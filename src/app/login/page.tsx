@@ -7,14 +7,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
-// Define the interface for the test result
 interface ApiTestResult {
     success: boolean;
     message: string;
 }
 
 export default function LoginPage() {
-    // Login state
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [showConfigModal, setShowConfigModal] = useState(false);
@@ -80,7 +78,6 @@ export default function LoginPage() {
                 if (rememberMe) {
                     localStorage.setItem('rememberedUsername', username);
                 }
-                // The router.push is already handled in the useAuth hook
             }
         } catch (err) {
             // Error handling is managed by the useAuth hook
@@ -369,7 +366,7 @@ export default function LoginPage() {
                                         href="#"
                                         className="text-sm font-medium text-[#09A08D] hover:text-[#3C787A]"
                                     >
-                                        Esqueci minha senha
+                                        Acessar como operador
                                     </a>
                                 </div>
                             </div>
