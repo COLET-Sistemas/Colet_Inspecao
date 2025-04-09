@@ -4,3 +4,81 @@
 
 
 @import "tailwindcss";
+
+@layer utilities {
+
+    /* Animações para o Navbar */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out forwards;
+    }
+
+    .animate-slideDown {
+        animation: slideDown 0.3s ease-out forwards;
+    }
+
+    .animate-scaleIn {
+        animation: scaleIn 0.2s ease-out forwards;
+    }
+}
+
+/* Estilos personalizados para o Navbar */
+:root {
+    --primary: #1ABC9C;
+    --primary-dark: #16a085;
+    --navbar-bg-start: #2C2C2C;
+    --navbar-bg-end: #3A3A3A;
+}
+
+/* Efeito de pulsação suave para os elementos ativos */
+.pulse-effect {
+    box-shadow: 0 0 0 rgba(26, 188, 156, 0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(26, 188, 156, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(26, 188, 156, 0);
+    }
+}
