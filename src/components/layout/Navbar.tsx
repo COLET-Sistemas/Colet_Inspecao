@@ -96,6 +96,13 @@ export default function Navbar() {
         return item.submenu.some(subItem => isActive(subItem.href));
     };
 
+    const handleSubItemClick = () => {
+        setTimeout(() => {
+            setMobileMenuOpen(false);
+            setOpenSubmenu(null);
+        }, 100); 
+    };
+
     return (
         <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : ''}`}>
             <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -292,7 +299,7 @@ export default function Navbar() {
                                                         href={subItem.href}
                                                         className={`flex items-center px-3 py-2 text-sm transition-colors duration-200 relative ${isActive(subItem.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'
                                                             }`}
-                                                        onClick={() => setMobileMenuOpen(false)}
+                                                        onClick={handleSubItemClick}
                                                     >
                                                         <span className="mr-2">
                                                             {subItem.icon}

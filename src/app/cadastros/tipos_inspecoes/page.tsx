@@ -185,12 +185,10 @@ export default function TiposInspecoesPage() {
         localStorage.setItem('tiposInspecaoViewMode', viewMode);
     }, [viewMode]);
 
-    // Mock data and filtering
     useEffect(() => {
         const loadData = () => {
             setIsLoading(true);
 
-            // Simulate API loading delay
             const timer = setTimeout(() => {
                 const mockData: TipoInspecao[] = [
                     {
@@ -236,7 +234,6 @@ export default function TiposInspecoesPage() {
                 ];
 
                 startTransition(() => {
-                    // Apply filters
                     let filtered = [...mockData];
 
                     if (searchTerm) {
@@ -340,7 +337,7 @@ export default function TiposInspecoesPage() {
     ), [tiposInspecao]);
 
     return (
-        <div className="space-y-6 p-2 sm:p-4 md:p-6 max-w-7xl mx-auto">
+        <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* Page header with title and actions */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

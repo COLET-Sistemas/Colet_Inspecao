@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, CardContent, CardHeader } from '@/components/ui/dashboard/card';
 import { ActivityCard, QuickActionCard, StatCard } from '@/components/ui/dashboard';
+import { Card, CardContent, CardHeader } from '@/components/ui/dashboard/card';
 import {
     BarChart,
     CheckCircle,
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     else if (currentHour >= 18) greeting = "Boa noite";
 
     return (
-        <main className="p-6 bg-gray-50 min-h-screen">
+        <main className="p-6 bg-gray-50 mx-auto">
             <header className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
                 <p className="text-gray-600 mt-1">{greeting}, bem-vindo ao sistema de inspeção Colet.</p>
