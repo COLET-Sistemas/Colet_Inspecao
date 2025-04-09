@@ -15,8 +15,7 @@ interface TipoInspecao {
     id: number;
     codigo: string;
     descricao: string;
-    categoria: string;
-    status: "ativo" | "inativo";
+    status: "A" | "I";
     dataCriacao: string;
 }
 
@@ -35,11 +34,11 @@ const Card = ({ tipo, onView, onEdit, onDelete }: {
                         {tipo.codigo}
                     </span>
                 </div>
-                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.status === 'ativo'
+                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.status === 'A'
                     ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
                     }`}>
-                    {tipo.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             </div>
 
@@ -49,9 +48,6 @@ const Card = ({ tipo, onView, onEdit, onDelete }: {
 
             <div className="flex justify-between items-end mt-3">
                 <div className="flex flex-col space-y-1">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 inline-block w-fit">
-                        {tipo.categoria}
-                    </span>
                     <span className="text-xs text-gray-400">
                         {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
                     </span>
@@ -98,34 +94,13 @@ const Card = ({ tipo, onView, onEdit, onDelete }: {
 
 export default function TiposInspecoesPage() {
     // State for filters
-    const [searchTerm, setSearchTerm] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('tiposInspecaoSearchTerm') || "";
-        }
-        return "";
-    });
-    const [statusFilter, setStatusFilter] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('tiposInspecaoStatusFilter') || "todos";
-        }
-        return "todos";
-    });
-    const [categoriaFilter, setCategoriaFilter] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('tiposInspecaoCategoriaFilter') || "todas";
-        }
-        return "todas";
-    });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
 
-    // View toggle state with localStorage persistence
-    const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('tiposInspecaoViewMode') as ViewMode || "table";
-        }
-        return "table";
-    });
+    // View toggle state
+    const [viewMode, setViewMode] = useState<ViewMode>("table");
 
     // State for data and loading
     const [tiposInspecao, setTiposInspecao] = useState<TipoInspecao[]>([]);
@@ -136,22 +111,13 @@ export default function TiposInspecoesPage() {
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
-    // Save user preferences to localStorage
-    useEffect(() => {
-        localStorage.setItem('tiposInspecaoViewMode', viewMode);
-        localStorage.setItem('tiposInspecaoSearchTerm', searchTerm);
-        localStorage.setItem('tiposInspecaoStatusFilter', statusFilter);
-        localStorage.setItem('tiposInspecaoCategoriaFilter', categoriaFilter);
-    }, [viewMode, searchTerm, statusFilter, categoriaFilter]);
-
     // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
         if (statusFilter !== "todos") count++;
-        if (categoriaFilter !== "todas") count++;
         setActiveFilters(count);
-    }, [searchTerm, statusFilter, categoriaFilter]);
+    }, [searchTerm, statusFilter]);
 
     // Handle keyboard accessibility
     useEffect(() => {
@@ -179,65 +145,57 @@ export default function TiposInspecoesPage() {
                 {
                     id: 1,
                     codigo: "INSP-001",
-                    descricao: "Inspeção de Qualidade Padrão",
-                    categoria: "Qualidade",
-                    status: "ativo",
+                    descricao: "Inspeção de Setup",
+                    status: "A",
                     dataCriacao: "2023-06-15"
                 },
                 {
                     id: 2,
                     codigo: "INSP-002",
-                    descricao: "Inspeção de Segurança Maquinário",
-                    categoria: "Segurança",
-                    status: "ativo",
+                    descricao: "Inspeção de Troca de Ferramentas",
+                    status: "A",
                     dataCriacao: "2023-07-22"
                 },
                 {
                     id: 3,
                     codigo: "INSP-003",
-                    descricao: "Inspeção de Manutenção Preventiva",
-                    categoria: "Manutenção",
-                    status: "ativo",
+                    descricao: "Inspeção de Liberação de Máquina",
+                    status: "A",
                     dataCriacao: "2023-08-10"
                 },
                 {
                     id: 4,
                     codigo: "INSP-004",
-                    descricao: "Inspeção de Conformidade Regulatória",
-                    categoria: "Conformidade",
-                    status: "inativo",
+                    descricao: "Inspeção de Processo",
+                    status: "I",
                     dataCriacao: "2023-09-05"
                 },
                 {
                     id: 5,
                     codigo: "INSP-005",
-                    descricao: "Inspeção de Procedimentos Operacionais",
-                    categoria: "Operacional",
-                    status: "ativo",
+                    descricao: "Inspeção na Qualidade",
+                    status: "A",
                     dataCriacao: "2023-10-18"
                 },
                 {
                     id: 6,
                     codigo: "INSP-006",
-                    descricao: "Inspeção de Equipamentos de Proteção",
-                    categoria: "Segurança",
-                    status: "ativo",
+                    descricao: "Inspeção de Não Conformidade",
+                    status: "A",
                     dataCriacao: "2023-11-03"
                 },
                 {
                     id: 7,
                     codigo: "INSP-007",
-                    descricao: "Inspeção de Qualidade de Matéria-Prima",
-                    categoria: "Qualidade",
-                    status: "ativo",
+                    descricao: "Inspeção Adicional",
+                    status: "A",
                     dataCriacao: "2023-11-15"
                 },
                 {
                     id: 8,
                     codigo: "INSP-008",
                     descricao: "Inspeção de Processos de Fabricação",
-                    categoria: "Operacional",
-                    status: "inativo",
+                    status: "I",
                     dataCriacao: "2023-11-27"
                 }
             ];
@@ -258,10 +216,6 @@ export default function TiposInspecoesPage() {
                     filtered = filtered.filter(item => item.status === statusFilter);
                 }
 
-                if (categoriaFilter !== "todas") {
-                    filtered = filtered.filter(item => item.categoria === categoriaFilter);
-                }
-
                 setTiposInspecao(filtered);
                 setIsLoading(false);
 
@@ -275,14 +229,11 @@ export default function TiposInspecoesPage() {
         }, 600);
 
         return () => clearTimeout(timer);
-    }, [searchTerm, statusFilter, categoriaFilter]);
+    }, [searchTerm, statusFilter]);
 
     useEffect(() => {
         loadData();
     }, [loadData]);
-
-    // List of unique categories for filter dropdown - memoized
-    const categorias = useMemo(() => ["Qualidade", "Segurança", "Manutenção", "Conformidade", "Operacional"], []);
 
     // Handle CRUD operations with feedback
     const handleView = useCallback((id: number) => {
@@ -316,7 +267,6 @@ export default function TiposInspecoesPage() {
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setStatusFilter("todos");
-        setCategoriaFilter("todas");
         setNotification("Filtros resetados.");
     }, []);
 
@@ -325,14 +275,8 @@ export default function TiposInspecoesPage() {
         // Status filter options
         const statusOptions: FilterOption[] = [
             { value: "todos", label: "Todos os status" },
-            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" },
-        ];
-
-        // Category filter options
-        const categoriaOptions: FilterOption[] = [
-            { value: "todas", label: "Todas as categorias" },
-            ...categorias.map(cat => ({ value: cat, label: cat })),
+            { value: "A", label: "Ativos", color: "bg-green-100 text-green-800" },
+            { value: "I", label: "Inativos", color: "bg-red-100 text-red-800" },
         ];
 
         return [
@@ -343,15 +287,8 @@ export default function TiposInspecoesPage() {
                 options: statusOptions,
                 onChange: setStatusFilter,
             },
-            {
-                id: "categoria",
-                label: "Categoria",
-                value: categoriaFilter,
-                options: categoriaOptions,
-                onChange: setCategoriaFilter,
-            },
         ];
-    }, [statusFilter, categoriaFilter, categorias]);
+    }, [statusFilter]);
 
     // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
@@ -370,24 +307,15 @@ export default function TiposInspecoesPage() {
             filters.push({
                 id: "status",
                 value: statusFilter,
-                label: statusFilter === "ativo" ? "Ativos" : "Inativos",
-                color: statusFilter === "ativo"
+                label: statusFilter === "A" ? "Ativos" : "Inativos",
+                color: statusFilter === "A"
                     ? "bg-green-100 text-green-800"
                     : "bg-red-100 text-red-800",
             });
         }
 
-        if (categoriaFilter !== "todas") {
-            filters.push({
-                id: "categoria",
-                value: categoriaFilter,
-                label: categoriaFilter,
-                color: "bg-blue-100 text-blue-800",
-            });
-        }
-
         return filters;
-    }, [searchTerm, statusFilter, categoriaFilter]);
+    }, [searchTerm, statusFilter]);
 
     // Table columns configuration
     const tableColumns = useMemo(() => [
@@ -406,23 +334,14 @@ export default function TiposInspecoesPage() {
             ),
         },
         {
-            key: "categoria",
-            title: "Categoria",
-            render: (tipo: TipoInspecao) => (
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {tipo.categoria}
-                </span>
-            ),
-        },
-        {
             key: "status",
             title: "Status",
             render: (tipo: TipoInspecao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'ativo'
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'A'
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                     }`}>
-                    {tipo.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             ),
         },

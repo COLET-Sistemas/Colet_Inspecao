@@ -138,34 +138,14 @@ const Card = ({ instrumento, onView, onEdit, onDelete }: {
 
 export default function InstrumentosMedicaoPage() {
     // State for filters
-    const [searchTerm, setSearchTerm] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('instrumentosMedicaoSearchTerm') || "";
-        }
-        return "";
-    });
-    const [statusFilter, setStatusFilter] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('instrumentosMedicaoStatusFilter') || "todos";
-        }
-        return "todos";
-    });
-    const [tipoFilter, setTipoFilter] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('instrumentosMedicaoTipoFilter') || "todos";
-        }
-        return "todos";
-    });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("todos");
+    const [tipoFilter, setTipoFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
 
-    // View toggle state with localStorage persistence
-    const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('instrumentosMedicaoViewMode') as ViewMode || "table";
-        }
-        return "table";
-    });
+    // View toggle state
+    const [viewMode, setViewMode] = useState<ViewMode>("table");
 
     // State for data and loading
     const [instrumentos, setInstrumentos] = useState<InstrumentoMedicao[]>([]);
@@ -175,14 +155,6 @@ export default function InstrumentosMedicaoPage() {
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
-
-    // Save user preferences to localStorage
-    useEffect(() => {
-        localStorage.setItem('instrumentosMedicaoViewMode', viewMode);
-        localStorage.setItem('instrumentosMedicaoSearchTerm', searchTerm);
-        localStorage.setItem('instrumentosMedicaoStatusFilter', statusFilter);
-        localStorage.setItem('instrumentosMedicaoTipoFilter', tipoFilter);
-    }, [viewMode, searchTerm, statusFilter, tipoFilter]);
 
     // Calculate active filters
     useEffect(() => {
