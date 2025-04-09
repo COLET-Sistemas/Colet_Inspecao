@@ -51,7 +51,7 @@ export default function Navbar() {
             icon: <Settings className="w-4 h-4" />,
             submenu: [
                 { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" /> },
-                { label: "Instrumentos de Medição", href: "/cadastros/instrumentos", icon: <Ruler className="w-4 h-4" /> },
+                { label: "Instrumentos de Medição", href: "/cadastros/instrumentos_medicao", icon: <Ruler className="w-4 h-4" /> },
                 { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4" /> }
             ]
         }

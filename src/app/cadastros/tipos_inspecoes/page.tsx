@@ -1,33 +1,15 @@
 "use client";
 
-import { LoadingSpinner } from "@/components/ui/Loading";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-    ChevronDown,
-    Eye,
-    LayoutGrid,
-    LayoutList,
-    Pencil,
-    Plus,
-    Search,
-    SlidersHorizontal,
-    Trash2,
-    X
-} from "lucide-react";
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Virtuoso } from 'react-virtuoso';
-
-// Update the interfaces to match Virtuoso's expected component props
-// Make children optional to match Virtuoso's expected props
-interface ListComponentProps extends React.HTMLAttributes<HTMLDivElement> {
-    style?: React.CSSProperties;
-    children?: React.ReactNode;
-}
-
-interface TableComponentProps extends React.HTMLAttributes<HTMLTableElement> {
-    style?: React.CSSProperties;
-    children?: React.ReactNode;
-}
+import { DataCards } from "@/components/ui/DataCards";
+import { DataListContainer } from "@/components/ui/DataListContainer";
+import { DataTable } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/FilterPanel";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { motion } from "framer-motion";
+import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 interface TipoInspecao {
     id: number;
@@ -38,134 +20,14 @@ interface TipoInspecao {
     dataCriacao: string;
 }
 
-// Componente de Tooltip para melhorar feedback visual
-const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const showTooltip = () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => setIsVisible(true), 300);
-    };
-
-    const hideTooltip = () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        setIsVisible(false);
-    };
-
-    return (
-        <div className="relative inline-block" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onFocus={showTooltip} onBlur={hideTooltip}>
-            {children}
-            <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded shadow-lg -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap"
-                        style={{ pointerEvents: 'none' }}
-                    >
-                        {text}
-                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
-
-// Memoized Table Row component to prevent unnecessary re-renders
-const TableRow = memo(({ tipo, onView, onEdit, onDelete }: {
+// Card component for list item
+const Card = ({ tipo, onView, onEdit, onDelete }: {
     tipo: TipoInspecao;
     onView: (id: number) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => (
-    <motion.tr
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="hover:bg-gray-50"
-    >
-        <td className="px-6 py-4 whitespace-nowrap">
-            <span className="text-sm font-medium text-gray-900">{tipo.codigo}</span>
-        </td>
-        <td className="px-6 py-4">
-            <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao}</div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                {tipo.categoria}
-            </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'ativo'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-                }`}>
-                {tipo.status === 'ativo' ? 'Ativo' : 'Inativo'}
-            </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-            <span className="text-sm text-gray-500">
-                {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
-            </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <div className="flex items-center justify-end gap-2">
-                <Tooltip text="Visualizar">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-1 rounded p-1"
-                        onClick={() => onView(tipo.id)}
-                        aria-label="Visualizar"
-                    >
-                        <Eye className="h-4 w-4" />
-                    </motion.button>
-                </Tooltip>
-
-                <Tooltip text="Editar">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        className="text-[#1ABC9C] hover:text-[#16A085] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/30 focus:ring-offset-1 rounded p-1"
-                        onClick={() => onEdit(tipo.id)}
-                        aria-label="Editar"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </motion.button>
-                </Tooltip>
-
-                <Tooltip text="Excluir">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        className="text-red-500 hover:text-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-1 rounded p-1"
-                        onClick={() => onDelete(tipo.id)}
-                        aria-label="Excluir"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </motion.button>
-                </Tooltip>
-            </div>
-        </td>
-    </motion.tr>
-));
-TableRow.displayName = 'TableRow';
-
-// Memoized Card component
-const Card = memo(({ tipo, onView, onEdit, onDelete }: {
-    tipo: TipoInspecao;
-    onView: (id: number) => void;
-    onEdit: (id: number) => void;
-    onDelete: (id: number) => void;
-}) => (
-    <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300"
-    >
+    <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
             <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center">
@@ -231,9 +93,8 @@ const Card = memo(({ tipo, onView, onEdit, onDelete }: {
                 </div>
             </div>
         </div>
-    </motion.div>
-));
-Card.displayName = 'Card';
+    </div>
+);
 
 export default function TiposInspecoesPage() {
     // State for filters
@@ -257,21 +118,18 @@ export default function TiposInspecoesPage() {
     });
 
     const [isPending, startTransition] = useTransition();
-    const [showFilters, setShowFilters] = useState(false);
 
     // View toggle state with localStorage persistence
-    const [viewMode, setViewMode] = useState<"table" | "card">(() => {
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('tiposInspecaoViewMode') as "table" | "card" || "table";
+            return localStorage.getItem('tiposInspecaoViewMode') as ViewMode || "table";
         }
         return "table";
     });
 
-    // State for data and pagination
+    // State for data and loading
     const [tiposInspecao, setTiposInspecao] = useState<TipoInspecao[]>([]);
     const [allData, setAllData] = useState<TipoInspecao[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
 
@@ -305,8 +163,7 @@ export default function TiposInspecoesPage() {
             }
             if (e.ctrlKey && e.key === 'n') {
                 e.preventDefault();
-                // Focus on the "Novo Tipo de Inspeção" button
-                document.getElementById('new-inspection-button')?.click();
+                handleCreateNew();
             }
         };
 
@@ -406,7 +263,6 @@ export default function TiposInspecoesPage() {
                 }
 
                 setTiposInspecao(filtered);
-                setTotalPages(Math.ceil(filtered.length / 10));
                 setIsLoading(false);
 
                 // Notifications for screen readers
@@ -424,21 +280,6 @@ export default function TiposInspecoesPage() {
     useEffect(() => {
         loadData();
     }, [loadData]);
-
-    // Debounce search input - optimized with useRef
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-
-        searchTimeoutRef.current = setTimeout(() => {
-            setSearchTerm(value);
-        }, 300);
-    };
 
     // List of unique categories for filter dropdown - memoized
     const categorias = useMemo(() => ["Qualidade", "Segurança", "Manutenção", "Conformidade", "Operacional"], []);
@@ -466,6 +307,11 @@ export default function TiposInspecoesPage() {
         }
     }, []);
 
+    const handleCreateNew = useCallback(() => {
+        console.log("Novo tipo de inspeção");
+        // Implementation of the creation logic
+    }, []);
+
     // Reset filters function
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -474,183 +320,162 @@ export default function TiposInspecoesPage() {
         setNotification("Filtros resetados.");
     }, []);
 
-    // Function to render card view with virtualization - memoized
-    const renderCardView = useMemo(() => {
-        // Para evitar problemas de layout com virtualização e grid,
-        // vamos agrupar os itens em linhas para a virtualização
-        const itemsPerRow = {
-            'sm': 2,  // 2 cards por linha em telas pequenas
-            'lg': 3   // 3 cards por linha em telas grandes
-        };
+    // Prepare filter options for the FilterPanel component
+    const filterOptions = useMemo(() => {
+        // Status filter options
+        const statusOptions: FilterOption[] = [
+            { value: "todos", label: "Todos os status" },
+            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
+            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" },
+        ];
 
-        // Versão simples sem virtualização para conjuntos de dados pequenos
-        if (tiposInspecao.length < 100) {
-            return (
-                <div className="p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {tiposInspecao.map((tipo) => (
-                            <Card
-                                key={`card-${tipo.id}`}
-                                tipo={tipo}
-                                onView={handleView}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                            />
-                        ))}
-                    </div>
-                </div>
-            );
+        // Category filter options
+        const categoriaOptions: FilterOption[] = [
+            { value: "todas", label: "Todas as categorias" },
+            ...categorias.map(cat => ({ value: cat, label: cat })),
+        ];
+
+        return [
+            {
+                id: "status",
+                label: "Status",
+                value: statusFilter,
+                options: statusOptions,
+                onChange: setStatusFilter,
+            },
+            {
+                id: "categoria",
+                label: "Categoria",
+                value: categoriaFilter,
+                options: categoriaOptions,
+                onChange: setCategoriaFilter,
+            },
+        ];
+    }, [statusFilter, categoriaFilter, categorias]);
+
+    // Prepare selected filters for display in the filter panel
+    const selectedFiltersForDisplay = useMemo(() => {
+        const filters = [];
+
+        if (searchTerm) {
+            filters.push({
+                id: "search",
+                value: searchTerm,
+                label: `Pesquisa: "${searchTerm}"`,
+                color: "bg-purple-100 text-purple-800",
+            });
         }
 
-        // Versão com virtualização para conjuntos maiores de dados
-        return (
-            <div className="w-full p-4">
-                <Virtuoso
-                    totalCount={tiposInspecao.length}
-                    itemContent={(index) => {
-                        const tipo = tiposInspecao[index];
-                        return (
-                            <div className="mb-4">
-                                <Card
-                                    tipo={tipo}
-                                    onView={handleView}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </div>
-                        );
-                    }}
-                    style={{ height: 'auto' }}
-                    components={{
-                        // Use the updated interface with proper typing
-                        List: React.forwardRef<HTMLDivElement, ListComponentProps>(({ style, children, ...rest }, ref) => (
-                            <div
-                                ref={ref}
-                                style={{ ...style, height: 'auto' }}
-                                {...rest}
-                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                            >
-                                {children}
-                            </div>
-                        ))
-                    }}
-                />
-            </div>
-        );
-    }, [tiposInspecao, handleView, handleEdit, handleDelete]);
+        if (statusFilter !== "todos") {
+            filters.push({
+                id: "status",
+                value: statusFilter,
+                label: statusFilter === "ativo" ? "Ativos" : "Inativos",
+                color: statusFilter === "ativo"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800",
+            });
+        }
 
-    // Function to render table view - memoized and fixed
-    const renderTableView = useMemo(() => (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Código
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Descrição
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Categoria
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Data de Criação
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Ações
-                        </th>
-                    </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                    {tiposInspecao.map((tipo) => (
-                        <TableRow
-                            key={`row-${tipo.id}`}
-                            tipo={tipo}
-                            onView={handleView}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                        />
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    ), [tiposInspecao, handleView, handleEdit, handleDelete]);
+        if (categoriaFilter !== "todas") {
+            filters.push({
+                id: "categoria",
+                value: categoriaFilter,
+                label: categoriaFilter,
+                color: "bg-blue-100 text-blue-800",
+            });
+        }
 
-    // Opção alternativa com virtualização - ative caso precise virtualizar grandes listas
-    const renderTableViewVirtualized = useMemo(() => {
-        // Este componente personalizado será usado para renderizar os itens virtualizados
-        const VirtualizedTableItem = (index: number) => {
-            const tipo = tiposInspecao[index];
-            return (
-                <TableRow
-                    key={`row-virtualized-${tipo.id}`}
-                    tipo={tipo}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-            );
-        };
+        return filters;
+    }, [searchTerm, statusFilter, categoriaFilter]);
 
-        return (
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Código
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Descrição
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Categoria
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Data de Criação
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ações
-                            </th>
-                        </tr>
-                    </thead>
-                </table>
+    // Table columns configuration
+    const tableColumns = useMemo(() => [
+        {
+            key: "codigo",
+            title: "Código",
+            render: (tipo: TipoInspecao) => (
+                <span className="text-sm font-medium text-gray-900">{tipo.codigo}</span>
+            ),
+        },
+        {
+            key: "descricao",
+            title: "Descrição",
+            render: (tipo: TipoInspecao) => (
+                <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao}</div>
+            ),
+        },
+        {
+            key: "categoria",
+            title: "Categoria",
+            render: (tipo: TipoInspecao) => (
+                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {tipo.categoria}
+                </span>
+            ),
+        },
+        {
+            key: "status",
+            title: "Status",
+            render: (tipo: TipoInspecao) => (
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'ativo'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                    {tipo.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                </span>
+            ),
+        },
+        {
+            key: "dataCriacao",
+            title: "Data de Criação",
+            render: (tipo: TipoInspecao) => (
+                <span className="text-sm text-gray-500">
+                    {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
+                </span>
+            ),
+        },
+        {
+            key: "acoes",
+            title: "Ações",
+            render: (tipo: TipoInspecao) => (
+                <div className="flex items-center justify-end gap-2">
+                    <Tooltip text="Visualizar">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-1 rounded p-1"
+                            onClick={() => handleView(tipo.id)}
+                            aria-label="Visualizar"
+                        >
+                            <Eye className="h-4 w-4" />
+                        </motion.button>
+                    </Tooltip>
 
-                {/* Instead of trying to virtualize a table directly, we'll virtualize a div and render rows inside it */}
-                <div className="virtualized-table-body bg-white">
-                    <Virtuoso
-                        totalCount={tiposInspecao.length}
-                        style={{ height: 'auto' }} // Dynamic height instead of fixed
-                        itemContent={index => {
-                            const tipo = tiposInspecao[index];
-                            // For each item, we'll render a div styled to look like a table row
-                            return (
-                                <div key={`row-virtualized-${tipo.id}`} className="border-b border-gray-200">
-                                    <table className="min-w-full">
-                                        <tbody>
-                                            <TableRow
-                                                tipo={tipo}
-                                                onView={handleView}
-                                                onEdit={handleEdit}
-                                                onDelete={handleDelete}
-                                            />
-                                        </tbody>
-                                    </table>
-                                </div>
-                            );
-                        }}
-                    />
+                    <Tooltip text="Editar">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="text-[#1ABC9C] hover:text-[#16A085] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/30 focus:ring-offset-1 rounded p-1"
+                            onClick={() => handleEdit(tipo.id)}
+                            aria-label="Editar"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </motion.button>
+                    </Tooltip>
+
+                    <Tooltip text="Excluir">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="text-red-500 hover:text-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-1 rounded p-1"
+                            onClick={() => handleDelete(tipo.id)}
+                            aria-label="Excluir"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                    </Tooltip>
                 </div>
-            </div>
-        );
-    }, [tiposInspecao, handleView, handleEdit, handleDelete]);
+            ),
+        },
+    ], [handleView, handleEdit, handleDelete]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -659,294 +484,67 @@ export default function TiposInspecoesPage() {
                 {notification}
             </div>
 
-            {/* Page header with title and actions */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+            {/* Page Header Component */}
+            <PageHeader
+                title="Tipos de Inspeções"
+                buttonLabel="Novo Tipo de Inspeção"
+                onButtonClick={handleCreateNew}
+            />
+
+            {/* Filters Component */}
+            <FilterPanel
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Buscar por código ou descrição... (Ctrl+F)"
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                filters={filterOptions}
+                activeFilters={activeFilters}
+                onResetFilters={resetFilters}
+                selectedFilters={selectedFiltersForDisplay}
+            />
+
+            {/* Data Container with Dynamic View */}
+            <DataListContainer
+                isLoading={isLoading || isPending}
+                isEmpty={tiposInspecao.length === 0}
+                emptyState={
+                    <EmptyState
+                        icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
+                        title="Nenhum resultado encontrado"
+                        description="Não encontramos tipos de inspeção que correspondam aos seus filtros atuais."
+                        primaryAction={{
+                            label: "Novo Tipo de Inspeção",
+                            onClick: handleCreateNew,
+                            icon: <Plus className="mr-2 h-4 w-4" />,
+                        }}
+                        secondaryAction={{
+                            label: "Limpar filtros",
+                            onClick: resetFilters,
+                        }}
+                    />
+                }
+                totalItems={allData.length}
+                totalFilteredItems={tiposInspecao.length}
+                activeFilters={activeFilters}
+                onResetFilters={resetFilters}
             >
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Tipos de Inspeções</h1>
-                <motion.button
-                    id="new-inspection-button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center bg-[#1ABC9C] hover:bg-[#16A085] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md shadow-sm transition-colors duration-200 w-full sm:w-auto justify-center focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/70 focus:ring-offset-2"
-                    onClick={() => console.log("Novo tipo de inspeção")}
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    <span>Novo Tipo de Inspeção</span>
-                </motion.button>
-            </motion.div>
-
-            {/* Filters section - responsive with animations */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="bg-white rounded-lg shadow p-3 sm:p-4"
-            >
-                <div className="flex flex-col space-y-4">
-                    <div className="flex flex-wrap justify-between items-center">
-                        {/* Search input */}
-                        <div className="w-full md:w-auto flex-1 md:mr-4 mb-4 md:mb-0">
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-4 w-4 text-gray-400" />
-                                </div>
-                                <input
-                                    id="search-input"
-                                    type="text"
-                                    placeholder="Buscar por código ou descrição... (Ctrl+F)"
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm transition-shadow duration-200"
-                                    defaultValue={searchTerm}
-                                    onChange={handleSearchChange}
-                                    aria-label="Buscar tipos de inspeção"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Advanced filters toggle button */}
-                        <div className="flex space-x-2">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50"
-                            >
-                                <SlidersHorizontal size={16} className="mr-2" />
-                                <span>Filtros</span>
-                                {activeFilters > 0 && (
-                                    <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white">
-                                        {activeFilters}
-                                    </span>
-                                )}
-                            </motion.button>
-
-                            {/* View toggle buttons */}
-                            <div className="flex border border-gray-300 rounded-md overflow-hidden">
-                                <Tooltip text="Visualização em tabela">
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setViewMode("table")}
-                                        className={`flex items-center px-3 py-2 ${viewMode === "table"
-                                            ? "bg-gray-100 text-[#1ABC9C]"
-                                            : "bg-white text-gray-600"
-                                            } transition-colors duration-200`}
-                                        aria-label="Ver como tabela"
-                                    >
-                                        <LayoutList size={18} />
-                                    </motion.button>
-                                </Tooltip>
-                                <Tooltip text="Visualização em cards">
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setViewMode("card")}
-                                        className={`flex items-center px-3 py-2 ${viewMode === "card"
-                                            ? "bg-gray-100 text-[#1ABC9C]"
-                                            : "bg-white text-gray-600"
-                                            } transition-colors duration-200`}
-                                        aria-label="Ver como cards"
-                                    >
-                                        <LayoutGrid size={18} />
-                                    </motion.button>
-                                </Tooltip>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Expanded filters - animated */}
-                    <AnimatePresence>
-                        {showFilters && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="pt-2 border-t border-gray-200 mt-2">
-                                    <div className="flex flex-wrap gap-3 items-center">
-                                        <div className="relative">
-                                            <label htmlFor="status-filter" className="block text-xs font-medium text-gray-700 mb-1 ml-1">
-                                                Status
-                                            </label>
-                                            <select
-                                                id="status-filter"
-                                                className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200"
-                                                value={statusFilter}
-                                                onChange={(e) => setStatusFilter(e.target.value)}
-                                            >
-                                                <option value="todos">Todos os status</option>
-                                                <option value="ativo">Ativos</option>
-                                                <option value="inativo">Inativos</option>
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-6">
-                                                <ChevronDown className="h-4 w-4" />
-                                            </div>
-                                        </div>
-
-                                        <div className="relative">
-                                            <label htmlFor="categoria-filter" className="block text-xs font-medium text-gray-700 mb-1 ml-1">
-                                                Categoria
-                                            </label>
-                                            <select
-                                                id="categoria-filter"
-                                                className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200"
-                                                value={categoriaFilter}
-                                                onChange={(e) => setCategoriaFilter(e.target.value)}
-                                            >
-                                                <option value="todas">Todas as categorias</option>
-                                                {categorias.map(categoria => (
-                                                    <option key={categoria} value={categoria}>{categoria}</option>
-                                                ))}
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-6">
-                                                <ChevronDown className="h-4 w-4" />
-                                            </div>
-                                        </div>
-
-                                        {activeFilters > 0 && (
-                                            <motion.button
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={resetFilters}
-                                                className="flex items-center px-3 py-2 mt-6 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                                            >
-                                                <X size={16} className="mr-1" />
-                                                Limpar filtros
-                                            </motion.button>
-                                        )}
-                                    </div>
-
-                                    {/* Exibição dos filtros atualmente selecionados */}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {statusFilter !== 'todos' && (
-                                            <div className={`px-3 py-1 text-xs rounded-full inline-flex items-center gap-1
-                                                ${statusFilter === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} font-medium`}
-                                            >
-                                                {statusFilter === 'ativo' ? 'Ativos' : 'Inativos'}
-                                            </div>
-                                        )}
-
-                                        {categoriaFilter !== 'todas' && (
-                                            <div className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium inline-flex items-center gap-1">
-                                                {categoriaFilter}
-                                            </div>
-                                        )}
-
-                                        {searchTerm && (
-                                            <div className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-medium inline-flex items-center gap-1">
-                                                <span>Pesquisa:</span>
-                                                <span className="font-normal">{`"${searchTerm}"`}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </motion.div>
-
-            {/* Data display - table or card view with animations */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="bg-white rounded-lg shadow overflow-hidden"
-            >
-                {isLoading || isPending ? (
-                    <div className="flex items-center justify-center min-h-[300px] w-full">
-                        <LoadingSpinner
-                            size="medium"
-                            text="Carregando dados..."
-                            color="primary"
-                        />
-                    </div>
-                ) : tiposInspecao.length > 0 ? (
-                    <AnimatePresence mode="wait">
-                        {viewMode === "table" ? renderTableView : renderCardView}
-
-                        {/* Statistics and filters summary */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.2 }}
-                            className="border-t border-gray-200 px-4 py-3 bg-gray-50 text-sm text-gray-500"
-                        >
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                <p>
-                                    Mostrando <span className="font-medium text-gray-700">{tiposInspecao.length}</span> de{" "}
-                                    <span className="font-medium text-gray-700">{allData.length}</span> tipos de inspeção
-                                </p>
-                                {activeFilters > 0 && (
-                                    <button
-                                        onClick={resetFilters}
-                                        className="text-[#1ABC9C] hover:text-[#16A085] text-sm font-medium flex items-center transition-colors"
-                                    >
-                                        <X size={14} className="mr-1" />
-                                        Limpar {activeFilters} filtro{activeFilters > 1 ? 's' : ''}
-                                    </button>
-                                )}
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                {viewMode === "table" ? (
+                    <DataTable data={tiposInspecao} columns={tableColumns} />
                 ) : (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className="text-center py-12 px-4 sm:px-6 lg:px-8"
-                    >
-                        <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto">
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                                <SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />
-                            </div>
-
-                            <motion.h3
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="mt-3 text-lg font-medium text-gray-900"
-                            >
-                                Nenhum resultado encontrado
-                            </motion.h3>
-
-                            <motion.p
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="mt-2 text-sm text-gray-500 max-w-sm mx-auto"
-                            >
-                                Não encontramos tipos de inspeção que correspondam aos seus filtros atuais.
-                            </motion.p>
-
-                            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                                <motion.button
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                    className="px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 shadow-sm transition-all"
-                                    onClick={resetFilters}
-                                >
-                                    Limpar filtros
-                                </motion.button>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
-                                    type="button"
-                                    className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-[#1ABC9C] hover:bg-[#16A085] shadow-md shadow-[#1ABC9C]/20 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#1ABC9C] transition-all"
-                                    onClick={() => console.log("Novo tipo de inspeção")}
-                                >
-                                    <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-                                    Novo Tipo de Inspeção
-                                </motion.button>
-                            </div>
-                        </div>
-                    </motion.div>
+                    <DataCards
+                        data={tiposInspecao}
+                        renderCard={(tipo) => (
+                            <Card
+                                tipo={tipo}
+                                onView={handleView}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
+                        )}
+                    />
                 )}
-            </motion.div>
+            </DataListContainer>
         </div>
     );
 }
