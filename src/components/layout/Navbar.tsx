@@ -1,10 +1,14 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronDown, ClipboardCheck, ClipboardList, Drill, FileSearch, FileText, LayoutDashboard, LogOut, Menu, Ruler, Settings, User, X } from "lucide-react";
+import {
+    ChevronDown, ClipboardCheck, ClipboardList, Drill,
+    FileSearch, FileText, LayoutDashboard, LogOut,
+    Menu, Ruler, Settings, User, X
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface NavItem {
@@ -22,6 +26,7 @@ export default function Navbar() {
 
     const { user, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     // Track scroll position to add shadow effect when scrolling
     useEffect(() => {
@@ -34,18 +39,18 @@ export default function Navbar() {
     }, []);
 
     const navItems: NavItem[] = [
-        { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4 mr-2" /> },
-        { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4 mr-2" /> },
-        { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4 mr-2" /> },
-        { label: "Relatórios", href: "/relatorios", icon: <FileText className="w-4 h-4 mr-2" /> },
+        { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+        { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4" /> },
+        { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4" /> },
+        { label: "Relatórios", href: "/relatorios", icon: <FileText className="w-4 h-4" /> },
         {
             label: "Cadastros",
             href: "#",
-            icon: <Settings className="w-4 h-4 mr-2" />,
+            icon: <Settings className="w-4 h-4" />,
             submenu: [
-                { label: "Tipo de Inspeção", href: "/cadastros/tipo-inspecao", icon: <ClipboardList className="w-4 h-4 mr-2" /> },
-                { label: "Instrumentos de Medição", href: "/cadastros/instrumentos", icon: <Ruler className="w-4 h-4 mr-2" /> },
-                { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4 mr-2" /> }
+                { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" /> },
+                { label: "Instrumentos de Medição", href: "/cadastros/instrumentos", icon: <Ruler className="w-4 h-4" /> },
+                { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4" /> }
             ]
         }
     ];
@@ -59,61 +64,103 @@ export default function Navbar() {
         setOpenSubmenu(openSubmenu === label ? null : label);
     };
 
+    const isActive = (href: string) => {
+        if (href === '#') return false;
+        return pathname === href || pathname?.startsWith(href + '/');
+    };
+
+    // Check if any submenu item is active for parent menu highlighting
+    const hasActiveSubmenu = (item: NavItem) => {
+        if (!item.submenu) return false;
+        return item.submenu.some(subItem => isActive(subItem.href));
+    };
+
     return (
-        <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/20' : ''}`}>
-            <div className="w-full mx-auto px-4 sm:px-6 lg:px-10">
+        <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : ''
+            }`}>
+            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo section */}
-                    <div className="flex-shrink-0 flex items-center pr-4">
+                    <div className="flex-shrink-0 flex items-center">
                         <Link href="/dashboard" className="hover:opacity-90 transition-opacity flex items-center">
                             <Image
                                 src="/images/logoColet.png"
                                 alt="Colet Logo"
                                 width={160}
                                 height={50}
-                                className="h-10 w-auto brightness-[1.15] contrast-[1.1]"
+                                className="h-8 w-auto brightness-105"
                                 priority
                             />
-                            <span className="text-white font-medium ml-2">Colet Sistemas</span>
+                            <span className="text-white font-medium ml-2">
+                                Colet <span className="text-[#1ABC9C] font-light">Sistemas</span>
+                            </span>
                         </Link>
                     </div>
 
                     {/* Desktop navigation */}
                     <div className="hidden md:flex md:items-center md:justify-center flex-1">
-                        <div className="flex space-x-1 items-center justify-center">
+                        <div className="flex items-center justify-center space-x-1">
                             {navItems.map((item) => (
                                 <div key={item.label} className="relative group">
                                     {item.submenu ? (
                                         <button
                                             onClick={() => toggleSubmenu(item.label)}
-                                            className="flex items-center px-4 py-2 text-sm font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-all duration-200 ease-in-out"
+                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative ${openSubmenu === item.label || hasActiveSubmenu(item)
+                                                ? 'text-[#1ABC9C]'
+                                                : 'text-gray-300 hover:text-white'
+                                                }`}
                                             aria-expanded={openSubmenu === item.label}
                                         >
-                                            {item.icon}
-                                            {item.label}
-                                            <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${openSubmenu === item.label ? 'transform rotate-180' : ''}`} />
+                                            <span className="flex items-center">
+                                                <span className="mr-2">
+                                                    {item.icon}
+                                                </span>
+                                                {item.label}
+                                            </span>
+                                            <ChevronDown className={`ml-1 h-3 w-3 transition-transform duration-200 ${openSubmenu === item.label ? 'transform rotate-180' : ''}`} />
+                                            {/* Add underline if submenu has active item */}
+                                            {hasActiveSubmenu(item) && (
+                                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1ABC9C]"></span>
+                                            )}
                                         </button>
                                     ) : (
                                         <Link
                                             href={item.href}
-                                            className="flex items-center px-4 py-2 text-sm font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200 ease-in-out"
+                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative ${isActive(item.href)
+                                                ? 'text-[#1ABC9C]'
+                                                : 'text-gray-300 hover:text-white'
+                                                }`}
                                         >
-                                            {item.icon}
+                                            <span className="mr-2">
+                                                {item.icon}
+                                            </span>
                                             {item.label}
+                                            {isActive(item.href) && (
+                                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1ABC9C]"></span>
+                                            )}
                                         </Link>
                                     )}
 
                                     {item.submenu && openSubmenu === item.label && (
-                                        <div className="absolute z-30 left-0 mt-1 w-52 rounded-md shadow-lg bg-[#444] ring-1 ring-black ring-opacity-5 py-1 animate-fadeIn">
+                                        <div className="absolute z-30 left-0 mt-1 w-52 rounded-md shadow-lg bg-[#3A3A3A] border border-gray-700/50 py-1 animate-fadeIn">
                                             {item.submenu.map((subItem) => (
                                                 <Link
                                                     key={subItem.label}
                                                     href={subItem.href}
-                                                    className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#555] hover:text-white transition-colors duration-200"
+                                                    className={`flex items-center px-4 py-2 text-sm hover:bg-gray-700/30 transition-colors duration-200 relative ${isActive(subItem.href)
+                                                        ? 'text-[#1ABC9C]'
+                                                        : 'text-gray-300 hover:text-white'
+                                                        }`}
                                                     onClick={() => setOpenSubmenu(null)}
                                                 >
-                                                    {subItem.icon}
+                                                    <span className="mr-2">
+                                                        {subItem.icon}
+                                                    </span>
                                                     {subItem.label}
+                                                    {/* Add left border indicator for active submenu item */}
+                                                    {isActive(subItem.href) && (
+                                                        <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
+                                                    )}
                                                 </Link>
                                             ))}
                                         </div>
@@ -124,39 +171,39 @@ export default function Navbar() {
                     </div>
 
                     {/* User profile section - Desktop */}
-                    <div className="hidden md:flex md:items-center md:justify-end pl-4">
+                    <div className="hidden md:flex md:items-center md:justify-end">
                         <div className="relative">
                             <div>
                                 <button
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                    className="flex items-center space-x-3 text-gray-200 hover:text-white focus:outline-none group"
+                                    className="flex items-center space-x-2 text-gray-300 hover:text-white focus:outline-none"
                                 >
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#09A08D] to-[#0a8a7a] flex items-center justify-center text-white shadow-sm group-hover:shadow-md transition-all duration-200">
-                                        {user?.username?.charAt(0).toUpperCase() || <User size={18} />}
+                                    <div className="h-8 w-8 rounded-full bg-[#1ABC9C]/20 flex items-center justify-center text-[#1ABC9C]">
+                                        {user?.username?.charAt(0).toUpperCase() || <User size={16} />}
                                     </div>
-                                    <div className="text-sm font-medium hidden lg:block group-hover:text-white transition-colors duration-200">
+                                    <div className="text-sm font-medium hidden lg:block">
                                         {user?.username || "Usuário"}
                                     </div>
-                                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${userMenuOpen ? 'transform rotate-180' : ''}`} />
+                                    <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${userMenuOpen ? 'transform rotate-180' : ''}`} />
                                 </button>
                             </div>
 
                             {userMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-[#444] ring-1 ring-black ring-opacity-5 z-30 animate-fadeIn">
-                                    <div className="px-4 py-3 text-xs text-gray-300 border-b border-gray-600 bg-[#3f3f3f] rounded-t-md">
-                                        <p className="text-xs text-gray-300">Logado como</p>
-                                        <p className="font-semibold text-gray-100">{user?.username}</p>
+                                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#3A3A3A] border border-gray-700/50 py-1 animate-fadeIn">
+                                    <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700/50">
+                                        <p>Logado como</p>
+                                        <p className="font-medium text-white text-sm">{user?.username}</p>
                                     </div>
                                     <a
                                         href="#"
-                                        className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#555] hover:text-white transition-colors duration-200"
+                                        className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/30 hover:text-white transition-colors duration-200"
                                     >
                                         <User className="mr-2 h-4 w-4" />
                                         Perfil
                                     </a>
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#555] hover:text-white transition-colors duration-200"
+                                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/30 hover:text-white transition-colors duration-200"
                                     >
                                         <LogOut className="mr-2 h-4 w-4" />
                                         Sair
@@ -170,14 +217,14 @@ export default function Navbar() {
                     <div className="flex items-center md:hidden">
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-[#4a4a4a] focus:outline-none transition-colors duration-200"
+                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white focus:outline-none"
                             aria-expanded="false"
                         >
                             <span className="sr-only">Abrir menu principal</span>
                             {mobileMenuOpen ? (
-                                <X className="block h-6 w-6" />
+                                <X className="block h-5 w-5" />
                             ) : (
-                                <Menu className="block h-6 w-6" />
+                                <Menu className="block h-5 w-5" />
                             )}
                         </button>
                     </div>
@@ -186,34 +233,46 @@ export default function Navbar() {
 
             {/* Mobile menu */}
             {mobileMenuOpen && (
-                <div className="md:hidden absolute w-full bg-[#333] shadow-lg z-20 animate-slideDown border-t border-[#444]">
-                    <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <div className="md:hidden absolute w-full bg-[#3A3A3A] shadow-lg z-20 animate-slideDown border-t border-gray-700/50">
+                    <div className="px-2 pt-2 pb-3 space-y-1">
                         {navItems.map((item) => (
                             <div key={item.label} className="relative">
                                 {item.submenu ? (
                                     <>
                                         <button
                                             onClick={() => toggleSubmenu(item.label)}
-                                            className="w-full flex items-center justify-between px-3 py-2 text-base font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200"
+                                            className={`w-full flex items-center justify-between px-3 py-2 text-base font-medium transition-colors duration-200 relative ${openSubmenu === item.label || hasActiveSubmenu(item) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'
+                                                }`}
                                         >
                                             <span className="flex items-center">
-                                                {item.icon}
+                                                <span className="mr-3">
+                                                    {item.icon}
+                                                </span>
                                                 {item.label}
                                             </span>
                                             <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${openSubmenu === item.label ? 'rotate-180' : ''}`} />
+                                            {hasActiveSubmenu(item) && (
+                                                <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
+                                            )}
                                         </button>
 
                                         {openSubmenu === item.label && (
-                                            <div className="pl-4 space-y-1 mt-1 border-l-2 border-gray-600 ml-3 animate-fadeIn">
+                                            <div className="pl-4 space-y-1 mt-1 border-l border-gray-700/50 ml-3 animate-fadeIn">
                                                 {item.submenu.map((subItem) => (
                                                     <Link
                                                         key={subItem.label}
                                                         href={subItem.href}
-                                                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200"
+                                                        className={`flex items-center px-3 py-2 text-sm transition-colors duration-200 relative ${isActive(subItem.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'
+                                                            }`}
                                                         onClick={() => setMobileMenuOpen(false)}
                                                     >
-                                                        {subItem.icon}
+                                                        <span className="mr-2">
+                                                            {subItem.icon}
+                                                        </span>
                                                         {subItem.label}
+                                                        {isActive(subItem.href) && (
+                                                            <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
+                                                        )}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -222,11 +281,17 @@ export default function Navbar() {
                                 ) : (
                                     <Link
                                         href={item.href}
-                                        className="flex items-center px-3 py-2 text-base font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200"
+                                        className={`flex items-center px-3 py-2 text-base font-medium transition-colors duration-200 relative ${isActive(item.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'
+                                            }`}
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
-                                        {item.icon}
+                                        <span className="mr-3">
+                                            {item.icon}
+                                        </span>
                                         {item.label}
+                                        {isActive(item.href) && (
+                                            <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
+                                        )}
                                     </Link>
                                 )}
                             </div>
@@ -234,18 +299,18 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile user menu */}
-                    <div className="pt-4 pb-3 border-t border-gray-600 bg-[#2d2d2d]">
+                    <div className="pt-4 pb-3 border-t border-gray-700/50">
                         <div className="flex items-center px-4">
                             <div className="flex-shrink-0">
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-[#09A08D] to-[#0a8a7a] flex items-center justify-center text-white shadow-sm">
-                                    {user?.username?.charAt(0).toUpperCase() || <User size={20} />}
+                                <div className="h-8 w-8 rounded-full bg-[#1ABC9C]/20 flex items-center justify-center text-[#1ABC9C]">
+                                    {user?.username?.charAt(0).toUpperCase() || <User size={16} />}
                                 </div>
                             </div>
                             <div className="ml-3">
-                                <div className="text-base font-medium text-gray-100">
+                                <div className="text-base font-medium text-white">
                                     {user?.username || "Usuário"}
                                 </div>
-                                <div className="text-sm font-medium text-gray-400">
+                                <div className="text-xs font-medium text-gray-400">
                                     {user?.email || ""}
                                 </div>
                             </div>
@@ -253,16 +318,16 @@ export default function Navbar() {
                         <div className="mt-3 space-y-1 px-2">
                             <a
                                 href="#"
-                                className="flex items-center px-3 py-2 text-base font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200"
+                                className="flex items-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white transition-colors duration-200"
                             >
-                                <User className="mr-3 h-5 w-5" />
+                                <User className="mr-3 h-4 w-4" />
                                 Perfil
                             </a>
                             <button
                                 onClick={handleLogout}
-                                className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-200 hover:text-white hover:bg-[#4a4a4a] rounded-md transition-colors duration-200"
+                                className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white transition-colors duration-200"
                             >
-                                <LogOut className="mr-3 h-5 w-5" />
+                                <LogOut className="mr-3 h-4 w-4" />
                                 Sair
                             </button>
                         </div>
@@ -270,10 +335,10 @@ export default function Navbar() {
                 </div>
             )}
 
-            {/* Backdrop for clicking outside to close menus - Reduced blur and opacity */}
+            {/* Backdrop for clicking outside to close menus */}
             {(userMenuOpen || openSubmenu) && (
                 <div
-                    className="fixed inset-0 z-10 bg-black/10 backdrop-blur-[2px]"
+                    className="fixed inset-0 z-10 bg-black/10"
                     onClick={() => {
                         setUserMenuOpen(false);
                         setOpenSubmenu(null);
