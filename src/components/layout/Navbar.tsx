@@ -9,7 +9,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface NavItem {
     label: string;
@@ -40,7 +40,7 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const navItems: NavItem[] = [
+    const navItems: NavItem[] = useMemo(() => [
         { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
         { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4" /> },
         { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4" /> },
@@ -55,7 +55,7 @@ export default function Navbar() {
                 { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4" /> }
             ]
         }
-    ];
+    ], []);
 
     const handleShowLogoutModal = (e?: React.MouseEvent) => {
         if (e) {
@@ -80,14 +80,14 @@ export default function Navbar() {
         }
     };
 
-    const toggleSubmenu = (label: string) => {
+    const toggleSubmenu = useCallback((label: string) => {
         setOpenSubmenu(openSubmenu === label ? null : label);
-    };
+    }, [openSubmenu]);
 
-    const isActive = (href: string) => {
+    const isActive = useCallback((href: string) => {
         if (href === '#') return false;
         return pathname === href || pathname?.startsWith(href + '/');
-    };
+    }, [pathname]);
 
     // Check if any submenu item is active for parent menu highlighting
     const hasActiveSubmenu = (item: NavItem) => {
@@ -99,7 +99,13 @@ export default function Navbar() {
         setTimeout(() => {
             setMobileMenuOpen(false);
             setOpenSubmenu(null);
-        }, 100); 
+        }, 100);
+    };
+
+    const handleLinkClick = () => {
+        setUserMenuOpen(false);
+        setOpenSubmenu(null);
+        setMobileMenuOpen(false);
     };
 
     return (
@@ -150,10 +156,9 @@ export default function Navbar() {
                                     ) : (
                                         <Link
                                             href={item.href}
-                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative ${isActive(item.href)
-                                                ? 'text-[#1ABC9C]'
-                                                : 'text-gray-300 hover:text-white'
-                                                }`}
+                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative
+                                                   hover:bg-gray-700/20 ${isActive(item.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'}`}
+                                            onClick={handleLinkClick}
                                         >
                                             <span className="mr-2">
                                                 {item.icon}
@@ -263,7 +268,8 @@ export default function Navbar() {
 
             {/* Mobile menu */}
             {mobileMenuOpen && (
-                <div className="md:hidden absolute w-full bg-[#3A3A3A] shadow-lg z-20 animate-slideDown border-t border-gray-700/50">
+                <div className="md:hidden absolute w-full bg-[#3A3A3A] shadow-lg z-20 animate-slideDown 
+                               border-t border-gray-700/50 max-h-[80vh] overflow-y-auto overscroll-contain">
                     <div className="px-2 pt-2 pb-3 space-y-1">
                         {navItems.map((item) => (
                             <div key={item.label} className="relative">
@@ -311,9 +317,9 @@ export default function Navbar() {
                                 ) : (
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center px-3 py-2 text-base font-medium transition-colors duration-200 relative ${isActive(item.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'
-                                            }`}
-                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`flex items-center px-3 py-2 text-base font-medium transition-colors duration-200 
+                                                   relative border-b border-gray-700/10 ${isActive(item.href) ? 'text-[#1ABC9C]' : 'text-gray-300 hover:text-white'}`}
+                                        onClick={handleLinkClick}
                                     >
                                         <span className="mr-3">
                                             {item.icon}

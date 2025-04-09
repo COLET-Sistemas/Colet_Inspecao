@@ -24,6 +24,9 @@ export default function LoginPage() {
     // API Configuration using the hook
     const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
 
+    // Add a local state to track button loading only during submission
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     // Auth hook
     const { login, isLoading: loginIsLoading, error: authError } = useAuth();
 
@@ -92,6 +95,9 @@ export default function LoginPage() {
             return;
         }
 
+        // Set local submitting state to true
+        setIsSubmitting(true);
+
         try {
             // Use the login method from useAuth hook
             const success = await login({ username, password, remember: rememberMe });
@@ -104,6 +110,9 @@ export default function LoginPage() {
         } catch (err) {
             // Error handling is managed by the useAuth hook
             console.error("Login error:", err);
+        } finally {
+            // Always reset submitting state when done
+            setIsSubmitting(false);
         }
     };
 
@@ -144,7 +153,8 @@ export default function LoginPage() {
         }
     };
 
-    const isLoading = loginIsLoading || apiIsLoading;
+
+    const isLoading = apiIsLoading;
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -183,6 +193,7 @@ export default function LoginPage() {
                             width={180}
                             height={45}
                             priority
+                            loading="eager"
                             className="object-contain h-10 md:h-12 lg:h-14 brightness-0 invert"
                         />
                     </div>
@@ -396,10 +407,10 @@ export default function LoginPage() {
                             <div>
                                 <button
                                     type="submit"
-                                    disabled={isLoading}
+                                    disabled={isSubmitting}
                                     className="flex w-full justify-center rounded-lg bg-gradient-to-r from-[#09A08D] to-[#3C787A] px-4 py-2.5 sm:py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#09A08D] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {isLoading ? (
+                                    {isSubmitting ? (
                                         <span className="flex items-center">
                                             <svg className="mr-2 h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
