@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useApiConfig } from "../hooks/useApiConfig";
 
 // Define types for our hook
 interface User {
@@ -23,151 +22,226 @@ interface AuthError {
     field?: string;
 }
 
-interface AuthContextType {
-    user: User | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    error: AuthError | null;
-    login: (credentials: LoginCredentials) => Promise<boolean>;
-    logout: () => Promise<void>;
-    checkAuth: () => boolean;
+// Function to encode password using XOR cipher
+const encodePassword = (password: string) => {
+    const key = Math.floor(Math.random() * 255);
+    const hexResult = [];
+    let result = '';
+
+    // Convert key to hex
+    hexResult.push((key >> 4).toString(16).toUpperCase());
+    hexResult.push((key & 0xF).toString(16).toUpperCase());
+    result += hexResult.join('');
+
+    // Convert password characters to hex
+    for (let i = 0; i < password.length; i++) {
+        const converted = password.charCodeAt(i) ^ key;
+        hexResult[0] = (converted >> 4).toString(16).toUpperCase();
+        hexResult[1] = (converted & 0xF).toString(16).toUpperCase();
+        result += hexResult.join('');
+    }
+
+    return result;
+};
+
+// Create a compatibility AuthContext for existing code that uses AuthProvider
+const AuthContext = createContext<any>(undefined);
+
+// Add this AuthProvider component to maintain compatibility with existing code
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const auth = useAuth();
+
+    return (
+        <AuthContext.Provider value={auth}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
-// Create context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export function useAuth() {
+    // Check if we're being used within context
+    const context = useContext(AuthContext);
+    if (context) return context;
 
-// Auth provider component
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(true); // Start with true to check auth status
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [error, setError] = useState<AuthError | null>(null);
-    const { apiUrl } = useApiConfig();
+    const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
-    // Check if user is authenticated by looking at local storage
-    const checkAuth = useCallback(() => {
-        const token = localStorage.getItem("authToken");
-        const userData = localStorage.getItem("userData");
-
-        if (token && userData) {
-            try {
-                const parsedUser = JSON.parse(userData);
-                setUser(parsedUser);
-                return true;
-            } catch (e) {
-                return false;
-            }
+    // Check authentication status on mount
+    useEffect(() => {
+        const authStatus = checkAuth();
+        setIsAuthenticated(authStatus);
+        if (authStatus) {
+            setUser(getUserData());
         }
-
-        return false;
+        setIsLoading(false);
     }, []);
 
-    // Initialize authentication state on load
-    useEffect(() => {
-        const initialize = async () => {
-            setIsLoading(true);
-            const isAuth = checkAuth();
-            setIsLoading(false);
+    const login = useCallback(async ({ username, password, remember }: LoginCredentials): Promise<boolean> => {
+        // Don't attempt login if already in progress
+        if (isLoading) return false;
 
-            // If not authenticated and not on login page, redirect to login
-            if (!isAuth && window.location.pathname !== "/login") {
-                router.push("/login");
-            }
-        };
-
-        initialize();
-    }, [checkAuth, router]);
-
-    // Login function
-    const login = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
         setIsLoading(true);
         setError(null);
 
-        try {
-            if (!apiUrl) {
-                throw new Error("API URL not configured");
-            }
+        // Check if API URL is configured
+        const apiUrl = localStorage.getItem("apiUrl");
+        console.log(apiUrl)
+        if (!apiUrl) {
+            setError({ message: "API não configurada. Configure o endereço da API primeiro." });
+            setIsLoading(false);
+            return false;
+        }
 
+        try {
+            // Encrypt the password
+            const senha_cripto = encodePassword(password);
+
+            console.log(`Tentando login na API: ${apiUrl}/login`);
+
+            // Real API call to login endpoint
             const response = await fetch(`${apiUrl}/login`, {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    usuario: credentials.username,
-                    senha: credentials.password,
+                    usuario: username,
+                    senha_cripto
                 }),
             });
 
-            const data = await response.json();
+            console.log('Dados da requisição:', JSON.stringify({
+                usuario: username,
+                senha_cripto
+            }));
 
-            if (!response.ok) {
-                // Handle different error cases
+            console.log(`Status da resposta: ${response.status} ${response.statusText}`);
+
+            // Get response data
+            const data = await response.json();
+            console.log('Dados completos da resposta:', data);
+
+            // Status 200 means the API call was successful
+            if (response.status === 200) {
+                // If data contains success field, check it, otherwise assume success based on status code
+                if (data.success === undefined || data.success) {
+                    console.log('Login bem-sucedido! Redirecionando para o dashboard...');
+
+                    // Create basic user object
+                    const userData: User = {
+                        username: username,
+                        name: data.nome || username,
+                    };
+
+                    // Store auth data
+                    if (remember) {
+                        localStorage.setItem("isAuthenticated", "true");
+                        localStorage.setItem("authToken", data.token || "");
+                        localStorage.setItem("userData", JSON.stringify(userData));
+                    } else {
+                        sessionStorage.setItem("isAuthenticated", "true");
+                        sessionStorage.setItem("authToken", data.token || "");
+                        sessionStorage.setItem("userData", JSON.stringify(userData));
+                    }
+
+                    // Update state
+                    setIsAuthenticated(true);
+                    setUser(userData);
+                    setIsLoading(false);
+
+                    router.push("/dashboard");
+                    return true;
+                } else {
+                    // API returned 200 but success is explicitly false
+                    setError({
+                        message: data.message || "Credenciais inválidas. Por favor, verifique seu usuário e senha."
+                    });
+                    setIsLoading(false);
+                    return false;
+                }
+            } else {
+                // Handle non-200 status codes
                 if (response.status === 401) {
                     setError({ message: "Usuário ou senha incorretos", field: "password" });
-                } else if (data.message) {
-                    setError({ message: data.message });
                 } else {
-                    setError({ message: "Erro ao fazer login. Tente novamente." });
+                    setError({
+                        message: data.mensagem || `Falha na autenticação (${response.status}). Por favor, tente novamente.`
+                    });
                 }
+                setIsLoading(false);
                 return false;
             }
-
-            // Store auth token and user data
-            localStorage.setItem("authToken", data.token);
-
-            // Create a user object from the response
-            const userData: User = {
-                username: credentials.username,
-                name: data.nome || credentials.username,
-                // Add any other user data from the response
-            };
-
-            // Store user data in localStorage
-            localStorage.setItem("userData", JSON.stringify(userData));
-
-            setUser(userData);
-
-            // Redirect to dashboard on successful login
-            router.push("/dashboard");
-
-            return true;
-        } catch (error) {
-            console.error("Login error:", error);
-            setError({ message: "Erro de conexão. Verifique sua conexão e tente novamente." });
-            return false;
-        } finally {
+        } catch (err) {
+            console.error("Login error:", err);
+            setError({ message: "Erro ao conectar ao servidor. Verifique sua conexão e tente novamente." });
             setIsLoading(false);
+            return false;
         }
-    }, [apiUrl, router]);
+    }, [router, isLoading]);
 
-    // Logout function
     const logout = useCallback(async (): Promise<void> => {
+        setIsLoading(true);
+
+        // Clear all authentication data from both localStorage and sessionStorage
+        localStorage.removeItem("isAuthenticated");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userName");
         localStorage.removeItem("authToken");
         localStorage.removeItem("userData");
+        sessionStorage.removeItem("isAuthenticated");
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("userName");
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("userData");
+
+        // Update state
+        setIsAuthenticated(false);
         setUser(null);
+        setIsLoading(false);
+
+        // Force immediate redirection to login page
         router.push("/login");
     }, [router]);
 
-    // Provide context value
-    const value = {
+    const checkAuth = useCallback((): boolean => {
+        return (
+            localStorage.getItem("isAuthenticated") === "true" ||
+            sessionStorage.getItem("isAuthenticated") === "true"
+        );
+    }, []);
+
+    // For backward compatibility with any code that might be using the user object
+    const getUserData = (): User | null => {
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+
+        if (userDataStr) {
+            try {
+                return JSON.parse(userDataStr);
+            } catch (e) {
+                return null;
+            }
+        } else if (userStr) {
+            try {
+                return JSON.parse(userStr);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        return null;
+    };
+
+    return {
         user,
-        isAuthenticated: !!user,
+        isAuthenticated,
         isLoading,
         error,
         login,
         logout,
-        checkAuth,
+        checkAuth
     };
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-// Hook to use auth context
-export function useAuth(): AuthContextType {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
 }

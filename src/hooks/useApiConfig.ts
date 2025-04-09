@@ -56,8 +56,9 @@ export function useApiConfig() {
             });
 
             clearTimeout(timeoutId);
-            setIsConnected(response.ok);
-            return response.ok;
+            const isOk = response.ok;
+            setIsConnected(isOk);
+            return isOk;
         } catch (error) {
             console.error("API connection test failed:", error);
             setIsConnected(false);

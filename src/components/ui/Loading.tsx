@@ -85,7 +85,7 @@ export const LoadingSpinner = React.memo(({
 
     // Container styling based on fullScreen prop
     const containerClasses = fullScreen
-        ? "min-h-screen flex items-center justify-center bg-[#F3F4F6]"
+        ? "fixed inset-0 flex items-center justify-center bg-[#F3F4F6] z-50"
         : "flex items-center justify-center py-8";
 
     return (
@@ -94,7 +94,7 @@ export const LoadingSpinner = React.memo(({
                 className="flex flex-col items-center"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.3 }}
             >
                 <div className={`relative ${sizeMap[size]}`}>
                     {/* Outer spinning ring */}
@@ -105,6 +105,7 @@ export const LoadingSpinner = React.memo(({
                             duration: 1,
                             ease: "linear",
                             repeat: Infinity,
+                            repeatType: "loop"
                         }}
                     />
 
@@ -116,6 +117,7 @@ export const LoadingSpinner = React.memo(({
                             duration: 1.5,
                             ease: "linear",
                             repeat: Infinity,
+                            repeatType: "loop"
                         }}
                     />
 
@@ -130,7 +132,7 @@ export const LoadingSpinner = React.memo(({
                         className={`mt-4 font-medium text-lg ${colorMap[color].text}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
+                        transition={{ delay: 0.2, duration: 0.3 }}
                     >
                         {text}
                     </motion.p>

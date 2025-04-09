@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { LoadingSpinner } from "../ui/Loading";
 import Navbar from "./Navbar";
 
@@ -12,12 +13,20 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
     const pathname = usePathname();
     const { isLoading, isAuthenticated } = useAuth();
+    const router = useRouter();
 
     // Don't show the navbar on the login page
     const isLoginPage = pathname === '/login';
 
+    // Redirect unauthenticated users to login page
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated && !isLoginPage) {
+            router.push('/login');
+        }
+    }, [isLoading, isAuthenticated, isLoginPage, router]);
+
     // Show loading spinner while auth state is being determined
-    if (isLoading) {
+    if (isLoading && !isLoginPage) {
         return <LoadingSpinner fullScreen size="medium" />;
     }
 

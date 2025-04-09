@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import {
     ChevronDown, ClipboardCheck, ClipboardList, Drill,
-    FileSearch, FileText, LayoutDashboard, LogOut,
+    FileSearch, FileText, LayoutDashboard, Loader2, LogOut,
     Menu, Ruler, Settings, User, X
 } from "lucide-react";
 import Image from "next/image";
@@ -23,6 +23,8 @@ export default function Navbar() {
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const { user, logout } = useAuth();
     const router = useRouter();
@@ -55,9 +57,28 @@ export default function Navbar() {
         }
     ];
 
+    const handleShowLogoutModal = (e?: React.MouseEvent) => {
+        // If event exists, prevent default and stop propagation
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        console.log("Opening logout modal");
+        setUserMenuOpen(false);
+        setShowLogoutModal(true);
+    };
+
     const handleLogout = async () => {
-        await logout();
-        router.push("/login");
+        try {
+            setIsLoggingOut(true);
+            console.log("Logging out");
+            await logout();
+            router.push("/login");
+        } catch (error) {
+            console.error("Logout failed:", error);
+        } finally {
+            setIsLoggingOut(false);
+        }
     };
 
     const toggleSubmenu = (label: string) => {
@@ -76,8 +97,7 @@ export default function Navbar() {
     };
 
     return (
-        <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : ''
-            }`}>
+        <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : ''}`}>
             <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo section */}
@@ -189,20 +209,28 @@ export default function Navbar() {
                             </div>
 
                             {userMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#3A3A3A] border border-gray-700/50 py-1 animate-fadeIn">
+                                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#3A3A3A] border border-gray-700/50 py-1 animate-fadeIn z-30">
                                     <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700/50">
                                         <p>Logado como</p>
                                         <p className="font-medium text-white text-sm">{user?.username}</p>
                                     </div>
                                     <a
                                         href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setUserMenuOpen(false);
+                                            // Add profile action here if needed
+                                            console.log("Profile clicked");
+                                        }}
                                         className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/30 hover:text-white transition-colors duration-200"
                                     >
                                         <User className="mr-2 h-4 w-4" />
                                         Perfil
                                     </a>
                                     <button
-                                        onClick={handleLogout}
+                                        type="button"
+                                        onClick={(e) => handleShowLogoutModal(e)}
                                         className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/30 hover:text-white transition-colors duration-200"
                                     >
                                         <LogOut className="mr-2 h-4 w-4" />
@@ -318,13 +346,21 @@ export default function Navbar() {
                         <div className="mt-3 space-y-1 px-2">
                             <a
                                 href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setMobileMenuOpen(false);
+                                    // Add profile action here if needed
+                                    console.log("Mobile profile clicked");
+                                }}
                                 className="flex items-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white transition-colors duration-200"
                             >
                                 <User className="mr-3 h-4 w-4" />
                                 Perfil
                             </a>
                             <button
-                                onClick={handleLogout}
+                                type="button"
+                                onClick={(e) => handleShowLogoutModal(e)}
                                 className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white transition-colors duration-200"
                             >
                                 <LogOut className="mr-3 h-4 w-4" />
@@ -338,12 +374,60 @@ export default function Navbar() {
             {/* Backdrop for clicking outside to close menus */}
             {(userMenuOpen || openSubmenu) && (
                 <div
-                    className="fixed inset-0 z-10 bg-black/10"
+                    className="fixed inset-0 z-20 bg-black/10"
                     onClick={() => {
                         setUserMenuOpen(false);
                         setOpenSubmenu(null);
                     }}
                 ></div>
+            )}
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/50 z-50"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowLogoutModal(false);
+                        }}
+                    ></div>
+                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#3A3A3A] rounded-md shadow-lg z-50 w-80 animate-fadeIn">
+                        <div className="p-5">
+                            <h3 className="text-lg font-medium text-white mb-2">Confirmar saída</h3>
+                            <p className="text-gray-300 mb-5">Tem certeza que deseja sair do sistema?</p>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowLogoutModal(false);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white border border-gray-600 rounded-md hover:bg-gray-700/30 transition-colors"
+                                    disabled={isLoggingOut}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleLogout();
+                                    }}
+                                    disabled={isLoggingOut}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-[#1ABC9C] rounded-md hover:bg-[#16a085] transition-colors flex items-center justify-center min-w-[80px]"
+                                >
+                                    {isLoggingOut ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Saindo...
+                                        </>
+                                    ) : (
+                                        "Sim, sair"
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
         </nav>
     );
