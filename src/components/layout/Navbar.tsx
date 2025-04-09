@@ -58,7 +58,6 @@ export default function Navbar() {
     ];
 
     const handleShowLogoutModal = (e?: React.MouseEvent) => {
-        // If event exists, prevent default and stop propagation
         if (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -107,7 +106,6 @@ export default function Navbar() {
         <nav className={`bg-[#3A3A3A] fixed w-full z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : ''}`}>
             <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    {/* Logo section */}
                     <div className="flex-shrink-0 flex items-center">
                         <Link href="/dashboard" className="hover:opacity-90 transition-opacity flex items-center">
                             <Image
@@ -145,7 +143,6 @@ export default function Navbar() {
                                                 {item.label}
                                             </span>
                                             <ChevronDown className={`ml-1 h-3 w-3 transition-transform duration-200 ${openSubmenu === item.label ? 'transform rotate-180' : ''}`} />
-                                            {/* Add underline if submenu has active item */}
                                             {hasActiveSubmenu(item) && (
                                                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1ABC9C]"></span>
                                             )}
@@ -227,8 +224,6 @@ export default function Navbar() {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             setUserMenuOpen(false);
-                                            // Add profile action here if needed
-                                            console.log("Profile clicked");
                                         }}
                                         className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/30 hover:text-white transition-colors duration-200"
                                     >

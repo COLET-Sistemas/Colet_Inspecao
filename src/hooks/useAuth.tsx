@@ -9,6 +9,7 @@ interface User {
     name?: string;
     email?: string;
     roles?: string[];
+    permissao?: string; // Add permissao field
 }
 
 interface LoginCredentials {
@@ -80,7 +81,6 @@ export function useAuth() {
     }, []);
 
     const login = useCallback(async ({ username, password, remember }: LoginCredentials): Promise<boolean> => {
-        // Don't attempt login if already in progress
         if (isLoading) return false;
 
         setIsLoading(true);
@@ -88,7 +88,6 @@ export function useAuth() {
 
         // Check if API URL is configured
         const apiUrl = localStorage.getItem("apiUrl");
-        console.log(apiUrl)
         if (!apiUrl) {
             setError({ message: "API não configurada. Configure o endereço da API primeiro." });
             setIsLoading(false);
@@ -99,9 +98,7 @@ export function useAuth() {
             // Encrypt the password
             const senha_cripto = encodePassword(password);
 
-            console.log(`Tentando login na API: ${apiUrl}/login`);
-
-            // Real API call to login endpoint
+            // API call to login endpoint
             const response = await fetch(`${apiUrl}/login`, {
                 method: 'POST',
                 headers: {
@@ -113,27 +110,18 @@ export function useAuth() {
                 }),
             });
 
-            console.log('Dados da requisição:', JSON.stringify({
-                usuario: username,
-                senha_cripto
-            }));
-
-            console.log(`Status da resposta: ${response.status} ${response.statusText}`);
-
             // Get response data
             const data = await response.json();
-            console.log('Dados completos da resposta:', data);
 
             // Status 200 means the API call was successful
             if (response.status === 200) {
                 // If data contains success field, check it, otherwise assume success based on status code
                 if (data.success === undefined || data.success) {
-                    console.log('Login bem-sucedido! Redirecionando para o dashboard...');
-
-                    // Create basic user object
+                    // Create user object with all returned data
                     const userData: User = {
                         username: username,
                         name: data.nome || username,
+                        permissao: data.permissao || '',
                     };
 
                     // Store auth data
@@ -159,8 +147,6 @@ export function useAuth() {
                     setError({
                         message: data.message || "Credenciais inválidas. Por favor, verifique seu usuário e senha."
                     });
-                    setIsLoading(false);
-                    return false;
                 }
             } else {
                 // Handle non-200 status codes
@@ -171,15 +157,14 @@ export function useAuth() {
                         message: data.mensagem || `Falha na autenticação (${response.status}). Por favor, tente novamente.`
                     });
                 }
-                setIsLoading(false);
-                return false;
             }
         } catch (err) {
             console.error("Login error:", err);
             setError({ message: "Erro ao conectar ao servidor. Verifique sua conexão e tente novamente." });
-            setIsLoading(false);
-            return false;
         }
+
+        setIsLoading(false);
+        return false;
     }, [router, isLoading]);
 
     const logout = useCallback(async (): Promise<void> => {
