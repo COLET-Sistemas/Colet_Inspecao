@@ -1,12 +1,12 @@
 "use client";
 
-import { DataCards } from "@/components/ui/DataCards";
-import { DataListContainer } from "@/components/ui/DataListContainer";
-import { DataTable } from "@/components/ui/DataTable";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/FilterPanel";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { DataCards } from "@/components/ui/cadastros/DataCards";
+import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
+import { DataTable } from "@/components/ui/cadastros/DataTable";
+import { EmptyState } from "@/components/ui/cadastros/EmptyState";
+import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -419,8 +419,8 @@ export default function TiposInspecoesPage() {
             title: "Status",
             render: (tipo: TipoInspecao) => (
                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'ativo'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
                     }`}>
                     {tipo.status === 'ativo' ? 'Ativo' : 'Inativo'}
                 </span>

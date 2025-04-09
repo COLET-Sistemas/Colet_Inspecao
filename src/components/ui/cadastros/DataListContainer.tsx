@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { ReactNode } from "react";
-import { LoadingSpinner } from "./Loading";
+import { LoadingSpinner } from "../Loading";
 
 interface DataListContainerProps {
     isLoading: boolean;

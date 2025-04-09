@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 // Update import path to use absolute path from project root
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 
 export type ViewMode = "table" | "card";
 export type FilterOption = {

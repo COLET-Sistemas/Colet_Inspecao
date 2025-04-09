@@ -2,9 +2,13 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import {
+    Archive,
     ChevronDown, ClipboardCheck, ClipboardList, Drill,
-    FileSearch, FileText, LayoutDashboard, Loader2, LogOut,
-    Menu, Ruler, Settings, User, X
+    FileSearch, FileText,
+    Gauge,
+    LayoutDashboard, Loader2, LogOut,
+    Menu, Ruler,
+    Settings, User, X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -51,7 +55,10 @@ export default function Navbar() {
             icon: <Settings className="w-4 h-4" />,
             submenu: [
                 { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" /> },
-                { label: "Instrumentos de Medição", href: "/cadastros/instrumentos_medicao", icon: <Ruler className="w-4 h-4" /> },
+                { label: "Tipos Inst. de Medição", href: "/cadastros/tipos_instrumentos_medicao", icon: <Archive className="w-4 h-4" /> },
+                { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" /> },
+                { label: "Cotas Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
+                { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" /> },
                 { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4" /> }
             ]
         }

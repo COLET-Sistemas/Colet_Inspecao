@@ -1,12 +1,12 @@
 "use client";
 
-import { DataCards } from "@/components/ui/DataCards";
-import { DataListContainer } from "@/components/ui/DataListContainer";
-import { DataTable } from "@/components/ui/DataTable";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/FilterPanel";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { DataCards } from "@/components/ui/cadastros/DataCards";
+import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
+import { DataTable } from "@/components/ui/cadastros/DataTable";
+import { EmptyState } from "@/components/ui/cadastros/EmptyState";
+import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";

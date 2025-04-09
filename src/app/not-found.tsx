@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MouseEvent, ReactNode, useCallback } from "react";
 
-// Local Button component with TypeScript types
 interface ButtonProps {
     children: ReactNode;
     onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -42,7 +41,7 @@ export default function NotFound() {
     }, [router]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 px-4 py-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 px-4 py-">
             <div className="max-w-md w-full text-center">
                 <div className="mb-8">
                     <div className="inline-block bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
