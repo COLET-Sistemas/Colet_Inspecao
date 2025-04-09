@@ -33,6 +33,27 @@ export default function LoginPage() {
 
     const router = useRouter();
 
+    // Add a state to detect orientation
+    const [isLandscape, setIsLandscape] = useState(false);
+
+    // Effect to detect orientation changes
+    useEffect(() => {
+        const checkOrientation = () => {
+            setIsLandscape(window.matchMedia("(orientation: landscape) and (max-width: 1024px)").matches);
+        };
+
+        // Check orientation on mount
+        checkOrientation();
+
+        // Listen for orientation changes
+        const mediaQuery = window.matchMedia("(orientation: landscape) and (max-width: 1024px)");
+        mediaQuery.addEventListener("change", checkOrientation);
+
+        return () => {
+            mediaQuery.removeEventListener("change", checkOrientation);
+        };
+    }, []);
+
     useEffect(() => {
         // Set temp API URL when modal opens or URL changes
         setTempApiUrl(apiUrl);
@@ -128,7 +149,7 @@ export default function LoginPage() {
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
             {/* Left Panel - Modern Redesigned Layout */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+            <div className={`hidden ${isLandscape ? 'lg:flex' : 'md:flex'} md:w-5/12 lg:w-1/2 relative overflow-hidden`}>
                 {/* Modern gradient background with enhanced design */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#08a88f] via-[#3c787a] to-[#1a5f7a] z-0"></div>
 
@@ -153,7 +174,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Content layout */}
-                <div className="relative flex flex-col h-full z-10 px-12 py-16">
+                <div className="relative flex flex-col h-full z-10 px-6 md:px-8 lg:px-12 py-12 md:py-16">
                     {/* Logo section */}
                     <div className="mb-auto">
                         <Image
@@ -162,23 +183,23 @@ export default function LoginPage() {
                             width={180}
                             height={45}
                             priority
-                            className="object-contain h-14 brightness-0 invert"
+                            className="object-contain h-10 md:h-12 lg:h-14 brightness-0 invert"
                         />
                     </div>
 
                     {/* Main content section */}
                     <div className="mb-12">
-                        <h1 className="text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 tracking-tight leading-tight">
                             Inspeção
                             <span className="text-white/80"> Colet</span>
                         </h1>
 
-                        <p className="text-white/80 text-xl max-w-md leading-relaxed mb-12">
+                        <p className="text-white/80 text-lg md:text-xl max-w-md leading-relaxed mb-8 md:mb-12">
                             Plataforma integrada para gestão completa das suas inspeções técnicas
                         </p>
 
                         {/* Feature highlights in cleaner layout */}
-                        <div className="space-y-6 mt-8">
+                        <div className="space-y-4 md:space-y-6 mt-6 md:mt-8">
                             <div className="flex items-start space-x-4">
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex-shrink-0">
                                     <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -187,7 +208,7 @@ export default function LoginPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Segurança e Conformidade</h3>
-                                    <p className="text-white/70 text-sm">Garantia de conformidade com normas técnicas e regulamentações</p>
+                                    <p className="text-white/70 text-sm md:text-base">Garantia de conformidade com normas técnicas e regulamentações</p>
                                 </div>
                             </div>
 
@@ -199,7 +220,7 @@ export default function LoginPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Insights Estratégicos</h3>
-                                    <p className="text-white/70 text-sm">Métricas e análises avançadas para decisões inteligentes</p>
+                                    <p className="text-white/70 text-sm md:text-base">Métricas e análises avançadas para decisões inteligentes</p>
                                 </div>
                             </div>
 
@@ -211,7 +232,7 @@ export default function LoginPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Eficiência Operacional</h3>
-                                    <p className="text-white/70 text-sm">Aumento de produtividade com processos otimizados e automatizados</p>
+                                    <p className="text-white/70 text-sm md:text-base">Aumento de produtividade com processos otimizados e automatizados</p>
                                 </div>
                             </div>
                         </div>
@@ -227,22 +248,22 @@ export default function LoginPage() {
             </div>
 
             {/* Right Panel - Login Form with Light Theme */}
-            <div className="w-full md:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-y-auto">
-                <div className="w-full max-w-md my-auto py-6">
-                    {/* Logo only shown on mobile - with responsive sizing */}
-                    <div className="flex justify-center lg:hidden mb-2">
+            <div className={`w-full ${isLandscape ? '' : 'md:w-7/12 lg:w-1/2'} flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-y-auto`}>
+                <div className={`w-full ${isLandscape ? 'max-w-lg' : 'max-w-md'} my-auto py-6`}>
+                    {/* Logo only shown on mobile or landscape tablet - with responsive sizing */}
+                    <div className={`flex justify-center ${isLandscape ? '' : 'md:hidden'} mb-2`}>
                         <Image
                             src="/images/logoLoginColetMobile.png"
                             alt="Colet Logo"
                             width={400}
                             height={100}
                             priority
-                            className="object-contain h-42 sm:h-48 md:h-52 w-auto"
+                            className="object-contain h-36 sm:h-40 w-auto"
                         />
                     </div>
 
                     {/* Login Panel */}
-                    <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 relative">
+                    <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-100 relative">
                         {/* Settings icon with darker gray circle */}
                         <button
                             onClick={() => setShowConfigModal(true)}
@@ -257,7 +278,7 @@ export default function LoginPage() {
                         </button>
 
                         <div className="mb-6 text-center">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-1">Bem-vindo de volta</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Bem-vindo de volta</h2>
                             <p className="text-gray-500">Acesse sua conta para continuar</p>
                         </div>
 
@@ -283,10 +304,10 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+                        <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit} noValidate>
                             <div>
                                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
-                                <div className={`flex items-center border ${formSubmitted && !username ? 'border-red-300 bg-red-50' : authError?.field === 'username' ? 'border-red-300 bg-red-50' : 'border-gray-300 focus-within:border-[#09A08D] focus-within:ring-1 focus-within:ring-[#09A08D]'} rounded-lg px-4 py-3 transition-all duration-200`}>
+                                <div className={`flex items-center border ${formSubmitted && !username ? 'border-red-300 bg-red-50' : authError?.field === 'username' ? 'border-red-300 bg-red-50' : 'border-gray-300 focus-within:border-[#09A08D] focus-within:ring-1 focus-within:ring-[#09A08D]'} rounded-lg px-4 py-2.5 sm:py-3 transition-all duration-200`}>
                                     <User className="h-5 w-5 text-gray-400 mr-2" />
                                     <input
                                         id="username"
@@ -311,7 +332,7 @@ export default function LoginPage() {
 
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                                <div className={`flex items-center border ${formSubmitted && !password ? 'border-red-300 bg-red-50' : authError?.field === 'password' ? 'border-red-300 bg-red-50' : 'border-gray-300 focus-within:border-[#09A08D] focus-within:ring-1 focus-within:ring-[#09A08D]'} rounded-lg px-4 py-3 transition-all duration-200`}>
+                                <div className={`flex items-center border ${formSubmitted && !password ? 'border-red-300 bg-red-50' : authError?.field === 'password' ? 'border-red-300 bg-red-50' : 'border-gray-300 focus-within:border-[#09A08D] focus-within:ring-1 focus-within:ring-[#09A08D]'} rounded-lg px-4 py-2.5 sm:py-3 transition-all duration-200`}>
                                     <Lock className="h-5 w-5 text-gray-400 mr-2" />
                                     <input
                                         id="password"
@@ -343,7 +364,7 @@ export default function LoginPage() {
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                                 <div className="flex items-center">
                                     <input
                                         id="remember"
@@ -376,7 +397,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="flex w-full justify-center rounded-lg bg-gradient-to-r from-[#09A08D] to-[#3C787A] px-4 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#09A08D] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="flex w-full justify-center rounded-lg bg-gradient-to-r from-[#09A08D] to-[#3C787A] px-4 py-2.5 sm:py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#09A08D] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
                                         <span className="flex items-center">
@@ -394,7 +415,7 @@ export default function LoginPage() {
                         </form>
                     </div>
 
-                    <div className="mt-8 text-center">
+                    <div className="mt-6 sm:mt-8 text-center">
                         <p className="text-xs text-gray-500">
                             {new Date().getFullYear()} Sistema de Gestão de Inspeções Colet Sistemas • Versão 0.0.1
                         </p>

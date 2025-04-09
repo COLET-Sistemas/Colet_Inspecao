@@ -285,11 +285,9 @@ export default function TiposInspecoesPage() {
             transition={{ duration: 0.3 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4"
         >
-            <AnimatePresence>
-                {tiposInspecao.map((tipo) => (
-                    <Card key={tipo.id} tipo={tipo} />
-                ))}
-            </AnimatePresence>
+            {tiposInspecao.map((tipo) => (
+                <Card key={`card-${tipo.id}`} tipo={tipo} />
+            ))}
         </motion.div>
     ), [tiposInspecao]);
 
@@ -326,11 +324,9 @@ export default function TiposInspecoesPage() {
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                    <AnimatePresence>
-                        {tiposInspecao.map((tipo) => (
-                            <TableRow key={tipo.id} tipo={tipo} />
-                        ))}
-                    </AnimatePresence>
+                    {tiposInspecao.map((tipo) => (
+                        <TableRow key={`row-${tipo.id}`} tipo={tipo} />
+                    ))}
                 </tbody>
             </table>
         </motion.div>
@@ -503,6 +499,7 @@ export default function TiposInspecoesPage() {
                                 <div>
                                     <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Paginação">
                                         <motion.button
+                                            key="prev-page-button"
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
@@ -512,21 +509,25 @@ export default function TiposInspecoesPage() {
                                             <span className="sr-only">Anterior</span>
                                             <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                                         </motion.button>
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`relative inline-flex items-center px-4 py-2 border ${currentPage === page
-                                                    ? 'bg-[#1ABC9C] text-white border-[#1ABC9C]'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                                    } text-sm font-medium transition-colors`}
-                                            >
-                                                {page}
-                                            </motion.button>
-                                        ))}
+                                        {Array.from({ length: totalPages }).map((_, i) => {
+                                            const pageNum = i + 1;
+                                            return (
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    key={`pagination-button-${pageNum}`}
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className={`relative inline-flex items-center px-4 py-2 border ${currentPage === pageNum
+                                                            ? 'bg-[#1ABC9C] text-white border-[#1ABC9C]'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                        } text-sm font-medium transition-colors`}
+                                                >
+                                                    {pageNum}
+                                                </motion.button>
+                                            );
+                                        })}
                                         <motion.button
+                                            key="next-page-button"
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
