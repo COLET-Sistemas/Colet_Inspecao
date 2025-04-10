@@ -68,9 +68,9 @@ export function FilterPanel({
             className="bg-white rounded-lg shadow p-3 sm:p-4"
         >
             <div className="flex flex-col space-y-4">
-                <div className="flex flex-wrap justify-between items-center">
-                    {/* Search input */}
-                    <div className="w-full md:w-auto flex-1 md:mr-4 mb-4 md:mb-0">
+                <div className="flex flex-row flex-wrap justify-between items-center gap-3">
+                    {/* Search input - modificado para ser mais responsivo */}
+                    <div className="relative min-w-0 flex-1 max-w-full">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-gray-400" />
@@ -87,15 +87,16 @@ export function FilterPanel({
                         </div>
                     </div>
 
-                    {/* Advanced filters toggle button */}
-                    <div className="flex space-x-2">
+                    {/* Action buttons container */}
+                    <div className="flex flex-nowrap gap-2 shrink-0">
+                        {/* Advanced filters toggle button */}
                         <motion.button
                             whileTap={{ scale: 0.97 }}
                             onClick={() => setShowFilters(!showFilters)}
                             className="flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50"
                         >
                             <SlidersHorizontal size={16} className="mr-2" />
-                            <span>Filtros</span>
+                            <span className="whitespace-nowrap">Filtros</span>
                             {activeFilters > 0 && (
                                 <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white">
                                     {activeFilters}
@@ -146,7 +147,7 @@ export function FilterPanel({
                             className="overflow-hidden"
                         >
                             <div className="pt-2 border-t border-gray-200 mt-2">
-                                <div className="flex flex-wrap gap-3 items-center">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
                                     {filters.map((filter) => (
                                         <div key={filter.id} className="relative">
                                             <label
@@ -155,20 +156,22 @@ export function FilterPanel({
                                             >
                                                 {filter.label}
                                             </label>
-                                            <select
-                                                id={`filter-${filter.id}`}
-                                                className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200"
-                                                value={filter.value}
-                                                onChange={(e) => filter.onChange(e.target.value)}
-                                            >
-                                                {filter.options.map((option) => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-6">
-                                                <ChevronDown className="h-4 w-4" />
+                                            <div className="relative">
+                                                <select
+                                                    id={`filter-${filter.id}`}
+                                                    className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200 w-full"
+                                                    value={filter.value}
+                                                    onChange={(e) => filter.onChange(e.target.value)}
+                                                >
+                                                    {filter.options.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -179,7 +182,7 @@ export function FilterPanel({
                                             animate={{ opacity: 1, scale: 1 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={onResetFilters}
-                                            className="flex items-center px-3 py-2 mt-6 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                            className="flex items-center justify-center px-3 py-2 mt-auto text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors self-end"
                                         >
                                             <X size={16} className="mr-1" />
                                             Limpar filtros
@@ -189,7 +192,7 @@ export function FilterPanel({
 
                                 {/* Display of currently selected filters */}
                                 {selectedFilters.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
+                                    <div className="flex flex-wrap gap-2 mt-4">
                                         {selectedFilters.map((filter) => (
                                             <div
                                                 key={filter.id}

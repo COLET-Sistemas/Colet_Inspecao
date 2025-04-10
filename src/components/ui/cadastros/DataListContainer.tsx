@@ -43,24 +43,26 @@ export function DataListContainer({
                 emptyState
             ) : (
                 <>
-                    {children}
+                    <div className="overflow-x-auto w-full">
+                        {children}
+                    </div>
 
                     {/* Statistics and filters summary */}
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
-                        className="border-t border-gray-200 px-4 py-3 bg-gray-50 text-sm text-gray-500"
+                        className="border-t border-gray-200 px-3 sm:px-4 py-3 bg-gray-50 text-sm text-gray-500"
                     >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                            <p>
+                            <p className="text-xs sm:text-sm">
                                 Mostrando <span className="font-medium text-gray-700">{totalFilteredItems}</span> de{" "}
                                 <span className="font-medium text-gray-700">{totalItems}</span> itens
                             </p>
                             {activeFilters > 0 && (
                                 <button
                                     onClick={onResetFilters}
-                                    className="text-[#1ABC9C] hover:text-[#16A085] text-sm font-medium flex items-center transition-colors"
+                                    className="text-[#1ABC9C] hover:text-[#16A085] text-xs sm:text-sm font-medium flex items-center transition-colors"
                                 >
                                     <X size={14} className="mr-1" />
                                     Limpar {activeFilters} filtro{activeFilters > 1 ? 's' : ''}

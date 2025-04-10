@@ -7,6 +7,7 @@ interface DataTableProps<T> {
         key: string;
         title: string;
         render: (item: T, index: number) => React.ReactNode;
+        className?: string; // Opcional para estilização específica de colunas
     }[];
 }
 
@@ -15,15 +16,15 @@ export function DataTable<T extends { id: string | number }>({
     columns,
 }: DataTableProps<T>) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto w-full">
+            <table className="min-w-full divide-y divide-gray-200 table-auto">
                 <thead className="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         {columns.map((column) => (
                             <th
                                 key={column.key}
                                 scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.className || ""}`}
                             >
                                 {column.title}
                             </th>
@@ -37,11 +38,14 @@ export function DataTable<T extends { id: string | number }>({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                            transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.5) }}
                             className="hover:bg-gray-50"
                         >
                             {columns.map((column) => (
-                                <td key={`${item.id}-${column.key}`} className="px-6 py-4">
+                                <td
+                                    key={`${item.id}-${column.key}`}
+                                    className={`px-3 sm:px-4 md:px-6 py-2 sm:py-4 text-sm ${column.className || ""}`}
+                                >
                                     {column.render(item, index)}
                                 </td>
                             ))}
