@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -95,6 +96,10 @@ export default function TiposInspecoesPage() {
     const [allData, setAllData] = useState<TipoInspecao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
+
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTipoInspecao, setSelectedTipoInspecao] = useState<TipoInspecao | undefined>(undefined);
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
@@ -226,26 +231,80 @@ export default function TiposInspecoesPage() {
     // Handle CRUD operations with feedback
     const handleView = useCallback((id: number) => {
         console.log(`Visualizando tipo de inspeção ${id}`);
-        setNotification(`Visualizando detalhes do tipo de inspeção ${id}.`);
-        // Implementar a lógica de visualização
-    }, []);
+        const tipoToView = tiposInspecao.find(tipo => tipo.id === id);
+        if (tipoToView) {
+            setSelectedTipoInspecao(tipoToView);
+            // Apenas visualização em modo de somente leitura
+            setNotification(`Visualizando detalhes do tipo de inspeção ${id}.`);
+        }
+    }, [tiposInspecao]);
 
     const handleEdit = useCallback((id: number) => {
         console.log(`Editando tipo de inspeção ${id}`);
-        setNotification(`Iniciando edição do tipo de inspeção ${id}.`);
-        // Implementar a lógica de edição
-    }, []);
+        const tipoToEdit = tiposInspecao.find(tipo => tipo.id === id);
+        if (tipoToEdit) {
+            setSelectedTipoInspecao(tipoToEdit);
+            setIsModalOpen(true);
+            setNotification(`Iniciando edição do tipo de inspeção ${id}.`);
+        }
+    }, [tiposInspecao]);
 
     const handleCreateNew = useCallback(() => {
         console.log("Novo tipo de inspeção");
-        // Implementation of the creation logic
+        setSelectedTipoInspecao(undefined); // Limpa qualquer seleção anterior
+        setIsModalOpen(true);
     }, []);
+
+    // Callback quando o modal for bem-sucedido
+    const handleModalSuccess = useCallback((data: any) => {
+        if (selectedTipoInspecao) {
+            // Modo de edição - atualiza o item na lista
+            setTiposInspecao(prev =>
+                prev.map(item => item.id === selectedTipoInspecao.id ? {
+                    ...item,
+                    descricao: data.descricao,
+                    status: data.status,
+                    codigo: data.codigo || item.codigo
+                } : item)
+            );
+            setAllData(prev =>
+                prev.map(item => item.id === selectedTipoInspecao.id ? {
+                    ...item,
+                    descricao: data.descricao,
+                    status: data.status,
+                    codigo: data.codigo || item.codigo
+                } : item)
+            );
+            setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
+        } else {
+            // Modo de criação - adiciona o novo item à lista
+            const newItem: TipoInspecao = {
+                id: data.id || Math.floor(Math.random() * 1000) + 100,
+                codigo: data.codigo || `INSP-${Math.floor(Math.random() * 1000)}`,
+                descricao: data.descricao,
+                status: data.status,
+                dataCriacao: new Date().toISOString().split('T')[0],
+            };
+            setTiposInspecao(prev => [newItem, ...prev]);
+            setAllData(prev => [newItem, ...prev]);
+            setNotification(`Novo tipo de inspeção criado com sucesso.`);
+        }
+    }, [selectedTipoInspecao]);
 
     // Reset filters function
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setStatusFilter("todos");
         setNotification("Filtros resetados.");
+    }, []);
+
+    // Close modal function
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
+        // Damos um tempo para a animação de saída do modal antes de limpar a seleção
+        setTimeout(() => {
+            setSelectedTipoInspecao(undefined);
+        }, 200);
     }, []);
 
     // Prepare filter options for the FilterPanel component
@@ -370,12 +429,20 @@ export default function TiposInspecoesPage() {
                 {notification}
             </div>
 
+            {/* Modal de Tipo de Inspeção */}
+            <TipoInspecaoModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                tipoInspecao={selectedTipoInspecao}
+                onSuccess={handleModalSuccess}
+            />
+
             {/* Page Header Component */}
             <PageHeader
                 title="Tipos de Inspeções"
                 buttonLabel="Novo Tipo de Inspeção"
                 onButtonClick={handleCreateNew}
-                buttonDisabled={true}
+                buttonDisabled={false}
             />
 
             {/* Filters Component */}
@@ -404,7 +471,7 @@ export default function TiposInspecoesPage() {
                             label: "Novo Tipo de Inspeção",
                             onClick: handleCreateNew,
                             icon: <Plus className="mr-2 h-4 w-4" />,
-                            disabled: true,
+                            disabled: false,
                         }}
                         secondaryAction={{
                             label: "Limpar filtros",

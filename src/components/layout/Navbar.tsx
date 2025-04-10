@@ -96,7 +96,6 @@ export default function Navbar() {
         return pathname === href || pathname?.startsWith(href + '/');
     }, [pathname]);
 
-    // Check if any submenu item is active for parent menu highlighting
     const hasActiveSubmenu = (item: NavItem) => {
         if (!item.submenu) return false;
         return item.submenu.some(subItem => isActive(subItem.href));
@@ -120,7 +119,6 @@ export default function Navbar() {
             }`}>
             <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    {/* Logo */}
                     <div className="flex-shrink-0 flex items-center">
                         <Link href="/dashboard" className="hover:opacity-90 transition-opacity flex items-center group">
                             <Image
@@ -137,7 +135,6 @@ export default function Navbar() {
                         </Link>
                     </div>
 
-                    {/* Desktop navigation */}
                     <div className="hidden md:flex md:items-center md:justify-center flex-1">
                         <div className="flex items-center justify-center space-x-1">
                             {navItems.map((item) => (
@@ -209,7 +206,6 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* User profile section - Desktop */}
                     <div className="hidden md:flex md:items-center md:justify-end">
                         <div className="relative">
                             <div>
@@ -263,7 +259,6 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* Mobile menu button */}
                     <div className="flex items-center md:hidden">
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -282,7 +277,6 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile menu */}
             {mobileMenuOpen && (
                 <div className="md:hidden absolute w-full bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] shadow-xl z-20 animate-slideDown 
                                border-t border-gray-700/30 max-h-[80vh] overflow-y-auto overscroll-contain">
@@ -358,7 +352,6 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    {/* Mobile user menu */}
                     <div className="pt-4 pb-3 border-t border-gray-700/30 bg-[#2C2C2C]/30">
                         <div className="flex items-center px-4 py-2">
                             <div className="flex-shrink-0">
@@ -383,8 +376,6 @@ export default function Navbar() {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     setMobileMenuOpen(false);
-                                    // Add profile action here if needed
-                                    console.log("Mobile profile clicked");
                                 }}
                                 className="flex items-center px-3 py-2.5 text-base font-medium text-gray-300 hover:text-white 
                                          transition-colors duration-200 rounded-lg hover:bg-[#2c2c2c]/60"
@@ -406,7 +397,6 @@ export default function Navbar() {
                 </div>
             )}
 
-            {/* Backdrop for clicking outside to close menus */}
             {(userMenuOpen || openSubmenu) && (
                 <div
                     className="fixed inset-0 z-10 bg-black/15"
@@ -417,7 +407,6 @@ export default function Navbar() {
                 ></div>
             )}
 
-            {/* Logout Confirmation Modal */}
             {showLogoutModal && (
                 <>
                     <div

@@ -15,17 +15,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const { isLoading, isAuthenticated } = useAuth();
     const router = useRouter();
 
-    // Don't show the navbar on the login page
     const isLoginPage = pathname === '/login';
 
-    // Redirect unauthenticated users to login page
     useEffect(() => {
         if (!isLoading && !isAuthenticated && !isLoginPage) {
             router.push('/login');
         }
     }, [isLoading, isAuthenticated, isLoginPage, router]);
 
-    // Show loading spinner while auth state is being determined
     if (isLoading && !isLoginPage) {
         return <LoadingSpinner fullScreen size="medium" />;
     }
