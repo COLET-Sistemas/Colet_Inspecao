@@ -584,7 +584,7 @@ export default function EspecificacoesPage() {
 
             {/* Page Header Component */}
             <PageHeader
-                title="Especificações"
+                title="Especificações da Inspeção"
                 buttonLabel="Nova Especificação"
                 onButtonClick={handleCreateNew}
             />
