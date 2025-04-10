@@ -9,6 +9,7 @@ interface EmptyStateProps {
         label: string;
         onClick: () => void;
         icon?: React.ReactNode;
+        disabled?: boolean;
     };
     secondaryAction?: {
         label: string;
@@ -72,11 +73,15 @@ export function EmptyState({
 
                         {primaryAction && (
                             <motion.button
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.97 }}
+                                whileHover={{ scale: primaryAction.disabled ? 1 : 1.03 }}
+                                whileTap={{ scale: primaryAction.disabled ? 1 : 0.97 }}
                                 type="button"
-                                className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-[#1ABC9C] hover:bg-[#16A085] shadow-md shadow-[#1ABC9C]/20 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#1ABC9C] transition-all"
-                                onClick={primaryAction.onClick}
+                                className={`inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white ${primaryAction.disabled
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-[#1ABC9C] hover:bg-[#16A085] shadow-md shadow-[#1ABC9C]/20 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#1ABC9C]"
+                                    } transition-all`}
+                                onClick={primaryAction.disabled ? undefined : primaryAction.onClick}
+                                disabled={primaryAction.disabled}
                             >
                                 {primaryAction.icon || <Plus className="mr-2 h-4 w-4" />}
                                 {primaryAction.label}

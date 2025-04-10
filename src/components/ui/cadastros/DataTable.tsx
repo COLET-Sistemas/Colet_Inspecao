@@ -17,7 +17,7 @@ export function DataTable<T extends { id: string | number }>({
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+                <thead className="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         {columns.map((column) => (
                             <th

@@ -8,7 +8,7 @@ import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/F
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 interface TipoInspecao {
@@ -20,11 +20,10 @@ interface TipoInspecao {
 }
 
 // Card component for list item
-const Card = ({ tipo, onView, onEdit, onDelete }: {
+const Card = ({ tipo, onView, onEdit }: {
     tipo: TipoInspecao;
     onView: (id: number) => void;
     onEdit: (id: number) => void;
-    onDelete: (id: number) => void;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
@@ -73,17 +72,6 @@ const Card = ({ tipo, onView, onEdit, onDelete }: {
                             aria-label="Editar"
                         >
                             <Pencil className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
-
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
-                            onClick={() => onDelete(tipo.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-3.5 w-3.5" />
                         </motion.button>
                     </Tooltip>
                 </div>
@@ -248,16 +236,6 @@ export default function TiposInspecoesPage() {
         // Implementar a lógica de edição
     }, []);
 
-    const handleDelete = useCallback((id: number) => {
-        console.log(`Excluindo tipo de inspeção ${id}`);
-        // Aqui você pode implementar um modal de confirmação
-        if (confirm('Tem certeza que deseja excluir este tipo de inspeção?')) {
-            setNotification(`Tipo de inspeção ${id} excluído com sucesso.`);
-            // Implementar a lógica de exclusão
-            setTiposInspecao(prev => prev.filter(tipo => tipo.id !== id));
-        }
-    }, []);
-
     const handleCreateNew = useCallback(() => {
         console.log("Novo tipo de inspeção");
         // Implementation of the creation logic
@@ -380,21 +358,10 @@ export default function TiposInspecoesPage() {
                             <Pencil className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
-
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:text-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleDelete(tipo.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
                 </div>
             ),
         },
-    ], [handleView, handleEdit, handleDelete]);
+    ], [handleView, handleEdit]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -408,6 +375,7 @@ export default function TiposInspecoesPage() {
                 title="Tipos de Inspeções"
                 buttonLabel="Novo Tipo de Inspeção"
                 onButtonClick={handleCreateNew}
+                buttonDisabled={true}
             />
 
             {/* Filters Component */}
@@ -436,6 +404,7 @@ export default function TiposInspecoesPage() {
                             label: "Novo Tipo de Inspeção",
                             onClick: handleCreateNew,
                             icon: <Plus className="mr-2 h-4 w-4" />,
+                            disabled: true,
                         }}
                         secondaryAction={{
                             label: "Limpar filtros",
@@ -458,7 +427,6 @@ export default function TiposInspecoesPage() {
                                 tipo={tipo}
                                 onView={handleView}
                                 onEdit={handleEdit}
-                                onDelete={handleDelete}
                             />
                         )}
                     />
