@@ -81,7 +81,6 @@ export function FormModal({
                 const formData = new FormData(e.target as HTMLFormElement);
                 const data = Object.fromEntries(formData.entries());
                 await onSubmit(data);
-                onClose();
             } catch (error) {
                 console.error("Erro ao submeter formulário:", error);
             } finally {
@@ -98,7 +97,7 @@ export function FormModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto"
                 >
                     <motion.div
                         ref={modalRef}
@@ -112,25 +111,25 @@ export function FormModal({
                             duration: 0.2,
                         }}
                         className={cn(
-                            "relative w-full rounded-lg bg-white shadow-xl",
+                            "relative w-full rounded-lg bg-white shadow-xl my-2 sm:my-4",
                             modalSizes[size]
                         )}
                     >
                         {/* Modal header com título e indicador visual de criar/editar */}
                         <div className={cn(
-                            "flex items-center justify-between rounded-t-lg p-4 border-b",
+                            "flex items-center justify-between rounded-t-lg p-3 sm:p-4 border-b",
                             isEditing
                                 ? "border-amber-200 bg-gradient-to-r from-amber-50 to-white"
                                 : "border-teal-200 bg-gradient-to-r from-teal-50 to-white"
                         )}>
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2 sm:space-x-3">
                                 <div
                                     className={cn(
                                         "w-1.5 h-6 rounded-full",
                                         isEditing ? "bg-amber-400" : "bg-teal-500"
                                     )}
                                 />
-                                <h2 className="text-lg font-semibold text-gray-800">
+                                <h2 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-1">
                                     {title}
                                 </h2>
                             </div>
@@ -147,16 +146,16 @@ export function FormModal({
 
                         {/* Corpo do modal com formulário */}
                         <form onSubmit={handleSubmit}>
-                            <div className="p-6">
+                            <div className="p-3 sm:p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
                                 {children}
                             </div>
 
                             {/* Rodapé com ações */}
-                            <div className="flex justify-end space-x-3 rounded-b-lg bg-gray-50 px-6 py-4 border-t border-gray-100">
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2 sm:gap-0 rounded-b-lg bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+                                    className="w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
                                     disabled={isSubmitting}
                                 >
                                     Cancelar
@@ -167,7 +166,7 @@ export function FormModal({
                                     type="submit"
                                     disabled={isSubmitting}
                                     className={cn(
-                                        "rounded-md px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2",
+                                        "w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2",
                                         isEditing
                                             ? "bg-amber-500 hover:bg-amber-600 focus:ring-amber-400/50"
                                             : "bg-[#09A08D] hover:bg-[#1ABC9E] focus:ring-[#09A08D]/50",

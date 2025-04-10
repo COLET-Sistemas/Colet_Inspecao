@@ -113,7 +113,7 @@ export function TipoInspecaoModal({
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                    className="mb-3 sm:mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-2 sm:p-3 text-sm text-red-700"
                 >
                     <AlertCircle className="mr-2 h-4 w-4 text-red-500 flex-shrink-0" />
                     <span>{error}</span>
@@ -126,7 +126,7 @@ export function TipoInspecaoModal({
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 flex items-center rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700"
+                    className="mb-3 sm:mb-4 flex items-center rounded-md border border-green-200 bg-green-50 p-2 sm:p-3 text-sm text-green-700"
                 >
                     <Check className="mr-2 h-4 w-4 text-green-500 flex-shrink-0" />
                     <span>{success}</span>
@@ -157,35 +157,33 @@ export function TipoInspecaoModal({
                 <div className="bg-white p-2">
 
                     {/* Campo de descrição */}
-                    <div className="mb-5">
-                        <div className="flex items-center justify-between mb-2">
+                    <div className="mb-4 sm:mb-5">
+                        <div className="flex items-center justify-between mb-1 sm:mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
                                 <label htmlFor="descricao_tipo_inspecao" className="text-sm font-medium text-gray-700">
                                     Descrição <span className="text-red-500">*</span>
                                 </label>
                             </div>
-
                         </div>
                         <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                             <input
                                 type="text"
                                 id="descricao_tipo_inspecao"
                                 name="descricao_tipo_inspecao"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Insira a descrição do tipo de inspeção"
                                 defaultValue={tipoInspecao?.descricao || ""}
                                 required
                                 onFocus={() => setIsFocused('descricao')}
                                 onBlur={() => setIsFocused(null)}
                             />
-
                         </div>
                     </div>
 
                     {/* Campo de status */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1 sm:mb-2">
                             <div className="flex items-center space-x-2">
                                 <ToggleLeft className="h-4 w-4 text-gray-500" />
                                 <label className="text-sm font-medium text-gray-700">
@@ -194,12 +192,16 @@ export function TipoInspecaoModal({
                             </div>
                         </div>
 
-                        <div className="flex items-center p-3 bg-gray-50 rounded-md border border-gray-100">
-                            <div className="flex-grow">
+                        <div className="flex flex-col sm:flex-row sm:items-center p-2 sm:p-3 bg-gray-50 rounded-md border border-gray-100">
+                            <div className="flex-grow mb-2 sm:mb-0">
                                 <p className="text-sm text-gray-700 font-medium">
                                     {isAtivo ? 'Ativo' : 'Inativo'}
                                 </p>
-
+                                <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
+                                    {isAtivo
+                                        ? 'O tipo de inspeção estará disponível para uso.'
+                                        : 'O tipo de inspeção não estará disponível para uso.'}
+                                </p>
                             </div>
 
                             <label htmlFor="situacao" className="relative inline-flex cursor-pointer items-center">
@@ -214,6 +216,11 @@ export function TipoInspecaoModal({
                                 <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>
                             </label>
                         </div>
+                    </div>
+
+                    {/* Mensagem sobre campos obrigatórios */}
+                    <div className="text-xs text-gray-500 mt-3 sm:mt-4">
+                        <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>
             </div>

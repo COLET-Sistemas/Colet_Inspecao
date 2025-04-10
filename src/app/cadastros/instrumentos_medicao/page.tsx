@@ -7,36 +7,51 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { InstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/InstrumentoMedicaoModal";
+import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
-interface InstrumentoMedicao {
+interface InstrumentoMedicaoUI {
     id: number;
-    codigo: string;
-    descricao: string;
-    tipo: string;
-    unidadeMedida: string;
-    status: "ativo" | "inativo" | "calibrando";
-    proximaCalibracao: string;
-    ultimaCalibracao: string;
+    tag: string;
+    nome_instrumento: string;
+    numero_serie: number;
+    numero_patrimonio: string;
+    codigo_artigo: string;
+    situacao: "A" | "I";
+    data_validade: string;
+    data_ultima_calibracao: string;
+    frequencia_calibracao: number;
 }
 
-// Card component for list item
+// A API já está com o formato correto, só mantemos como referência
+interface InstrumentoMedicaoAPI {
+    id?: number;
+    tag: string;
+    nome_instrumento: string;
+    numero_serie: number;
+    numero_patrimonio: string;
+    codigo_artigo: string;
+    situacao: "A" | "I";
+    data_validade: string;
+    data_ultima_calibracao: string;
+    frequencia_calibracao: number;
+}
+
 const Card = ({ instrumento, onView, onEdit, onDelete }: {
-    instrumento: InstrumentoMedicao;
+    instrumento: InstrumentoMedicaoUI;
     onView: (id: number) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => {
     const getStatusClass = (status: string) => {
         switch (status) {
-            case 'ativo':
+            case 'A':
                 return 'bg-green-50 text-green-700';
-            case 'inativo':
+            case 'I':
                 return 'bg-red-50 text-red-700';
-            case 'calibrando':
-                return 'bg-amber-50 text-amber-700';
             default:
                 return 'bg-gray-50 text-gray-700';
         }
@@ -48,12 +63,10 @@ const Card = ({ instrumento, onView, onEdit, onDelete }: {
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case 'ativo':
+            case 'A':
                 return 'Ativo';
-            case 'inativo':
+            case 'I':
                 return 'Inativo';
-            case 'calibrando':
-                return 'Em Calibração';
             default:
                 return status;
         }
@@ -65,34 +78,34 @@ const Card = ({ instrumento, onView, onEdit, onDelete }: {
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center">
                         <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                            {instrumento.codigo}
+                            {instrumento.tag}
                         </span>
                     </div>
-                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getStatusClass(instrumento.status)}`}>
-                        {getStatusLabel(instrumento.status)}
+                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getStatusClass(instrumento.situacao)}`}>
+                        {getStatusLabel(instrumento.situacao)}
                     </span>
                 </div>
 
                 <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                    {instrumento.descricao}
+                    {instrumento.nome_instrumento}
                 </h3>
 
                 <div className="flex justify-between items-center mt-2 mb-3">
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 inline-block">
-                        {instrumento.tipo}
+                        {instrumento.codigo_artigo}
                     </span>
                     <span className="text-xs text-gray-600">
-                        {instrumento.unidadeMedida}
+                        Série: {instrumento.numero_serie}
                     </span>
                 </div>
 
                 <div className="flex justify-between items-end mt-3">
                     <div className="flex flex-col space-y-1">
                         <span className="text-xs text-gray-500">
-                            Última: {formatDate(instrumento.ultimaCalibracao)}
+                            Última: {formatDate(instrumento.data_ultima_calibracao)}
                         </span>
                         <span className="text-xs text-gray-500">
-                            Próxima: {formatDate(instrumento.proximaCalibracao)}
+                            Próxima: {formatDate(instrumento.data_validade)}
                         </span>
                     </div>
 
@@ -137,26 +150,26 @@ const Card = ({ instrumento, onView, onEdit, onDelete }: {
 };
 
 export default function InstrumentosMedicaoPage() {
-    // State for filters
+    const { apiUrl } = useApiConfig();
+
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("todos");
     const [tipoFilter, setTipoFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
 
-    // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-    // State for data and loading
-    const [instrumentos, setInstrumentos] = useState<InstrumentoMedicao[]>([]);
-    const [allData, setAllData] = useState<InstrumentoMedicao[]>([]);
+    const [instrumentos, setInstrumentos] = useState<InstrumentoMedicaoUI[]>([]);
+    const [allData, setAllData] = useState<InstrumentoMedicaoUI[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
 
-    // ARIA Live region for screen readers
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedInstrumento, setSelectedInstrumento] = useState<InstrumentoMedicaoAPI | undefined>(undefined);
+
     const [notification, setNotification] = useState('');
 
-    // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
@@ -165,10 +178,8 @@ export default function InstrumentosMedicaoPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter, tipoFilter]);
 
-    // Handle keyboard accessibility
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Implement keyboard shortcuts
             if (e.ctrlKey && e.key === 'f') {
                 e.preventDefault();
                 document.getElementById('search-input')?.focus();
@@ -187,86 +198,102 @@ export default function InstrumentosMedicaoPage() {
         setIsLoading(true);
 
         const timer = setTimeout(() => {
-            const mockData: InstrumentoMedicao[] = [
+            const mockData: InstrumentoMedicaoUI[] = [
                 {
                     id: 1,
-                    codigo: "IMD-001",
-                    descricao: "Paquímetro Digital 150mm",
-                    tipo: "Paquímetro",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    proximaCalibracao: "2024-06-15",
-                    ultimaCalibracao: "2023-06-15"
+                    tag: "TAG-001",
+                    nome_instrumento: "Paquímetro Digital 150mm",
+                    numero_serie: 10001,
+                    numero_patrimonio: "PT-001",
+                    codigo_artigo: "CA-001",
+                    situacao: "A",
+                    data_validade: "2024-06-15",
+                    data_ultima_calibracao: "2023-06-15",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 2,
-                    codigo: "IMD-002",
-                    descricao: "Micrômetro Externo 0-25mm",
-                    tipo: "Micrômetro",
-                    unidadeMedida: "mm",
-                    status: "calibrando",
-                    proximaCalibracao: "2024-05-20",
-                    ultimaCalibracao: "2023-05-20"
+                    tag: "TAG-002",
+                    nome_instrumento: "Micrômetro Externo 0-25mm",
+                    numero_serie: 10002,
+                    numero_patrimonio: "PT-002",
+                    codigo_artigo: "CA-002",
+                    situacao: "A",
+                    data_validade: "2024-05-20",
+                    data_ultima_calibracao: "2023-05-20",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 3,
-                    codigo: "IMD-003",
-                    descricao: "Relógio Comparador 10mm",
-                    tipo: "Relógio Comparador",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    proximaCalibracao: "2024-07-10",
-                    ultimaCalibracao: "2023-07-10"
+                    tag: "TAG-003",
+                    nome_instrumento: "Relógio Comparador 10mm",
+                    numero_serie: 10003,
+                    numero_patrimonio: "PT-003",
+                    codigo_artigo: "CA-003",
+                    situacao: "A",
+                    data_validade: "2024-07-10",
+                    data_ultima_calibracao: "2023-07-10",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 4,
-                    codigo: "IMD-004",
-                    descricao: "Trena Laser 50m",
-                    tipo: "Trena",
-                    unidadeMedida: "m",
-                    status: "inativo",
-                    proximaCalibracao: "2024-08-05",
-                    ultimaCalibracao: "2023-08-05"
+                    tag: "TAG-004",
+                    nome_instrumento: "Trena Laser 50m",
+                    numero_serie: 10004,
+                    numero_patrimonio: "PT-004",
+                    codigo_artigo: "CA-004",
+                    situacao: "I",
+                    data_validade: "2024-08-05",
+                    data_ultima_calibracao: "2023-08-05",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 5,
-                    codigo: "IMD-005",
-                    descricao: "Termômetro Infravermelho",
-                    tipo: "Termômetro",
-                    unidadeMedida: "°C",
-                    status: "ativo",
-                    proximaCalibracao: "2024-09-18",
-                    ultimaCalibracao: "2023-09-18"
+                    tag: "TAG-005",
+                    nome_instrumento: "Termômetro Infravermelho",
+                    numero_serie: 10005,
+                    numero_patrimonio: "PT-005",
+                    codigo_artigo: "CA-005",
+                    situacao: "A",
+                    data_validade: "2024-09-18",
+                    data_ultima_calibracao: "2023-09-18",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 6,
-                    codigo: "IMD-006",
-                    descricao: "Balança de Precisão 5kg",
-                    tipo: "Balança",
-                    unidadeMedida: "g",
-                    status: "ativo",
-                    proximaCalibracao: "2024-10-03",
-                    ultimaCalibracao: "2023-10-03"
+                    tag: "TAG-006",
+                    nome_instrumento: "Balança de Precisão 5kg",
+                    numero_serie: 10006,
+                    numero_patrimonio: "PT-006",
+                    codigo_artigo: "CA-006",
+                    situacao: "A",
+                    data_validade: "2024-10-03",
+                    data_ultima_calibracao: "2023-10-03",
+                    frequencia_calibracao: 365
                 },
                 {
                     id: 7,
-                    codigo: "IMD-007",
-                    descricao: "Medidor de Espessura Ultrassônico",
-                    tipo: "Medidor de Espessura",
-                    unidadeMedida: "mm",
-                    status: "inativo",
-                    proximaCalibracao: "2024-11-15",
-                    ultimaCalibracao: "2023-11-15"
+                    tag: "TAG-007",
+                    nome_instrumento: "Medidor de Espessura Ultrassônico",
+                    numero_serie: 10007,
+                    numero_patrimonio: "PT-007",
+                    codigo_artigo: "CA-007",
+                    situacao: "I",
+                    data_validade: "2024-11-15",
+                    data_ultima_calibracao: "2023-11-15",
+                    frequencia_calibracao: 180
                 },
                 {
                     id: 8,
-                    codigo: "IMD-008",
-                    descricao: "Durômetro Portátil",
-                    tipo: "Durômetro",
-                    unidadeMedida: "HRC",
-                    status: "calibrando",
-                    proximaCalibracao: "2024-12-27",
-                    ultimaCalibracao: "2023-12-27"
+                    tag: "TAG-008",
+                    nome_instrumento: "Durômetro Portátil",
+                    numero_serie: 10008,
+                    numero_patrimonio: "PT-008",
+                    codigo_artigo: "CA-008",
+                    situacao: "A",
+                    data_validade: "2024-12-27",
+                    data_ultima_calibracao: "2023-12-27",
+                    frequencia_calibracao: 180
                 }
             ];
 
@@ -277,23 +304,22 @@ export default function InstrumentosMedicaoPage() {
 
                 if (searchTerm) {
                     filtered = filtered.filter(item =>
-                        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+                        item.nome_instrumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        item.tag.toLowerCase().includes(searchTerm.toLowerCase())
                     );
                 }
 
                 if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.status === statusFilter);
+                    filtered = filtered.filter(item => item.situacao === statusFilter);
                 }
 
                 if (tipoFilter !== "todos") {
-                    filtered = filtered.filter(item => item.tipo === tipoFilter);
+                    filtered = filtered.filter(item => item.codigo_artigo === tipoFilter);
                 }
 
                 setInstrumentos(filtered);
                 setIsLoading(false);
 
-                // Notifications for screen readers
                 if (filtered.length === 0) {
                     setNotification('Nenhum resultado encontrado para os filtros atuais.');
                 } else {
@@ -309,42 +335,70 @@ export default function InstrumentosMedicaoPage() {
         loadData();
     }, [loadData]);
 
-    // List of unique instrument types for filter dropdown - memoized
+    const fetchInstrumentoById = useCallback(async (id: number) => {
+        try {
+            const mockInstrumento: InstrumentoMedicaoAPI = {
+                id: id,
+                tag: `TAG-${id}`,
+                nome_instrumento: instrumentos.find(i => i.id === id)?.nome_instrumento || "",
+                numero_serie: 10000 + id,
+                numero_patrimonio: `PT-${id}`,
+                codigo_artigo: `CA-${id}`,
+                situacao: instrumentos.find(i => i.id === id)?.situacao || "A",
+                data_validade: "2025-12-31",
+                data_ultima_calibracao: instrumentos.find(i => i.id === id)?.data_ultima_calibracao || "",
+                frequencia_calibracao: 365
+            };
+
+            return mockInstrumento;
+        } catch (error) {
+            console.error("Erro ao buscar instrumento:", error);
+            setNotification("Erro ao buscar dados do instrumento.");
+            return undefined;
+        }
+    }, [instrumentos]);
+
     const tipos = useMemo(() => [
-        "Paquímetro", "Micrômetro", "Relógio Comparador",
-        "Trena", "Termômetro", "Balança",
-        "Medidor de Espessura", "Durômetro"
+        "CA-001", "CA-002", "CA-003", "CA-004", "CA-005",
+        "CA-006", "CA-007", "CA-008"
     ], []);
 
-    // Handle CRUD operations with feedback
-    const handleView = useCallback((id: number) => {
-        console.log(`Visualizando instrumento de medição ${id}`);
-        setNotification(`Visualizando detalhes do instrumento de medição ${id}.`);
-        // Implementar a lógica de visualização
-    }, []);
+    const handleView = useCallback(async (id: number) => {
+        const instrumento = await fetchInstrumentoById(id);
+        if (instrumento) {
+            setSelectedInstrumento(instrumento);
+            setIsModalOpen(true);
+            setNotification(`Visualizando detalhes do instrumento de medição ${id}.`);
+        }
+    }, [fetchInstrumentoById]);
 
-    const handleEdit = useCallback((id: number) => {
-        console.log(`Editando instrumento de medição ${id}`);
-        setNotification(`Iniciando edição do instrumento de medição ${id}.`);
-        // Implementar a lógica de edição
-    }, []);
+    const handleEdit = useCallback(async (id: number) => {
+        const instrumento = await fetchInstrumentoById(id);
+        if (instrumento) {
+            setSelectedInstrumento(instrumento);
+            setIsModalOpen(true);
+            setNotification(`Iniciando edição do instrumento de medição ${id}.`);
+        }
+    }, [fetchInstrumentoById]);
 
     const handleDelete = useCallback((id: number) => {
-        console.log(`Excluindo instrumento de medição ${id}`);
-        // Aqui você pode implementar um modal de confirmação
         if (confirm('Tem certeza que deseja excluir este instrumento de medição?')) {
             setNotification(`Instrumento de medição ${id} excluído com sucesso.`);
-            // Implementar a lógica de exclusão
             setInstrumentos(prev => prev.filter(instrumento => instrumento.id !== id));
         }
     }, []);
 
     const handleCreateNew = useCallback(() => {
-        console.log("Novo instrumento de medição");
-        // Implementation of the creation logic
+        setSelectedInstrumento(undefined);
+        setIsModalOpen(true);
+        setNotification("Iniciando cadastro de novo instrumento de medição.");
     }, []);
 
-    // Reset filters function
+    const handleModalSuccess = useCallback((data: InstrumentoMedicaoAPI) => {
+        loadData();
+        setNotification(`Instrumento de medição ${data.id ? 'atualizado' : 'criado'} com sucesso.`);
+    }, [loadData]);
+
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setStatusFilter("todos");
@@ -352,17 +406,13 @@ export default function InstrumentosMedicaoPage() {
         setNotification("Filtros resetados.");
     }, []);
 
-    // Prepare filter options for the FilterPanel component
     const filterOptions = useMemo(() => {
-        // Status filter options
         const statusOptions: FilterOption[] = [
             { value: "todos", label: "Todos os status" },
-            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" },
-            { value: "calibrando", label: "Em Calibração", color: "bg-amber-100 text-amber-800" },
+            { value: "A", label: "Ativos", color: "bg-green-100 text-green-800" },
+            { value: "I", label: "Inativos", color: "bg-red-100 text-red-800" },
         ];
 
-        // Type filter options
         const tipoOptions: FilterOption[] = [
             { value: "todos", label: "Todos os tipos" },
             ...tipos.map(tipo => ({ value: tipo, label: tipo })),
@@ -386,7 +436,6 @@ export default function InstrumentosMedicaoPage() {
         ];
     }, [statusFilter, tipoFilter, tipos]);
 
-    // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
 
@@ -403,17 +452,13 @@ export default function InstrumentosMedicaoPage() {
             let label = "Status", color = "bg-gray-100 text-gray-800";
 
             switch (statusFilter) {
-                case "ativo":
+                case "A":
                     label = "Ativos";
                     color = "bg-green-100 text-green-800";
                     break;
-                case "inativo":
+                case "I":
                     label = "Inativos";
                     color = "bg-red-100 text-red-800";
-                    break;
-                case "calibrando":
-                    label = "Em Calibração";
-                    color = "bg-amber-100 text-amber-800";
                     break;
             }
 
@@ -437,15 +482,12 @@ export default function InstrumentosMedicaoPage() {
         return filters;
     }, [searchTerm, statusFilter, tipoFilter]);
 
-    // Function to get status class for table
     const getStatusClass = useCallback((status: string) => {
         switch (status) {
-            case 'ativo':
+            case 'A':
                 return 'bg-green-100 text-green-800';
-            case 'inativo':
+            case 'I':
                 return 'bg-red-100 text-red-800';
-            case 'calibrando':
-                return 'bg-amber-100 text-amber-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -453,74 +495,71 @@ export default function InstrumentosMedicaoPage() {
 
     const getStatusLabel = useCallback((status: string) => {
         switch (status) {
-            case 'ativo':
+            case 'A':
                 return 'Ativo';
-            case 'inativo':
+            case 'I':
                 return 'Inativo';
-            case 'calibrando':
-                return 'Em Calibração';
             default:
                 return status;
         }
     }, []);
 
-    // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "codigo",
-            title: "Código",
-            render: (instrumento: InstrumentoMedicao) => (
-                <span className="text-sm font-medium text-gray-900">{instrumento.codigo}</span>
+            key: "tag",
+            title: "Tag",
+            render: (instrumento: InstrumentoMedicaoUI) => (
+                <span className="text-sm font-medium text-gray-900">{instrumento.tag}</span>
             ),
         },
         {
-            key: "descricao",
-            title: "Descrição",
-            render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{instrumento.descricao}</div>
+            key: "nome_instrumento",
+            title: "Nome",
+            render: (instrumento: InstrumentoMedicaoUI) => (
+                <div className="text-sm text-gray-900 max-w-md truncate">{instrumento.nome_instrumento}</div>
             ),
         },
         {
-            key: "tipo",
-            title: "Tipo",
-            render: (instrumento: InstrumentoMedicao) => (
+            key: "codigo_artigo",
+            title: "Código Artigo",
+            render: (instrumento: InstrumentoMedicaoUI) => (
                 <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {instrumento.tipo}
+                    {instrumento.codigo_artigo}
                 </span>
             ),
         },
         {
-            key: "unidadeMedida",
-            title: "Unidade",
-            render: (instrumento: InstrumentoMedicao) => (
+            key: "numero_serie",
+            title: "Número Série",
+            render: (instrumento: InstrumentoMedicaoUI) => (
                 <span className="text-sm text-gray-500">
-                    {instrumento.unidadeMedida}
+                    {instrumento.numero_serie}
                 </span>
             ),
         },
         {
-            key: "status",
-            title: "Status",
-            render: (instrumento: InstrumentoMedicao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(instrumento.status)}`}>
-                    {getStatusLabel(instrumento.status)}
+            key: "situacao",
+            title: "Situação",
+            render: (instrumento: InstrumentoMedicaoUI) => (
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(instrumento.situacao)}`}>
+                    {getStatusLabel(instrumento.situacao)}
                 </span>
             ),
         },
         {
             key: "calibracao",
             title: "Calibração",
-            render: (instrumento: InstrumentoMedicao) => (
+            render: (instrumento: InstrumentoMedicaoUI) => (
                 <div className="text-sm text-gray-500">
-                    <div>Última: {new Date(instrumento.ultimaCalibracao).toLocaleDateString('pt-BR')}</div>
-                    <div>Próxima: {new Date(instrumento.proximaCalibracao).toLocaleDateString('pt-BR')}</div>
+                    <div>Última: {new Date(instrumento.data_ultima_calibracao).toLocaleDateString('pt-BR')}</div>
+                    <div>Próxima: {new Date(instrumento.data_validade).toLocaleDateString('pt-BR')}</div>
                 </div>
             ),
         },
         {
             key: "acoes",
             title: "Ações",
-            render: (instrumento: InstrumentoMedicao) => (
+            render: (instrumento: InstrumentoMedicaoUI) => (
                 <div className="flex items-center justify-end gap-2">
                     <Tooltip text="Visualizar">
                         <motion.button
@@ -561,19 +600,16 @@ export default function InstrumentosMedicaoPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* ARIA Live region for accessibility */}
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
 
-            {/* Page Header Component */}
             <PageHeader
                 title="Instrumentos de Medição"
                 buttonLabel="Novo Instrumento"
                 onButtonClick={handleCreateNew}
             />
 
-            {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -586,7 +622,6 @@ export default function InstrumentosMedicaoPage() {
                 selectedFilters={selectedFiltersForDisplay}
             />
 
-            {/* Data Container with Dynamic View */}
             <DataListContainer
                 isLoading={isLoading || isPending}
                 isEmpty={instrumentos.length === 0}
@@ -627,6 +662,13 @@ export default function InstrumentosMedicaoPage() {
                     />
                 )}
             </DataListContainer>
+
+            <InstrumentoMedicaoModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                instrumento={selectedInstrumento}
+                onSuccess={handleModalSuccess}
+            />
         </div>
     );
 }
