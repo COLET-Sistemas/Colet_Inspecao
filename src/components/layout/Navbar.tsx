@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { getProfileNames, useAuth } from "@/hooks/useAuth";
 import {
     Archive,
     ChevronDown, ClipboardCheck, ClipboardList, Drill,
@@ -231,6 +231,11 @@ export default function Navbar() {
                                     <div className="px-4 py-3 text-xs text-gray-400 border-b border-gray-700/50">
                                         <p>Logado como</p>
                                         <p className="font-medium text-white text-sm mt-0.5">{user?.username}</p>
+                                        {user?.perfil_inspecao && (
+                                            <p className="text-[#1ABC9C] text-xs mt-1">
+                                                Perfil: {getProfileNames(user.perfil_inspecao)}
+                                            </p>
+                                        )}
                                     </div>
                                     <a
                                         href="#"

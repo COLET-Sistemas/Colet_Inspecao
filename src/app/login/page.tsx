@@ -82,6 +82,41 @@ export default function LoginPage() {
         }
     };
 
+    const handleOperatorAccess = async (e: React.MouseEvent) => {
+        e.preventDefault();
+
+        // Definindo as credenciais do operador
+        const operatorUsername = "operador";
+        const operatorPassword = "yp0p0th@m";
+
+        // Check if API URL is configured
+        if (!apiUrl) {
+            setShowConfigModal(true);
+            return;
+        }
+
+        // Set local submitting state to true
+        setIsSubmitting(true);
+
+        try {
+            // Use the login method from useAuth hook with operator credentials
+            const success = await login({
+                username: operatorUsername,
+                password: operatorPassword,
+                remember: false // Não salvar credenciais do operador
+            });
+
+            if (success) {
+                console.log('Login como operador realizado com sucesso!');
+            }
+        } catch (err) {
+            console.error("Login como operador error:", err);
+        } finally {
+            // Always reset submitting state when done
+            setIsSubmitting(false);
+        }
+    };
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setFormSubmitted(true);
@@ -108,6 +143,9 @@ export default function LoginPage() {
                 if (rememberMe) {
                     localStorage.setItem('rememberedUsername', username);
                 }
+
+                // Verificar se o perfil_inspecao foi devidamente salvo
+                console.log('Login realizado com sucesso! Perfil de inspeção capturado.');
             }
         } catch (err) {
             // Error handling is managed by the useAuth hook
@@ -400,6 +438,7 @@ export default function LoginPage() {
                                     <a
                                         href="#"
                                         className="text-sm font-medium text-[#09A08D] hover:text-[#3C787A]"
+                                        onClick={handleOperatorAccess}
                                     >
                                         Acessar como operador
                                     </a>

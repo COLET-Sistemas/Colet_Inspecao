@@ -9,8 +9,21 @@ interface User {
     name?: string;
     email?: string;
     roles?: string[];
-    permissao?: string; // Add permissao field
+    permissao?: string; 
+    perfil_inspecao?: string; 
 }
+
+
+export const getProfileNames = (perfil_inspecao?: string): string => {
+    if (!perfil_inspecao) return '';
+
+    const profiles = [];
+    if (perfil_inspecao.includes('G')) profiles.push('Gestor');
+    if (perfil_inspecao.includes('Q')) profiles.push('Qualidade');
+    if (perfil_inspecao.includes('O')) profiles.push('Operador');
+
+    return profiles.join(', ');
+};
 
 interface LoginCredentials {
     username: string;
@@ -45,7 +58,6 @@ const encodePassword = (password: string) => {
     return result;
 };
 
-// Create a compatibility AuthContext for existing code that uses AuthProvider
 const AuthContext = createContext<any>(undefined);
 
 // Add this AuthProvider component to maintain compatibility with existing code
@@ -112,6 +124,7 @@ export function useAuth() {
 
             // Get response data
             const data = await response.json();
+            console.log('Login API response:', data); // Log dos dados recebidos da API
 
             // Status 200 means the API call was successful
             if (response.status === 200) {
@@ -120,8 +133,9 @@ export function useAuth() {
                     // Create user object with all returned data
                     const userData: User = {
                         username: username,
-                        name: data.nome || username,
+                        name: data.nome || data.usuario || username, // Considerar 'usuario' se 'nome' não existir
                         permissao: data.permissao || '',
+                        perfil_inspecao: data.perfil_inspecao || '', // Capturando o perfil_inspecao da resposta da API
                     };
 
                     // Store auth data
