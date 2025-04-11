@@ -7,6 +7,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import packageInfo from '../../../package.json';
+
 interface ApiTestResult {
     success: boolean;
     message: string;
@@ -428,7 +430,7 @@ export default function LoginPage() {
 
                     <div className="mt-6 sm:mt-8 text-center">
                         <p className="text-xs text-gray-500">
-                            {new Date().getFullYear()} Sistema de Gestão de Inspeções Colet Sistemas • Versão 0.0.1
+                            {new Date().getFullYear()} Sistema de Inspeções Colet Sistemas • Versão {packageInfo.version}
                         </p>
                     </div>
                 </div>
