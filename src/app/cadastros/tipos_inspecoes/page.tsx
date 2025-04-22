@@ -8,6 +8,7 @@ import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/F
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -87,6 +88,7 @@ export default function TiposInspecoesPage() {
     const [statusFilter, setStatusFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
+    const { isAuthenticated } = useAuth();
 
     // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -96,6 +98,7 @@ export default function TiposInspecoesPage() {
     const [allData, setAllData] = useState<TipoInspecao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
+    const [apiError, setApiError] = useState<string | null>(null);
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -132,109 +135,98 @@ export default function TiposInspecoesPage() {
 
     const loadData = useCallback(() => {
         setIsLoading(true);
+        setApiError(null);
 
-        const timer = setTimeout(() => {
-            const mockData: TipoInspecao[] = [
-                {
-                    id: 1,
-                    codigo: "INSP-001",
-                    descricao: "Inspeção de Setup",
-                    status: "A",
-                    dataCriacao: "2023-06-15"
-                },
-                {
-                    id: 2,
-                    codigo: "INSP-002",
-                    descricao: "Inspeção de Troca de Ferramentas",
-                    status: "A",
-                    dataCriacao: "2023-07-22"
-                },
-                {
-                    id: 3,
-                    codigo: "INSP-003",
-                    descricao: "Inspeção de Liberação de Máquina",
-                    status: "A",
-                    dataCriacao: "2023-08-10"
-                },
-                {
-                    id: 4,
-                    codigo: "INSP-004",
-                    descricao: "Inspeção de Processo",
-                    status: "I",
-                    dataCriacao: "2023-09-05"
-                },
-                {
-                    id: 5,
-                    codigo: "INSP-005",
-                    descricao: "Inspeção na Qualidade",
-                    status: "A",
-                    dataCriacao: "2023-10-18"
-                },
-                {
-                    id: 6,
-                    codigo: "INSP-006",
-                    descricao: "Inspeção de Não Conformidade",
-                    status: "A",
-                    dataCriacao: "2023-11-03"
-                },
-                {
-                    id: 7,
-                    codigo: "INSP-007",
-                    descricao: "Inspeção Adicional",
-                    status: "A",
-                    dataCriacao: "2023-11-15"
-                },
-                {
-                    id: 8,
-                    codigo: "INSP-008",
-                    descricao: "Inspeção de Processos de Fabricação",
-                    status: "I",
-                    dataCriacao: "2023-11-27"
+        // Get API URL and token from storage
+        const apiUrl = localStorage.getItem("apiUrl");
+        // Obter o token exatamente como foi recebido no login
+        const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+        if (!apiUrl) {
+            setApiError("URL da API não está configurada");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!authToken) {
+            setApiError("Token de autenticação não encontrado");
+            setIsLoading(false);
+            return;
+        }
+
+        console.log('Token usado na requisição:', authToken); // Log para debug
+
+        // Fetch data from API
+        fetch(`${apiUrl}/tipos_inspecao`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar dados: ${response.status}`);
                 }
-            ];
+                return response.json();
+            })
+            .then(data => {
+                // Format the response data to match our interface
+                const formattedData = Array.isArray(data) ? data.map(item => ({
+                    id: item.id || item.ID || 0,
+                    codigo: item.codigo || item.CODIGO || '',
+                    descricao: item.descricao || item.DESCRICAO || '',
+                    status: item.status || item.STATUS || 'A',
+                    dataCriacao: item.dataCriacao || item.DATA_CRIACAO || new Date().toISOString().split('T')[0]
+                })) : [];
 
-            setAllData(mockData);
+                setAllData(formattedData);
 
-            startTransition(() => {
-                let filtered = [...mockData];
+                startTransition(() => {
+                    let filtered = [...formattedData];
 
-                if (searchTerm) {
-                    filtered = filtered.filter(item =>
-                        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                }
+                    if (searchTerm) {
+                        filtered = filtered.filter(item =>
+                            item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                    }
 
-                if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.status === statusFilter);
-                }
+                    if (statusFilter !== "todos") {
+                        filtered = filtered.filter(item => item.status === statusFilter);
+                    }
 
-                setTiposInspecao(filtered);
+                    setTiposInspecao(filtered);
+
+                    // Notifications for screen readers
+                    if (filtered.length === 0) {
+                        setNotification('Nenhum resultado encontrado para os filtros atuais.');
+                    } else {
+                        setNotification(`${filtered.length} tipos de inspeção encontrados.`);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Erro ao buscar tipos de inspeção:", error);
+                setApiError(`Falha ao carregar dados: ${error.message}`);
+            })
+            .finally(() => {
                 setIsLoading(false);
-
-                // Notifications for screen readers
-                if (filtered.length === 0) {
-                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
-                } else {
-                    setNotification(`${filtered.length} tipos de inspeção encontrados.`);
-                }
             });
-        }, 600);
 
-        return () => clearTimeout(timer);
     }, [searchTerm, statusFilter]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (isAuthenticated) {
+            loadData();
+        }
+    }, [loadData, isAuthenticated]);
 
-    // Handle CRUD operations with feedback
     const handleView = useCallback((id: number) => {
         console.log(`Visualizando tipo de inspeção ${id}`);
         const tipoToView = tiposInspecao.find(tipo => tipo.id === id);
         if (tipoToView) {
             setSelectedTipoInspecao(tipoToView);
-            // Apenas visualização em modo de somente leitura
             setNotification(`Visualizando detalhes do tipo de inspeção ${id}.`);
         }
     }, [tiposInspecao]);
@@ -251,14 +243,12 @@ export default function TiposInspecoesPage() {
 
     const handleCreateNew = useCallback(() => {
         console.log("Novo tipo de inspeção");
-        setSelectedTipoInspecao(undefined); // Limpa qualquer seleção anterior
+        setSelectedTipoInspecao(undefined);
         setIsModalOpen(true);
     }, []);
 
-    // Callback quando o modal for bem-sucedido
     const handleModalSuccess = useCallback((data: any) => {
         if (selectedTipoInspecao) {
-            // Modo de edição - atualiza o item na lista
             setTiposInspecao(prev =>
                 prev.map(item => item.id === selectedTipoInspecao.id ? {
                     ...item,
@@ -277,7 +267,6 @@ export default function TiposInspecoesPage() {
             );
             setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
         } else {
-            // Modo de criação - adiciona o novo item à lista
             const newItem: TipoInspecao = {
                 id: data.id || Math.floor(Math.random() * 1000) + 100,
                 codigo: data.codigo || `INSP-${Math.floor(Math.random() * 1000)}`,
@@ -291,25 +280,20 @@ export default function TiposInspecoesPage() {
         }
     }, [selectedTipoInspecao]);
 
-    // Reset filters function
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setStatusFilter("todos");
         setNotification("Filtros resetados.");
     }, []);
 
-    // Close modal function
     const handleCloseModal = useCallback(() => {
         setIsModalOpen(false);
-        // Damos um tempo para a animação de saída do modal antes de limpar a seleção
         setTimeout(() => {
             setSelectedTipoInspecao(undefined);
         }, 200);
     }, []);
 
-    // Prepare filter options for the FilterPanel component
     const filterOptions = useMemo(() => {
-        // Status filter options
         const statusOptions: FilterOption[] = [
             { value: "todos", label: "Todos os status" },
             { value: "A", label: "Ativos", color: "bg-green-100 text-green-800" },
@@ -327,7 +311,6 @@ export default function TiposInspecoesPage() {
         ];
     }, [statusFilter]);
 
-    // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
 
@@ -354,7 +337,6 @@ export default function TiposInspecoesPage() {
         return filters;
     }, [searchTerm, statusFilter]);
 
-    // Table columns configuration
     const tableColumns = useMemo(() => [
         {
             key: "codigo",
@@ -463,21 +445,35 @@ export default function TiposInspecoesPage() {
                 isLoading={isLoading || isPending}
                 isEmpty={tiposInspecao.length === 0}
                 emptyState={
-                    <EmptyState
-                        icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                        title="Nenhum resultado encontrado"
-                        description="Não encontramos tipos de inspeção que correspondam aos seus filtros atuais."
-                        primaryAction={{
-                            label: "Novo Tipo de Inspeção",
-                            onClick: handleCreateNew,
-                            icon: <Plus className="mr-2 h-4 w-4" />,
-                            disabled: false,
-                        }}
-                        secondaryAction={{
-                            label: "Limpar filtros",
-                            onClick: resetFilters,
-                        }}
-                    />
+                    apiError ? (
+                        <EmptyState
+                            icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
+                            title="Erro ao carregar dados"
+                            description={apiError}
+                            primaryAction={{
+                                label: "Tentar novamente",
+                                onClick: loadData,
+                                icon: <Plus className="mr-2 h-4 w-4" />,
+                                disabled: false,
+                            }}
+                        />
+                    ) : (
+                        <EmptyState
+                            icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
+                            title="Nenhum resultado encontrado"
+                            description="Não encontramos tipos de inspeção que correspondam aos seus filtros atuais."
+                            primaryAction={{
+                                label: "Novo Tipo de Inspeção",
+                                onClick: handleCreateNew,
+                                icon: <Plus className="mr-2 h-4 w-4" />,
+                                disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Limpar filtros",
+                                onClick: resetFilters,
+                            }}
+                        />
+                    )
                 }
                 totalItems={allData.length}
                 totalFilteredItems={tiposInspecao.length}

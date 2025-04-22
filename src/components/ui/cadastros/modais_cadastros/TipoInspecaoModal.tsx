@@ -45,19 +45,32 @@ export function TipoInspecaoModal({
                     return;
                 }
 
+                // Obter o token exatamente como foi recebido no login
+                const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+                if (!authToken) {
+                    setError("Sessão expirada. Por favor, faça login novamente.");
+                    return;
+                }
+
+                console.log('Token usado na requisição do modal:', authToken); // Log para debug
+
                 const payload = {
                     descricao: formData.descricao_tipo_inspecao.trim(),
                     status: formData.situacao === "on" ? "A" : "I",
                 };
 
                 let response;
-                let url = `${apiUrl}/tipo_inspecao`;
+                let url = `${apiUrl}/tipos_inspecao`;
 
                 if (isEditing && tipoInspecao) {
                     // Modo de edição - PUT
                     response = await fetch(`${url}/${tipoInspecao.id}`, {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+                        },
                         body: JSON.stringify({
                             ...payload,
                             id: tipoInspecao.id,
@@ -68,7 +81,10 @@ export function TipoInspecaoModal({
                     // Modo de criação - POST
                     response = await fetch(url, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+                        },
                         body: JSON.stringify(payload),
                     });
                 }
