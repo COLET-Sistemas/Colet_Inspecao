@@ -161,7 +161,7 @@ export default function TiposInspecoesPage() {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+                'Key': authToken // Usando o token como API Key conforme nova especificação
             }
         })
             .then(response => {

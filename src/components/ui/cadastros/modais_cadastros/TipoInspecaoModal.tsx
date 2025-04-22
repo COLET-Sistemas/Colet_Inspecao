@@ -69,7 +69,7 @@ export function TipoInspecaoModal({
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
-                            "Authorization": `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+                            "Key": authToken // Usando API Key no cabeçalho
                         },
                         body: JSON.stringify({
                             ...payload,
@@ -83,7 +83,7 @@ export function TipoInspecaoModal({
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "Authorization": `Bearer ${authToken}` // Usando o token exatamente como foi recebido
+                            "Key": authToken // Usando API Key no cabeçalho
                         },
                         body: JSON.stringify(payload),
                     });
