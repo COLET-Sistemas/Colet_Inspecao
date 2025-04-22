@@ -16,8 +16,8 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 interface TipoInspecao {
     id: number;
     codigo: string;
-    descricao: string;
-    status: "A" | "I";
+    descricao_tipo_inspecao: string;
+    situacao: "A" | "I";
     dataCriacao: string;
 }
 
@@ -35,16 +35,16 @@ const Card = ({ tipo, onView, onEdit }: {
                         {tipo.codigo}
                     </span>
                 </div>
-                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.status === 'A'
+                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.situacao === 'A'
                     ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
                     }`}>
-                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
+                    {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             </div>
 
             <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                {tipo.descricao}
+                {tipo.descricao_tipo_inspecao}
             </h3>
 
             <div className="flex justify-between items-end mt-3">
@@ -154,15 +154,15 @@ export default function TiposInspecoesPage() {
             return;
         }
 
-        console.log('Token usado na requisição:', authToken); // Log para debug
+        console.log('Token usado na requisição:', authToken);
 
-        // Fetch data from API
-        fetch(`${apiUrl}/tipos_inspecao`, {
+        fetch(`${apiUrl}/tipos_inspecaox`, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'Key': authToken // Usando o token como API Key conforme nova especificação
-            }
+                "Content-Type": "application/json",
+                "Key": authToken
+            },
+
         })
             .then(response => {
                 if (!response.ok) {
@@ -173,11 +173,11 @@ export default function TiposInspecoesPage() {
             .then(data => {
                 // Format the response data to match our interface
                 const formattedData = Array.isArray(data) ? data.map(item => ({
-                    id: item.id || item.ID || 0,
-                    codigo: item.codigo || item.CODIGO || '',
-                    descricao: item.descricao || item.DESCRICAO || '',
-                    status: item.status || item.STATUS || 'A',
-                    dataCriacao: item.dataCriacao || item.DATA_CRIACAO || new Date().toISOString().split('T')[0]
+                    id: parseInt(item.id) || 0,
+                    codigo: item.codigo || item.id || '',
+                    descricao_tipo_inspecao: item.descricao_tipo_inspecao || '',
+                    situacao: item.situacao || 'A',
+                    dataCriacao: item.dataCriacao || new Date().toISOString().split('T')[0]
                 })) : [];
 
                 setAllData(formattedData);
@@ -187,13 +187,13 @@ export default function TiposInspecoesPage() {
 
                     if (searchTerm) {
                         filtered = filtered.filter(item =>
-                            item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
                         );
                     }
 
                     if (statusFilter !== "todos") {
-                        filtered = filtered.filter(item => item.status === statusFilter);
+                        filtered = filtered.filter(item => item.situacao === statusFilter);
                     }
 
                     setTiposInspecao(filtered);
@@ -252,26 +252,26 @@ export default function TiposInspecoesPage() {
             setTiposInspecao(prev =>
                 prev.map(item => item.id === selectedTipoInspecao.id ? {
                     ...item,
-                    descricao: data.descricao,
-                    status: data.status,
+                    descricao_tipo_inspecao: data.descricao_tipo_inspecao,
+                    situacao: data.situacao,
                     codigo: data.codigo || item.codigo
                 } : item)
             );
             setAllData(prev =>
                 prev.map(item => item.id === selectedTipoInspecao.id ? {
                     ...item,
-                    descricao: data.descricao,
-                    status: data.status,
+                    descricao_tipo_inspecao: data.descricao_tipo_inspecao,
+                    situacao: data.situacao,
                     codigo: data.codigo || item.codigo
                 } : item)
             );
             setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
         } else {
             const newItem: TipoInspecao = {
-                id: data.id || Math.floor(Math.random() * 1000) + 100,
+                id: parseInt(data.id) || Math.floor(Math.random() * 1000) + 100,
                 codigo: data.codigo || `INSP-${Math.floor(Math.random() * 1000)}`,
-                descricao: data.descricao,
-                status: data.status,
+                descricao_tipo_inspecao: data.descricao_tipo_inspecao,
+                situacao: data.situacao,
                 dataCriacao: new Date().toISOString().split('T')[0],
             };
             setTiposInspecao(prev => [newItem, ...prev]);
@@ -342,25 +342,25 @@ export default function TiposInspecoesPage() {
             key: "codigo",
             title: "Código",
             render: (tipo: TipoInspecao) => (
-                <span className="text-sm font-medium text-gray-900">{tipo.codigo}</span>
+                <span className="text-sm font-medium text-gray-900">{tipo.id}</span>
             ),
         },
         {
             key: "descricao",
             title: "Descrição",
             render: (tipo: TipoInspecao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao}</div>
+                <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao_tipo_inspecao}</div>
             ),
         },
         {
             key: "status",
             title: "Status",
             render: (tipo: TipoInspecao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'A'
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                     }`}>
-                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
+                    {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             ),
         },

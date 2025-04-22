@@ -7,10 +7,10 @@ import { useCallback, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface TipoInspecao {
-    id?: number;
+    id?: string;
     codigo?: string;
-    descricao: string;
-    status: "A" | "I";
+    descricao_tipo_inspecao: string;
+    situacao: "A" | "I";
 }
 
 interface TipoInspecaoModalProps {
@@ -30,7 +30,7 @@ export function TipoInspecaoModal({
     const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [isAtivo, setIsAtivo] = useState(!tipoInspecao || tipoInspecao.status === "A");
+    const [isAtivo, setIsAtivo] = useState(!tipoInspecao || tipoInspecao.situacao === "A");
     const [isFocused, setIsFocused] = useState<string | null>(null);
 
     const handleSubmit = useCallback(
@@ -56,12 +56,12 @@ export function TipoInspecaoModal({
                 console.log('Token usado na requisição do modal:', authToken); // Log para debug
 
                 const payload = {
-                    descricao: formData.descricao_tipo_inspecao.trim(),
-                    status: formData.situacao === "on" ? "A" : "I",
+                    descricao_tipo_inspecao: formData.descricao_tipo_inspecao.trim(),
+                    situacao: formData.situacao === "on" ? "A" : "I",
                 };
 
                 let response;
-                let url = `${apiUrl}/tipos_inspecao`;
+                let url = `${apiUrl}/tipos_inspecoes`;
 
                 if (isEditing && tipoInspecao) {
                     // Modo de edição - PUT
@@ -69,7 +69,7 @@ export function TipoInspecaoModal({
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
-                            "Key": authToken // Usando API Key no cabeçalho
+                            "Key": authToken 
                         },
                         body: JSON.stringify({
                             ...payload,
@@ -107,7 +107,11 @@ export function TipoInspecaoModal({
 
                 // Enviar dados para o callback de sucesso e fechar o modal após 1s
                 if (onSuccess) {
-                    onSuccess(responseData);
+                    onSuccess({
+                        ...responseData,
+                        descricao_tipo_inspecao: responseData.descricao_tipo_inspecao || formData.descricao_tipo_inspecao,
+                        situacao: responseData.situacao || payload.situacao
+                    });
                 }
 
                 setTimeout(() => {
@@ -182,6 +186,7 @@ export function TipoInspecaoModal({
                                 </label>
                             </div>
                         </div>
+
                         <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                             <input
                                 type="text"
@@ -189,7 +194,7 @@ export function TipoInspecaoModal({
                                 name="descricao_tipo_inspecao"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Insira a descrição do tipo de inspeção"
-                                defaultValue={tipoInspecao?.descricao || ""}
+                                defaultValue={tipoInspecao?.descricao_tipo_inspecao || ""}
                                 required
                                 onFocus={() => setIsFocused('descricao')}
                                 onBlur={() => setIsFocused(null)}
@@ -226,7 +231,7 @@ export function TipoInspecaoModal({
                                     id="situacao"
                                     name="situacao"
                                     className="peer sr-only"
-                                    defaultChecked={!tipoInspecao || tipoInspecao.status === "A"}
+                                    defaultChecked={!tipoInspecao || tipoInspecao.situacao === "A"}
                                     onChange={(e) => setIsAtivo(e.target.checked)}
                                 />
                                 <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>
