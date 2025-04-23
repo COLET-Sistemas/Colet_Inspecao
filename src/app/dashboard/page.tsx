@@ -1,7 +1,6 @@
 "use client";
 
-import { ActivityCard, QuickActionCard, StatCard } from '@/components/ui/dashboard';
-import { Card, CardContent, CardHeader } from '@/components/ui/dashboard/card';
+import { QuickActionCard, StatCard } from '@/components/ui/dashboard';
 import {
     BarChart,
     CheckCircle,
@@ -16,12 +15,6 @@ export default function DashboardPage() {
         { title: 'Inspeções Pendentes', value: '42', icon: Clock, color: 'bg-yellow-100 text-yellow-600' },
         { title: 'Total de Relatórios', value: '187', icon: ClipboardList, color: 'bg-blue-100 text-blue-600' },
         { title: 'Métricas Coletadas', value: '1,243', icon: BarChart, color: 'bg-purple-100 text-purple-600' },
-    ];
-
-    const activities = [
-        { id: 1, title: 'Inspeção #101 finalizada', time: 'Há 1 hora' },
-        { id: 2, title: 'Inspeção #102 finalizada', time: 'Há 2 horas' },
-        { id: 3, title: 'Inspeção #103 finalizada', time: 'Há 3 horas' },
     ];
 
     const quickActions = [
@@ -55,27 +48,6 @@ export default function DashboardPage() {
                     />
                 ))}
             </div>
-
-            {/* Recent Activity Section */}
-            <section className="mt-8">
-                <Card>
-                    <CardHeader>
-                        <h2 className="text-xl font-bold">Atividades Recentes</h2>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {activities.map((activity) => (
-                                <ActivityCard
-                                    key={activity.id}
-                                    id={activity.id}
-                                    title={activity.title}
-                                    time={activity.time}
-                                />
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </section>
 
             {/* Quick Actions */}
             <section className="mt-8 mb-6">

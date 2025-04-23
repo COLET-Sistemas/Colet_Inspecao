@@ -8,12 +8,14 @@ export function useApiConfig() {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // Load saved API URL on component mount
+    // Only load the saved API URL on component mount, without testing the connection
     useEffect(() => {
         const savedApiUrl = localStorage.getItem("apiUrl");
         if (savedApiUrl) {
             setApiUrl(savedApiUrl);
-            testApiConnection(savedApiUrl).then(setIsConnected);
+            // Note: removed automatic connection test here
+            // Just set the connected state based on whether there's a saved URL
+            setIsConnected(!!savedApiUrl);
         }
     }, []);
 

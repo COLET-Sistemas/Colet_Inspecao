@@ -9,11 +9,11 @@ import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
 import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 interface TipoInspecao {
-    id: number;
+    id: string;
     codigo: string;
     descricao_tipo_inspecao: string;
     situacao: "A" | "I";
@@ -21,10 +21,9 @@ interface TipoInspecao {
 }
 
 // Card component for list item
-const Card = ({ tipo, onView, onEdit }: {
+const Card = ({ tipo, onEdit }: {
     tipo: TipoInspecao;
-    onView: (id: number) => void;
-    onEdit: (id: number) => void;
+    onEdit: (id: string) => void;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
@@ -48,17 +47,6 @@ const Card = ({ tipo, onView, onEdit }: {
 
             <div className="flex justify-between items-end mt-3">
                 <div className="flex space-x-1">
-                    <Tooltip text="Visualizar">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50"
-                            onClick={() => onView(tipo.id)}
-                            aria-label="Visualizar"
-                        >
-                            <Eye className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
-
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.97 }}
@@ -99,6 +87,9 @@ export default function TiposInspecoesPage() {
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
+    // Utilize uma ref para controlar se a requisição já foi feita
+    const dataFetchedRef = useRef(false);
+
     // Calculate active filters
     useEffect(() => {
         let count = 0;
@@ -111,9 +102,7 @@ export default function TiposInspecoesPage() {
         setIsLoading(true);
         setApiError(null);
 
-        // Get API URL and token from storage
         const apiUrl = localStorage.getItem("apiUrl");
-        // Obter o token exatamente como foi recebido no login
         const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
         if (!apiUrl) {
@@ -128,7 +117,6 @@ export default function TiposInspecoesPage() {
             return;
         }
 
-
         console.log('Token usado na requisição:', authToken);
         fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
             method: 'GET',
@@ -137,7 +125,6 @@ export default function TiposInspecoesPage() {
                 "chave": authToken
             },
         })
-
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro ao buscar dados: ${response.status}`);
@@ -145,9 +132,8 @@ export default function TiposInspecoesPage() {
                 return response.json();
             })
             .then(data => {
-                // Format the response data to match our interface
                 const formattedData = Array.isArray(data) ? data.map(item => ({
-                    id: parseInt(item.id) || 0,
+                    id: item.id || '',
                     codigo: item.codigo || item.id || '',
                     descricao_tipo_inspecao: item.descricao_tipo_inspecao || '',
                     situacao: item.situacao || 'A',
@@ -188,22 +174,45 @@ export default function TiposInspecoesPage() {
                 setIsLoading(false);
             });
 
-    }, [searchTerm, statusFilter]);
+    }, []);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    const handleView = useCallback((id: number) => {
-        console.log(`Visualizando tipo de inspeção ${id}`);
-        const tipoToView = tiposInspecao.find(tipo => tipo.id === id);
-        if (tipoToView) {
-            setSelectedTipoInspecao(tipoToView);
-            setNotification(`Visualizando detalhes do tipo de inspeção ${id}.`);
+        if (dataFetchedRef.current === false) {
+            dataFetchedRef.current = true;
+            loadData();
         }
-    }, [tiposInspecao]);
+    }, []);
 
-    const handleEdit = useCallback((id: number) => {
+    // Effect para filtrar dados quando os filtros mudam
+    useEffect(() => {
+        if (allData.length > 0) {
+            startTransition(() => {
+                let filtered = [...allData];
+
+                if (searchTerm) {
+                    filtered = filtered.filter(item =>
+                        item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+
+                if (statusFilter !== "todos") {
+                    filtered = filtered.filter(item => item.situacao === statusFilter);
+                }
+
+                setTiposInspecao(filtered);
+
+                // Notifications for screen readers
+                if (filtered.length === 0) {
+                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
+                } else {
+                    setNotification(`${filtered.length} tipos de inspeção encontrados.`);
+                }
+            });
+        }
+    }, [searchTerm, statusFilter, allData]);
+
+    const handleEdit = useCallback((id: string) => {
         console.log(`Editando tipo de inspeção ${id}`);
         const tipoToEdit = tiposInspecao.find(tipo => tipo.id === id);
         if (tipoToEdit) {
@@ -240,7 +249,7 @@ export default function TiposInspecoesPage() {
             setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
         } else {
             const newItem: TipoInspecao = {
-                id: parseInt(data.id) || Math.floor(Math.random() * 1000) + 100,
+                id: data.id || Math.floor(Math.random() * 1000).toString(),
                 codigo: data.codigo || `INSP-${Math.floor(Math.random() * 1000)}`,
                 descricao_tipo_inspecao: data.descricao_tipo_inspecao,
                 situacao: data.situacao,
@@ -341,17 +350,6 @@ export default function TiposInspecoesPage() {
             title: "Ações",
             render: (tipo: TipoInspecao) => (
                 <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Visualizar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleView(tipo.id)}
-                            aria-label="Visualizar"
-                        >
-                            <Eye className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
@@ -365,7 +363,7 @@ export default function TiposInspecoesPage() {
                 </div>
             ),
         },
-    ], [handleView, handleEdit]);
+    ], [handleEdit]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -451,7 +449,6 @@ export default function TiposInspecoesPage() {
                         renderCard={(tipo) => (
                             <Card
                                 tipo={tipo}
-                                onView={handleView}
                                 onEdit={handleEdit}
                             />
                         )}
