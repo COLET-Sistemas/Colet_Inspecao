@@ -172,24 +172,6 @@ export default function CotasCaracteristicasPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter, tipoFilter]);
 
-    // Handle keyboard accessibility
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Implement keyboard shortcuts
-            if (e.ctrlKey && e.key === 'f') {
-                e.preventDefault();
-                document.getElementById('search-input')?.focus();
-            }
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault();
-                handleCreateNew();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
     const loadData = useCallback(() => {
         setIsLoading(true);
 
@@ -599,7 +581,7 @@ export default function CotasCaracteristicasPage() {
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar por código ou descrição... (Ctrl+F)"
+                searchPlaceholder="Buscar por código ou descrição..."
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 filters={filterOptions}

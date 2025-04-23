@@ -47,10 +47,8 @@ export default function LoginPage() {
             setIsLandscape(window.matchMedia("(orientation: landscape) and (max-width: 1024px)").matches);
         };
 
-        // Check orientation on mount
         checkOrientation();
 
-        // Listen for orientation changes
         const mediaQuery = window.matchMedia("(orientation: landscape) and (max-width: 1024px)");
         mediaQuery.addEventListener("change", checkOrientation);
 
@@ -60,10 +58,8 @@ export default function LoginPage() {
     }, []);
 
     useEffect(() => {
-        // Set temp API URL when modal opens or URL changes
         setTempApiUrl(apiUrl);
 
-        // Load remembered username if exists
         const savedUsername = localStorage.getItem('rememberedUsername');
         if (savedUsername) {
             setUsername(savedUsername);
@@ -99,11 +95,10 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            // Use the login method from useAuth hook with operator credentials
             const success = await login({
                 username: operatorUsername,
                 password: operatorPassword,
-                remember: false // Não salvar credenciais do operador
+                remember: false 
             });
 
             if (success) {
@@ -112,7 +107,6 @@ export default function LoginPage() {
         } catch (err) {
             console.error("Login como operador error:", err);
         } finally {
-            // Always reset submitting state when done
             setIsSubmitting(false);
         }
     };

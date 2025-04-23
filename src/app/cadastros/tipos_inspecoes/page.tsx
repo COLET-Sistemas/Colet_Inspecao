@@ -8,7 +8,6 @@ import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/F
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
-import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -32,7 +31,7 @@ const Card = ({ tipo, onView, onEdit }: {
             <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center">
                     <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                        {tipo.codigo}
+                        #{tipo.codigo}
                     </span>
                 </div>
                 <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.situacao === 'A'
@@ -48,12 +47,6 @@ const Card = ({ tipo, onView, onEdit }: {
             </h3>
 
             <div className="flex justify-between items-end mt-3">
-                <div className="flex flex-col space-y-1">
-                    <span className="text-xs text-gray-400">
-                        {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
-                    </span>
-                </div>
-
                 <div className="flex space-x-1">
                     <Tooltip text="Visualizar">
                         <motion.button
@@ -88,7 +81,6 @@ export default function TiposInspecoesPage() {
     const [statusFilter, setStatusFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
-    const { isAuthenticated } = useAuth();
 
     // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -115,24 +107,6 @@ export default function TiposInspecoesPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter]);
 
-    // Handle keyboard accessibility
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Implement keyboard shortcuts
-            if (e.ctrlKey && e.key === 'f') {
-                e.preventDefault();
-                document.getElementById('search-input')?.focus();
-            }
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault();
-                handleCreateNew();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
     const loadData = useCallback(() => {
         setIsLoading(true);
         setApiError(null);
@@ -154,16 +128,16 @@ export default function TiposInspecoesPage() {
             return;
         }
 
-        console.log('Token usado na requisição:', authToken);
 
-        fetch(`${apiUrl}/tipos_inspecaox`, {
+        console.log('Token usado na requisição:', authToken);
+        fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
             method: 'GET',
             headers: {
                 "Content-Type": "application/json",
-                "Key": authToken
+                "chave": authToken
             },
-
         })
+
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro ao buscar dados: ${response.status}`);
@@ -217,10 +191,8 @@ export default function TiposInspecoesPage() {
     }, [searchTerm, statusFilter]);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            loadData();
-        }
-    }, [loadData, isAuthenticated]);
+        loadData();
+    }, [loadData]);
 
     const handleView = useCallback((id: number) => {
         console.log(`Visualizando tipo de inspeção ${id}`);
@@ -342,7 +314,7 @@ export default function TiposInspecoesPage() {
             key: "codigo",
             title: "Código",
             render: (tipo: TipoInspecao) => (
-                <span className="text-sm font-medium text-gray-900">{tipo.id}</span>
+                <span className="text-sm font-medium text-gray-900">#{tipo.id}</span>
             ),
         },
         {
@@ -361,15 +333,6 @@ export default function TiposInspecoesPage() {
                     : 'bg-red-100 text-red-800'
                     }`}>
                     {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
-                </span>
-            ),
-        },
-        {
-            key: "dataCriacao",
-            title: "Data de Criação",
-            render: (tipo: TipoInspecao) => (
-                <span className="text-sm text-gray-500">
-                    {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
                 </span>
             ),
         },
@@ -431,7 +394,7 @@ export default function TiposInspecoesPage() {
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar por código ou descrição... (Ctrl+F)"
+                searchPlaceholder="Buscar por código ou descrição..."
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 filters={filterOptions}

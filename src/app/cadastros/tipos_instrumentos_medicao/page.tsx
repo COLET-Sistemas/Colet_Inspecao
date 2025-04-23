@@ -5,12 +5,12 @@ import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInstrumentoMedicaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { motion } from "framer-motion";
 import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInstrumentoMedicaoModal";
 
 interface TipoInstrumentoMedicao {
     id: number;
@@ -117,24 +117,6 @@ export default function TiposInstrumentosMedicaoPage() {
         if (statusFilter !== "todos") count++;
         setActiveFilters(count);
     }, [searchTerm, statusFilter]);
-
-    // Handle keyboard accessibility
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Implement keyboard shortcuts
-            if (e.ctrlKey && e.key === 'f') {
-                e.preventDefault();
-                document.getElementById('search-input')?.focus();
-            }
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault();
-                handleCreateNew();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
 
     const loadData = useCallback(() => {
         setIsLoading(true);
@@ -456,7 +438,7 @@ export default function TiposInstrumentosMedicaoPage() {
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar por nome ou observação... (Ctrl+F)"
+                searchPlaceholder="Buscar por nome ou observação..."
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 filters={filterOptions}

@@ -53,11 +53,7 @@ export function useApiConfig() {
             const response = await fetch(`${url}/parametros?chave=NOME-EMP&sistema=CLT&estabelecimento=1`, {
                 signal: controller.signal,
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                mode: "cors", // Explicitly set CORS mode
-                cache: "no-cache" // Prevent caching issues
+
             });
 
             clearTimeout(timeoutId);

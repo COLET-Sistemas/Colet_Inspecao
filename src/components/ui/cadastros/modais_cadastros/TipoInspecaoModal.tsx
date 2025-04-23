@@ -3,7 +3,7 @@
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
 import { AlertCircle, Check, FileText, ToggleLeft } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface TipoInspecao {
@@ -30,8 +30,14 @@ export function TipoInspecaoModal({
     const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [isAtivo, setIsAtivo] = useState(!tipoInspecao || tipoInspecao.situacao === "A");
+    const [isAtivo, setIsAtivo] = useState<boolean>(false);
     const [isFocused, setIsFocused] = useState<string | null>(null);
+
+    // Initialize isAtivo state based on tipoInspecao when component mounts or tipoInspecao changes
+    useEffect(() => {
+        // Default to active for new items, use the actual status for existing ones
+        setIsAtivo(!tipoInspecao || tipoInspecao.situacao === "A");
+    }, [tipoInspecao]);
 
     const handleSubmit = useCallback(
         async (formData: any) => {
@@ -69,7 +75,7 @@ export function TipoInspecaoModal({
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
-                            "Key": authToken 
+                            "Key": authToken
                         },
                         body: JSON.stringify({
                             ...payload,
@@ -83,7 +89,7 @@ export function TipoInspecaoModal({
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "Key": authToken // Usando API Key no cabeçalho
+                            "Key": authToken
                         },
                         body: JSON.stringify(payload),
                     });
