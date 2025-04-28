@@ -434,7 +434,7 @@ export default function LoginPage() {
                                         className="text-sm font-medium text-[#09A08D] hover:text-[#3C787A]"
                                         onClick={handleOperatorAccess}
                                     >
-                                        Acessar como operador
+                                        Acessar como operador TESTE GITHUB
                                     </a>
                                 </div>
                             </div>
