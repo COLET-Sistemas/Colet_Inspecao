@@ -11,7 +11,7 @@ import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
 import { motion } from "framer-motion";
 import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 interface TipoInspecao {
     id: string;
@@ -27,7 +27,7 @@ interface AlertState {
 }
 
 // Card component for list item
-const Card = ({ tipo, onEdit }: {
+const Card = React.memo(({ tipo, onEdit }: {
     tipo: TipoInspecao;
     onEdit: (id: string) => void;
 }) => (
@@ -68,7 +68,7 @@ const Card = ({ tipo, onEdit }: {
             </div>
         </div>
     </div>
-);
+));
 
 export default function TiposInspecoesPage() {
     // State for filters
@@ -151,30 +151,7 @@ export default function TiposInspecoesPage() {
                 })) : [];
 
                 setAllData(formattedData);
-
-                startTransition(() => {
-                    let filtered = [...formattedData];
-
-                    if (searchTerm) {
-                        filtered = filtered.filter(item =>
-                            item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-                        );
-                    }
-
-                    if (statusFilter !== "todos") {
-                        filtered = filtered.filter(item => item.situacao === statusFilter);
-                    }
-
-                    setTiposInspecao(filtered);
-
-                    // Notifications for screen readers
-                    if (filtered.length === 0) {
-                        setNotification('Nenhum resultado encontrado para os filtros atuais.');
-                    } else {
-                        setNotification(`${filtered.length} tipos de inspeção encontrados.`);
-                    }
-                });
+                // A filtragem real será feita pelo useEffect que depende de allData, searchTerm e statusFilter
             })
             .catch(error => {
                 console.error("Erro ao buscar tipos de inspeção:", error);
@@ -184,8 +161,7 @@ export default function TiposInspecoesPage() {
                 setIsLoading(false);
                 setIsRefreshing(false);
             });
-
-    }, [searchTerm, statusFilter]);
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
@@ -204,20 +180,29 @@ export default function TiposInspecoesPage() {
     // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
         if (allData.length > 0) {
+            // Usar startTransition para não bloquear a UI durante filtragens pesadas
             startTransition(() => {
-                let filtered = [...allData];
+                // Filtrar usando função memoizada para melhor performance
+                const filterData = () => {
+                    // Só realizar filtragem se houver filtros ativos
+                    if (!searchTerm && statusFilter === "todos") {
+                        return allData;
+                    }
 
-                if (searchTerm) {
-                    filtered = filtered.filter(item =>
-                        item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                }
+                    return allData.filter(item => {
+                        // Verificar texto de busca
+                        const matchesSearch = !searchTerm ||
+                            item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
 
-                if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.situacao === statusFilter);
-                }
+                        // Verificar filtro de status
+                        const matchesStatus = statusFilter === "todos" || item.situacao === statusFilter;
 
+                        return matchesSearch && matchesStatus;
+                    });
+                };
+
+                const filtered = filterData();
                 setTiposInspecao(filtered);
 
                 // Notifications for screen readers
@@ -231,35 +216,32 @@ export default function TiposInspecoesPage() {
     }, [searchTerm, statusFilter, allData]);
 
     const handleEdit = useCallback((id: string) => {
-        const tipoToEdit = tiposInspecao.find(tipo => tipo.id === id);
+        const tipoToEdit = allData.find(tipo => tipo.id === id);
         if (tipoToEdit) {
             setSelectedTipoInspecao(tipoToEdit);
             setIsModalOpen(true);
             setNotification(`Iniciando edição do tipo de inspeção ${id}.`);
         }
-    }, [tiposInspecao]);
+    }, [allData]);
 
     const handleModalSuccess = useCallback((data: any) => {
         if (selectedTipoInspecao) {
-            // Atualiza o item na lista
-            setTiposInspecao(prev =>
-                prev.map(item => item.id === selectedTipoInspecao.id ? {
-                    ...item,
-                    descricao_tipo_inspecao: data.descricao_tipo_inspecao,
-                    situacao: data.situacao,
-                    codigo: data.codigo || item.codigo
-                } : item)
-            );
-            setAllData(prev =>
-                prev.map(item => item.id === selectedTipoInspecao.id ? {
-                    ...item,
-                    descricao_tipo_inspecao: data.descricao_tipo_inspecao,
-                    situacao: data.situacao,
-                    codigo: data.codigo || item.codigo
-                } : item)
-            );
+            // Criando uma função de atualização para evitar inconsistências de estado
+            const updateItem = (item: TipoInspecao) =>
+                item.id === selectedTipoInspecao.id
+                    ? {
+                        ...item,
+                        descricao_tipo_inspecao: data.descricao_tipo_inspecao,
+                        situacao: data.situacao,
+                        codigo: data.codigo || item.codigo
+                    }
+                    : item;
 
-            // Mostrar mensagem de sucesso na página, não no modal
+            // Atualiza o item em ambas as listas de forma consistente
+            setTiposInspecao(prev => prev.map(updateItem));
+            setAllData(prev => prev.map(updateItem));
+
+            // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
                 type: "warning"

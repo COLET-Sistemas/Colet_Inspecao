@@ -97,7 +97,7 @@ export function FormModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto"
+                    className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 backdrop-blur-sm overflow-y-auto py-4 md:py-6"
                 >
                     <motion.div
                         ref={modalRef}

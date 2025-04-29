@@ -18,7 +18,7 @@ export function AlertMessage({
     type,
     onDismiss,
     autoDismiss = true,
-    dismissDuration = 5000,
+    dismissDuration = 3000,
     title,
 }: AlertMessageProps) {
     const [isVisible, setIsVisible] = useState(!!message);
