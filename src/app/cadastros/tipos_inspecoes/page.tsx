@@ -128,7 +128,6 @@ export default function TiposInspecoesPage() {
             return;
         }
 
-        console.log('Token usado na requisição:', authToken);
         fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
             method: 'GET',
             headers: {
@@ -232,7 +231,6 @@ export default function TiposInspecoesPage() {
     }, [searchTerm, statusFilter, allData]);
 
     const handleEdit = useCallback((id: string) => {
-        console.log(`Editando tipo de inspeção ${id}`);
         const tipoToEdit = tiposInspecao.find(tipo => tipo.id === id);
         if (tipoToEdit) {
             setSelectedTipoInspecao(tipoToEdit);
