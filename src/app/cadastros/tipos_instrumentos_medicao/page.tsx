@@ -1,29 +1,33 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInstrumentoMedicaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 interface TipoInstrumentoMedicao {
     id: number;
     nome_tipo_instrumento: string;
     observacao: string;
-    status: "A" | "I";
-    dataCriacao: string;
+}
+
+interface AlertState {
+    message: string | null;
+    type: "success" | "error" | "warning";
 }
 
 // Card component for list item
-const Card = ({ tipo, onView, onEdit }: {
+const Card = ({ tipo, onEdit }: {
     tipo: TipoInstrumentoMedicao;
-    onView: (id: number) => void;
     onEdit: (id: number) => void;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
@@ -34,12 +38,6 @@ const Card = ({ tipo, onView, onEdit }: {
                         #{tipo.id}
                     </span>
                 </div>
-                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.status === 'A'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
-                    }`}>
-                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
-                </span>
             </div>
 
             <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
@@ -54,27 +52,13 @@ const Card = ({ tipo, onView, onEdit }: {
 
             <div className="flex justify-between items-end mt-3">
                 <div className="flex flex-col space-y-1">
-                    <span className="text-xs text-gray-400">
-                        {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
-                    </span>
                 </div>
 
                 <div className="flex space-x-1">
-                    <Tooltip text="Visualizar">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50"
-                            onClick={() => onView(tipo.id)}
-                            aria-label="Visualizar"
-                        >
-                            <Eye className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
-
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-green-600 hover:bg-green-50"
+                            className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
                             onClick={() => onEdit(tipo.id)}
                             aria-label="Editar"
                         >
@@ -101,14 +85,22 @@ export default function TiposInstrumentosMedicaoPage() {
     const [tiposInstrumentosMedicao, setTiposInstrumentosMedicao] = useState<TipoInstrumentoMedicao[]>([]);
     const [allData, setAllData] = useState<TipoInstrumentoMedicao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
+    const [apiError, setApiError] = useState<string | null>(null);
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTipoInstrumentoMedicao, setSelectedTipoInstrumentoMedicao] = useState<TipoInstrumentoMedicao | undefined>(undefined);
 
+    // Alert state para mensagens de sucesso fora do modal
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
+
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
+
+    // API configuration
+    const { apiUrl, getAuthHeaders, isConnected } = useApiConfig();
 
     // Calculate active filters
     useEffect(() => {
@@ -118,74 +110,34 @@ export default function TiposInstrumentosMedicaoPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter]);
 
-    const loadData = useCallback(() => {
+    const loadData = useCallback(async () => {
+        if (!apiUrl || !isConnected) {
+            setApiError("API não configurada ou não conectada.");
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
+        setApiError(null);
 
-        const timer = setTimeout(() => {
-            // Simulação de dados - em produção será substituído por uma chamada API real
-            const mockData: TipoInstrumentoMedicao[] = [
-                {
-                    id: 1,
-                    nome_tipo_instrumento: "Paquímetro",
-                    observacao: "Instrumento utilizado para medição de dimensões externas, internas e profundidade.",
-                    status: "A",
-                    dataCriacao: "2023-06-15"
-                },
-                {
-                    id: 2,
-                    nome_tipo_instrumento: "Micrômetro",
-                    observacao: "Instrumento de alta precisão para medições de dimensões.",
-                    status: "A",
-                    dataCriacao: "2023-07-22"
-                },
-                {
-                    id: 3,
-                    nome_tipo_instrumento: "Relógio Comparador",
-                    observacao: "Utilizado para comparar diferenças em altura ou desvios de peças.",
-                    status: "A",
-                    dataCriacao: "2023-08-10"
-                },
-                {
-                    id: 4,
-                    nome_tipo_instrumento: "Trena",
-                    observacao: "Instrumento para medição de comprimento e distâncias.",
-                    status: "I",
-                    dataCriacao: "2023-09-05"
-                },
-                {
-                    id: 5,
-                    nome_tipo_instrumento: "Calibrador de Folga",
-                    observacao: "Utilizado para verificar folgas e tolerâncias.",
-                    status: "A",
-                    dataCriacao: "2023-10-18"
-                },
-                {
-                    id: 6,
-                    nome_tipo_instrumento: "Balança de Precisão",
-                    observacao: "Instrumento para medição de massa com alta precisão.",
-                    status: "A",
-                    dataCriacao: "2023-11-03"
-                },
-                {
-                    id: 7,
-                    nome_tipo_instrumento: "Escala de Aço",
-                    observacao: "Instrumento para medição de comprimento com marcações milimétricas.",
-                    status: "A",
-                    dataCriacao: "2023-11-15"
-                },
-                {
-                    id: 8,
-                    nome_tipo_instrumento: "Goniômetro",
-                    observacao: "Instrumento para medição de ângulos.",
-                    status: "I",
-                    dataCriacao: "2023-11-27"
-                }
-            ];
+        try {
+            console.log('Buscando dados da API:', `${apiUrl}/inspecao/tipos_instrumentos_medicao`);
 
-            setAllData(mockData);
+            const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro ao buscar dados: ${response.status} ${response.statusText}`);
+            }
+
+            const data: TipoInstrumentoMedicao[] = await response.json();
+            console.log('Dados recebidos:', data);
+            setAllData(data);
 
             startTransition(() => {
-                let filtered = [...mockData];
+                let filtered = [...data];
 
                 if (searchTerm) {
                     filtered = filtered.filter(item =>
@@ -194,12 +146,7 @@ export default function TiposInstrumentosMedicaoPage() {
                     );
                 }
 
-                if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.status === statusFilter);
-                }
-
                 setTiposInstrumentosMedicao(filtered);
-                setIsLoading(false);
 
                 // Notifications for screen readers
                 if (filtered.length === 0) {
@@ -208,25 +155,62 @@ export default function TiposInstrumentosMedicaoPage() {
                     setNotification(`${filtered.length} tipos de instrumentos de medição encontrados.`);
                 }
             });
-        }, 600);
+        } catch (error) {
+            console.error('Erro ao carregar tipos de instrumentos de medição:', error);
+            setApiError(error instanceof Error ? error.message : 'Erro desconhecido ao carregar os dados');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [apiUrl, getAuthHeaders, isConnected, searchTerm]);
 
-        return () => clearTimeout(timer);
-    }, [searchTerm, statusFilter]);
+    const handleRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        loadData();
+        setNotification("Atualizando dados...");
+    }, [loadData]);
 
+    // Carrega os dados iniciais quando o componente é montado
     useEffect(() => {
+        console.log('Efeito de carregamento inicial executado');
+        // Carrega os dados independentemente do valor de dataFetchedRef
         loadData();
     }, [loadData]);
 
-    // Handle CRUD operations with feedback
-    const handleView = useCallback((id: number) => {
-        console.log(`Visualizando tipo de instrumento de medição ${id}`);
-        const tipoToView = tiposInstrumentosMedicao.find(tipo => tipo.id === id);
-        if (tipoToView) {
-            setSelectedTipoInstrumentoMedicao(tipoToView);
-            // Apenas visualização em modo de somente leitura
-            setNotification(`Visualizando detalhes do tipo de instrumento de medição ${id}.`);
+    // Effect para filtrar dados quando os filtros mudam
+    useEffect(() => {
+        if (allData.length > 0) {
+            // Usar startTransition para não bloquear a UI durante filtragens pesadas
+            startTransition(() => {
+                // Filtrar usando função memoizada para melhor performance
+                const filterData = () => {
+                    // Só realizar filtragem se houver filtros ativos
+                    if (!searchTerm) {
+                        return allData;
+                    }
+
+                    return allData.filter(item => {
+                        // Verificar texto de busca
+                        const matchesSearch = !searchTerm ||
+                            item.nome_tipo_instrumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (item.observacao && item.observacao.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                        return matchesSearch;
+                    });
+                };
+
+                const filtered = filterData();
+                setTiposInstrumentosMedicao(filtered);
+
+                // Notifications for screen readers
+                if (filtered.length === 0) {
+                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
+                } else {
+                    setNotification(`${filtered.length} tipos de instrumentos de medição encontrados.`);
+                }
+            });
         }
-    }, [tiposInstrumentosMedicao]);
+    }, [searchTerm, allData]);
 
     const handleEdit = useCallback((id: number) => {
         console.log(`Editando tipo de instrumento de medição ${id}`);
@@ -246,37 +230,46 @@ export default function TiposInstrumentosMedicaoPage() {
 
     // Callback quando o modal for bem-sucedido
     const handleModalSuccess = useCallback((data: any) => {
+        console.log('Modal success callback com dados:', data);
+
         if (selectedTipoInstrumentoMedicao) {
-            // Modo de edição - atualiza o item na lista
-            setTiposInstrumentosMedicao(prev =>
-                prev.map(item => item.id === selectedTipoInstrumentoMedicao.id ? {
-                    ...item,
-                    nome_tipo_instrumento: data.nome_tipo_instrumento,
-                    observacao: data.observacao,
-                    status: data.status,
-                } : item)
-            );
-            setAllData(prev =>
-                prev.map(item => item.id === selectedTipoInstrumentoMedicao.id ? {
-                    ...data,
-                    dataCriacao: item.dataCriacao
-                } : item)
-            );
-            setNotification(`Tipo de instrumento de medição ${data.nome_tipo_instrumento || selectedTipoInstrumentoMedicao.id} atualizado com sucesso.`);
-        } else {
-            // Modo de criação - adiciona o novo item à lista
-            const newItem: TipoInstrumentoMedicao = {
-                id: data.id || Math.floor(Math.random() * 1000) + 100,
+            // Edição de um item existente - log para debug
+            console.log('Atualizando tipo de instrumento com ID:', selectedTipoInstrumentoMedicao.id);
+
+            // Garantindo que temos todos os campos necessários
+            const updatedTipo = {
+                id: selectedTipoInstrumentoMedicao.id,
                 nome_tipo_instrumento: data.nome_tipo_instrumento,
-                observacao: data.observacao || "",
-                status: data.status,
-                dataCriacao: new Date().toISOString().split('T')[0],
+                observacao: data.observacao ?? selectedTipoInstrumentoMedicao.observacao ?? ""
             };
-            setTiposInstrumentosMedicao(prev => [newItem, ...prev]);
-            setAllData(prev => [newItem, ...prev]);
+
+            console.log('Objeto atualizado:', updatedTipo);
+
+            // Recarrega todos os dados em vez de tentar atualizar o estado diretamente
+            loadData();
+
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Tipo de instrumento de medição ${updatedTipo.nome_tipo_instrumento} editado com sucesso!`,
+                type: "warning"
+            });
+
+            // Para leitores de tela
+            setNotification(`Tipo de instrumento de medição ${updatedTipo.nome_tipo_instrumento} atualizado com sucesso.`);
+        } else {
+            // É um novo registro
+            console.log('Novo tipo de instrumento criado, recarregando dados');
+            loadData(); // Recarrega todos os dados
+
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Novo tipo de instrumento de medição criado com sucesso!`,
+                type: "success"
+            });
+
             setNotification(`Novo tipo de instrumento de medição criado com sucesso.`);
         }
-    }, [selectedTipoInstrumentoMedicao]);
+    }, [selectedTipoInstrumentoMedicao, loadData]);
 
     // Reset filters function
     const resetFilters = useCallback(() => {
@@ -294,25 +287,15 @@ export default function TiposInstrumentosMedicaoPage() {
         }, 200);
     }, []);
 
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
+    }, []);
+
     // Prepare filter options for the FilterPanel component
     const filterOptions = useMemo(() => {
-        // Status filter options
-        const statusOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os status" },
-            { value: "A", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "I", label: "Inativos", color: "bg-red-100 text-red-800" },
-        ];
-
-        return [
-            {
-                id: "status",
-                label: "Status",
-                value: statusFilter,
-                options: statusOptions,
-                onChange: setStatusFilter,
-            },
-        ];
-    }, [statusFilter]);
+        return [];
+    }, []);
 
     // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
@@ -327,19 +310,8 @@ export default function TiposInstrumentosMedicaoPage() {
             });
         }
 
-        if (statusFilter !== "todos") {
-            filters.push({
-                id: "status",
-                value: statusFilter,
-                label: statusFilter === "A" ? "Ativos" : "Inativos",
-                color: statusFilter === "A"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800",
-            });
-        }
-
         return filters;
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm]);
 
     // Table columns configuration
     const tableColumns = useMemo(() => [
@@ -367,49 +339,24 @@ export default function TiposInstrumentosMedicaoPage() {
             ),
         },
         {
-            key: "status",
-            title: "Status",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.status === 'A'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                    }`}>
-                    {tipo.status === 'A' ? 'Ativo' : 'Inativo'}
-                </span>
-            ),
-        },
-        {
-            key: "dataCriacao",
-            title: "Data de Criação",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <span className="text-sm text-gray-500">
-                    {new Date(tipo.dataCriacao).toLocaleDateString('pt-BR')}
-                </span>
-            ),
-        },
-        {
             key: "acoes",
             title: "Ações",
             render: (tipo: TipoInstrumentoMedicao) => (
                 <div className="flex items-center justify-end gap-2">
-                    <button
-                        onClick={() => handleView(tipo.id)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        aria-label="Visualizar detalhes"
-                    >
-                        <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                        onClick={() => handleEdit(tipo.id)}
-                        className="text-green-600 hover:text-green-800 transition-colors"
-                        aria-label="Editar"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </button>
+                    <Tooltip text="Editar">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            onClick={() => handleEdit(tipo.id)}
+                            aria-label="Editar"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </motion.button>
+                    </Tooltip>
                 </div>
             ),
         },
-    ], [handleView, handleEdit]);
+    ], [handleEdit]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -417,6 +364,15 @@ export default function TiposInstrumentosMedicaoPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
+
+            {/* Alerta para mensagens de sucesso */}
+            <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onDismiss={clearAlert}
+                autoDismiss={true}
+                dismissDuration={5000}
+            />
 
             {/* Modal de Tipo de Instrumento de Medição */}
             <TipoInstrumentoMedicaoModal
@@ -429,9 +385,11 @@ export default function TiposInstrumentosMedicaoPage() {
             {/* Page Header Component */}
             <PageHeader
                 title="Tipos de Instrumentos de Medição"
+                subtitle="Cadastro e edição de tipos de instrumentos"
                 buttonLabel="Novo Tipo de Instrumento"
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
+                showButton={true}
             />
 
             {/* Filters Component */}
@@ -445,6 +403,8 @@ export default function TiposInstrumentosMedicaoPage() {
                 activeFilters={activeFilters}
                 onResetFilters={resetFilters}
                 selectedFilters={selectedFiltersForDisplay}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
             />
 
             {/* Data Container with Dynamic View */}
@@ -452,21 +412,40 @@ export default function TiposInstrumentosMedicaoPage() {
                 isLoading={isLoading || isPending}
                 isEmpty={tiposInstrumentosMedicao.length === 0}
                 emptyState={
-                    <EmptyState
-                        icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                        title="Nenhum resultado encontrado"
-                        description="Não encontramos tipos de instrumentos de medição que correspondam aos seus filtros atuais."
-                        primaryAction={{
-                            label: "Novo Tipo de Instrumento",
-                            onClick: handleCreateNew,
-                            icon: <Plus className="mr-2 h-4 w-4" />,
-                            disabled: false,
-                        }}
-                        secondaryAction={{
-                            label: "Limpar filtros",
-                            onClick: resetFilters,
-                        }}
-                    />
+                    apiError ? (
+                        <EmptyState
+                            icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
+                            title="Erro ao carregar dados"
+                            description={apiError}
+                            primaryAction={{
+                                label: "Tentar novamente",
+                                onClick: loadData,
+                                icon: null,
+                                disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Novo Tipo de Instrumento",
+                                onClick: handleCreateNew,
+                                disabled: false,
+                            }}
+                        />
+                    ) : (
+                        <EmptyState
+                            icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
+                            title="Nenhum resultado encontrado"
+                            description="Não encontramos tipos de instrumentos de medição que correspondam aos seus filtros atuais."
+                            primaryAction={{
+                                label: "Novo Tipo de Instrumento",
+                                onClick: handleCreateNew,
+                                icon: <Plus className="mr-2 h-4 w-4" />,
+                                disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Limpar filtros",
+                                onClick: resetFilters,
+                            }}
+                        />
+                    )
                 }
                 totalItems={allData.length}
                 totalFilteredItems={tiposInstrumentosMedicao.length}
@@ -481,7 +460,6 @@ export default function TiposInstrumentosMedicaoPage() {
                         renderCard={(tipo) => (
                             <Card
                                 tipo={tipo}
-                                onView={handleView}
                                 onEdit={handleEdit}
                             />
                         )}
