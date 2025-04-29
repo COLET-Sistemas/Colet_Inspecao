@@ -98,7 +98,7 @@ export default function LoginPage() {
             const success = await login({
                 username: operatorUsername,
                 password: operatorPassword,
-                remember: false 
+                remember: false
             });
 
             if (success) {
@@ -434,7 +434,7 @@ export default function LoginPage() {
                                         className="text-sm font-medium text-[#09A08D] hover:text-[#3C787A]"
                                         onClick={handleOperatorAccess}
                                     >
-                                        Acessar como operador TESTE GITHUB
+                                        Acessar como operador
                                     </a>
                                 </div>
                             </div>

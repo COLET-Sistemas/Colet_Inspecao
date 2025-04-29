@@ -16,7 +16,7 @@ interface TipoInspecao {
 interface TipoInspecaoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    tipoInspecao?: TipoInspecao;
+    tipoInspecao: TipoInspecao; // Removida a opcionalidade para exigir o objeto
     onSuccess?: (data: TipoInspecao) => void;
 }
 
@@ -26,7 +26,6 @@ export function TipoInspecaoModal({
     tipoInspecao,
     onSuccess,
 }: TipoInspecaoModalProps) {
-    const isEditing = !!tipoInspecao;
     const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -35,8 +34,7 @@ export function TipoInspecaoModal({
 
     // Initialize isAtivo state based on tipoInspecao when component mounts or tipoInspecao changes
     useEffect(() => {
-        // Default to active for new items, use the actual status for existing ones
-        setIsAtivo(!tipoInspecao || tipoInspecao.situacao === "A");
+        setIsAtivo(tipoInspecao.situacao === "A");
     }, [tipoInspecao]);
 
     const handleSubmit = useCallback(
@@ -59,57 +57,35 @@ export function TipoInspecaoModal({
                     return;
                 }
 
-                console.log('Token usado na requisição do modal:', authToken); // Log para debug
-
                 const payload = {
                     descricao_tipo_inspecao: formData.descricao_tipo_inspecao.trim(),
                     situacao: formData.situacao === "on" ? "A" : "I",
                 };
 
-                let response;
-                let url = `${apiUrl}/tipos_inspecoes`;
-
-                if (isEditing && tipoInspecao) {
-                    // Modo de edição - PUT
-                    response = await fetch(`${url}/${tipoInspecao.id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Key": authToken
-                        },
-                        body: JSON.stringify({
-                            ...payload,
-                            id: tipoInspecao.id,
-                            codigo: tipoInspecao.codigo,
-                        }),
-                    });
-                } else {
-                    // Modo de criação - POST
-                    response = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Key": authToken
-                        },
-                        body: JSON.stringify(payload),
-                    });
-                }
+                // Modo de edição - PUT
+                const url = `${apiUrl}/inspecao/tipos_inspecao`;
+                const response = await fetch(`${url}?id=${tipoInspecao.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Token": authToken
+                    },
+                    body: JSON.stringify({
+                        ...payload,
+                        id: Number(tipoInspecao.id),
+                    }),
+                });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
-                        errorData?.message ||
-                        `Erro ao ${isEditing ? "atualizar" : "criar"} tipo de inspeção`
+                        errorData?.message || "Erro ao atualizar tipo de inspeção"
                     );
                 }
 
                 const responseData = await response.json();
 
-                setSuccess(
-                    isEditing
-                        ? "Tipo de inspeção atualizado com sucesso!"
-                        : "Tipo de inspeção criado com sucesso!"
-                );
+                setSuccess("Tipo de inspeção atualizado com sucesso!");
 
                 // Enviar dados para o callback de sucesso e fechar o modal após 1s
                 if (onSuccess) {
@@ -129,7 +105,7 @@ export function TipoInspecaoModal({
                 setError(err.message || "Ocorreu um erro inesperado");
             }
         },
-        [apiUrl, isEditing, onClose, onSuccess, tipoInspecao]
+        [apiUrl, onClose, onSuccess, tipoInspecao]
     );
 
     // Feedback visual para sucesso ou erro
@@ -167,14 +143,10 @@ export function TipoInspecaoModal({
         <FormModal
             isOpen={isOpen}
             onClose={onClose}
-            title={
-                isEditing
-                    ? "Editar Tipo de Inspeção"
-                    : "Novo Tipo de Inspeção"
-            }
-            isEditing={isEditing}
+            title="Editar Tipo de Inspeção"
+            isEditing={true}
             onSubmit={handleSubmit}
-            submitLabel={isEditing ? "Salvar alterações" : "Criar tipo de inspeção"}
+            submitLabel="Salvar alterações"
             size="sm"
         >
             {renderFeedback()}
@@ -200,7 +172,7 @@ export function TipoInspecaoModal({
                                 name="descricao_tipo_inspecao"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Insira a descrição do tipo de inspeção"
-                                defaultValue={tipoInspecao?.descricao_tipo_inspecao || ""}
+                                defaultValue={tipoInspecao.descricao_tipo_inspecao}
                                 required
                                 onFocus={() => setIsFocused('descricao')}
                                 onBlur={() => setIsFocused(null)}
@@ -237,7 +209,7 @@ export function TipoInspecaoModal({
                                     id="situacao"
                                     name="situacao"
                                     className="peer sr-only"
-                                    defaultChecked={!tipoInspecao || tipoInspecao.situacao === "A"}
+                                    defaultChecked={tipoInspecao.situacao === "A"}
                                     onChange={(e) => setIsAtivo(e.target.checked)}
                                 />
                                 <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>

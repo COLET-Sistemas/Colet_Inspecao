@@ -15,6 +15,7 @@ interface EmptyStateProps {
         label: string;
         onClick: () => void;
         icon?: React.ReactNode;
+        disabled?: boolean;
     };
 }
 
@@ -59,10 +60,14 @@ export function EmptyState({
                     <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                         {secondaryAction && (
                             <motion.button
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.97 }}
-                                className="px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 shadow-sm transition-all"
-                                onClick={secondaryAction.onClick}
+                                whileHover={{ scale: secondaryAction.disabled ? 1 : 1.03 }}
+                                whileTap={{ scale: secondaryAction.disabled ? 1 : 0.97 }}
+                                className={`px-4 py-2.5 text-sm font-medium rounded-lg ${secondaryAction.disabled
+                                        ? "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
+                                        : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 shadow-sm"
+                                    } transition-all`}
+                                onClick={secondaryAction.disabled ? undefined : secondaryAction.onClick}
+                                disabled={secondaryAction.disabled}
                             >
                                 {secondaryAction.icon && (
                                     <span className="mr-2">{secondaryAction.icon}</span>

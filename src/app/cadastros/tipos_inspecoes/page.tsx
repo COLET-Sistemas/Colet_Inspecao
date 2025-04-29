@@ -33,10 +33,11 @@ const Card = ({ tipo, onEdit }: {
                         #{tipo.codigo}
                     </span>
                 </div>
-                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${tipo.situacao === 'A'
+                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full flex items-center gap-1.5 ${tipo.situacao === 'A'
                     ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
                     }`}>
+                    <span className={`inline-block w-2 h-2 rounded-full ${tipo.situacao === 'A' ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             </div>
@@ -122,7 +123,7 @@ export default function TiposInspecoesPage() {
             method: 'GET',
             headers: {
                 "Content-Type": "application/json",
-                "chave": authToken
+                "Token": authToken
             },
         })
             .then(response => {
@@ -222,12 +223,6 @@ export default function TiposInspecoesPage() {
         }
     }, [tiposInspecao]);
 
-    const handleCreateNew = useCallback(() => {
-        console.log("Novo tipo de inspeção");
-        setSelectedTipoInspecao(undefined);
-        setIsModalOpen(true);
-    }, []);
-
     const handleModalSuccess = useCallback((data: any) => {
         if (selectedTipoInspecao) {
             setTiposInspecao(prev =>
@@ -247,17 +242,6 @@ export default function TiposInspecoesPage() {
                 } : item)
             );
             setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
-        } else {
-            const newItem: TipoInspecao = {
-                id: data.id || Math.floor(Math.random() * 1000).toString(),
-                codigo: data.codigo || `INSP-${Math.floor(Math.random() * 1000)}`,
-                descricao_tipo_inspecao: data.descricao_tipo_inspecao,
-                situacao: data.situacao,
-                dataCriacao: new Date().toISOString().split('T')[0],
-            };
-            setTiposInspecao(prev => [newItem, ...prev]);
-            setAllData(prev => [newItem, ...prev]);
-            setNotification(`Novo tipo de inspeção criado com sucesso.`);
         }
     }, [selectedTipoInspecao]);
 
@@ -337,10 +321,11 @@ export default function TiposInspecoesPage() {
             key: "status",
             title: "Status",
             render: (tipo: TipoInspecao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
+                <span className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                     }`}>
+                    <span className={`inline-block w-2 h-2 rounded-full ${tipo.situacao === 'A' ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
                 </span>
             ),
@@ -373,19 +358,22 @@ export default function TiposInspecoesPage() {
             </div>
 
             {/* Modal de Tipo de Inspeção */}
-            <TipoInspecaoModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                tipoInspecao={selectedTipoInspecao}
-                onSuccess={handleModalSuccess}
-            />
+            {selectedTipoInspecao && (
+                <TipoInspecaoModal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    tipoInspecao={selectedTipoInspecao}
+                    onSuccess={handleModalSuccess}
+                />
+            )}
 
-            {/* Page Header Component */}
+            {/* Page Header Component - botão de criar desabilitado */}
             <PageHeader
                 title="Tipos de Inspeções"
+                subtitle="Consulta e edição de tipos de inspeção"
                 buttonLabel="Novo Tipo de Inspeção"
-                onButtonClick={handleCreateNew}
-                buttonDisabled={false}
+                buttonDisabled={true}
+                showButton={true}
             />
 
             {/* Filters Component */}
@@ -414,8 +402,13 @@ export default function TiposInspecoesPage() {
                             primaryAction={{
                                 label: "Tentar novamente",
                                 onClick: loadData,
-                                icon: <Plus className="mr-2 h-4 w-4" />,
+                                icon: null,
                                 disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Novo Tipo de Inspeção",
+                                onClick: () => { }, // função vazia
+                                disabled: true,
                             }}
                         />
                     ) : (
@@ -425,9 +418,9 @@ export default function TiposInspecoesPage() {
                             description="Não encontramos tipos de inspeção que correspondam aos seus filtros atuais."
                             primaryAction={{
                                 label: "Novo Tipo de Inspeção",
-                                onClick: handleCreateNew,
+                                onClick: () => { }, // função vazia
                                 icon: <Plus className="mr-2 h-4 w-4" />,
-                                disabled: false,
+                                disabled: true,
                             }}
                             secondaryAction={{
                                 label: "Limpar filtros",

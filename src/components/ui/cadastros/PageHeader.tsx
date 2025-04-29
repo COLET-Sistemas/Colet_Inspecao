@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 
 interface PageHeaderProps {
     title: string;
+    subtitle?: string;
     buttonLabel?: string;
     buttonIcon?: React.ReactNode;
     onButtonClick?: () => void;
@@ -12,6 +13,7 @@ interface PageHeaderProps {
 
 export function PageHeader({
     title,
+    subtitle,
     buttonLabel = "Novo Item",
     buttonIcon = <Plus className="mr-2 h-4 w-4" />,
     onButtonClick,
@@ -25,7 +27,10 @@ export function PageHeader({
             transition={{ duration: 0.3 }}
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
         >
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
+            <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
+                {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+            </div>
             {showButton && (
                 <motion.button
                     whileHover={{ scale: buttonDisabled ? 1 : 1.02 }}
