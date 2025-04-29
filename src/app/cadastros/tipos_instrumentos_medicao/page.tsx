@@ -261,11 +261,21 @@ export default function TiposInstrumentosMedicaoPage() {
                 headers: getAuthHeaders()
             });
 
-            // Verificar especificamente o status 299, além da verificação padrão !response.ok
-            if (response.status === 299) {
-                throw new Error(`Não foi possível excluir este tipo de instrumento de medição porque está em uso.`);
-            } else if (!response.ok) {
-                throw new Error(`Erro ao excluir: ${response.status} ${response.statusText}`);
+            // Extrair a mensagem de erro da resposta da API, caso exista
+            let errorMessage = 'Erro desconhecido ao excluir o registro';
+            try {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData && errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData && errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (e) {
+                console.error('Erro ao processar resposta:', e);
+            }
+
+            if (!response.ok) {
+                throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);
             }
 
             // Item excluído com sucesso
@@ -287,18 +297,16 @@ export default function TiposInstrumentosMedicaoPage() {
         } catch (error) {
             console.error('Erro ao excluir tipo de instrumento de medição:', error);
 
+            // Sempre fechar o modal em caso de erro
+            setIsDeleteModalOpen(false);
+
             // Mostrar mensagem de erro
             setAlert({
                 message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
                 type: "error"
             });
 
-            setNotification(`Erro ao excluir tipo de instrumento de medição.`);
-
-            // Manter o modal de exclusão aberto apenas se for um erro diferente de 299
-            if (error instanceof Error && !error.message.includes("está em uso")) {
-                setIsDeleteModalOpen(false);
-            }
+            setNotification(`Erro ao excluir tipo de instrumento de medição: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
         } finally {
             setIsDeleting(false);
             setDeletingId(null);
@@ -490,10 +498,13 @@ export default function TiposInstrumentosMedicaoPage() {
                 title="Confirmar Exclusão"
                 message={
                     deletingId !== null
-                        ? `Deseja realmente excluir o tipo de instrumento de medição ${tiposInstrumentosMedicao.find(tipo => tipo.id === deletingId)?.id
-                        } - "${tiposInstrumentosMedicao.find(tipo => tipo.id === deletingId)?.nome_tipo_instrumento || ""
-                        }"?`
+                        ? `Você está prestes a excluir permanentemente o tipo de instrumento de medição:`
                         : "Deseja realmente excluir este item?"
+                }
+                itemName={
+                    deletingId !== null
+                        ? tiposInstrumentosMedicao.find(tipo => tipo.id === deletingId)?.nome_tipo_instrumento
+                        : undefined
                 }
             />
 

@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal";
 import { InstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/InstrumentoMedicaoModal";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
@@ -173,6 +174,11 @@ export default function InstrumentosMedicaoPage() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInstrumento, setSelectedInstrumento] = useState<InstrumentoMedicaoAPI | undefined>(undefined);
+
+    // Delete modal states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Alert state para mensagens de sucesso ou erro
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
@@ -376,17 +382,71 @@ export default function InstrumentosMedicaoPage() {
     }, [fetchInstrumentoById]);
 
     const handleDelete = useCallback((id: number) => {
-        if (confirm('Tem certeza que deseja excluir este instrumento de medição?')) {
-            setInstrumentos(prev => prev.filter(instrumento => instrumento.id !== id));
-
-            // Mostrar mensagem de sucesso na exclusão
-            setAlert({
-                message: `Instrumento de medição ${id} excluído com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Instrumento de medição ${id} excluído com sucesso.`);
+        console.log(`Preparando exclusão do instrumento de medição ${id}`);
+        setDeletingId(id);
+        setIsDeleteModalOpen(true);
+        const instrumentoToDelete = instrumentos.find(item => item.id === id);
+        if (instrumentoToDelete) {
+            setNotification(`Preparando para excluir o instrumento de medição: ${instrumentoToDelete.nome_instrumento}`);
         }
+    }, [instrumentos]);
+
+    const confirmDelete = useCallback((id: number | null) => {
+        if (id === null) return;
+
+        setIsDeleting(true);
+        setNotification(`Excluindo instrumento de medição...`);
+
+        // Simular uma chamada de API com possibilidade de erro para teste
+        setTimeout(() => {
+            try {
+                // Simulando uma chamada à API (em um ambiente real, isso seria um fetch)
+                // Ocasionalmente simulamos um erro para testar o tratamento de erros (1 em cada 5 tentativas)
+                const shouldFail = Math.random() > 0.8;
+
+                if (shouldFail) {
+                    // Simula um erro da API
+                    throw new Error("O instrumento não pode ser excluído porque está associado a registros de inspeção.");
+                }
+
+                // Remover o instrumento da lista
+                setInstrumentos(prev => prev.filter(instrumento => instrumento.id !== id));
+                setAllData(prev => prev.filter(instrumento => instrumento.id !== id));
+
+                // Mostrar mensagem de sucesso na exclusão
+                setAlert({
+                    message: `Instrumento de medição excluído com sucesso!`,
+                    type: "success"
+                });
+
+                setNotification(`Instrumento de medição excluído com sucesso.`);
+
+                // Fechar o modal
+                setIsDeleteModalOpen(false);
+            } catch (error) {
+                console.error("Erro ao excluir instrumento:", error);
+
+                // Fechar o modal em caso de erro
+                setIsDeleteModalOpen(false);
+
+                // Exibir mensagem de erro no alerta
+                setAlert({
+                    message: error instanceof Error ? error.message : "Ocorreu um erro ao excluir o instrumento de medição.",
+                    type: "error"
+                });
+
+                setNotification(`Erro ao excluir instrumento de medição: ${error instanceof Error ? error.message : "erro desconhecido"}`);
+            } finally {
+                setIsDeleting(false);
+                setDeletingId(null);
+            }
+        }, 1000);
+    }, []);
+
+    const handleCloseDeleteModal = useCallback(() => {
+        setIsDeleteModalOpen(false);
+        setDeletingId(null);
+        setNotification("Exclusão cancelada.");
     }, []);
 
     const handleCreateNew = useCallback(() => {
@@ -625,6 +685,25 @@ export default function InstrumentosMedicaoPage() {
                 onDismiss={clearAlert}
                 autoDismiss={true}
                 dismissDuration={5000}
+            />
+
+            {/* Modal de confirmação de exclusão */}
+            <ConfirmDeleteModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={() => confirmDelete(deletingId)}
+                isDeleting={isDeleting}
+                title="Confirmar Exclusão"
+                message={
+                    deletingId !== null
+                        ? `Você está prestes a excluir permanentemente o instrumento de medição:`
+                        : "Deseja realmente excluir este item?"
+                }
+                itemName={
+                    deletingId !== null
+                        ? instrumentos.find(item => item.id === deletingId)?.nome_instrumento
+                        : undefined
+                }
             />
 
             <PageHeader
