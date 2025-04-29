@@ -3,6 +3,7 @@ import {
     ChevronDown,
     LayoutGrid,
     LayoutList,
+    RefreshCw,
     Search,
     SlidersHorizontal,
     X,
@@ -33,6 +34,8 @@ interface FilterPanelProps {
     }[];
     activeFilters: number;
     onResetFilters: () => void;
+    onRefresh?: () => void;
+    isRefreshing?: boolean;
     selectedFilters?: {
         id: string;
         value: string;
@@ -50,6 +53,8 @@ export function FilterPanel({
     filters = [],
     activeFilters,
     onResetFilters,
+    onRefresh,
+    isRefreshing = false,
     selectedFilters = [],
 }: FilterPanelProps) {
     const [showFilters, setShowFilters] = useState(false);
@@ -59,6 +64,15 @@ export function FilterPanel({
         const value = e.target.value;
         onSearchChange(value);
     };
+
+    // Classe de botão comum para manter consistência de altura e estilo
+    const buttonBaseClass = "flex items-center px-3 h-10 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50";
+
+    // Classe específica para o botão de refresh para garantir dimensões consistentes
+    const refreshButtonClass = `${buttonBaseClass} justify-center w-10`;
+
+    // Classe para os botões de visualização (tabela/cards)
+    const viewButtonClass = "flex items-center justify-center h-10 px-3";
 
     return (
         <motion.div
@@ -82,55 +96,77 @@ export function FilterPanel({
                                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm transition-shadow duration-200"
                                 defaultValue={searchTerm}
                                 onChange={handleSearchChange}
-                                aria-label="Buscar"
+                                title="Buscar"
                             />
                         </div>
                     </div>
 
                     {/* Action buttons container */}
                     <div className="flex flex-nowrap gap-2 shrink-0">
-                        {/* Advanced filters toggle button */}
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => setShowFilters(!showFilters)}
-                            className="flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50"
-                        >
-                            <SlidersHorizontal size={16} className="mr-2" />
-                            <span className="whitespace-nowrap">Filtros</span>
-                            {activeFilters > 0 && (
-                                <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white">
-                                    {activeFilters}
-                                </span>
-                            )}
-                        </motion.button>
-
-                        {/* View toggle buttons */}
-                        <div className="flex border border-gray-300 rounded-md overflow-hidden">
-                            <Tooltip text="Visualização em tabela">
+                        {/* Refresh button */}
+                        {onRefresh && (
+                            <Tooltip text="Atualizar dados">
                                 <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => onViewModeChange("table")}
-                                    className={`flex items-center px-3 py-2 ${viewMode === "table"
-                                        ? "bg-gray-100 text-[#1ABC9C]"
-                                        : "bg-white text-gray-600"
-                                        } transition-colors duration-200`}
-                                    aria-label="Ver como tabela"
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={onRefresh}
+                                    disabled={isRefreshing}
+                                    className={`${refreshButtonClass} ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    aria-label="Atualizar lista"
                                 >
-                                    <LayoutList size={18} />
+                                    <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''}`} />
                                 </motion.button>
                             </Tooltip>
+                        )}
+
+                        {/* Advanced filters toggle button */}
+                        <Tooltip text="Filtros avançados">
+                            <motion.button
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={buttonBaseClass}
+                                aria-label="Mostrar filtros avançados"
+                            >
+                                <SlidersHorizontal size={16} className="mr-2" />
+                                <span className="whitespace-nowrap">Filtros</span>
+                                {activeFilters > 0 && (
+                                    <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white">
+                                        {activeFilters}
+                                    </span>
+                                )}
+                            </motion.button>
+                        </Tooltip>
+
+                        {/* View toggle buttons */}
+                        <div className="flex">
+                            <Tooltip text="Visualização em tabela">
+                                <div className="border border-gray-300 rounded-l-md overflow-hidden">
+                                    <motion.button
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => onViewModeChange("table")}
+                                        className={`${viewButtonClass} ${viewMode === "table"
+                                            ? "bg-gray-100 text-[#1ABC9C]"
+                                            : "bg-white text-gray-600"
+                                            } transition-colors duration-200`}
+                                        aria-label="Ver como tabela"
+                                    >
+                                        <LayoutList size={18} />
+                                    </motion.button>
+                                </div>
+                            </Tooltip>
                             <Tooltip text="Visualização em cards">
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => onViewModeChange("card")}
-                                    className={`flex items-center px-3 py-2 ${viewMode === "card"
-                                        ? "bg-gray-100 text-[#1ABC9C]"
-                                        : "bg-white text-gray-600"
-                                        } transition-colors duration-200`}
-                                    aria-label="Ver como cards"
-                                >
-                                    <LayoutGrid size={18} />
-                                </motion.button>
+                                <div className="border border-gray-300 border-l-0 rounded-r-md overflow-hidden">
+                                    <motion.button
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => onViewModeChange("card")}
+                                        className={`${viewButtonClass} ${viewMode === "card"
+                                            ? "bg-gray-100 text-[#1ABC9C]"
+                                            : "bg-white text-gray-600"
+                                            } transition-colors duration-200`}
+                                        aria-label="Ver como cards"
+                                    >
+                                        <LayoutGrid size={18} />
+                                    </motion.button>
+                                </div>
                             </Tooltip>
                         </div>
                     </div>
@@ -162,6 +198,7 @@ export function FilterPanel({
                                                     className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200 w-full"
                                                     value={filter.value}
                                                     onChange={(e) => filter.onChange(e.target.value)}
+                                                    aria-label={`Filtro de ${filter.label}`}
                                                 >
                                                     {filter.options.map((option) => (
                                                         <option key={option.value} value={option.value}>
@@ -183,6 +220,7 @@ export function FilterPanel({
                                             whileTap={{ scale: 0.95 }}
                                             onClick={onResetFilters}
                                             className="flex items-center justify-center px-3 py-2 mt-auto text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors self-end"
+                                            aria-label="Limpar todos os filtros"
                                         >
                                             <X size={16} className="mr-1" />
                                             Limpar filtros

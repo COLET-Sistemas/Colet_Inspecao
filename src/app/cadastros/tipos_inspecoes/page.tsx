@@ -84,6 +84,7 @@ export default function TiposInspecoesPage() {
     const [tiposInspecao, setTiposInspecao] = useState<TipoInspecao[]>([]);
     const [allData, setAllData] = useState<TipoInspecao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -182,9 +183,17 @@ export default function TiposInspecoesPage() {
             })
             .finally(() => {
                 setIsLoading(false);
+                setIsRefreshing(false);
             });
 
     }, [searchTerm, statusFilter]);
+
+    const handleRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        dataFetchedRef.current = false; // Reset para forçar nova busca
+        loadData();
+        setNotification("Atualizando dados...");
+    }, [loadData]);
 
     useEffect(() => {
         if (dataFetchedRef.current === false) {
@@ -419,6 +428,8 @@ export default function TiposInspecoesPage() {
                 activeFilters={activeFilters}
                 onResetFilters={resetFilters}
                 selectedFilters={selectedFiltersForDisplay}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
             />
 
             {/* Data Container with Dynamic View */}
