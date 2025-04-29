@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
@@ -18,6 +19,11 @@ interface TipoInspecao {
     descricao_tipo_inspecao: string;
     situacao: "A" | "I";
     dataCriacao: string;
+}
+
+interface AlertState {
+    message: string | null;
+    type: "success" | "error" | "warning";
 }
 
 // Card component for list item
@@ -84,6 +90,9 @@ export default function TiposInspecoesPage() {
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTipoInspecao, setSelectedTipoInspecao] = useState<TipoInspecao | undefined>(undefined);
+
+    // Alert state para mensagens de sucesso fora do modal
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
@@ -175,14 +184,14 @@ export default function TiposInspecoesPage() {
                 setIsLoading(false);
             });
 
-    }, []);
+    }, [searchTerm, statusFilter]);
 
     useEffect(() => {
         if (dataFetchedRef.current === false) {
             dataFetchedRef.current = true;
             loadData();
         }
-    }, []);
+    }, [loadData]);
 
     // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
@@ -225,6 +234,7 @@ export default function TiposInspecoesPage() {
 
     const handleModalSuccess = useCallback((data: any) => {
         if (selectedTipoInspecao) {
+            // Atualiza o item na lista
             setTiposInspecao(prev =>
                 prev.map(item => item.id === selectedTipoInspecao.id ? {
                     ...item,
@@ -241,6 +251,14 @@ export default function TiposInspecoesPage() {
                     codigo: data.codigo || item.codigo
                 } : item)
             );
+
+            // Mostrar mensagem de sucesso na página, não no modal
+            setAlert({
+                message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
+                type: "warning"
+            });
+
+            // Para leitores de tela
             setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
         }
     }, [selectedTipoInspecao]);
@@ -256,6 +274,11 @@ export default function TiposInspecoesPage() {
         setTimeout(() => {
             setSelectedTipoInspecao(undefined);
         }, 200);
+    }, []);
+
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
     }, []);
 
     const filterOptions = useMemo(() => {
@@ -356,6 +379,15 @@ export default function TiposInspecoesPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
+
+            {/* Alerta para mensagens de sucesso */}
+            <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onDismiss={clearAlert}
+                autoDismiss={true}
+                dismissDuration={5000}
+            />
 
             {/* Modal de Tipo de Inspeção */}
             {selectedTipoInspecao && (

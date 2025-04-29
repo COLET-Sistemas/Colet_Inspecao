@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
@@ -38,6 +39,11 @@ interface InstrumentoMedicaoAPI {
     data_validade: string;
     data_ultima_calibracao: string;
     frequencia_calibracao: number;
+}
+
+interface AlertState {
+    message: string | null;
+    type: "success" | "error" | "warning";
 }
 
 const Card = ({ instrumento, onView, onEdit, onDelete }: {
@@ -168,6 +174,10 @@ export default function InstrumentosMedicaoPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInstrumento, setSelectedInstrumento] = useState<InstrumentoMedicaoAPI | undefined>(undefined);
 
+    // Alert state para mensagens de sucesso ou erro
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
+
+    // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
     useEffect(() => {
@@ -367,8 +377,15 @@ export default function InstrumentosMedicaoPage() {
 
     const handleDelete = useCallback((id: number) => {
         if (confirm('Tem certeza que deseja excluir este instrumento de medição?')) {
-            setNotification(`Instrumento de medição ${id} excluído com sucesso.`);
             setInstrumentos(prev => prev.filter(instrumento => instrumento.id !== id));
+
+            // Mostrar mensagem de sucesso na exclusão
+            setAlert({
+                message: `Instrumento de medição ${id} excluído com sucesso!`,
+                type: "success"
+            });
+
+            setNotification(`Instrumento de medição ${id} excluído com sucesso.`);
         }
     }, []);
 
@@ -380,6 +397,13 @@ export default function InstrumentosMedicaoPage() {
 
     const handleModalSuccess = useCallback((data: InstrumentoMedicaoAPI) => {
         loadData();
+
+        // Mostrar mensagem de sucesso na página, não no modal
+        setAlert({
+            message: `Instrumento de medição ${data.tag} ${data.id ? 'atualizado' : 'criado'} com sucesso!`,
+            type: data.id ? "warning" : "success"
+        });
+
         setNotification(`Instrumento de medição ${data.id ? 'atualizado' : 'criado'} com sucesso.`);
     }, [loadData]);
 
@@ -388,6 +412,11 @@ export default function InstrumentosMedicaoPage() {
         setStatusFilter("todos");
         setTipoFilter("todos");
         setNotification("Filtros resetados.");
+    }, []);
+
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
     }, []);
 
     const filterOptions = useMemo(() => {
@@ -584,9 +613,19 @@ export default function InstrumentosMedicaoPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
+            {/* ARIA Live region for accessibility */}
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
+
+            {/* Alerta para mensagens de sucesso */}
+            <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onDismiss={clearAlert}
+                autoDismiss={true}
+                dismissDuration={5000}
+            />
 
             <PageHeader
                 title="Instrumentos de Medição"

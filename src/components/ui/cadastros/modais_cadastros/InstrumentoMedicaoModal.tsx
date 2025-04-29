@@ -2,7 +2,7 @@
 
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
-import { AlertCircle, CalendarDays, Check, FileText, Hash, ListOrdered, Tag, ToggleLeft } from "lucide-react";
+import { AlertCircle, CalendarDays, FileText, Hash, ListOrdered, Tag, ToggleLeft } from "lucide-react";
 import { useCallback, useState } from "react";
 import { FormModal } from "../FormModal";
 
@@ -35,7 +35,6 @@ export function InstrumentoMedicaoModal({
     const isEditing = !!instrumento;
     const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState(!instrumento || instrumento.situacao === "A");
     const [isFocused, setIsFocused] = useState<string | null>(null);
 
@@ -50,7 +49,6 @@ export function InstrumentoMedicaoModal({
         async (formData: any) => {
             try {
                 setError(null);
-                setSuccess(null);
 
                 // Validar campos obrigatórios
                 if (!formData.tag?.trim()) {
@@ -119,20 +117,14 @@ export function InstrumentoMedicaoModal({
 
                 const responseData = await response.json();
 
-                setSuccess(
-                    isEditing
-                        ? "Instrumento de medição atualizado com sucesso!"
-                        : "Instrumento de medição criado com sucesso!"
-                );
-
-                // Enviar dados para o callback de sucesso e fechar o modal após 1s
+                // Removida a exibição de sucesso do modal
+                // Enviar dados para o callback de sucesso e fechar o modal imediatamente
                 if (onSuccess) {
                     onSuccess(responseData);
                 }
 
-                setTimeout(() => {
-                    onClose();
-                }, 1000);
+                // Fechamos o modal imediatamente ao sucesso
+                onClose();
 
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
@@ -142,7 +134,7 @@ export function InstrumentoMedicaoModal({
         [apiUrl, isEditing, onClose, onSuccess, instrumento]
     );
 
-    // Feedback visual para sucesso ou erro
+    // Feedback visual apenas para erros
     const renderFeedback = () => {
         if (error) {
             return (
@@ -153,19 +145,6 @@ export function InstrumentoMedicaoModal({
                 >
                     <AlertCircle className="mr-2 h-4 w-4 text-red-500 flex-shrink-0" />
                     <span>{error}</span>
-                </motion.div>
-            );
-        }
-
-        if (success) {
-            return (
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 flex items-center rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700"
-                >
-                    <Check className="mr-2 h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span>{success}</span>
                 </motion.div>
             );
         }

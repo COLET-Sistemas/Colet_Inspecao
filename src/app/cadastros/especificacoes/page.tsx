@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
@@ -22,6 +23,11 @@ interface Especificacao {
     valorMinimo: number;
     valorNominal: number;
     valorMaximo: number;
+}
+
+interface AlertState {
+    message: string | null;
+    type: "success" | "error" | "warning";
 }
 
 // Card component for list item
@@ -160,6 +166,9 @@ export default function EspecificacoesPage() {
     const [allData, setAllData] = useState<Especificacao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
+
+    // Alert state para mensagens de sucesso ou erro
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
@@ -330,22 +339,48 @@ export default function EspecificacoesPage() {
     const handleEdit = useCallback((id: number) => {
         console.log(`Editando especificação ${id}`);
         setNotification(`Iniciando edição da especificação ${id}.`);
-        // Implementar a lógica de edição
+
+        // Simulando uma edição bem-sucedida após um tempo
+        setTimeout(() => {
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Especificação ${id} atualizada com sucesso!`,
+                type: "warning"
+            });
+
+            setNotification(`Especificação ${id} atualizada com sucesso.`);
+        }, 1000);
     }, []);
 
     const handleDelete = useCallback((id: number) => {
         console.log(`Excluindo especificação ${id}`);
         // Aqui você pode implementar um modal de confirmação
         if (confirm('Tem certeza que deseja excluir esta especificação?')) {
-            setNotification(`Especificação ${id} excluída com sucesso.`);
-            // Implementar a lógica de exclusão
+            // Remove a especificação da lista
             setEspecificacoes(prev => prev.filter(especificacao => especificacao.id !== id));
+
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Especificação ${id} excluída com sucesso!`,
+                type: "success"
+            });
+
+            setNotification(`Especificação ${id} excluída com sucesso.`);
         }
     }, []);
 
     const handleCreateNew = useCallback(() => {
         console.log("Nova especificação");
-        // Implementation of the creation logic
+        // Simulando uma criação bem-sucedida após um tempo
+        setTimeout(() => {
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Nova especificação criada com sucesso!`,
+                type: "success"
+            });
+
+            setNotification(`Nova especificação criada com sucesso.`);
+        }, 1000);
     }, []);
 
     // Reset filters function
@@ -354,6 +389,11 @@ export default function EspecificacoesPage() {
         setStatusFilter("todos");
         setTipoFilter("todos");
         setNotification("Filtros resetados.");
+    }, []);
+
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
     }, []);
 
     // Prepare filter options for the FilterPanel component
@@ -563,6 +603,15 @@ export default function EspecificacoesPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
+
+            {/* Alerta para mensagens de sucesso */}
+            <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onDismiss={clearAlert}
+                autoDismiss={true}
+                dismissDuration={5000}
+            />
 
             {/* Page Header Component */}
             <PageHeader

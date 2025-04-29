@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
@@ -21,6 +22,11 @@ interface CotaCaracteristica {
     status: "ativo" | "inativo" | "revisao";
     ultimaRevisao: string;
     proximaRevisao: string;
+}
+
+interface AlertState {
+    message: string | null;
+    type: "success" | "error" | "warning";
 }
 
 // Card component for list item
@@ -159,6 +165,9 @@ export default function CotasCaracteristicasPage() {
     const [allData, setAllData] = useState<CotaCaracteristica[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilters, setActiveFilters] = useState(0);
+
+    // Alert state para mensagens de sucesso ou erro
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
@@ -321,22 +330,48 @@ export default function CotasCaracteristicasPage() {
     const handleEdit = useCallback((id: number) => {
         console.log(`Editando cota/característica ${id}`);
         setNotification(`Iniciando edição da cota/característica ${id}.`);
-        // Implementar a lógica de edição
+
+        // Simulando uma edição bem-sucedida após um tempo
+        setTimeout(() => {
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Cota/característica ${id} atualizada com sucesso!`,
+                type: "warning"
+            });
+
+            setNotification(`Cota/característica ${id} atualizada com sucesso.`);
+        }, 1000);
     }, []);
 
     const handleDelete = useCallback((id: number) => {
         console.log(`Excluindo cota/característica ${id}`);
         // Aqui você pode implementar um modal de confirmação
         if (confirm('Tem certeza que deseja excluir esta cota/característica?')) {
-            setNotification(`Cota/característica ${id} excluída com sucesso.`);
-            // Implementar a lógica de exclusão
+            // Remove a cota da lista
             setCotas(prev => prev.filter(cota => cota.id !== id));
+
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Cota/característica ${id} excluída com sucesso!`,
+                type: "success"
+            });
+
+            setNotification(`Cota/característica ${id} excluída com sucesso.`);
         }
     }, []);
 
     const handleCreateNew = useCallback(() => {
         console.log("Nova cota/característica");
-        // Implementation of the creation logic
+        // Simulando uma criação bem-sucedida após um tempo
+        setTimeout(() => {
+            // Mostrar mensagem de sucesso na página
+            setAlert({
+                message: `Nova cota/característica criada com sucesso!`,
+                type: "success"
+            });
+
+            setNotification(`Nova cota/característica criada com sucesso.`);
+        }, 1000);
     }, []);
 
     // Reset filters function
@@ -345,6 +380,11 @@ export default function CotasCaracteristicasPage() {
         setStatusFilter("todos");
         setTipoFilter("todos");
         setNotification("Filtros resetados.");
+    }, []);
+
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
     }, []);
 
     // Prepare filter options for the FilterPanel component
@@ -569,6 +609,15 @@ export default function CotasCaracteristicasPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
+
+            {/* Alerta para mensagens de sucesso */}
+            <AlertMessage
+                message={alert.message}
+                type={alert.type}
+                onDismiss={clearAlert}
+                autoDismiss={true}
+                dismissDuration={5000}
+            />
 
             {/* Page Header Component */}
             <PageHeader
