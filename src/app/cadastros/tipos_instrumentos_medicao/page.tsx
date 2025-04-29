@@ -6,12 +6,13 @@ import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal";
 import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInstrumentoMedicaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
-import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 interface TipoInstrumentoMedicao {
@@ -26,9 +27,10 @@ interface AlertState {
 }
 
 // Card component for list item
-const Card = ({ tipo, onEdit }: {
+const Card = ({ tipo, onEdit, onDelete }: {
     tipo: TipoInstrumentoMedicao;
     onEdit: (id: number) => void;
+    onDelete: (id: number) => void;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
@@ -65,6 +67,16 @@ const Card = ({ tipo, onEdit }: {
                             <Pencil className="h-3.5 w-3.5" />
                         </motion.button>
                     </Tooltip>
+                    <Tooltip text="Excluir">
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
+                            onClick={() => onDelete(tipo.id)}
+                            aria-label="Excluir"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </motion.button>
+                    </Tooltip>
                 </div>
             </div>
         </div>
@@ -92,6 +104,11 @@ export default function TiposInstrumentosMedicaoPage() {
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTipoInstrumentoMedicao, setSelectedTipoInstrumentoMedicao] = useState<TipoInstrumentoMedicao | undefined>(undefined);
+
+    // Delete modal states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
@@ -221,6 +238,78 @@ export default function TiposInstrumentosMedicaoPage() {
             setNotification(`Iniciando edição do tipo de instrumento de medição ${id}.`);
         }
     }, [tiposInstrumentosMedicao]);
+
+    const handleDelete = useCallback((id: number) => {
+        console.log(`Preparando exclusão do tipo de instrumento de medição ${id}`);
+        setDeletingId(id);
+        setIsDeleteModalOpen(true);
+        const tipoToDelete = tiposInstrumentosMedicao.find(tipo => tipo.id === id);
+        if (tipoToDelete) {
+            setNotification(`Preparando para excluir o tipo de instrumento de medição: ${tipoToDelete.nome_tipo_instrumento}`);
+        }
+    }, [tiposInstrumentosMedicao]);
+
+    const confirmDelete = useCallback(async () => {
+        if (deletingId === null || !apiUrl) return;
+
+        setIsDeleting(true);
+        setNotification(`Excluindo tipo de instrumento de medição...`);
+
+        try {
+            const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${deletingId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+
+            // Verificar especificamente o status 299, além da verificação padrão !response.ok
+            if (response.status === 299) {
+                throw new Error(`Não foi possível excluir este tipo de instrumento de medição porque está em uso.`);
+            } else if (!response.ok) {
+                throw new Error(`Erro ao excluir: ${response.status} ${response.statusText}`);
+            }
+
+            // Item excluído com sucesso
+            console.log(`Tipo de instrumento de medição ${deletingId} excluído com sucesso`);
+
+            // Recarregar dados
+            loadData();
+
+            // Fechar modal de confirmação
+            setIsDeleteModalOpen(false);
+
+            // Mostrar mensagem de sucesso
+            setAlert({
+                message: `Tipo de instrumento de medição excluído com sucesso!`,
+                type: "error"
+            });
+
+            setNotification(`Tipo de instrumento de medição excluído com sucesso.`);
+        } catch (error) {
+            console.error('Erro ao excluir tipo de instrumento de medição:', error);
+
+            // Mostrar mensagem de erro
+            setAlert({
+                message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
+                type: "error"
+            });
+
+            setNotification(`Erro ao excluir tipo de instrumento de medição.`);
+
+            // Manter o modal de exclusão aberto apenas se for um erro diferente de 299
+            if (error instanceof Error && !error.message.includes("está em uso")) {
+                setIsDeleteModalOpen(false);
+            }
+        } finally {
+            setIsDeleting(false);
+            setDeletingId(null);
+        }
+    }, [deletingId, apiUrl, getAuthHeaders, loadData]);
+
+    const handleCloseDeleteModal = useCallback(() => {
+        setIsDeleteModalOpen(false);
+        setDeletingId(null);
+        setNotification("Exclusão cancelada.");
+    }, []);
 
     const handleCreateNew = useCallback(() => {
         console.log("Novo tipo de instrumento de medição");
@@ -353,10 +442,20 @@ export default function TiposInstrumentosMedicaoPage() {
                             <Pencil className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
+                    <Tooltip text="Excluir">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            onClick={() => handleDelete(tipo.id)}
+                            aria-label="Excluir"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                    </Tooltip>
                 </div>
             ),
         },
-    ], [handleEdit]);
+    ], [handleEdit, handleDelete]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -380,6 +479,22 @@ export default function TiposInstrumentosMedicaoPage() {
                 onClose={handleCloseModal}
                 tipoInstrumentoMedicao={selectedTipoInstrumentoMedicao}
                 onSuccess={handleModalSuccess}
+            />
+
+            {/* Modal de confirmação de exclusão */}
+            <ConfirmDeleteModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={confirmDelete}
+                isDeleting={isDeleting}
+                title="Confirmar Exclusão"
+                message={
+                    deletingId !== null
+                        ? `Deseja realmente excluir o tipo de instrumento de medição ${tiposInstrumentosMedicao.find(tipo => tipo.id === deletingId)?.id
+                        } - "${tiposInstrumentosMedicao.find(tipo => tipo.id === deletingId)?.nome_tipo_instrumento || ""
+                        }"?`
+                        : "Deseja realmente excluir este item?"
+                }
             />
 
             {/* Page Header Component */}
@@ -461,6 +576,7 @@ export default function TiposInstrumentosMedicaoPage() {
                             <Card
                                 tipo={tipo}
                                 onEdit={handleEdit}
+                                onDelete={handleDelete}
                             />
                         )}
                     />

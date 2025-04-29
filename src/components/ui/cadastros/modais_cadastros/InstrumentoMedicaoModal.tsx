@@ -88,14 +88,14 @@ export function InstrumentoMedicaoModal({
                 let response;
                 let url = `${apiUrl}/instrumentos_medicao`;
 
-                if (isEditing && instrumento?.id) {
+                if (instrumento?.id) {
                     // Modo de edição - PUT
-                    response = await fetch(`${url}/${instrumento.id}`, {
+                    response = await fetch(`${url}?id=${instrumento.id}`, {
                         method: "PUT",
                         headers: getAuthHeaders(),
                         body: JSON.stringify({
                             ...payload,
-                            id: instrumento.id
+                            id: Number(instrumento.id),
                         }),
                     });
                 } else {
@@ -107,11 +107,11 @@ export function InstrumentoMedicaoModal({
                     });
                 }
 
-                if (!response.ok) {
+                if (!response.ok || response.status === 299) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
                         errorData?.message ||
-                        `Erro ao ${isEditing ? "atualizar" : "criar"} instrumento de medição`
+                        `Erro ao ${instrumento?.id ? "atualizar" : "criar"} instrumento de medição`
                     );
                 }
 

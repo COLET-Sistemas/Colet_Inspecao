@@ -63,7 +63,7 @@ export function TipoInspecaoModal({
                     }),
                 });
 
-                if (!response.ok) {
+                if (!response.ok || response.status === 299) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
                         errorData?.message || "Erro ao atualizar tipo de inspeção"
@@ -72,7 +72,6 @@ export function TipoInspecaoModal({
 
                 const responseData = await response.json();
 
-                // Enviar dados para o callback de sucesso e fechar o modal imediatamente
                 if (onSuccess) {
                     onSuccess({
                         ...responseData,
@@ -80,8 +79,6 @@ export function TipoInspecaoModal({
                         situacao: responseData.situacao || payload.situacao
                     });
                 }
-
-                // Fechamos o modal imediatamente ao sucesso
                 onClose();
 
             } catch (err: any) {
@@ -126,7 +123,7 @@ export function TipoInspecaoModal({
                 <div className="bg-white p-2">
 
                     {/* Campo de descrição */}
-                    <div className="mb-4 sm:mb-5">
+                    <div className="mb-2 sm:mb-2">
                         <div className="flex items-center justify-between mb-1 sm:mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
@@ -189,7 +186,7 @@ export function TipoInspecaoModal({
                     </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-3 sm:mt-4">
+                    <div className="text-xs text-gray-500 mt-2 sm:mt-2">
                         <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>

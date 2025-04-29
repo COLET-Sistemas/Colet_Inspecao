@@ -2,12 +2,12 @@
 
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
-import { AlertCircle, FileText, Hash, MessageSquare } from "lucide-react";
+import { AlertCircle, FileText, MessageSquare } from "lucide-react";
 import { useCallback, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface TipoInstrumentoMedicao {
-    id?: number;
+    id: number;
     nome_tipo_instrumento: string;
     observacao?: string;
 }
@@ -49,12 +49,6 @@ export function TipoInstrumentoMedicaoModal({
                     observacao: formData.observacao?.trim() || "",
                 };
 
-                // Adicionar ID ao payload se fornecido
-                const id = formData.id?.trim();
-                if (id) {
-                    payload.id = Number(id);
-                }
-
                 let response;
                 let url = `${apiUrl}/inspecao/tipos_instrumentos_medicao`;
 
@@ -77,7 +71,7 @@ export function TipoInstrumentoMedicaoModal({
                     });
                 }
 
-                if (!response.ok) {
+                if (!response.ok || response.status === 299) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
                         errorData?.message ||
@@ -91,18 +85,14 @@ export function TipoInstrumentoMedicaoModal({
                 } catch (err) {
                     // Se a API não retornou dados JSON válidos, construímos o objeto de resposta com os dados do formulário
                     responseData = {
-                        id: tipoInstrumentoMedicao?.id || id,
+                        id: tipoInstrumentoMedicao?.id || undefined,
                         nome_tipo_instrumento: formData.nome_tipo_instrumento.trim(),
                         observacao: formData.observacao?.trim() || "",
                     };
                 }
-
-                // Enviar dados para o callback de sucesso e fechar o modal imediatamente
                 if (onSuccess) {
                     onSuccess(responseData);
                 }
-
-                // Fechamos o modal imediatamente ao sucesso
                 onClose();
 
             } catch (err: any) {
@@ -149,30 +139,8 @@ export function TipoInstrumentoMedicaoModal({
 
             <div className="space-y-3">
                 <div className="bg-white p-2">
-                    {/* Campo ID */}
-                    <div className="mb-4 sm:mb-5">
-                        <div className="flex items-center justify-between mb-1 sm:mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Hash className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="id" className="text-sm font-medium text-gray-700">
-                                    ID
-                                </label>
-                            </div>
-                        </div>
-                        <input
-                            type="number"
-                            id="id"
-                            name="id"
-                            className={`w-full rounded-md border ${isFocused === 'id' ? 'border-[#09A08D] ring-1 ring-[#09A08D]/30' : 'border-gray-300'} px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:outline-none transition-all duration-300`}
-                            placeholder="Insira o ID (opcional)"
-                            defaultValue={tipoInstrumentoMedicao?.id || ""}
-                            onFocus={() => setIsFocused('id')}
-                            onBlur={() => setIsFocused(null)}
-                        />
-                    </div>
-
                     {/* Campo de nome do tipo de instrumento */}
-                    <div className="mb-4 sm:mb-5">
+                    <div className="mb-2 sm:mb-2">
                         <div className="flex items-center justify-between mb-1 sm:mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
@@ -197,7 +165,7 @@ export function TipoInstrumentoMedicaoModal({
                     </div>
 
                     {/* Campo de observação */}
-                    <div className="mb-4 sm:mb-5">
+                    <div className="mb-2 sm:mb-2">
                         <div className="flex items-center justify-between mb-1 sm:mb-2">
                             <div className="flex items-center space-x-2">
                                 <MessageSquare className="h-4 w-4 text-gray-500" />
@@ -218,7 +186,7 @@ export function TipoInstrumentoMedicaoModal({
                     </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-3 sm:mt-4">
+                    <div className="text-xs text-gray-500 mt-2 sm:mt-2">
                         <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>
