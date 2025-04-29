@@ -66,13 +66,13 @@ export function FilterPanel({
     };
 
     // Classe de botão comum para manter consistência de altura e estilo
-    const buttonBaseClass = "flex items-center px-3 h-10 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50";
+    const buttonBaseClass = "flex items-center px-3 h-10 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/50 cursor-pointer";
 
     // Classe específica para o botão de refresh para garantir dimensões consistentes
     const refreshButtonClass = `${buttonBaseClass} justify-center w-10`;
 
     // Classe para os botões de visualização (tabela/cards)
-    const viewButtonClass = "flex items-center justify-center h-10 px-3";
+    const viewButtonClass = "flex items-center justify-center h-10 px-3 cursor-pointer";
 
     return (
         <motion.div
@@ -93,7 +93,7 @@ export function FilterPanel({
                                 id="search-input"
                                 type="text"
                                 placeholder={searchPlaceholder}
-                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm transition-shadow duration-200"
+                                className="pl-10 pr-4 h-10 border border-gray-300 rounded-md w-full focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm transition-shadow duration-200"
                                 defaultValue={searchTerm}
                                 onChange={handleSearchChange}
                                 title="Buscar"
@@ -195,7 +195,7 @@ export function FilterPanel({
                                             <div className="relative">
                                                 <select
                                                     id={`filter-${filter.id}`}
-                                                    className="appearance-none pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200 w-full"
+                                                    className="appearance-none pl-3 pr-10 h-10 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200 w-full"
                                                     value={filter.value}
                                                     onChange={(e) => filter.onChange(e.target.value)}
                                                     aria-label={`Filtro de ${filter.label}`}
@@ -219,7 +219,7 @@ export function FilterPanel({
                                             animate={{ opacity: 1, scale: 1 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={onResetFilters}
-                                            className="flex items-center justify-center px-3 py-2 mt-auto text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors self-end"
+                                            className="flex items-center justify-center px-3 h-10 mt-auto text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors self-end cursor-pointer"
                                             aria-label="Limpar todos os filtros"
                                         >
                                             <X size={16} className="mr-1" />

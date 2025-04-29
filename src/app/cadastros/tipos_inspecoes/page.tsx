@@ -57,7 +57,7 @@ const Card = ({ tipo, onEdit }: {
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-[#1ABC9C] hover:bg-[#1ABC9C]/5"
+                            className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50 cursor-pointer"
                             onClick={() => onEdit(tipo.id)}
                             aria-label="Editar"
                         >
@@ -370,7 +370,7 @@ export default function TiposInspecoesPage() {
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-[#1ABC9C] hover:text-[#16A085] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/30 focus:ring-offset-1 rounded p-1"
+                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
                             onClick={() => handleEdit(tipo.id)}
                             aria-label="Editar"
                         >
