@@ -9,6 +9,7 @@ import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/F
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
+import { useApiConfig } from "@/hooks/useApiConfig";
 import { motion } from "framer-motion";
 import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -101,6 +102,8 @@ export default function TiposInspecoesPage() {
     // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
 
+    const { getAuthHeaders } = useApiConfig();
+
     // Calculate active filters
     useEffect(() => {
         let count = 0;
@@ -114,7 +117,6 @@ export default function TiposInspecoesPage() {
         setApiError(null);
 
         const apiUrl = localStorage.getItem("apiUrl");
-        const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
         if (!apiUrl) {
             setApiError("URL da API não está configurada");
@@ -122,18 +124,9 @@ export default function TiposInspecoesPage() {
             return;
         }
 
-        if (!authToken) {
-            setApiError("Token de autenticação não encontrado");
-            setIsLoading(false);
-            return;
-        }
-
         fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
             method: 'GET',
-            headers: {
-                "Content-Type": "application/json",
-                "Token": authToken
-            },
+            headers: getAuthHeaders(),
         })
             .then(response => {
                 if (!response.ok) {
@@ -161,7 +154,7 @@ export default function TiposInspecoesPage() {
                 setIsLoading(false);
                 setIsRefreshing(false);
             });
-    }, []);
+    }, [getAuthHeaders]);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);

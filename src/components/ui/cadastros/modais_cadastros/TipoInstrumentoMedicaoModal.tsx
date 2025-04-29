@@ -26,8 +26,7 @@ export function TipoInstrumentoMedicaoModal({
     tipoInstrumentoMedicao,
     onSuccess,
 }: TipoInstrumentoMedicaoModalProps) {
-    const isEditing = !!tipoInstrumentoMedicao;
-    const { apiUrl } = useApiConfig();
+    const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState(!tipoInstrumentoMedicao || tipoInstrumentoMedicao.status === "A");
@@ -54,21 +53,21 @@ export function TipoInstrumentoMedicaoModal({
                 let response;
                 let url = `${apiUrl}/tipos_instrumentos_medicao`;
 
-                if (isEditing && tipoInstrumentoMedicao) {
+                if (tipoInstrumentoMedicao?.id) {
                     // Modo de edição - PUT
-                    response = await fetch(`${url}/${tipoInstrumentoMedicao.id}`, {
+                    response = await fetch(`${url}?id=${tipoInstrumentoMedicao.id}`, {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({
                             ...payload,
-                            id: tipoInstrumentoMedicao.id,
+                            id: Number(tipoInstrumentoMedicao.id),
                         }),
                     });
                 } else {
                     // Modo de criação - POST
                     response = await fetch(url, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify(payload),
                     });
                 }
@@ -77,14 +76,14 @@ export function TipoInstrumentoMedicaoModal({
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
                         errorData?.message ||
-                        `Erro ao ${isEditing ? "atualizar" : "criar"} tipo de instrumento de medição`
+                        `Erro ao ${tipoInstrumentoMedicao?.id ? "atualizar" : "criar"} tipo de instrumento de medição`
                     );
                 }
 
                 const responseData = await response.json();
 
                 setSuccess(
-                    isEditing
+                    tipoInstrumentoMedicao?.id
                         ? "Tipo de instrumento de medição atualizado com sucesso!"
                         : "Tipo de instrumento de medição criado com sucesso!"
                 );
@@ -103,7 +102,7 @@ export function TipoInstrumentoMedicaoModal({
                 setError(err.message || "Ocorreu um erro inesperado");
             }
         },
-        [apiUrl, isEditing, onClose, onSuccess, tipoInstrumentoMedicao]
+        [apiUrl, onClose, onSuccess, tipoInstrumentoMedicao, getAuthHeaders]
     );
 
     // Feedback visual para sucesso ou erro
@@ -142,13 +141,13 @@ export function TipoInstrumentoMedicaoModal({
             isOpen={isOpen}
             onClose={onClose}
             title={
-                isEditing
+                tipoInstrumentoMedicao?.id
                     ? "Editar Tipo de Instrumento de Medição"
                     : "Novo Tipo de Instrumento de Medição"
             }
-            isEditing={isEditing}
+            isEditing={!!tipoInstrumentoMedicao?.id}
             onSubmit={handleSubmit}
-            submitLabel={isEditing ? "Salvar alterações" : "Criar tipo de instrumento"}
+            submitLabel={tipoInstrumentoMedicao?.id ? "Salvar alterações" : "Criar tipo de instrumento"}
             size="sm"
         >
             {renderFeedback()}
@@ -156,7 +155,7 @@ export function TipoInstrumentoMedicaoModal({
             <div className="space-y-3">
                 <div className="bg-white p-2">
                     {/* ID (somente exibição no modo de edição) */}
-                    {isEditing && tipoInstrumentoMedicao?.id && (
+                    {tipoInstrumentoMedicao?.id && (
                         <div className="mb-4 sm:mb-5">
                             <div className="flex items-center justify-between mb-1 sm:mb-2">
                                 <div className="flex items-center space-x-2">

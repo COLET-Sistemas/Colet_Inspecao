@@ -19,6 +19,20 @@ export function useApiConfig() {
         }
     }, []);
 
+    // Function to get standardized auth headers for API calls
+    const getAuthHeaders = useCallback((): HeadersInit => {
+        const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+        if (!authToken) {
+            console.warn("Auth token not found. User may not be authenticated.");
+        }
+
+        return {
+            "Content-Type": "application/json",
+            "Token": authToken || ""
+        };
+    }, []);
+
     const saveApiUrl = useCallback(async (url: string): Promise<boolean> => {
         setIsLoading(true);
         setErrorMessage(null);
@@ -104,6 +118,7 @@ export function useApiConfig() {
         errorMessage,
         saveApiUrl,
         testApiConnection,
-        clearApiConfig
+        clearApiConfig,
+        getAuthHeaders
     };
 }

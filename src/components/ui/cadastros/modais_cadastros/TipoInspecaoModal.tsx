@@ -26,7 +26,7 @@ export function TipoInspecaoModal({
     tipoInspecao,
     onSuccess,
 }: TipoInspecaoModalProps) {
-    const { apiUrl } = useApiConfig();
+    const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState<boolean>(false);
     const [isFocused, setIsFocused] = useState<string | null>(null);
@@ -47,14 +47,6 @@ export function TipoInspecaoModal({
                     return;
                 }
 
-                // Obter o token exatamente como foi recebido no login
-                const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
-                if (!authToken) {
-                    setError("Sessão expirada. Por favor, faça login novamente.");
-                    return;
-                }
-
                 const payload = {
                     descricao_tipo_inspecao: formData.descricao_tipo_inspecao.trim(),
                     situacao: formData.situacao === "on" ? "A" : "I",
@@ -64,10 +56,7 @@ export function TipoInspecaoModal({
                 const url = `${apiUrl}/inspecao/tipos_inspecao`;
                 const response = await fetch(`${url}?id=${tipoInspecao.id}`, {
                     method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Token": authToken
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         ...payload,
                         id: Number(tipoInspecao.id),
@@ -100,7 +89,7 @@ export function TipoInspecaoModal({
                 setError(err.message || "Ocorreu um erro inesperado");
             }
         },
-        [apiUrl, onClose, onSuccess, tipoInspecao]
+        [apiUrl, onClose, onSuccess, tipoInspecao, getAuthHeaders]
     );
 
     // Feedback visual apenas para erros

@@ -33,7 +33,7 @@ export function InstrumentoMedicaoModal({
     onSuccess,
 }: InstrumentoMedicaoModalProps) {
     const isEditing = !!instrumento;
-    const { apiUrl } = useApiConfig();
+    const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState(!instrumento || instrumento.situacao === "A");
     const [isFocused, setIsFocused] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export function InstrumentoMedicaoModal({
                     // Modo de edição - PUT
                     response = await fetch(`${url}/${instrumento.id}`, {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({
                             ...payload,
                             id: instrumento.id
@@ -102,7 +102,7 @@ export function InstrumentoMedicaoModal({
                     // Modo de criação - POST
                     response = await fetch(url, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify(payload),
                     });
                 }
@@ -131,7 +131,7 @@ export function InstrumentoMedicaoModal({
                 setError(err.message || "Ocorreu um erro inesperado");
             }
         },
-        [apiUrl, isEditing, onClose, onSuccess, instrumento]
+        [apiUrl, isEditing, onClose, onSuccess, instrumento, getAuthHeaders]
     );
 
     // Feedback visual apenas para erros
