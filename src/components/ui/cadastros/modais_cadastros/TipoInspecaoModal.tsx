@@ -89,14 +89,14 @@ export function TipoInspecaoModal({
         [apiUrl, onClose, onSuccess, tipoInspecao, getAuthHeaders]
     );
 
-    // Feedback visual apenas para erros
+    // Feedback visual para erros
     const renderFeedback = () => {
         if (error) {
             return (
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-3 sm:mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-2 sm:p-3 text-sm text-red-700"
+                    className="mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                 >
                     <AlertCircle className="mr-2 h-4 w-4 text-red-500 flex-shrink-0" />
                     <span>{error}</span>
@@ -119,12 +119,11 @@ export function TipoInspecaoModal({
         >
             {renderFeedback()}
 
-            <div className="space-y-3">
-                <div className="bg-white p-2">
-
+            <div className="space-y-4">
+                <div className="bg-white rounded-md">
                     {/* Campo de descrição */}
-                    <div className="mb-2 sm:mb-2">
-                        <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
                                 <label htmlFor="descricao_tipo_inspecao" className="text-sm font-medium text-gray-700">
@@ -138,7 +137,7 @@ export function TipoInspecaoModal({
                                 type="text"
                                 id="descricao_tipo_inspecao"
                                 name="descricao_tipo_inspecao"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Insira a descrição do tipo de inspeção"
                                 defaultValue={tipoInspecao.descricao_tipo_inspecao}
                                 required
@@ -149,8 +148,8 @@ export function TipoInspecaoModal({
                     </div>
 
                     {/* Campo de status */}
-                    <div>
-                        <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <div className="mb-2">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <ToggleLeft className="h-4 w-4 text-gray-500" />
                                 <label className="text-sm font-medium text-gray-700">
@@ -159,12 +158,12 @@ export function TipoInspecaoModal({
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center p-2 sm:p-3 bg-gray-50 rounded-md border border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center p-3 bg-gray-50 rounded-md border border-gray-100">
                             <div className="flex-grow mb-2 sm:mb-0">
                                 <p className="text-sm text-gray-700 font-medium">
                                     {isAtivo ? 'Ativo' : 'Inativo'}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
+                                <p className="text-xs text-gray-500 mt-0.5">
                                     {isAtivo
                                         ? 'O tipo de inspeção estará disponível para uso.'
                                         : 'O tipo de inspeção não estará disponível para uso.'}
@@ -186,7 +185,7 @@ export function TipoInspecaoModal({
                     </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-2 sm:mt-2">
+                    <div className="text-xs text-gray-500 mt-4">
                         <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>

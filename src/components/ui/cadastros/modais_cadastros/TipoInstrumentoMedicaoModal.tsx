@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface TipoInstrumentoMedicao {
-    id: number;
+    id?: number;
     nome_tipo_instrumento: string;
     observacao?: string;
 }
@@ -103,14 +103,14 @@ export function TipoInstrumentoMedicaoModal({
         [apiUrl, onClose, onSuccess, tipoInstrumentoMedicao, getAuthHeaders]
     );
 
-    // Feedback visual apenas para erros
+    // Feedback visual para erros
     const renderFeedback = () => {
         if (error) {
             return (
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-3 sm:mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-2 sm:p-3 text-sm text-red-700"
+                    className="mb-4 flex items-center rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                 >
                     <AlertCircle className="mr-2 h-4 w-4 text-red-500 flex-shrink-0" />
                     <span>{error}</span>
@@ -137,11 +137,11 @@ export function TipoInstrumentoMedicaoModal({
         >
             {renderFeedback()}
 
-            <div className="space-y-3">
-                <div className="bg-white p-2">
+            <div className="space-y-4">
+                <div className="bg-white rounded-md">
                     {/* Campo de nome do tipo de instrumento */}
-                    <div className="mb-2 sm:mb-2">
-                        <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
                                 <label htmlFor="nome_tipo_instrumento" className="text-sm font-medium text-gray-700">
@@ -154,8 +154,8 @@ export function TipoInstrumentoMedicaoModal({
                                 type="text"
                                 id="nome_tipo_instrumento"
                                 name="nome_tipo_instrumento"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Insira o nome do tipo de instrumento"
                                 defaultValue={tipoInstrumentoMedicao?.nome_tipo_instrumento || ""}
                                 required
                                 onFocus={() => setIsFocused('nome')}
@@ -165,8 +165,8 @@ export function TipoInstrumentoMedicaoModal({
                     </div>
 
                     {/* Campo de observação */}
-                    <div className="mb-2 sm:mb-2">
-                        <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <MessageSquare className="h-4 w-4 text-gray-500" />
                                 <label htmlFor="observacao" className="text-sm font-medium text-gray-700">
@@ -174,19 +174,22 @@ export function TipoInstrumentoMedicaoModal({
                                 </label>
                             </div>
                         </div>
-                        <textarea
-                            id="observacao"
-                            name="observacao"
-                            rows={3}
-                            className={`w-full rounded-md border ${isFocused === 'observacao' ? 'border-[#09A08D] ring-1 ring-[#09A08D]/30' : 'border-gray-300'} px-3 py-2 sm:py-2.5 text-sm sm:text-base focus:outline-none transition-all duration-300 resize-none`}
-                            defaultValue={tipoInstrumentoMedicao?.observacao || ""}
-                            onFocus={() => setIsFocused('observacao')}
-                            onBlur={() => setIsFocused(null)}
-                        />
+                        <div className={`relative transition-all duration-200 ${isFocused === 'observacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <textarea
+                                id="observacao"
+                                name="observacao"
+                                rows={3}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 resize-none"
+                                placeholder="Informações adicionais sobre o tipo de instrumento (opcional)"
+                                defaultValue={tipoInstrumentoMedicao?.observacao || ""}
+                                onFocus={() => setIsFocused('observacao')}
+                                onBlur={() => setIsFocused(null)}
+                            />
+                        </div>
                     </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-2 sm:mt-2">
+                    <div className="text-xs text-gray-500 mt-4">
                         <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>
