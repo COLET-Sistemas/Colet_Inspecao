@@ -1,6 +1,7 @@
 "use client";
 
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { createTipoInstrumentoMedicao, updateTipoInstrumentoMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, MessageSquare } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -49,109 +50,47 @@ export function TipoInstrumentoMedicaoModal({
                     observacao: formData.observacao?.trim() || "",
                 };
 
-                let response;
-                let url = `${apiUrl}/inspecao/tipos_instrumentos_medicao`;
+                let responseData;
 
                 if (tipoInstrumentoMedicao?.id) {
                     // Modo de edição - PUT
-                    response = await fetch(`${url}?id=${tipoInstrumentoMedicao.id}`, {
-                        method: "PUT",
-                        headers: getAuthHeaders(),
-                        body: JSON.stringify({
-                            ...payload,
-                            id: Number(tipoInstrumentoMedicao.id),
-                        }),
-                    });
+                    try {
+                        responseData = await updateTipoInstrumentoMedicao(
+                            {
+                                id: Number(tipoInstrumentoMedicao.id),
+                                nome_tipo_instrumento: payload.nome_tipo_instrumento,
+                                observacao: payload.observacao
+                            },
+                            getAuthHeaders()
+                        );
+                        console.log("Resposta da API ao editar:", responseData);
+                    } catch (error: any) {
+                        throw new Error(error.message || "Erro ao atualizar tipo de instrumento de medição");
+                    }
                 } else {
                     // Modo de criação - POST
                     console.log("Enviando POST para criar novo item:", payload);
-                    response = await fetch(url, {
-                        method: "POST",
-                        headers: getAuthHeaders(),
-                        body: JSON.stringify(payload),
-                    });
-                    console.log("Status da resposta:", response.status);
-
-                    // Se a resposta for 204 No Content, precisamos fazer uma nova requisição para obter o item criado
-                    if (response.status === 204) {
-                        console.log("Resposta sem conteúdo (204). Buscando item recém-criado...");
-
-                        try {
-                            // Esperar um curto período para dar tempo à API de processar
-                            await new Promise(resolve => setTimeout(resolve, 300));
-
-                            // Buscar todos os itens para encontrar o que acabamos de criar
-                            const getAllResponse = await fetch(url, {
-                                method: 'GET',
-                                headers: getAuthHeaders()
-                            });
-
-                            if (getAllResponse.ok) {
-                                const allItems = await getAllResponse.json();
-                                // Tentar encontrar o item pelo nome que acabamos de criar
-                                const createdItem = Array.isArray(allItems)
-                                    ? allItems.find(item =>
-                                        item.nome_tipo_instrumento === payload.nome_tipo_instrumento &&
-                                        item.observacao === payload.observacao
-                                    )
-                                    : null;
-
-                                if (createdItem && createdItem.id) {
-                                    console.log("Item recém-criado encontrado:", createdItem);
-                                    // Usar este item como resposta
-                                    response = new Response(JSON.stringify(createdItem), {
-                                        status: 200,
-                                        headers: { 'Content-Type': 'application/json' }
-                                    });
-                                }
-                            }
-                        } catch (err) {
-                            console.error("Erro ao tentar buscar o item recém-criado:", err);
-                            // Continuamos com o fluxo normal mesmo se falhar
-                        }
+                    try {
+                        responseData = await createTipoInstrumentoMedicao(
+                            {
+                                nome_tipo_instrumento: payload.nome_tipo_instrumento,
+                                observacao: payload.observacao
+                            },
+                            getAuthHeaders()
+                        );
+                        console.log("Resposta da API ao criar:", responseData);
+                    } catch (error: any) {
+                        throw new Error(error.message || "Erro ao criar tipo de instrumento de medição");
                     }
                 }
 
-                // Verificar se a resposta da API foi bem-sucedida
-                if (!response.ok || response.status === 299) {
-                    const errorData = await response.json().catch(() => null);
-                    throw new Error(
-                        errorData?.message ||
-                        `Erro ao ${tipoInstrumentoMedicao?.id ? "atualizar" : "criar"} tipo de instrumento de medição`
-                    );
-                }
-
-                // Construir objeto de resposta
-                let responseData;
-                try {
-                    // Tentar obter os dados da resposta
-                    responseData = await response.json();
-                    console.log("Resposta da API ao criar/editar:", responseData);
-
-                    // Verificar se a API retornou um ID válido
-                    if (responseData && (responseData.id === undefined || responseData.id === null)) {
-                        console.warn("API não retornou um ID válido. Usando um ID temporário.");
-
-                        // Se a API não retornou um ID na resposta, mas estamos em modo de edição,
-                        // mantemos o ID original
-                        if (tipoInstrumentoMedicao?.id) {
-                            responseData.id = tipoInstrumentoMedicao.id;
-                        } else {
-                            // Para um novo item, usamos um ID temporário apenas para exibição
-                            responseData.id = Math.floor(Math.random() * 10000) + 1;
-                            console.log("ID temporário gerado:", responseData.id);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro ao parsear resposta da API:", err);
-
-                    // Se não conseguir parsear a resposta, criar um objeto com os dados do formulário
+                // Se não temos um ID na resposta, pode ser necessário usar um ID temporário
+                if (!responseData || responseData.id === undefined) {
+                    console.warn("API não retornou um ID válido. Usando um ID temporário.");
                     responseData = {
-                        id: tipoInstrumentoMedicao?.id || Math.floor(Math.random() * 10000) + 1, // ID temporário para novo item
-                        nome_tipo_instrumento: formData.nome_tipo_instrumento.trim(),
-                        observacao: formData.observacao?.trim() || "",
+                        ...payload,
+                        id: tipoInstrumentoMedicao?.id || Math.floor(Math.random() * 10000) + 1 // Usa o ID existente ou cria um temporário
                     };
-                    console.log("Usando dados do formulário com ID temporário:", responseData);
                 }
 
                 if (onSuccess) {

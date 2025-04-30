@@ -11,20 +11,11 @@ import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_ca
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { deleteTipoInstrumentoMedicao, getTiposInstrumentosMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
+import { AlertState, TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
 import { Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-
-interface TipoInstrumentoMedicao {
-    id: number;
-    nome_tipo_instrumento: string;
-    observacao: string;
-}
-
-interface AlertState {
-    message: string | null;
-    type: "success" | "error" | "warning";
-}
 
 // Card component for list item
 const Card = React.memo(({ tipo, onEdit, onDelete }: {
@@ -134,46 +125,16 @@ export default function TiposInstrumentosMedicaoPage() {
         setIsLoading(true);
         setApiError(null);
 
-        const apiUrl = localStorage.getItem("apiUrl");
-
-        if (!apiUrl) {
-            setApiError("URL da API não está configurada");
+        try {
+            const data = await getTiposInstrumentosMedicao(getAuthHeaders());
+            setAllData(data);
+        } catch (error) {
+            console.error("Erro ao buscar tipos de instrumentos de medição:", error);
+            setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        } finally {
             setIsLoading(false);
-            return;
+            setIsRefreshing(false);
         }
-
-        fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
-            method: 'GET',
-            headers: getAuthHeaders(),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao buscar dados: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                const formattedData = Array.isArray(data) ? data.map(item => {
-                    // Verificar se o ID é válido e convertê-lo para número
-                    const id = item.id !== undefined && item.id !== null ? Number(item.id) : 0;
-                    return {
-                        id: id,
-                        nome_tipo_instrumento: item.nome_tipo_instrumento || '',
-                        observacao: item.observacao || '',
-                    };
-                }) : [];
-
-                setAllData(formattedData);
-                // A filtragem real será feita pelo useEffect que depende de allData, searchTerm e statusFilter
-            })
-            .catch(error => {
-                console.error("Erro ao buscar tipos de inspeção:", error);
-                setApiError(`Falha ao carregar dados: ${error.message}`);
-            })
-            .finally(() => {
-                setIsLoading(false);
-                setIsRefreshing(false);
-            });
     }, [getAuthHeaders]);
 
     const handleRefresh = useCallback(() => {
@@ -240,40 +201,11 @@ export default function TiposInstrumentosMedicaoPage() {
     const confirmDelete = useCallback(async () => {
         if (deletingId === null) return;
 
-        const apiUrl = localStorage.getItem("apiUrl");
-        if (!apiUrl) {
-            setAlert({
-                message: "URL da API não está configurada",
-                type: "error"
-            });
-            return;
-        }
-
         setIsDeleting(true);
         setNotification(`Excluindo tipo de instrumento de medição...`);
 
         try {
-            const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${deletingId}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
-            });
-
-            // Extrair a mensagem de erro da resposta da API, caso exista
-            let errorMessage = 'Erro desconhecido ao excluir o registro';
-            try {
-                const errorData = await response.json().catch(() => ({}));
-                if (errorData && errorData.message) {
-                    errorMessage = errorData.message;
-                } else if (errorData && errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch (e) {
-                // Erro silencioso - já temos uma mensagem padrão
-            }
-
-            if (!response.ok) {
-                throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);
-            }
+            await deleteTipoInstrumentoMedicao(deletingId, getAuthHeaders());
 
             // Recarregar dados
             loadData();
@@ -319,66 +251,61 @@ export default function TiposInstrumentosMedicaoPage() {
     }, []);
 
     // Callback quando o modal for bem-sucedido
-    const handleModalSuccess = useCallback((data: any) => {
+    const handleModalSuccess = useCallback(async (data: any) => {
         console.log("Dados recebidos do modal:", data);
-        if (selectedTipoInstrumentoMedicao) {
-            // Criando uma função de atualização para evitar inconsistências de estado
-            const updateItem = (item: TipoInstrumentoMedicao) =>
-                item.id === selectedTipoInstrumentoMedicao.id
-                    ? {
-                        id: selectedTipoInstrumentoMedicao.id,
-                        nome_tipo_instrumento: data.nome_tipo_instrumento || item.nome_tipo_instrumento,
-                        observacao: data.observacao !== undefined ? data.observacao : item.observacao
-                    }
-                    : item;
 
-            // Atualiza o item em ambas as listas de forma consistente
-            setTiposInstrumentosMedicao(prev => prev.map(updateItem));
-            setAllData(prev => prev.map(updateItem));
+        // Atualizar o estado local com os dados recebidos do modal
+        if (selectedTipoInstrumentoMedicao) {
+            // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
+
+            // Atualiza o item em ambas as listas de forma consistente, usando os dados retornados pelo modal
+            setTiposInstrumentosMedicao(prev => prev.map(item =>
+                item.id === data.id ? data : item
+            ));
+            setAllData(prev => prev.map(item =>
+                item.id === data.id ? data : item
+            ));
 
             // Mostrar mensagem de sucesso na página
             setAlert({
-                message: `Tipo de instrumento de medição ${selectedTipoInstrumentoMedicao.id} atualizado com sucesso!`,
+                message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`,
                 type: "warning"
             });
 
             // Para leitores de tela
-            setNotification(`Tipo de instrumento de medição ${selectedTipoInstrumentoMedicao.id} atualizado com sucesso.`);
+            setNotification(`Tipo de instrumento de medição ${data.id} atualizado com sucesso.`);
+
         } else if (data) {
-            // Se o ID não for um número ou for inválido, recarregar dados diretamente do servidor
-            if (typeof data.id !== 'number' || isNaN(data.id) || data.id <= 0) {
-                console.log("Detectado ID inválido ou temporário, recarregando dados do servidor:", data.id);
-                loadData();
+            // Caso de criação - O modal já fez a chamada POST
+            console.log("Item criado com sucesso:", data);
+
+            // Após criar o item, recarrega a lista completa com uma chamada GET
+            try {
+                setNotification(`Atualizando lista de tipos de instrumentos de medição...`);
+
+                // Recarregar dados completos do servidor após criação
+                await loadData();
 
                 // Mostrar mensagem de sucesso na página
                 setAlert({
-                    message: `Novo tipo de instrumento de medição criado com sucesso! Atualizando lista...`,
+                    message: `Novo tipo de instrumento de medição criado com sucesso!`,
                     type: "success"
                 });
-                return;
+
+                // Para leitores de tela
+                setNotification(`Novo tipo de instrumento de medição criado com sucesso.`);
+            } catch (error) {
+                console.error("Erro ao atualizar lista após criar item:", error);
+
+                // Como fallback, adiciona o item retornado pelo modal às listas locais
+                setTiposInstrumentosMedicao(prev => [...prev, data]);
+                setAllData(prev => [...prev, data]);
+
+                setAlert({
+                    message: `Item criado com sucesso, mas houve um erro ao atualizar a lista.`,
+                    type: "warning"
+                });
             }
-
-            // Caso de criação de novo item com ID válido
-            const newItem: TipoInstrumentoMedicao = {
-                id: Number(data.id),
-                nome_tipo_instrumento: data.nome_tipo_instrumento || '',
-                observacao: data.observacao || ''
-            };
-
-            console.log("Adicionando novo item à lista:", newItem);
-
-            // Adicionar o novo item em ambas as listas
-            setTiposInstrumentosMedicao(prev => [...prev, newItem]);
-            setAllData(prev => [...prev, newItem]);
-
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Novo tipo de instrumento de medição criado com sucesso!`,
-                type: "success"
-            });
-
-            // Para leitores de tela
-            setNotification(`Novo tipo de instrumento de medição criado com sucesso.`);
         }
     }, [selectedTipoInstrumentoMedicao, loadData]);
 

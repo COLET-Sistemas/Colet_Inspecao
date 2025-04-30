@@ -10,21 +10,11 @@ import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
+import { AlertState, TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-
-interface TipoInspecao {
-    id: string;
-    codigo: string;
-    descricao_tipo_inspecao: string;
-    situacao: "A" | "I";
-}
-
-interface AlertState {
-    message: string | null;
-    type: "success" | "error" | "warning";
-}
 
 // Card component for list item
 const Card = React.memo(({ tipo, onEdit }: {
@@ -111,47 +101,20 @@ export default function TiposInspecoesPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter]);
 
-    const loadData = useCallback(() => {
+    const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
 
-        const apiUrl = localStorage.getItem("apiUrl");
-
-        if (!apiUrl) {
-            setApiError("URL da API não está configurada");
+        try {
+            const data = await getTiposInspecao(getAuthHeaders());
+            setAllData(data);
+        } catch (error) {
+            console.error("Erro ao buscar tipos de inspeção:", error);
+            setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        } finally {
             setIsLoading(false);
-            return;
+            setIsRefreshing(false);
         }
-
-        fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
-            method: 'GET',
-            headers: getAuthHeaders(),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao buscar dados: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                const formattedData = Array.isArray(data) ? data.map(item => ({
-                    id: item.id || '',
-                    codigo: item.codigo || item.id || '',
-                    descricao_tipo_inspecao: item.descricao_tipo_inspecao || '',
-                    situacao: item.situacao || 'A',
-                })) : [];
-
-                setAllData(formattedData);
-                // A filtragem real será feita pelo useEffect que depende de allData, searchTerm e statusFilter
-            })
-            .catch(error => {
-                console.error("Erro ao buscar tipos de inspeção:", error);
-                setApiError(`Falha ao carregar dados: ${error.message}`);
-            })
-            .finally(() => {
-                setIsLoading(false);
-                setIsRefreshing(false);
-            });
     }, [getAuthHeaders]);
 
     const handleRefresh = useCallback(() => {
@@ -215,33 +178,45 @@ export default function TiposInspecoesPage() {
         }
     }, [allData]);
 
-    const handleModalSuccess = useCallback((data: any) => {
+    const handleModalSuccess = useCallback(async (data: any) => {
         if (selectedTipoInspecao) {
-            // Criando uma função de atualização para evitar inconsistências de estado
-            const updateItem = (item: TipoInspecao) =>
-                item.id === selectedTipoInspecao.id
-                    ? {
-                        ...item,
-                        descricao_tipo_inspecao: data.descricao_tipo_inspecao,
-                        situacao: data.situacao,
-                        codigo: data.codigo || item.codigo
-                    }
-                    : item;
+            try {
+                // Criar objeto com dados atualizados
+                const updatedTipoInspecao: TipoInspecao = {
+                    id: selectedTipoInspecao.id,
+                    descricao_tipo_inspecao: data.descricao_tipo_inspecao,
+                    situacao: data.situacao,
+                    codigo: data.codigo || selectedTipoInspecao.codigo
+                };
 
-            // Atualiza o item em ambas as listas de forma consistente
-            setTiposInspecao(prev => prev.map(updateItem));
-            setAllData(prev => prev.map(updateItem));
+                // Criando uma função de atualização para evitar inconsistências de estado
+                const updateItem = (item: TipoInspecao) =>
+                    item.id === selectedTipoInspecao.id
+                        ? updatedTipoInspecao
+                        : item;
 
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
-                type: "warning"
-            });
+                // Atualiza o item em ambas as listas de forma consistente
+                setTiposInspecao(prev => prev.map(updateItem));
+                setAllData(prev => prev.map(updateItem));
 
-            // Para leitores de tela
-            setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
+                // Mostrar mensagem de sucesso na página
+                setAlert({
+                    message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
+                    type: "warning"
+                });
+
+                // Para leitores de tela
+                setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
+            } catch (error) {
+                console.error("Erro ao atualizar tipo de inspeção:", error);
+                setAlert({
+                    message: error instanceof Error ? error.message : "Erro ao atualizar tipo de inspeção",
+                    type: "error"
+                });
+                setNotification(`Erro ao atualizar tipo de inspeção: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+            }
         }
-    }, [selectedTipoInspecao]);
+    }, [selectedTipoInspecao, getAuthHeaders]);
 
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -308,7 +283,7 @@ export default function TiposInspecoesPage() {
     const tableColumns = useMemo(() => [
         {
             key: "codigo",
-            title: "Código",
+            title: "ID",
             render: (tipo: TipoInspecao) => (
                 <span className="text-sm font-medium text-gray-900">#{tipo.id}</span>
             ),
@@ -455,6 +430,7 @@ export default function TiposInspecoesPage() {
                         data={tiposInspecao}
                         renderCard={(tipo) => (
                             <Card
+                                key={tipo.id}
                                 tipo={tipo}
                                 onEdit={handleEdit}
                             />
