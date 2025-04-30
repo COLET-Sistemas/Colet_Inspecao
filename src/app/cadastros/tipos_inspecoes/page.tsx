@@ -19,7 +19,6 @@ interface TipoInspecao {
     codigo: string;
     descricao_tipo_inspecao: string;
     situacao: "A" | "I";
-    dataCriacao: string;
 }
 
 interface AlertState {
@@ -140,7 +139,6 @@ export default function TiposInspecoesPage() {
                     codigo: item.codigo || item.id || '',
                     descricao_tipo_inspecao: item.descricao_tipo_inspecao || '',
                     situacao: item.situacao || 'A',
-                    dataCriacao: item.dataCriacao || new Date().toISOString().split('T')[0]
                 })) : [];
 
                 setAllData(formattedData);
@@ -158,7 +156,7 @@ export default function TiposInspecoesPage() {
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
-        dataFetchedRef.current = false; // Reset para forçar nova busca
+        dataFetchedRef.current = false;
         loadData();
         setNotification("Atualizando dados...");
     }, [loadData]);
