@@ -5,65 +5,55 @@ import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal";
+import { CotaCaracteristicaModal } from "@/components/ui/cadastros/modais_cadastros/CotaCaracteristicaModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { useApiConfig } from "@/hooks/useApiConfig";
+import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
+import { AlertState, CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-
-interface CotaCaracteristica {
-    id: number;
-    codigo: string;
-    descricao: string;
-    tipo: string;
-    unidadeMedida: string;
-    tolerancia: string;
-    status: "ativo" | "inativo" | "revisao";
-    ultimaRevisao: string;
-    proximaRevisao: string;
-}
-
-interface AlertState {
-    message: string | null;
-    type: "success" | "error" | "warning";
-}
+import { Pencil, Plus, RulerIcon, SlidersHorizontal, Trash2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
-const Card = ({ cota, onView, onEdit, onDelete }: {
+const Card = React.memo(({ cota, onEdit, onDelete }: {
     cota: CotaCaracteristica;
-    onView: (id: number) => void;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => {
-    const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'bg-green-50 text-green-700';
-            case 'inativo':
-                return 'bg-red-50 text-red-700';
-            case 'revisao':
-                return 'bg-amber-50 text-amber-700';
-            default:
-                return 'bg-gray-50 text-gray-700';
+    const getTipoLabel = (tipo: string) => {
+        switch (tipo) {
+            case 'O': return 'Cota';
+            case 'A': return 'Característica';
+            default: return 'Outro';
         }
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pt-BR');
+    const getTipoClass = (tipo: string) => {
+        switch (tipo) {
+            case 'O': return 'bg-blue-50 text-blue-700';
+            case 'A': return 'bg-green-50 text-green-700';
+            default: return 'bg-gray-50 text-gray-700';
+        }
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'Ativo';
-            case 'inativo':
-                return 'Inativo';
-            case 'revisao':
-                return 'Em Revisão';
-            default:
-                return status;
-        }
+    // Renderiza o SVG de maneira segura, dentro de um wrapper SVG
+    const renderSvg = () => {
+        if (!cota.simbolo_path_svg) return null;
+
+        return (
+            <div className="flex items-center justify-center p-2 mb-2 border border-gray-100 rounded bg-gray-50">
+                <svg
+                    viewBox="0 0 100 100"
+                    width="60"
+                    height="60"
+                    className="overflow-visible"
+                    dangerouslySetInnerHTML={{ __html: cota.simbolo_path_svg }}
+                />
+            </div>
+        );
     };
 
     return (
@@ -72,66 +62,41 @@ const Card = ({ cota, onView, onEdit, onDelete }: {
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center">
                         <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                            {cota.codigo}
+                            #{cota.id}
                         </span>
                     </div>
-                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getStatusClass(cota.status)}`}>
-                        {getStatusLabel(cota.status)}
+                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getTipoClass(cota.tipo)}`}>
+                        {getTipoLabel(cota.tipo)}
                     </span>
                 </div>
+
+                {cota.simbolo_path_svg && renderSvg()}
 
                 <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
                     {cota.descricao}
                 </h3>
 
-                <div className="flex justify-between items-center mt-2 mb-3">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 inline-block">
-                        {cota.tipo}
-                    </span>
-                    <span className="text-xs text-gray-600">
-                        {cota.unidadeMedida}
-                    </span>
-                </div>
-
-                <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">
-                        Tolerância: {cota.tolerancia}
-                    </span>
-                </div>
+                {cota.unidade_medida && (
+                    <p className="text-sm text-gray-500 mb-2">
+                        Unidade: {cota.unidade_medida}
+                    </p>
+                )}
 
                 <div className="flex justify-between items-end mt-3">
                     <div className="flex flex-col space-y-1">
-                        <span className="text-xs text-gray-500">
-                            Última: {formatDate(cota.ultimaRevisao)}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                            Próxima: {formatDate(cota.proximaRevisao)}
-                        </span>
                     </div>
 
                     <div className="flex space-x-1">
-                        <Tooltip text="Visualizar">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50"
-                                onClick={() => onView(cota.id)}
-                                aria-label="Visualizar"
-                            >
-                                <Eye className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-
                         <Tooltip text="Editar">
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-[#1ABC9C] hover:bg-[#1ABC9C]/5"
+                                className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
                                 onClick={() => onEdit(cota.id)}
                                 aria-label="Editar"
                             >
                                 <Pencil className="h-3.5 w-3.5" />
                             </motion.button>
                         </Tooltip>
-
                         <Tooltip text="Excluir">
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
@@ -147,12 +112,11 @@ const Card = ({ cota, onView, onEdit, onDelete }: {
             </div>
         </div>
     );
-};
+});
 
 export default function CotasCaracteristicasPage() {
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("todos");
     const [tipoFilter, setTipoFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
@@ -161,225 +125,247 @@ export default function CotasCaracteristicasPage() {
     const [viewMode, setViewMode] = useState<ViewMode>("table");
 
     // State for data and loading
-    const [cotas, setCotas] = useState<CotaCaracteristica[]>([]);
+    const [cotasCaracteristicas, setCotasCaracteristicas] = useState<CotaCaracteristica[]>([]);
     const [allData, setAllData] = useState<CotaCaracteristica[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
+    const [apiError, setApiError] = useState<string | null>(null);
 
-    // Alert state para mensagens de sucesso ou erro
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCotaCaracteristica, setSelectedCotaCaracteristica] = useState<CotaCaracteristica | undefined>(undefined);
+
+    // Delete modal states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
 
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
+    // Utilize uma ref para controlar se a requisição já foi feita
+    const dataFetchedRef = useRef(false);
+
+    const { getAuthHeaders } = useApiConfig();
+
     // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
-        if (statusFilter !== "todos") count++;
         if (tipoFilter !== "todos") count++;
         setActiveFilters(count);
-    }, [searchTerm, statusFilter, tipoFilter]);
+    }, [searchTerm, tipoFilter]);
 
-    const loadData = useCallback(() => {
+    // Função para carregar dados memoizada para evitar recriação desnecessária
+    const loadData = useCallback(async () => {
         setIsLoading(true);
+        setApiError(null);
 
-        const timer = setTimeout(() => {
-            const mockData: CotaCaracteristica[] = [
-                {
-                    id: 1,
-                    codigo: "CC-001",
-                    descricao: "Diâmetro do eixo principal",
-                    tipo: "Dimensional",
-                    unidadeMedida: "mm",
-                    tolerancia: "±0.05",
-                    status: "ativo",
-                    ultimaRevisao: "2023-08-15",
-                    proximaRevisao: "2024-08-15"
-                },
-                {
-                    id: 2,
-                    codigo: "CC-002",
-                    descricao: "Rugosidade superficial",
-                    tipo: "Superficial",
-                    unidadeMedida: "Ra",
-                    tolerancia: "1.6",
-                    status: "revisao",
-                    ultimaRevisao: "2023-10-20",
-                    proximaRevisao: "2024-04-20"
-                },
-                {
-                    id: 3,
-                    codigo: "CC-003",
-                    descricao: "Comprimento da peça",
-                    tipo: "Dimensional",
-                    unidadeMedida: "mm",
-                    tolerancia: "±0.1",
-                    status: "ativo",
-                    ultimaRevisao: "2023-12-10",
-                    proximaRevisao: "2024-12-10"
-                },
-                {
-                    id: 4,
-                    codigo: "CC-004",
-                    descricao: "Angulação da borda",
-                    tipo: "Geométrico",
-                    unidadeMedida: "graus",
-                    tolerancia: "±0.2",
-                    status: "ativo",
-                    ultimaRevisao: "2024-01-05",
-                    proximaRevisao: "2025-01-05"
-                },
-                {
-                    id: 5,
-                    codigo: "CC-005",
-                    descricao: "Tolerância de posição",
-                    tipo: "Geométrico",
-                    unidadeMedida: "mm",
-                    tolerancia: "±0.02",
-                    status: "inativo",
-                    ultimaRevisao: "2023-09-18",
-                    proximaRevisao: "2024-09-18"
-                },
-                {
-                    id: 6,
-                    codigo: "CC-006",
-                    descricao: "Dureza da peça",
-                    tipo: "Material",
-                    unidadeMedida: "HRC",
-                    tolerancia: "45-50",
-                    status: "ativo",
-                    ultimaRevisao: "2024-02-03",
-                    proximaRevisao: "2025-02-03"
-                },
-                {
-                    id: 7,
-                    codigo: "CC-007",
-                    descricao: "Paralelismo entre faces",
-                    tipo: "Geométrico",
-                    unidadeMedida: "mm",
-                    tolerancia: "0.03",
-                    status: "revisao",
-                    ultimaRevisao: "2023-11-15",
-                    proximaRevisao: "2024-05-15"
-                },
-                {
-                    id: 8,
-                    codigo: "CC-008",
-                    descricao: "Espessura do revestimento",
-                    tipo: "Material",
-                    unidadeMedida: "μm",
-                    tolerancia: "5-10",
-                    status: "inativo",
-                    ultimaRevisao: "2023-07-27",
-                    proximaRevisao: "2024-07-27"
-                }
-            ];
+        try {
+            const data = await getCotasCaracteristicas(getAuthHeaders());
+            setAllData(data);
+        } catch (error) {
+            console.error("Erro ao buscar cotas e características:", error);
+            setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [getAuthHeaders]);
 
-            setAllData(mockData);
-
-            startTransition(() => {
-                let filtered = [...mockData];
-
-                if (searchTerm) {
-                    filtered = filtered.filter(item =>
-                        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                }
-
-                if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.status === statusFilter);
-                }
-
-                if (tipoFilter !== "todos") {
-                    filtered = filtered.filter(item => item.tipo === tipoFilter);
-                }
-
-                setCotas(filtered);
-                setIsLoading(false);
-
-                // Notifications for screen readers
-                if (filtered.length === 0) {
-                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
-                } else {
-                    setNotification(`${filtered.length} cotas e características encontradas.`);
-                }
-            });
-        }, 600);
-
-        return () => clearTimeout(timer);
-    }, [searchTerm, statusFilter, tipoFilter]);
-
-    useEffect(() => {
+    const handleRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        dataFetchedRef.current = false;
         loadData();
+        setNotification("Atualizando dados...");
     }, [loadData]);
 
-    // List of unique tipos for filter dropdown - memoized
-    const tipos = useMemo(() => [
-        "Dimensional", "Geométrico", "Superficial", "Material"
-    ], []);
+    // Carrega os dados iniciais quando o componente é montado
+    useEffect(() => {
+        if (dataFetchedRef.current === false) {
+            dataFetchedRef.current = true;
+            loadData();
+        }
+    }, [loadData]);
 
-    // Handle CRUD operations with feedback
-    const handleView = useCallback((id: number) => {
-        console.log(`Visualizando cota/característica ${id}`);
-        setNotification(`Visualizando detalhes da cota/característica ${id}.`);
-        // Implementar a lógica de visualização
-    }, []);
+    // Effect para filtrar dados quando os filtros mudam
+    useEffect(() => {
+        if (allData.length > 0) {
+            // Usar startTransition para não bloquear a UI durante filtragens pesadas
+            startTransition(() => {
+                // Filtrar usando função memoizada para melhor performance
+                const filterData = () => {
+                    // Só realizar filtragem se houver filtros ativos
+                    if (!searchTerm && tipoFilter === "todos") {
+                        return allData;
+                    }
+
+                    return allData.filter(item => {
+                        // Verificar texto de busca
+                        const matchesSearch = !searchTerm ||
+                            item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (item.unidade_medida && item.unidade_medida.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                        // Verificar filtro de tipo
+                        const matchesTipo = tipoFilter === "todos" || item.tipo === tipoFilter;
+
+                        return matchesSearch && matchesTipo;
+                    });
+                };
+
+                // Atualizar o estado com os dados filtrados
+                setCotasCaracteristicas(filterData());
+            });
+        }
+    }, [searchTerm, tipoFilter, allData]);
 
     const handleEdit = useCallback((id: number) => {
-        console.log(`Editando cota/característica ${id}`);
-        setNotification(`Iniciando edição da cota/característica ${id}.`);
-
-        // Simulando uma edição bem-sucedida após um tempo
-        setTimeout(() => {
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Cota/característica ${id} atualizada com sucesso!`,
-                type: "warning"
-            });
-
-            setNotification(`Cota/característica ${id} atualizada com sucesso.`);
-        }, 1000);
-    }, []);
+        const cotaToEdit = cotasCaracteristicas.find(cota => cota.id === id);
+        if (cotaToEdit) {
+            setSelectedCotaCaracteristica(cotaToEdit);
+            setIsModalOpen(true);
+            setNotification(`Iniciando edição da cota/característica ${id}.`);
+        }
+    }, [cotasCaracteristicas]);
 
     const handleDelete = useCallback((id: number) => {
-        console.log(`Excluindo cota/característica ${id}`);
-        // Aqui você pode implementar um modal de confirmação
-        if (confirm('Tem certeza que deseja excluir esta cota/característica?')) {
-            // Remove a cota da lista
-            setCotas(prev => prev.filter(cota => cota.id !== id));
+        setDeletingId(id);
+        setIsDeleteModalOpen(true);
+        const cotaToDelete = cotasCaracteristicas.find(cota => cota.id === id);
+        if (cotaToDelete) {
+            setNotification(`Preparando para excluir a cota/característica: ${cotaToDelete.descricao}`);
+        }
+    }, [cotasCaracteristicas]);
 
-            // Mostrar mensagem de sucesso na página
+    const confirmDelete = useCallback(async () => {
+        if (deletingId === null) return;
+
+        setIsDeleting(true);
+        setNotification(`Excluindo cota/característica...`);
+
+        try {
+            await deleteCotaCaracteristica(deletingId, getAuthHeaders());
+
+            // Recarregar dados
+            loadData();
+
+            // Fechar modal de confirmação
+            setIsDeleteModalOpen(false);
+
+            // Mostrar mensagem de sucesso
             setAlert({
-                message: `Cota/característica ${id} excluída com sucesso!`,
-                type: "success"
+                message: `Cota/característica excluída com sucesso!`,
+                type: "error"
             });
 
-            setNotification(`Cota/característica ${id} excluída com sucesso.`);
+            setNotification(`Cota/característica excluída com sucesso.`);
+        } catch (error) {
+            console.error('Erro ao excluir cota/característica:', error);
+
+            // Sempre fechar o modal em caso de erro
+            setIsDeleteModalOpen(false);
+
+            // Mostrar mensagem de erro
+            setAlert({
+                message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
+                type: "error"
+            });
+
+            setNotification(`Erro ao excluir cota/característica: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+        } finally {
+            setIsDeleting(false);
+            setDeletingId(null);
         }
+    }, [deletingId, getAuthHeaders, loadData]);
+
+    const handleCloseDeleteModal = useCallback(() => {
+        setIsDeleteModalOpen(false);
+        setDeletingId(null);
+        setNotification("Exclusão cancelada.");
     }, []);
 
     const handleCreateNew = useCallback(() => {
-        console.log("Nova cota/característica");
-        // Simulando uma criação bem-sucedida após um tempo
-        setTimeout(() => {
+        setSelectedCotaCaracteristica(undefined); // Limpa qualquer seleção anterior
+        setIsModalOpen(true);
+    }, []);
+
+    // Callback quando o modal for bem-sucedido
+    const handleModalSuccess = useCallback(async (data: any) => {
+        console.log("Dados recebidos do modal:", data);
+
+        // Atualizar o estado local com os dados recebidos do modal
+        if (selectedCotaCaracteristica) {
+            // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
+
+            // Atualiza o item em ambas as listas de forma consistente, usando os dados retornados pelo modal
+            setCotasCaracteristicas(prev => prev.map(item =>
+                item.id === data.id ? data : item
+            ));
+            setAllData(prev => prev.map(item =>
+                item.id === data.id ? data : item
+            ));
+
             // Mostrar mensagem de sucesso na página
             setAlert({
-                message: `Nova cota/característica criada com sucesso!`,
-                type: "success"
+                message: `Cota/característica ${data.id} atualizada com sucesso!`,
+                type: "warning"
             });
 
-            setNotification(`Nova cota/característica criada com sucesso.`);
-        }, 1000);
-    }, []);
+            // Para leitores de tela
+            setNotification(`Cota/característica ${data.id} atualizada com sucesso.`);
+
+        } else if (data) {
+            // Caso de criação - O modal já fez a chamada POST
+            console.log("Item criado com sucesso:", data);
+
+            // Após criar o item, recarrega a lista completa com uma chamada GET
+            try {
+                setNotification(`Atualizando lista de cotas/características...`);
+
+                // Recarregar dados completos do servidor após criação
+                await loadData();
+
+                // Mostrar mensagem de sucesso na página
+                setAlert({
+                    message: `Nova cota/característica criada com sucesso!`,
+                    type: "success"
+                });
+
+                // Para leitores de tela
+                setNotification(`Nova cota/característica criada com sucesso.`);
+            } catch (error) {
+                console.error("Erro ao atualizar lista após criar item:", error);
+
+                // Como fallback, adiciona o item retornado pelo modal às listas locais
+                setCotasCaracteristicas(prev => [...prev, data]);
+                setAllData(prev => [...prev, data]);
+
+                setAlert({
+                    message: `Item criado com sucesso, mas houve um erro ao atualizar a lista.`,
+                    type: "warning"
+                });
+            }
+        }
+    }, [selectedCotaCaracteristica, loadData]);
 
     // Reset filters function
     const resetFilters = useCallback(() => {
         setSearchTerm("");
-        setStatusFilter("todos");
         setTipoFilter("todos");
         setNotification("Filtros resetados.");
+    }, []);
+
+    // Close modal function
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
+        // Damos um tempo para a animação de saída do modal antes de limpar a seleção
+        setTimeout(() => {
+            setSelectedCotaCaracteristica(undefined);
+        }, 200);
     }, []);
 
     // Limpar alerta
@@ -389,37 +375,20 @@ export default function CotasCaracteristicasPage() {
 
     // Prepare filter options for the FilterPanel component
     const filterOptions = useMemo(() => {
-        // Status filter options
-        const statusOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os status" },
-            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" },
-            { value: "revisao", label: "Em Revisão", color: "bg-amber-100 text-amber-800" },
-        ];
-
-        // Type filter options
-        const tipoOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os tipos" },
-            ...tipos.map(tipo => ({ value: tipo, label: tipo })),
-        ];
-
         return [
-            {
-                id: "status",
-                label: "Status",
-                value: statusFilter,
-                options: statusOptions,
-                onChange: setStatusFilter,
-            },
             {
                 id: "tipo",
                 label: "Tipo",
                 value: tipoFilter,
-                options: tipoOptions,
+                options: [
+                    { value: "todos", label: "Todos os tipos" },
+                    { value: "O", label: "Cota", color: "bg-blue-100 text-blue-800" },
+                    { value: "A", label: "Característica", color: "bg-green-100 text-green-800" },
+                ],
                 onChange: setTipoFilter,
             },
         ];
-    }, [statusFilter, tipoFilter, tipos]);
+    }, [tipoFilter]);
 
     // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
@@ -434,78 +403,76 @@ export default function CotasCaracteristicasPage() {
             });
         }
 
-        if (statusFilter !== "todos") {
-            let label = "Status", color = "bg-gray-100 text-gray-800";
+        if (tipoFilter !== "todos") {
+            let label, color;
 
-            switch (statusFilter) {
-                case "ativo":
-                    label = "Ativos";
+            switch (tipoFilter) {
+                case "O":
+                    label = "Cota";
+                    color = "bg-blue-100 text-blue-800";
+                    break;
+                case "A":
+                    label = "Característica";
                     color = "bg-green-100 text-green-800";
                     break;
-                case "inativo":
-                    label = "Inativos";
-                    color = "bg-red-100 text-red-800";
-                    break;
-                case "revisao":
-                    label = "Em Revisão";
-                    color = "bg-amber-100 text-amber-800";
-                    break;
+                default:
+                    label = tipoFilter;
+                    color = "bg-gray-100 text-gray-800";
             }
 
             filters.push({
-                id: "status",
-                value: statusFilter,
+                id: "tipo",
+                value: tipoFilter,
                 label,
                 color,
             });
         }
 
-        if (tipoFilter !== "todos") {
-            filters.push({
-                id: "tipo",
-                value: tipoFilter,
-                label: tipoFilter,
-                color: "bg-blue-100 text-blue-800",
-            });
-        }
-
         return filters;
-    }, [searchTerm, statusFilter, tipoFilter]);
+    }, [searchTerm, tipoFilter]);
 
-    // Function to get status class for table
-    const getStatusClass = useCallback((status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'bg-green-100 text-green-800';
-            case 'inativo':
-                return 'bg-red-100 text-red-800';
-            case 'revisao':
-                return 'bg-amber-100 text-amber-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
+    const getTipoLabel = useCallback((tipo: string) => {
+        switch (tipo) {
+            case 'O': return 'Cota';
+            case 'A': return 'Característica';
+            default: return 'Outro';
         }
     }, []);
 
-    const getStatusLabel = useCallback((status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'Ativo';
-            case 'inativo':
-                return 'Inativo';
-            case 'revisao':
-                return 'Em Revisão';
-            default:
-                return status;
+    const getTipoClass = useCallback((tipo: string) => {
+        switch (tipo) {
+            case 'O': return 'bg-blue-100 text-blue-800';
+            case 'A': return 'bg-green-100 text-green-800';
+            default: return 'bg-gray-100 text-gray-800';
         }
     }, []);
 
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "codigo",
-            title: "Código",
+            key: "id",
+            title: "ID",
             render: (cota: CotaCaracteristica) => (
-                <span className="text-sm font-medium text-gray-900">{cota.codigo}</span>
+                <span className="text-sm font-medium text-gray-900">#{cota.id}</span>
+            ),
+        },
+        {
+            key: "simbolo",
+            title: "Símbolo",
+            render: (cota: CotaCaracteristica) => (
+                <div className="flex items-center justify-center">
+                    {cota.simbolo_path_svg ? (
+                        <svg
+                            viewBox="0 0 100 100"
+                            width="40"
+                            height="40"
+                            className="overflow-visible"
+                            dangerouslySetInnerHTML={{ __html: cota.simbolo_path_svg }}
+                        />
+                    ) : (
+                        <span className="text-xs text-gray-400 italic">Sem símbolo</span>
+                    )}
+                </div>
             ),
         },
         {
@@ -519,45 +486,17 @@ export default function CotasCaracteristicasPage() {
             key: "tipo",
             title: "Tipo",
             render: (cota: CotaCaracteristica) => (
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {cota.tipo}
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
+                    {getTipoLabel(cota.tipo)}
                 </span>
             ),
         },
         {
-            key: "unidadeMedida",
-            title: "Unidade",
+            key: "unidade_medida",
+            title: "Unidade de Medida",
             render: (cota: CotaCaracteristica) => (
-                <span className="text-sm text-gray-500">
-                    {cota.unidadeMedida}
-                </span>
-            ),
-        },
-        {
-            key: "tolerancia",
-            title: "Tolerância",
-            render: (cota: CotaCaracteristica) => (
-                <span className="text-sm text-gray-500">
-                    {cota.tolerancia}
-                </span>
-            ),
-        },
-        {
-            key: "status",
-            title: "Status",
-            render: (cota: CotaCaracteristica) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(cota.status)}`}>
-                    {getStatusLabel(cota.status)}
-                </span>
-            ),
-        },
-        {
-            key: "revisao",
-            title: "Revisão",
-            render: (cota: CotaCaracteristica) => (
-                <div className="text-sm text-gray-500">
-                    <div>Última: {new Date(cota.ultimaRevisao).toLocaleDateString('pt-BR')}</div>
-                    <div>Próxima: {new Date(cota.proximaRevisao).toLocaleDateString('pt-BR')}</div>
+                <div className="text-sm text-gray-500 max-w-md truncate">
+                    {cota.unidade_medida || "-"}
                 </div>
             ),
         },
@@ -566,32 +505,20 @@ export default function CotasCaracteristicasPage() {
             title: "Ações",
             render: (cota: CotaCaracteristica) => (
                 <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Visualizar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleView(cota.id)}
-                            aria-label="Visualizar"
-                        >
-                            <Eye className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-[#1ABC9C] hover:text-[#16A085] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/30 focus:ring-offset-1 rounded p-1"
+                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
                             onClick={() => handleEdit(cota.id)}
                             aria-label="Editar"
                         >
                             <Pencil className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
-
                     <Tooltip text="Excluir">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:text-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-1 rounded p-1"
+                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
                             onClick={() => handleDelete(cota.id)}
                             aria-label="Excluir"
                         >
@@ -601,7 +528,7 @@ export default function CotasCaracteristicasPage() {
                 </div>
             ),
         },
-    ], [handleView, handleEdit, handleDelete, getStatusClass, getStatusLabel]);
+    ], [handleEdit, handleDelete, getTipoClass, getTipoLabel]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -619,60 +546,112 @@ export default function CotasCaracteristicasPage() {
                 dismissDuration={5000}
             />
 
+            {/* Modal de Cota/Característica */}
+            <CotaCaracteristicaModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                cotaCaracteristica={selectedCotaCaracteristica}
+                onSuccess={handleModalSuccess}
+            />
+
+            {/* Modal de confirmação de exclusão */}
+            <ConfirmDeleteModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={confirmDelete}
+                isDeleting={isDeleting}
+                title="Confirmar Exclusão"
+                message={
+                    deletingId !== null
+                        ? `Você está prestes a excluir permanentemente a cota/característica:`
+                        : "Deseja realmente excluir este item?"
+                }
+                itemName={
+                    deletingId !== null
+                        ? cotasCaracteristicas.find(cota => cota.id === deletingId)?.descricao
+                        : undefined
+                }
+            />
+
             {/* Page Header Component */}
             <PageHeader
                 title="Cotas e Características"
+                subtitle="Cadastro e edição de cotas e características"
                 buttonLabel="Nova Cota/Característica"
                 onButtonClick={handleCreateNew}
+                buttonDisabled={false}
+                showButton={true}
             />
 
             {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar por código ou descrição..."
+                searchPlaceholder="Buscar por descrição ou unidade de medida..."
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 filters={filterOptions}
                 activeFilters={activeFilters}
                 onResetFilters={resetFilters}
                 selectedFilters={selectedFiltersForDisplay}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
             />
 
             {/* Data Container with Dynamic View */}
             <DataListContainer
                 isLoading={isLoading || isPending}
-                isEmpty={cotas.length === 0}
+                isEmpty={cotasCaracteristicas.length === 0}
                 emptyState={
-                    <EmptyState
-                        icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                        title="Nenhum resultado encontrado"
-                        description="Não encontramos cotas e características que correspondam aos seus filtros atuais."
-                        primaryAction={{
-                            label: "Nova Cota/Característica",
-                            onClick: handleCreateNew,
-                            icon: <Plus className="mr-2 h-4 w-4" />,
-                        }}
-                        secondaryAction={{
-                            label: "Limpar filtros",
-                            onClick: resetFilters,
-                        }}
-                    />
+                    apiError ? (
+                        <EmptyState
+                            icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
+                            title="Erro ao carregar dados"
+                            description={apiError}
+                            primaryAction={{
+                                label: "Tentar novamente",
+                                onClick: loadData,
+                                icon: null,
+                                disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Nova Cota/Característica",
+                                onClick: handleCreateNew,
+                                disabled: false,
+                            }}
+                        />
+                    ) : (
+                        <EmptyState
+                            icon={<RulerIcon className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
+                            title="Nenhum resultado encontrado"
+                            description="Não encontramos cotas e características que correspondam aos seus filtros atuais."
+                            primaryAction={{
+                                label: "Nova Cota/Característica",
+                                onClick: handleCreateNew,
+                                icon: <Plus className="mr-2 h-4 w-4" />,
+                                disabled: false,
+                            }}
+                            secondaryAction={{
+                                label: "Limpar filtros",
+                                onClick: resetFilters,
+                            }}
+                        />
+                    )
                 }
                 totalItems={allData.length}
-                totalFilteredItems={cotas.length}
+                totalFilteredItems={cotasCaracteristicas.length}
                 activeFilters={activeFilters}
                 onResetFilters={resetFilters}
             >
                 {viewMode === "table" ? (
-                    <DataTable data={cotas} columns={tableColumns} />
+                    <DataTable data={cotasCaracteristicas} columns={tableColumns} />
                 ) : (
                     <DataCards
-                        data={cotas}
+                        data={cotasCaracteristicas}
                         renderCard={(cota) => (
                             <Card
+                                key={cota.id}
                                 cota={cota}
-                                onView={handleView}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                             />
