@@ -483,21 +483,21 @@ export default function CotasCaracteristicasPage() {
             ),
         },
         {
-            key: "tipo",
-            title: "Tipo",
-            render: (cota: CotaCaracteristica) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
-                    {getTipoLabel(cota.tipo)}
-                </span>
-            ),
-        },
-        {
             key: "unidade_medida",
             title: "Unidade de Medida",
             render: (cota: CotaCaracteristica) => (
                 <div className="text-sm text-gray-500 max-w-md truncate">
                     {cota.unidade_medida || "-"}
                 </div>
+            ),
+        },
+        {
+            key: "tipo",
+            title: "Tipo",
+            render: (cota: CotaCaracteristica) => (
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
+                    {getTipoLabel(cota.tipo)}
+                </span>
             ),
         },
         {

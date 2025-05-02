@@ -4,7 +4,7 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { createCotaCaracteristica, updateCotaCaracteristica } from "@/services/api/cotasCaracteristicasService";
 import { CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { motion } from "framer-motion";
-import { AlertCircle, Code, FileText, Info, MessageSquare, RulerIcon } from "lucide-react";
+import { AlertCircle, CircleCheck, Code, FileText, Info, Ruler } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { FormModal } from "../FormModal";
 
@@ -55,6 +55,11 @@ export function CotaCaracteristicaModal({
                     return;
                 }
 
+                if (!formData.unidade_medida?.trim()) {
+                    setError("A unidade de medida é obrigatória");
+                    return;
+                }
+
                 // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
                 let svgContent = formData.simbolo_path_svg?.trim() || "";
                 // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
@@ -88,13 +93,11 @@ export function CotaCaracteristicaModal({
                             },
                             getAuthHeaders()
                         );
-                        console.log("Resposta da API ao editar:", responseData);
                     } catch (error: any) {
                         throw new Error(error.message || "Erro ao atualizar cota/característica");
                     }
                 } else {
                     // Modo de criação - POST
-                    console.log("Enviando POST para criar novo item:", payload);
                     try {
                         responseData = await createCotaCaracteristica(
                             {
@@ -105,7 +108,6 @@ export function CotaCaracteristicaModal({
                             },
                             getAuthHeaders()
                         );
-                        console.log("Resposta da API ao criar:", responseData);
                     } catch (error: any) {
                         throw new Error(error.message || "Erro ao criar cota/característica");
                     }
@@ -130,7 +132,6 @@ export function CotaCaracteristicaModal({
                         simbolo_path_svg: responseData.simbolo_path_svg || formData.simbolo_path_svg?.trim() || "",
                         unidade_medida: responseData.unidade_medida || formData.unidade_medida?.trim() || "",
                     };
-                    console.log("Dados enviados ao componente pai:", successData);
                     onSuccess(successData);
                 }
 
@@ -182,7 +183,7 @@ export function CotaCaracteristicaModal({
             isEditing={!!cotaCaracteristica?.id}
             onSubmit={handleSubmit}
             submitLabel={cotaCaracteristica?.id ? "Salvar alterações" : "Criar cota/característica"}
-            size="sm"
+            size="lg"
         >
             {renderFeedback()}
 
@@ -213,54 +214,58 @@ export function CotaCaracteristicaModal({
                         </div>
                     </div>
 
-                    {/* Campo de tipo (select) */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <RulerIcon className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="tipo" className="text-sm font-medium text-gray-700">
-                                    Tipo <span className="text-red-500">*</span>
-                                </label>
+                    {/* Campos de tipo e unidade de medida na mesma linha */}
+                    <div className="mb-4 grid grid-cols-2 gap-4">
+                        {/* Campo de tipo (select) */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <CircleCheck className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="tipo" className="text-sm font-medium text-gray-700">
+                                        Tipo <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="tipo"
+                                    name="tipo"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    required
+                                    defaultValue={cotaCaracteristica?.tipo || ""}
+                                    onFocus={() => setIsFocused('tipo')}
+                                    onBlur={() => setIsFocused(null)}
+                                >
+                                    <option value="" disabled>Selecione o tipo</option>
+                                    <option value="O">Cota</option>
+                                    <option value="A">Característica</option>
+                                </select>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <select
-                                id="tipo"
-                                name="tipo"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                required
-                                defaultValue={cotaCaracteristica?.tipo || ""}
-                                onFocus={() => setIsFocused('tipo')}
-                                onBlur={() => setIsFocused(null)}
-                            >
-                                <option value="" disabled>Selecione o tipo</option>
-                                <option value="O">Cota</option>
-                                <option value="A">Característica</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {/* Campo de unidade de medida */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <MessageSquare className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
-                                    Unidade de Medida
-                                </label>
+                        {/* Campo de unidade de medida */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <Ruler className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                        Unidade de Medida <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="unidade_medida"
-                                name="unidade_medida"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Ex: mm, kg, cm (opcional)"
-                                defaultValue={cotaCaracteristica?.unidade_medida || ""}
-                                onFocus={() => setIsFocused('unidade_medida')}
-                                onBlur={() => setIsFocused(null)}
-                            />
+                            <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="text"
+                                    id="unidade_medida"
+                                    name="unidade_medida"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Ex: mm, kg, cm"
+                                    defaultValue={cotaCaracteristica?.unidade_medida || ""}
+                                    required
+                                    onFocus={() => setIsFocused('unidade_medida')}
+                                    onBlur={() => setIsFocused(null)}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -275,37 +280,44 @@ export function CotaCaracteristicaModal({
                             </div>
                         </div>
 
-                        {/* Área de visualização do SVG */}
-                        <div className="mb-2 border border-gray-200 rounded-md p-3 bg-gray-50 flex items-center justify-center">
-                            <div className="bg-white shadow-sm rounded-md p-2" style={{ width: '100px', height: '100px' }}>
-                                <svg
-                                    viewBox="0 0 100 100"
-                                    width="100%"
-                                    height="100%"
-                                    className="overflow-visible"
-                                    dangerouslySetInnerHTML={{ __html: svgPreview }}
+                        {/* Layout em grid com textarea à esquerda e visualização à direita */}
+                        <div className="grid grid-cols-1 md:grid-cols-2  gap-3">
+                            {/* Textarea para código SVG à esquerda */}
+                            <div className={`relative transition-all duration-200 border border-gray-200 p-2 ${isFocused === 'simbolo_path_svg' ? 'ring-2 ring-[#09A08D]/30  rounded-md' : ''}`}>
+                                <textarea
+                                    id="simbolo_path_svg"
+                                    name="simbolo_path_svg"
+                                    rows={6}
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 font-mono"
+                                    placeholder="<circle cx='50' cy='50' r='35' stroke='black' stroke-width='4' fill='none'/>"
+                                    defaultValue={cotaCaracteristica?.simbolo_path_svg || ""}
+                                    onChange={handleSvgChange}
+                                    onFocus={() => setIsFocused('simbolo_path_svg')}
+                                    onBlur={() => setIsFocused(null)}
                                 />
+                                <div className="mt-1 flex items-start">
+                                    <Info className="h-3.5 w-3.5 text-gray-400 mr-1 flex-shrink-0" />
+                                    <p className="text-xs text-gray-500">
+                                        Sem as tags &lt;svg&gt; e &lt;/svg&gt;
+                                    </p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className={`relative transition-all duration-200 ${isFocused === 'simbolo_path_svg' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <textarea
-                                id="simbolo_path_svg"
-                                name="simbolo_path_svg"
-                                rows={4}
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 font-mono"
-                                placeholder="<circle cx='50' cy='50' r='35' stroke='black' stroke-width='4' fill='none'/>"
-                                defaultValue={cotaCaracteristica?.simbolo_path_svg || ""}
-                                onChange={handleSvgChange}
-                                onFocus={() => setIsFocused('simbolo_path_svg')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                        <div className="mt-1 flex items-start">
-                            <Info className="h-3.5 w-3.5 text-gray-400 mr-1 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-gray-500">
-                                Insira apenas o conteúdo interno do SVG, sem as tags &lt;svg&gt; e &lt;/svg&gt;
-                            </p>
+                            {/* Área de visualização do SVG à direita */}
+                            <div className="flex flex-col items-center justify-center bg-gray-50 border border-gray-200 rounded-md p-3">
+                                <div className="bg-white shadow-sm rounded-md p-2 w-full h-full max-h-32 flex items-center justify-center">
+                                    <svg
+                                        viewBox="0 0 100 100"
+                                        width="100%"
+                                        height="100%"
+                                        className="overflow-visible"
+                                        dangerouslySetInnerHTML={{ __html: svgPreview }}
+                                    />
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 text-center">
+                                    Visualização do símbolo
+                                </p>
+                            </div>
                         </div>
                     </div>
 
