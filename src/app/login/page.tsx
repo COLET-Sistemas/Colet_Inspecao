@@ -101,9 +101,6 @@ export default function LoginPage() {
                 remember: false
             });
 
-            if (success) {
-                console.log('Login como operador realizado com sucesso!');
-            }
         } catch (err) {
             console.error("Login como operador error:", err);
         } finally {
@@ -138,8 +135,6 @@ export default function LoginPage() {
                     localStorage.setItem('rememberedUsername', username);
                 }
 
-                // Verificar se o perfil_inspecao foi devidamente salvo
-                console.log('Login realizado com sucesso! Perfil de inspeção capturado.');
             }
         } catch (err) {
             // Error handling is managed by the useAuth hook

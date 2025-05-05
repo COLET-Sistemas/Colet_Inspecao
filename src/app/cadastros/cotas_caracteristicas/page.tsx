@@ -14,7 +14,7 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
 import { AlertState, CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { motion } from "framer-motion";
-import { Pencil, Plus, RulerIcon, SlidersHorizontal, Trash2 } from "lucide-react";
+import { IterationCcw, Pencil, Plus, RulerIcon, SlidersHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
@@ -611,14 +611,10 @@ export default function CotasCaracteristicasPage() {
                             primaryAction={{
                                 label: "Tentar novamente",
                                 onClick: loadData,
-                                icon: null,
+                                icon: <IterationCcw className="mr-2 h-4 w-4" />,
                                 disabled: false,
                             }}
-                            secondaryAction={{
-                                label: "Nova Cota/Característica",
-                                onClick: handleCreateNew,
-                                disabled: false,
-                            }}
+
                         />
                     ) : (
                         <EmptyState

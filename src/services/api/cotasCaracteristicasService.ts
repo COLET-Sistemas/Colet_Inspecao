@@ -6,7 +6,7 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`, {
+    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas`, {
         method: 'GET',
         headers: authHeaders,
     });

@@ -124,7 +124,6 @@ export function useAuth() {
 
             // Get response data
             const data = await response.json();
-            console.log('Login API response:', data); // Log dos dados recebidos da API
 
             // Status 200 means the API call was successful
             if (response.status === 200) {

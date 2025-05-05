@@ -14,7 +14,7 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteTipoInstrumentoMedicao, getTiposInstrumentosMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
 import { AlertState, TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
-import { Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { IterationCcw, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
@@ -485,12 +485,7 @@ export default function TiposInstrumentosMedicaoPage() {
                             primaryAction={{
                                 label: "Tentar novamente",
                                 onClick: loadData,
-                                icon: null,
-                                disabled: false,
-                            }}
-                            secondaryAction={{
-                                label: "Novo Tipo de Instrumento",
-                                onClick: handleCreateNew,
+                                icon: <IterationCcw className="mr-2 h-4 w-4" />,
                                 disabled: false,
                             }}
                         />

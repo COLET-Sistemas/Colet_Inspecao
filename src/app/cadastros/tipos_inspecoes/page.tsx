@@ -13,7 +13,7 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { AlertState, TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
-import { Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { IterationCcw, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
@@ -391,13 +391,8 @@ export default function TiposInspecoesPage() {
                             primaryAction={{
                                 label: "Tentar novamente",
                                 onClick: loadData,
-                                icon: null,
+                                icon: <IterationCcw className="mr-2 h-4 w-4" />,
                                 disabled: false,
-                            }}
-                            secondaryAction={{
-                                label: "Novo Tipo de Inspeção",
-                                onClick: () => { }, // função vazia
-                                disabled: true,
                             }}
                         />
                     ) : (
@@ -407,7 +402,7 @@ export default function TiposInspecoesPage() {
                             description="Não encontramos tipos de inspeção que correspondam aos seus filtros atuais."
                             primaryAction={{
                                 label: "Novo Tipo de Inspeção",
-                                onClick: () => { }, // função vazia
+                                onClick: () => { },
                                 icon: <Plus className="mr-2 h-4 w-4" />,
                                 disabled: true,
                             }}
