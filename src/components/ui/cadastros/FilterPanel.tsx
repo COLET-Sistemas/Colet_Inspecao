@@ -8,9 +8,42 @@ import {
     SlidersHorizontal,
     X,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 // Update import path to use absolute path from project root
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+
+// Hook para detectar tamanho da tela
+const useMediaQuery = (query: string): boolean => {
+    const [matches, setMatches] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia(query);
+        if (media.matches !== matches) {
+            setMatches(media.matches);
+        }
+
+        const listener = () => setMatches(media.matches);
+        media.addEventListener("change", listener);
+
+        return () => media.removeEventListener("change", listener);
+    }, [matches, query]);
+
+    return matches;
+};
+
+// Componente condicional para renderizar Tooltip apenas em desktop
+const ConditionalTooltip = ({ children, text }: { children: React.ReactNode; text: string }) => {
+    // Detecta se o dispositivo é móvel ou tablet (width < 768px)
+    const isMobileOrTablet = useMediaQuery('(max-width: 768px)');
+
+    // Se for mobile ou tablet, retorna apenas o children sem o tooltip
+    if (isMobileOrTablet) {
+        return <>{children}</>;
+    }
+
+    // Se for desktop, retorna o Tooltip completo
+    return <Tooltip text={text}>{children}</Tooltip>;
+};
 
 export type ViewMode = "table" | "card";
 export type FilterOption = {
@@ -105,7 +138,7 @@ export function FilterPanel({
                     <div className="flex flex-nowrap gap-2 shrink-0">
                         {/* Refresh button */}
                         {onRefresh && (
-                            <Tooltip text="Atualizar dados">
+                            <ConditionalTooltip text="Atualizar dados">
                                 <motion.button
                                     whileTap={{ scale: 0.97 }}
                                     onClick={onRefresh}
@@ -115,11 +148,11 @@ export function FilterPanel({
                                 >
                                     <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''}`} />
                                 </motion.button>
-                            </Tooltip>
+                            </ConditionalTooltip>
                         )}
 
                         {/* Advanced filters toggle button */}
-                        <Tooltip text="Filtros avançados">
+                        <ConditionalTooltip text="Filtros avançados">
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => setShowFilters(!showFilters)}
@@ -134,11 +167,11 @@ export function FilterPanel({
                                     </span>
                                 )}
                             </motion.button>
-                        </Tooltip>
+                        </ConditionalTooltip>
 
                         {/* View toggle buttons */}
                         <div className="flex">
-                            <Tooltip text="Visualização em tabela">
+                            <ConditionalTooltip text="Visualização em tabela">
                                 <div className="border border-gray-300 rounded-l-md overflow-hidden">
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
@@ -152,8 +185,8 @@ export function FilterPanel({
                                         <LayoutList size={18} />
                                     </motion.button>
                                 </div>
-                            </Tooltip>
-                            <Tooltip text="Visualização em cards">
+                            </ConditionalTooltip>
+                            <ConditionalTooltip text="Visualização em cards">
                                 <div className="border border-gray-300 border-l-0 rounded-r-md overflow-hidden">
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
@@ -167,7 +200,7 @@ export function FilterPanel({
                                         <LayoutGrid size={18} />
                                     </motion.button>
                                 </div>
-                            </Tooltip>
+                            </ConditionalTooltip>
                         </div>
                     </div>
                 </div>
