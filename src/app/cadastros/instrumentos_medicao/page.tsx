@@ -461,7 +461,7 @@ export default function InstrumentosMedicaoPage() {
         // Mostrar mensagem de sucesso na página, não no modal
         setAlert({
             message: `Instrumento de medição ${data.tag} ${data.id ? 'atualizado' : 'criado'} com sucesso!`,
-            type: data.id ? "warning" : "success"
+            type: "success"
         });
 
         setNotification(`Instrumento de medição ${data.id ? 'atualizado' : 'criado'} com sucesso.`);
