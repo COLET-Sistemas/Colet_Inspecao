@@ -13,6 +13,7 @@ interface CotaCaracteristicaModalProps {
     onClose: () => void;
     cotaCaracteristica?: CotaCaracteristica;
     onSuccess?: (data: CotaCaracteristica) => void;
+    onError?: (error: string) => void;
 }
 
 export function CotaCaracteristicaModal({
@@ -20,6 +21,7 @@ export function CotaCaracteristicaModal({
     onClose,
     cotaCaracteristica,
     onSuccess,
+    onError,
 }: CotaCaracteristicaModalProps) {
     const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export function CotaCaracteristicaModal({
                             getAuthHeaders()
                         );
                     } catch (error: any) {
-                        throw new Error(error.message || "Erro ao atualizar cota/característica");
+                        throw new Error(error.message || error.erro || "Erro ao atualizar cota/característica");
                     }
                 } else {
                     // Modo de criação - POST
@@ -109,7 +111,7 @@ export function CotaCaracteristicaModal({
                             getAuthHeaders()
                         );
                     } catch (error: any) {
-                        throw new Error(error.message || "Erro ao criar cota/característica");
+                        throw new Error(error.message || error.erro || "Erro ao criar cota/característica");
                     }
                 }
 
@@ -139,10 +141,16 @@ export function CotaCaracteristicaModal({
 
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
-                setError(err.message || "Ocorreu um erro inesperado");
+                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                // Fechar o modal em caso de erro
+                onClose();
+                // Propagar o erro para o componente pai
+                if (onError) {
+                    onError(errorMessage);
+                }
             }
         },
-        [cotaCaracteristica, onClose, onSuccess, getAuthHeaders]
+        [cotaCaracteristica, onClose, onSuccess, onError, getAuthHeaders]
     );
 
     // Feedback visual para erros

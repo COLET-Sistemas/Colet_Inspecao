@@ -18,6 +18,7 @@ interface TipoInstrumentoMedicaoModalProps {
     onClose: () => void;
     tipoInstrumentoMedicao?: TipoInstrumentoMedicao;
     onSuccess?: (data: TipoInstrumentoMedicao) => void;
+    onError?: (error: string) => void;
 }
 
 export function TipoInstrumentoMedicaoModal({
@@ -25,6 +26,7 @@ export function TipoInstrumentoMedicaoModal({
     onClose,
     tipoInstrumentoMedicao,
     onSuccess,
+    onError,
 }: TipoInstrumentoMedicaoModalProps) {
     const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function TipoInstrumentoMedicaoModal({
                         );
                         console.log("Resposta da API ao editar:", responseData);
                     } catch (error: any) {
-                        throw new Error(error.message || "Erro ao atualizar tipo de instrumento de medição");
+                        throw new Error(error.message || error.erro || "Erro ao atualizar tipo de instrumento de medição");
                     }
                 } else {
                     // Modo de criação - POST
@@ -80,7 +82,7 @@ export function TipoInstrumentoMedicaoModal({
                         );
                         console.log("Resposta da API ao criar:", responseData);
                     } catch (error: any) {
-                        throw new Error(error.message || "Erro ao criar tipo de instrumento de medição");
+                        throw new Error(error.message || error.erro || "Erro ao criar tipo de instrumento de medição");
                     }
                 }
 
@@ -109,10 +111,16 @@ export function TipoInstrumentoMedicaoModal({
 
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
-                setError(err.message || "Ocorreu um erro inesperado");
+                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                // Fechar o modal em caso de erro
+                onClose();
+                // Propagar o erro para o componente pai
+                if (onError) {
+                    onError(errorMessage);
+                }
             }
         },
-        [apiUrl, onClose, onSuccess, tipoInstrumentoMedicao, getAuthHeaders]
+        [apiUrl, onClose, onSuccess, onError, tipoInstrumentoMedicao, getAuthHeaders]
     );
 
     // Feedback visual para erros
@@ -144,7 +152,8 @@ export function TipoInstrumentoMedicaoModal({
             }
             isEditing={!!tipoInstrumentoMedicao?.id}
             onSubmit={handleSubmit}
-            submitLabel={tipoInstrumentoMedicao?.id ? "Salvar alterações" : "Criar tipo de instrumento"}
+            submitLabel={tipoInstrumentoMedicao?.id ? "Salvar alterações" : "Criar tipo de instrumento"
+            }
             size="sm"
         >
             {renderFeedback()}

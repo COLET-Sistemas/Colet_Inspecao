@@ -42,6 +42,46 @@ interface InstrumentoMedicaoAPI {
     frequencia_calibracao: number;
 }
 
+// Interface InstrumentoMedicao que o modal espera
+interface InstrumentoMedicao {
+    id?: number;
+    id_tipo_instrumento_medicao?: number;
+    nome?: string;
+    codigo?: string;
+    descricao?: string;
+    data_calibracao_inicial?: string;
+    data_calibracao_vencimento?: string;
+}
+
+// Adaptador para converter entre os tipos
+const adaptInstrumentoMedicaoAPIToModal = (api: InstrumentoMedicaoAPI): InstrumentoMedicao => {
+    return {
+        id: api.id,
+        nome: api.nome_instrumento,
+        codigo: api.tag,
+        descricao: `Número de série: ${api.numero_serie}, Patrimônio: ${api.numero_patrimonio}`,
+        data_calibracao_inicial: api.data_ultima_calibracao,
+        data_calibracao_vencimento: api.data_validade,
+        id_tipo_instrumento_medicao: 1, // Valor padrão, ajustar conforme necessário
+    };
+};
+
+// Adaptador para converter de volta para InstrumentoMedicaoAPI
+const adaptModalToInstrumentoMedicaoAPI = (modal: InstrumentoMedicao): InstrumentoMedicaoAPI => {
+    return {
+        id: modal.id,
+        tag: modal.codigo || "",
+        nome_instrumento: modal.nome || "",
+        numero_serie: 0, // Valores padrão, ajustar conforme necessário
+        numero_patrimonio: "",
+        codigo_artigo: "",
+        situacao: "A",
+        data_validade: modal.data_calibracao_vencimento || "",
+        data_ultima_calibracao: modal.data_calibracao_inicial || "",
+        frequencia_calibracao: 365
+    };
+};
+
 interface AlertState {
     message: string | null;
     type: "success" | "error" | "warning";
@@ -173,7 +213,7 @@ export default function InstrumentosMedicaoPage() {
     const [activeFilters, setActiveFilters] = useState(0);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedInstrumento, setSelectedInstrumento] = useState<InstrumentoMedicaoAPI | undefined>(undefined);
+    const [selectedInstrumento, setSelectedInstrumento] = useState<InstrumentoMedicao | undefined>(undefined);
 
     // Delete modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -366,7 +406,7 @@ export default function InstrumentosMedicaoPage() {
     const handleView = useCallback(async (id: number) => {
         const instrumento = await fetchInstrumentoById(id);
         if (instrumento) {
-            setSelectedInstrumento(instrumento);
+            setSelectedInstrumento(adaptInstrumentoMedicaoAPIToModal(instrumento));
             setIsModalOpen(true);
             setNotification(`Visualizando detalhes do instrumento de medição ${id}.`);
         }
@@ -375,7 +415,7 @@ export default function InstrumentosMedicaoPage() {
     const handleEdit = useCallback(async (id: number) => {
         const instrumento = await fetchInstrumentoById(id);
         if (instrumento) {
-            setSelectedInstrumento(instrumento);
+            setSelectedInstrumento(adaptInstrumentoMedicaoAPIToModal(instrumento));
             setIsModalOpen(true);
             setNotification(`Iniciando edição do instrumento de medição ${id}.`);
         }
@@ -455,12 +495,15 @@ export default function InstrumentosMedicaoPage() {
         setNotification("Iniciando cadastro de novo instrumento de medição.");
     }, []);
 
-    const handleModalSuccess = useCallback((data: InstrumentoMedicaoAPI) => {
+    const handleModalSuccess = useCallback((data: InstrumentoMedicao) => {
+        // Convert modal data back to API format before using it in the app
+        const apiData = adaptModalToInstrumentoMedicaoAPI(data);
+
         loadData();
 
         // Mostrar mensagem de sucesso na página, não no modal
         setAlert({
-            message: `Instrumento de medição ${data.tag} ${data.id ? 'atualizado' : 'criado'} com sucesso!`,
+            message: `Instrumento de medição ${data.codigo} ${data.id ? 'atualizado' : 'criado'} com sucesso!`,
             type: "success"
         });
 
@@ -768,8 +811,9 @@ export default function InstrumentosMedicaoPage() {
             <InstrumentoMedicaoModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                instrumento={selectedInstrumento}
+                instrumentoMedicao={selectedInstrumento}
                 onSuccess={handleModalSuccess}
+                tiposInstrumentosMedicao={[{ id: 1, nome_tipo_instrumento: "Paquímetro" }]} // Adding mock data here
             />
         </div>
     );

@@ -202,7 +202,7 @@ export default function TiposInspecoesPage() {
                 // Mostrar mensagem de sucesso na página
                 setAlert({
                     message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
-                    type: "warning"
+                    type: "success"
                 });
 
                 // Para leitores de tela
@@ -351,6 +351,13 @@ export default function TiposInspecoesPage() {
                     onClose={handleCloseModal}
                     tipoInspecao={selectedTipoInspecao}
                     onSuccess={handleModalSuccess}
+                    onError={(errorMessage) => {
+                        setAlert({
+                            message: errorMessage,
+                            type: "error"
+                        });
+                        setNotification(`Erro: ${errorMessage}`);
+                    }}
                 />
             )}
 

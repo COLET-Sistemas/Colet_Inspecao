@@ -18,6 +18,7 @@ interface TipoInspecaoModalProps {
     onClose: () => void;
     tipoInspecao: TipoInspecao; // Removida a opcionalidade para exigir o objeto
     onSuccess?: (data: TipoInspecao) => void;
+    onError?: (error: string) => void;
 }
 
 export function TipoInspecaoModal({
@@ -25,6 +26,7 @@ export function TipoInspecaoModal({
     onClose,
     tipoInspecao,
     onSuccess,
+    onError,
 }: TipoInspecaoModalProps) {
     const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function TipoInspecaoModal({
                 if (!response.ok || response.status === 299) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
-                        errorData?.message || "Erro ao atualizar tipo de inspeção"
+                        errorData?.message || errorData?.erro || "Erro ao atualizar tipo de inspeção"
                     );
                 }
 
@@ -83,10 +85,16 @@ export function TipoInspecaoModal({
 
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
-                setError(err.message || "Ocorreu um erro inesperado");
+                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                // Fechar o modal em caso de erro
+                onClose();
+                // Propagar o erro para o componente pai
+                if (onError) {
+                    onError(errorMessage);
+                }
             }
         },
-        [apiUrl, onClose, onSuccess, tipoInspecao, getAuthHeaders]
+        [apiUrl, onClose, onSuccess, onError, tipoInspecao, getAuthHeaders]
     );
 
     // Feedback visual para erros

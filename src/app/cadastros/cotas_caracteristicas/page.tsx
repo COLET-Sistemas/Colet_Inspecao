@@ -259,7 +259,7 @@ export default function CotasCaracteristicasPage() {
             // Mostrar mensagem de sucesso
             setAlert({
                 message: `Cota/característica excluída com sucesso!`,
-                type: "error"
+                type: "success"
             });
 
             setNotification(`Cota/característica excluída com sucesso.`);
@@ -312,7 +312,7 @@ export default function CotasCaracteristicasPage() {
             // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Cota/característica ${data.id} atualizada com sucesso!`,
-                type: "warning"
+                type: "success"
             });
 
             // Para leitores de tela
@@ -552,6 +552,13 @@ export default function CotasCaracteristicasPage() {
                 onClose={handleCloseModal}
                 cotaCaracteristica={selectedCotaCaracteristica}
                 onSuccess={handleModalSuccess}
+                onError={(errorMessage) => {
+                    setAlert({
+                        message: errorMessage,
+                        type: "error"
+                    });
+                    setNotification(`Erro: ${errorMessage}`);
+                }}
             />
 
             {/* Modal de confirmação de exclusão */}

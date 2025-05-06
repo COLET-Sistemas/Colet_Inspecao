@@ -345,7 +345,7 @@ export default function EspecificacoesPage() {
             // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Especificação ${id} atualizada com sucesso!`,
-                type: "warning"
+                type: "success"
             });
 
             setNotification(`Especificação ${id} atualizada com sucesso.`);

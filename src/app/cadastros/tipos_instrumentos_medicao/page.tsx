@@ -216,7 +216,7 @@ export default function TiposInstrumentosMedicaoPage() {
             // Mostrar mensagem de sucesso
             setAlert({
                 message: `Tipo de instrumento de medição excluído com sucesso!`,
-                type: "error"
+                type: "success"
             });
 
             setNotification(`Tipo de instrumento de medição excluído com sucesso.`);
@@ -269,7 +269,7 @@ export default function TiposInstrumentosMedicaoPage() {
             // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`,
-                type: "warning"
+                type: "success"
             });
 
             // Para leitores de tela
@@ -426,6 +426,13 @@ export default function TiposInstrumentosMedicaoPage() {
                 onClose={handleCloseModal}
                 tipoInstrumentoMedicao={selectedTipoInstrumentoMedicao}
                 onSuccess={handleModalSuccess}
+                onError={(errorMessage) => {
+                    setAlert({
+                        message: errorMessage,
+                        type: "error"
+                    });
+                    setNotification(`Erro: ${errorMessage}`);
+                }}
             />
 
             {/* Modal de confirmação de exclusão */}

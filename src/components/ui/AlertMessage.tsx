@@ -108,9 +108,9 @@ export function AlertMessage({
 
     const currentStyle = styleConfig[type];
     const defaultTitle = {
-        success: "Criado com sucesso",
-        error: "Apagado com sucesso",
-        warning: "Editado com sucesso",
+        success: "Operação realizada com sucesso",
+        error: "Erro na operação",
+        warning: "Atenção",
         info: "Informação",
     };
 
