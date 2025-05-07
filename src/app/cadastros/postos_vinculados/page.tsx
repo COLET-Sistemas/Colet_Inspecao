@@ -66,6 +66,7 @@ export default function PostosVinculadosPage() {
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoRecursoFilter, setTipoRecursoFilter] = useState<string>("todos");
+    const [selectionFilter, setSelectionFilter] = useState<string>("todos"); // Novo estado para filtrar por seleção
 
     const [isPending, startTransition] = useTransition();
 
@@ -108,8 +109,9 @@ export default function PostosVinculadosPage() {
         let count = 0;
         if (searchTerm) count++;
         if (tipoRecursoFilter !== "todos") count++;
+        if (selectionFilter !== "todos") count++; // Contar filtro de seleção
         setActiveFilters(count);
-    }, [searchTerm, tipoRecursoFilter]);
+    }, [searchTerm, tipoRecursoFilter, selectionFilter]);
 
     // Carregar dados iniciais
     const loadData = useCallback(async () => {
@@ -165,10 +167,6 @@ export default function PostosVinculadosPage() {
 
     // Função auxiliar para filtrar dados
     const filterData = (data: Posto[], search: string, tipoRecurso: string) => {
-        if (!search && tipoRecurso === "todos") {
-            return data;
-        }
-
         return data.filter(item => {
             // Verificar texto de busca
             const matchesSearch = !search ||
@@ -180,7 +178,12 @@ export default function PostosVinculadosPage() {
             const matchesTipoRecurso = tipoRecurso === "todos" ||
                 item.tipo_recurso === tipoRecurso;
 
-            return matchesSearch && matchesTipoRecurso;
+            // Verificar filtro de seleção
+            const matchesSelection = selectionFilter === "todos" ||
+                (selectionFilter === "selecionados" && selectedPostos.has(item.posto)) ||
+                (selectionFilter === "nao-selecionados" && !selectedPostos.has(item.posto));
+
+            return matchesSearch && matchesTipoRecurso && matchesSelection;
         });
     };
 
@@ -214,7 +217,7 @@ export default function PostosVinculadosPage() {
                 }
             });
         }
-    }, [searchTerm, tipoRecursoFilter, allData]);
+    }, [searchTerm, tipoRecursoFilter, allData, selectionFilter, selectedPostos]);
 
     // Gerenciar a seleção de postos
     const handleToggleSelect = useCallback((postoId: string) => {
@@ -274,6 +277,7 @@ export default function PostosVinculadosPage() {
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setTipoRecursoFilter("todos");
+        setSelectionFilter("todos"); // Resetar filtro de seleção
         setNotification("Filtros resetados.");
     }, []);
 
@@ -292,6 +296,12 @@ export default function PostosVinculadosPage() {
             }))
         ];
 
+        const selectionOptions: FilterOption[] = [
+            { value: "todos", label: "Todos" },
+            { value: "selecionados", label: "Selecionados", color: "bg-green-100 text-green-800" },
+            { value: "nao-selecionados", label: "Não Selecionados", color: "bg-red-100 text-red-800" },
+        ];
+
         return [
             {
                 id: "tipoRecurso",
@@ -300,8 +310,15 @@ export default function PostosVinculadosPage() {
                 options: tipoRecursoOptions,
                 onChange: setTipoRecursoFilter,
             },
+            {
+                id: "selection",
+                label: "Seleção",
+                value: selectionFilter,
+                options: selectionOptions,
+                onChange: setSelectionFilter,
+            },
         ];
-    }, [tipoRecursoFilter, tiposRecurso]);
+    }, [tipoRecursoFilter, tiposRecurso, selectionFilter]);
 
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
@@ -324,8 +341,17 @@ export default function PostosVinculadosPage() {
             });
         }
 
+        if (selectionFilter !== "todos") {
+            filters.push({
+                id: "selection",
+                value: selectionFilter,
+                label: `Seleção: ${selectionFilter === "selecionados" ? "Selecionados" : "Não Selecionados"}`,
+                color: selectionFilter === "selecionados" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800",
+            });
+        }
+
         return filters;
-    }, [searchTerm, tipoRecursoFilter]);
+    }, [searchTerm, tipoRecursoFilter, selectionFilter]);
 
     const tableColumns = useMemo(() => [
         {
