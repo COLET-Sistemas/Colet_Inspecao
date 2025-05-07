@@ -72,7 +72,7 @@ const adaptModalToInstrumentoMedicaoAPI = (modal: InstrumentoMedicao): Instrumen
         id: modal.id,
         tag: modal.codigo || "",
         nome_instrumento: modal.nome || "",
-        numero_serie: 0, // Valores padrão, ajustar conforme necessário
+        numero_serie: 0, 
         numero_patrimonio: "",
         codigo_artigo: "",
         situacao: "A",
