@@ -100,6 +100,8 @@ export default function PostosVinculadosPage() {
     // Chave para local storage
     const localStorageKey = 'postos-vinculados';
 
+    const apiUrl = localStorage.getItem("apiUrl");
+
     // Calculate active filters
     useEffect(() => {
         let count = 0;
@@ -114,7 +116,7 @@ export default function PostosVinculadosPage() {
         setApiError(null);
 
         try {
-            const response = await fetch('http://10.0.0.151:8080/postos');
+            const response = await fetch(`${apiUrl}/postos`);
 
             if (!response.ok) {
                 throw new Error(`Erro ao obter postos: ${response.status}`);
