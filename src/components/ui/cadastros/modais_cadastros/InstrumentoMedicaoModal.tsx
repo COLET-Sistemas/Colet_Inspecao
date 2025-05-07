@@ -1,31 +1,16 @@
 "use client";
 
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
 import { motion } from "framer-motion";
-import { AlertCircle, CalendarClock, FileText, MessageSquare, Ruler, Tag } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, FileText, Tag } from "lucide-react";
+import { useCallback, useState } from "react";
 import { FormModal } from "../FormModal";
-
-interface TipoInstrumentoMedicao {
-    id: number;
-    nome_tipo_instrumento: string;
-}
-
-interface InstrumentoMedicao {
-    id?: number;
-    id_tipo_instrumento_medicao?: number;
-    nome?: string;
-    codigo?: string;
-    descricao?: string;
-    data_calibracao_inicial?: string;
-    data_calibracao_vencimento?: string;
-}
 
 interface InstrumentoMedicaoModalProps {
     isOpen: boolean;
     onClose: () => void;
     instrumentoMedicao?: InstrumentoMedicao;
-    tiposInstrumentosMedicao?: TipoInstrumentoMedicao[];
     onSuccess?: (data: InstrumentoMedicao) => void;
 }
 
@@ -33,46 +18,11 @@ export function InstrumentoMedicaoModal({
     isOpen,
     onClose,
     instrumentoMedicao,
-    tiposInstrumentosMedicao = [],
     onSuccess,
 }: InstrumentoMedicaoModalProps) {
     const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
-    const [dataCalibracaoInicial, setDataCalibracaoInicial] = useState<string>("");
-    const [dataCalibracaoVencimento, setDataCalibracaoVencimento] = useState<string>("");
-
-    // Inicializar as datas quando o componente montar ou o instrumentoMedicao mudar
-    useEffect(() => {
-        if (instrumentoMedicao?.data_calibracao_inicial) {
-            const formattedDate = formatDateForInput(instrumentoMedicao.data_calibracao_inicial);
-            setDataCalibracaoInicial(formattedDate);
-        }
-
-        if (instrumentoMedicao?.data_calibracao_vencimento) {
-            const formattedDate = formatDateForInput(instrumentoMedicao.data_calibracao_vencimento);
-            setDataCalibracaoVencimento(formattedDate);
-        }
-    }, [instrumentoMedicao]);
-
-    // Função para formatar datas para input do tipo date (YYYY-MM-DD)
-    const formatDateForInput = (dateString: string): string => {
-        // Se a data já estiver no formato YYYY-MM-DD, retorna como está
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-            return dateString;
-        }
-
-        try {
-            const date = new Date(dateString);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        } catch (error) {
-            console.error("Erro ao formatar data:", error);
-            return "";
-        }
-    };
 
     const handleSubmit = useCallback(
         async (formData: any) => {
@@ -80,67 +30,62 @@ export function InstrumentoMedicaoModal({
                 setError(null);
 
                 // Validar campos obrigatórios
-                if (!formData.nome?.trim()) {
+                if (!formData.nome_instrumento?.trim()) {
                     setError("O nome do instrumento é obrigatório");
                     return;
                 }
 
-                if (!formData.id_tipo_instrumento_medicao) {
-                    setError("O tipo de instrumento é obrigatório");
+                if (!formData.tag?.trim()) {
+                    setError("A TAG do instrumento é obrigatória");
                     return;
                 }
 
                 const payload: {
-                    id_tipo_instrumento_medicao: number;
-                    nome: string;
-                    codigo?: string;
-                    descricao?: string;
-                    data_calibracao_inicial?: string;
-                    data_calibracao_vencimento?: string;
-                    id?: number;
+                    tag: string;
+                    nome_instrumento: string;
+                    situacao: "A" | "I";
+                    id_tipo_instrumento?: number;
                 } = {
-                    id_tipo_instrumento_medicao: Number(formData.id_tipo_instrumento_medicao),
-                    nome: formData.nome.trim(),
-                    codigo: formData.codigo?.trim() || "",
-                    descricao: formData.descricao?.trim() || "",
+                    tag: formData.tag.trim(),
+                    nome_instrumento: formData.nome_instrumento.trim(),
+                    situacao: formData.situacao || "A",
                 };
 
-                // Adicionar datas apenas se preenchidas
-                if (formData.data_calibracao_inicial) {
-                    payload.data_calibracao_inicial = formData.data_calibracao_inicial;
-                }
-
-                if (formData.data_calibracao_vencimento) {
-                    payload.data_calibracao_vencimento = formData.data_calibracao_vencimento;
+                // Adicionar ID se estiver editando
+                if (instrumentoMedicao?.id_tipo_instrumento) {
+                    payload.id_tipo_instrumento = instrumentoMedicao.id_tipo_instrumento;
                 }
 
                 let response;
                 let url = `${apiUrl}/inspecao/instrumentos_medicao`;
 
-                if (instrumentoMedicao?.id) {
+                if (instrumentoMedicao?.id_tipo_instrumento) {
                     // Modo de edição - PUT
-                    response = await fetch(`${url}?id=${instrumentoMedicao.id}`, {
+                    response = await fetch(`${url}?id=${instrumentoMedicao.id_tipo_instrumento}`, {
                         method: "PUT",
-                        headers: getAuthHeaders(),
-                        body: JSON.stringify({
-                            ...payload,
-                            id: Number(instrumentoMedicao.id),
-                        }),
+                        headers: {
+                            ...getAuthHeaders(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
                     });
                 } else {
                     // Modo de criação - POST
                     response = await fetch(url, {
                         method: "POST",
-                        headers: getAuthHeaders(),
+                        headers: {
+                            ...getAuthHeaders(),
+                            'Content-Type': 'application/json',
+                        },
                         body: JSON.stringify(payload),
                     });
                 }
 
-                if (!response.ok || response.status === 299) {
+                if (!response.ok) {
                     const errorData = await response.json().catch(() => null);
                     throw new Error(
                         errorData?.message ||
-                        `Erro ao ${instrumentoMedicao?.id ? "atualizar" : "criar"} instrumento de medição`
+                        `Erro ao ${instrumentoMedicao?.id_tipo_instrumento ? "atualizar" : "criar"} instrumento de medição`
                     );
                 }
 
@@ -150,13 +95,16 @@ export function InstrumentoMedicaoModal({
                 } catch (err) {
                     // Se a API não retornou dados JSON válidos, construímos o objeto de resposta com os dados do formulário
                     responseData = {
-                        id: instrumentoMedicao?.id || undefined,
+                        id_tipo_instrumento: instrumentoMedicao?.id_tipo_instrumento || 0,
                         ...payload
                     };
                 }
 
+                // Garantir que o objeto tenha a propriedade 'id' para compatibilidade com componentes
+                responseData.id = responseData.id_tipo_instrumento;
+
                 if (onSuccess) {
-                    onSuccess(responseData);
+                    onSuccess(responseData as InstrumentoMedicao);
                 }
                 onClose();
 
@@ -191,48 +139,41 @@ export function InstrumentoMedicaoModal({
             isOpen={isOpen}
             onClose={onClose}
             title={
-                instrumentoMedicao?.id
+                instrumentoMedicao?.id_tipo_instrumento
                     ? "Editar Instrumento de Medição"
                     : "Novo Instrumento de Medição"
             }
-            isEditing={!!instrumentoMedicao?.id}
+            isEditing={!!instrumentoMedicao?.id_tipo_instrumento}
             onSubmit={handleSubmit}
-            submitLabel={instrumentoMedicao?.id ? "Salvar alterações" : "Criar instrumento"}
+            submitLabel={instrumentoMedicao?.id_tipo_instrumento ? "Salvar alterações" : "Criar instrumento"}
             size="md"
         >
             {renderFeedback()}
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Select de tipo de instrumento */}
+                    {/* Campo de TAG */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
-                                <Ruler className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="id_tipo_instrumento_medicao" className="text-sm font-medium text-gray-700">
-                                    Tipo de Instrumento <span className="text-red-500">*</span>
+                                <Tag className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="tag" className="text-sm font-medium text-gray-700">
+                                    TAG <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <select
-                                id="id_tipo_instrumento_medicao"
-                                name="id_tipo_instrumento_medicao"
+                        <div className={`relative transition-all duration-200 ${isFocused === 'tag' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="text"
+                                id="tag"
+                                name="tag"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                defaultValue={instrumentoMedicao?.id_tipo_instrumento_medicao || ""}
+                                placeholder="Ex: CAL-001"
+                                defaultValue={instrumentoMedicao?.tag || ""}
                                 required
-                                onFocus={() => setIsFocused('tipo')}
+                                onFocus={() => setIsFocused('tag')}
                                 onBlur={() => setIsFocused(null)}
-                            >
-                                <option value="" disabled>
-                                    Selecione o tipo de instrumento
-                                </option>
-                                {tiposInstrumentosMedicao.map((tipo) => (
-                                    <option key={tipo.id} value={tipo.id}>
-                                        {tipo.nome_tipo_instrumento}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
                     </div>
 
@@ -241,7 +182,7 @@ export function InstrumentoMedicaoModal({
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                                <label htmlFor="nome_instrumento" className="text-sm font-medium text-gray-700">
                                     Nome <span className="text-red-500">*</span>
                                 </label>
                             </div>
@@ -249,11 +190,11 @@ export function InstrumentoMedicaoModal({
                         <div className={`relative transition-all duration-200 ${isFocused === 'nome' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                             <input
                                 type="text"
-                                id="nome"
-                                name="nome"
+                                id="nome_instrumento"
+                                name="nome_instrumento"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Insira o nome do instrumento"
-                                defaultValue={instrumentoMedicao?.nome || ""}
+                                placeholder="Nome do instrumento"
+                                defaultValue={instrumentoMedicao?.nome_instrumento || ""}
                                 required
                                 onFocus={() => setIsFocused('nome')}
                                 onBlur={() => setIsFocused(null)}
@@ -261,104 +202,29 @@ export function InstrumentoMedicaoModal({
                         </div>
                     </div>
 
-                    {/* Campo de código */}
+                    {/* Campo de situação (status) */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
-                                <Tag className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="codigo" className="text-sm font-medium text-gray-700">
-                                    Código
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="situacao" className="text-sm font-medium text-gray-700">
+                                    Situação <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'codigo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="codigo"
-                                name="codigo"
+                        <div className={`relative transition-all duration-200 ${isFocused === 'situacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <select
+                                id="situacao"
+                                name="situacao"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Código do instrumento (opcional)"
-                                defaultValue={instrumentoMedicao?.codigo || ""}
-                                onFocus={() => setIsFocused('codigo')}
+                                defaultValue={instrumentoMedicao?.situacao || "A"}
+                                required
+                                onFocus={() => setIsFocused('situacao')}
                                 onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campo de descrição */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <MessageSquare className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="descricao" className="text-sm font-medium text-gray-700">
-                                    Descrição
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <textarea
-                                id="descricao"
-                                name="descricao"
-                                rows={2}
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 resize-none"
-                                placeholder="Descrição do instrumento (opcional)"
-                                defaultValue={instrumentoMedicao?.descricao || ""}
-                                onFocus={() => setIsFocused('descricao')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Grupo de campos de calibração */}
-                    <div className="mb-4 pt-1.5 border-t border-gray-100">
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">
-                            Informações de Calibração
-                        </h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Data de calibração inicial */}
-                            <div>
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <CalendarClock className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="data_calibracao_inicial" className="text-sm font-medium text-gray-700">
-                                        Data Inicial
-                                    </label>
-                                </div>
-                                <div className={`relative transition-all duration-200 ${isFocused === 'data_inicial' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                    <input
-                                        type="date"
-                                        id="data_calibracao_inicial"
-                                        name="data_calibracao_inicial"
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                        value={dataCalibracaoInicial}
-                                        onChange={(e) => setDataCalibracaoInicial(e.target.value)}
-                                        onFocus={() => setIsFocused('data_inicial')}
-                                        onBlur={() => setIsFocused(null)}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Data de vencimento da calibração */}
-                            <div>
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <CalendarClock className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="data_calibracao_vencimento" className="text-sm font-medium text-gray-700">
-                                        Data de Vencimento
-                                    </label>
-                                </div>
-                                <div className={`relative transition-all duration-200 ${isFocused === 'data_vencimento' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                    <input
-                                        type="date"
-                                        id="data_calibracao_vencimento"
-                                        name="data_calibracao_vencimento"
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                        value={dataCalibracaoVencimento}
-                                        onChange={(e) => setDataCalibracaoVencimento(e.target.value)}
-                                        onFocus={() => setIsFocused('data_vencimento')}
-                                        onBlur={() => setIsFocused(null)}
-                                    />
-                                </div>
-                            </div>
+                            >
+                                <option value="A">Ativo</option>
+                                <option value="I">Inativo</option>
+                            </select>
                         </div>
                     </div>
 
