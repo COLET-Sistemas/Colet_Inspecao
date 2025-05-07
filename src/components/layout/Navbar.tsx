@@ -1,6 +1,6 @@
 "use client";
 
-import { getProfileNames, useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
     Archive,
     ChevronDown, ClipboardCheck, ClipboardList, Drill,
@@ -15,11 +15,30 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+// Check if user has the required permission
+const hasPermission = (permission: string): boolean => {
+    try {
+        // Get userData from localStorage
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        if (!userDataStr) return false;
+
+        const userData = JSON.parse(userDataStr);
+        // Check if perfil_inspecao exists and contains the required permission
+        if (!userData || !userData.perfil_inspecao) return false;
+
+        return userData.perfil_inspecao.includes(permission);
+    } catch (error) {
+        console.error("Error checking permissions:", error);
+        return false;
+    }
+};
+
 interface NavItem {
     label: string;
     href: string;
     icon?: React.ReactNode;
-    submenu?: { label: string; href: string; icon?: React.ReactNode }[];
+    submenu?: { label: string; href: string; icon?: React.ReactNode, requiredPermission?: string }[];
+    requiredPermission?: string;
 }
 
 export default function Navbar() {
@@ -59,7 +78,7 @@ export default function Navbar() {
                 { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" /> },
                 { label: "Cotas Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
                 { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" /> },
-                { label: "Postos Vinculados", href: "/cadastros/postos_vinculados", icon: <Drill className="w-4 h-4" /> }
+                { label: "Postos Vinculados", href: "/cadastros/postos_vinculados", icon: <Drill className="w-4 h-4" />, requiredPermission: "G" }
             ]
         }
     ], []);
@@ -112,6 +131,15 @@ export default function Navbar() {
         setUserMenuOpen(false);
         setOpenSubmenu(null);
         setMobileMenuOpen(false);
+    };
+
+    // Filter submenu items based on permissions
+    const getFilteredSubmenu = (item: NavItem) => {
+        if (!item.submenu) return [];
+
+        return item.submenu.filter(subItem =>
+            !subItem.requiredPermission || hasPermission(subItem.requiredPermission)
+        );
     };
 
     return (
@@ -179,7 +207,7 @@ export default function Navbar() {
 
                                     {item.submenu && openSubmenu === item.label && (
                                         <div className="absolute z-30 left-0 mt-1 w-56 rounded-md shadow-xl bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] border border-gray-700/30 py-1.5 animate-fadeIn overflow-hidden">
-                                            {item.submenu.map((subItem) => (
+                                            {getFilteredSubmenu(item).map((subItem) => (
                                                 <Link
                                                     key={subItem.label}
                                                     href={subItem.href}
@@ -233,7 +261,7 @@ export default function Navbar() {
                                         <p className="font-medium text-white text-sm mt-0.5">{user?.username}</p>
                                         {user?.perfil_inspecao && (
                                             <p className="text-[#1ABC9C] text-xs mt-1">
-                                                Perfil: {getProfileNames(user.perfil_inspecao)}
+                                                Perfil: {user.perfil_inspecao}
                                             </p>
                                         )}
                                     </div>
@@ -312,7 +340,7 @@ export default function Navbar() {
 
                                         {openSubmenu === item.label && (
                                             <div className="pl-4 space-y-0.5 mt-1 border-l border-gray-700/30 ml-3 animate-fadeIn">
-                                                {item.submenu.map((subItem) => (
+                                                {getFilteredSubmenu(item).map((subItem) => (
                                                     <Link
                                                         key={subItem.label}
                                                         href={subItem.href}

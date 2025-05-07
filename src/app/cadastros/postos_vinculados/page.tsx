@@ -9,24 +9,11 @@ import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/F
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { SelectableCheckbox } from "@/components/ui/cadastros/SelectableCheckbox";
 import { useApiConfig } from "@/hooks/useApiConfig";
-import { CheckSquare, IterationCcw, SlidersHorizontal } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { AlertState, Posto } from "@/types/cadastros/posto";
+import { CheckSquare, IterationCcw, ShieldAlert, SlidersHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-
-// Interface para os dados de postos
-interface Posto {
-    posto: string;
-    nome_posto: string;
-    codigo_parada: string;
-    descricao_parada: string;
-    tipo_recurso: string;
-    id: string;
-}
-
-// Interface para o estado de alerta
-interface AlertState {
-    message: string | null;
-    type: 'success' | 'error' | 'warning' | 'info';
-}
 
 // Card component for list item
 const Card = React.memo(({ posto, isSelected, onToggleSelect }: {
@@ -62,7 +49,29 @@ const Card = React.memo(({ posto, isSelected, onToggleSelect }: {
     </div>
 ));
 
+// Check if user has the required permission
+const hasPermission = (permission: string): boolean => {
+    try {
+        // Get userData from localStorage
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        if (!userDataStr) return false;
+
+        const userData = JSON.parse(userDataStr);
+        // Check if perfil_inspecao exists and contains the required permission
+        if (!userData || !userData.perfil_inspecao) return false;
+
+        return userData.perfil_inspecao.includes(permission);
+    } catch (error) {
+        console.error("Error checking permissions:", error);
+        return false;
+    }
+};
+
 export default function PostosVinculadosPage() {
+    // Get user authentication data
+    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const router = useRouter();
+
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoRecursoFilter, setTipoRecursoFilter] = useState<string>("todos");
@@ -101,6 +110,28 @@ export default function PostosVinculadosPage() {
     const localStorageKey = 'postos-vinculados';
 
     const apiUrl = localStorage.getItem("apiUrl");
+
+    // Permission check - redirect if not a manager
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            if (!hasPermission('G')) {
+                setAlert({
+                    message: "Você não tem permissão para acessar esta página. Redirecionando...",
+                    type: "error"
+                });
+
+                // Redirect after showing the message for a moment
+                const timer = setTimeout(() => {
+                    router.push('/dashboard');
+                }, 2000);
+
+                return () => clearTimeout(timer);
+            }
+        } else if (!authLoading && !isAuthenticated) {
+            // Not authenticated, redirect to login
+            router.push('/login');
+        }
+    }, [isAuthenticated, authLoading, router]);
 
     // Calculate active filters
     useEffect(() => {
@@ -154,7 +185,7 @@ export default function PostosVinculadosPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders, searchTerm, tipoRecursoFilter]);
+    }, [getAuthHeaders, searchTerm, tipoRecursoFilter, apiUrl]);
 
     // Função auxiliar para filtrar dados
     const filterData = (data: Posto[], search: string, tipoRecurso: string) => {
@@ -179,7 +210,8 @@ export default function PostosVinculadosPage() {
     }, [loadData]);
 
     useEffect(() => {
-        if (dataFetchedRef.current === false) {
+        // Only load data if user has proper permission
+        if (dataFetchedRef.current === false && hasPermission('G')) {
             dataFetchedRef.current = true;
             loadData();
         }
@@ -249,6 +281,31 @@ export default function PostosVinculadosPage() {
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
+
+    // If auth is still loading or user doesn't have permission, show access denied
+    if ((authLoading) || (!authLoading && !hasPermission('G'))) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
+                <AlertMessage
+                    message={alert.message}
+                    type={alert.type}
+                    onDismiss={clearAlert}
+                    autoDismiss={true}
+                    dismissDuration={5000}
+                />
+                {!authLoading && !hasPermission('G') && (
+                    <div className="text-center">
+                        <ShieldAlert className="h-16 w-16 text-red-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
+                        <p className="text-gray-600 mb-4">
+                            Esta página está disponível apenas para usuários com permissão de Gestor.
+                        </p>
+                        <p className="text-gray-500 text-sm">Redirecionando para o Dashboard...</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     const filterOptions = useMemo(() => {
         const tipoRecursoOptions: FilterOption[] = [
