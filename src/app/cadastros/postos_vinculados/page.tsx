@@ -385,7 +385,7 @@ export default function PostosVinculadosPage() {
             {/* Page Header Component */}
             <PageHeader
                 title="Postos Vinculados"
-                subtitle="Seleção de postos disponíveis para coleta"
+                subtitle="Seleção de postos disponíveis desse dispositivo para inspeção"
                 showButton={false}
             />
 
