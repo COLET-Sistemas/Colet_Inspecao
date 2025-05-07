@@ -66,12 +66,8 @@ export default function PostosVinculadosPage() {
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoRecursoFilter, setTipoRecursoFilter] = useState<string>("todos");
-    const [selectionFilter, setSelectionFilter] = useState<string>("todos"); // Novo estado para filtrar por seleção
 
     const [isPending, startTransition] = useTransition();
-
-    // Contador de renderização para forçar atualizações
-    const [renderCount, setRenderCount] = useState(0);
 
     // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -109,9 +105,8 @@ export default function PostosVinculadosPage() {
         let count = 0;
         if (searchTerm) count++;
         if (tipoRecursoFilter !== "todos") count++;
-        if (selectionFilter !== "todos") count++; // Contar filtro de seleção
         setActiveFilters(count);
-    }, [searchTerm, tipoRecursoFilter, selectionFilter]);
+    }, [searchTerm, tipoRecursoFilter]);
 
     // Carregar dados iniciais
     const loadData = useCallback(async () => {
@@ -119,7 +114,6 @@ export default function PostosVinculadosPage() {
         setApiError(null);
 
         try {
-            // Correção: Usar a configuração de API do projeto em vez de URL hardcoded
             const response = await fetch('http://10.0.0.151:8080/postos');
 
             if (!response.ok) {
@@ -127,27 +121,22 @@ export default function PostosVinculadosPage() {
             }
 
             const data = await response.json();
-            // Adicionar o campo id aos postos para compatibilidade com os componentes
             const postsWithId = data.map((posto: any) => ({
                 ...posto,
-                id: posto.posto // Usando o campo posto como id
+                id: posto.posto
             }));
 
             setAllData(postsWithId);
-            // Aplicar os mesmos filtros aos dados quando carregados
             const filtered = filterData(postsWithId, searchTerm, tipoRecursoFilter);
             setPostos(filtered);
 
-            // Extrair tipos de recurso únicos para o filtro
             const uniqueTiposRecurso = [...new Set(postsWithId.map((posto: Posto) => posto.tipo_recurso))] as string[];
             setTiposRecurso(uniqueTiposRecurso);
 
-            // Carregar postos selecionados do local storage
             const savedSelected = localStorage.getItem(localStorageKey);
             if (savedSelected) {
                 try {
                     const parsedData = JSON.parse(savedSelected);
-                    // Garantir que todos os valores são strings
                     const parsedSelected = new Set<string>(parsedData.map((item: unknown) => String(item)));
                     setSelectedPostos(parsedSelected);
                     setNotification(`${parsedSelected.size} postos carregados de configurações anteriores.`);
@@ -168,22 +157,15 @@ export default function PostosVinculadosPage() {
     // Função auxiliar para filtrar dados
     const filterData = (data: Posto[], search: string, tipoRecurso: string) => {
         return data.filter(item => {
-            // Verificar texto de busca
             const matchesSearch = !search ||
                 item.posto.toLowerCase().includes(search.toLowerCase()) ||
                 item.nome_posto.toLowerCase().includes(search.toLowerCase()) ||
                 item.tipo_recurso.toLowerCase().includes(search.toLowerCase());
 
-            // Verificar filtro de tipo de recurso
             const matchesTipoRecurso = tipoRecurso === "todos" ||
                 item.tipo_recurso === tipoRecurso;
 
-            // Verificar filtro de seleção
-            const matchesSelection = selectionFilter === "todos" ||
-                (selectionFilter === "selecionados" && selectedPostos.has(item.posto)) ||
-                (selectionFilter === "nao-selecionados" && !selectedPostos.has(item.posto));
-
-            return matchesSearch && matchesTipoRecurso && matchesSelection;
+            return matchesSearch && matchesTipoRecurso;
         });
     };
 
@@ -204,12 +186,10 @@ export default function PostosVinculadosPage() {
     // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
         if (allData.length > 0) {
-            // Usar startTransition para não bloquear a UI durante filtragens pesadas
             startTransition(() => {
                 const filtered = filterData(allData, searchTerm, tipoRecursoFilter);
                 setPostos(filtered);
 
-                // Notifications for screen readers
                 if (filtered.length === 0) {
                     setNotification('Nenhum resultado encontrado para os filtros atuais.');
                 } else {
@@ -217,44 +197,27 @@ export default function PostosVinculadosPage() {
                 }
             });
         }
-    }, [searchTerm, tipoRecursoFilter, allData, selectionFilter, selectedPostos]);
+    }, [searchTerm, tipoRecursoFilter, allData]);
 
-    // Gerenciar a seleção de postos
+    // Gerenciar a seleção de postos - com melhorias para evitar re-renders
     const handleToggleSelect = useCallback((postoId: string) => {
-        // Usando uma abordagem direta com array para garantir que o React detecte a mudança
         setSelectedPostos(prevSelected => {
-            // Convertemos o Set para array para manipulação
-            const prevArray = Array.from(prevSelected);
+            const isCurrentlySelected = prevSelected.has(postoId);
+            const newSelected = new Set(prevSelected);
 
-            if (prevSelected.has(postoId)) {
-                // Se já está selecionado, remove
-                const newArray = prevArray.filter(id => id !== postoId);
+            if (isCurrentlySelected) {
+                newSelected.delete(postoId);
                 setNotification(`Posto ${postoId} desmarcado.`);
-
-                // Salvar no local storage
-                localStorage.setItem(localStorageKey, JSON.stringify(newArray));
-
-                // Retorna um novo Set baseado no array filtrado
-                return new Set(newArray);
             } else {
-                // Se não está selecionado, adiciona
-                const newArray = [...prevArray, postoId];
+                newSelected.add(postoId);
                 setNotification(`Posto ${postoId} marcado.`);
-
-                // Salvar no local storage
-                localStorage.setItem(localStorageKey, JSON.stringify(newArray));
-
-                // Retorna um novo Set baseado no array com o novo elemento
-                return new Set(newArray);
             }
+
+            localStorage.setItem(localStorageKey, JSON.stringify([...newSelected]));
+
+            return newSelected;
         });
-
-
-        // Esta é uma solução temporária que força um re-render
-        setTimeout(() => {
-            setRenderCount(prev => prev + 1);
-        }, 0);
-    }, [localStorageKey, renderCount]);
+    }, [localStorageKey]);
 
     // Salvar postos selecionados
     const handleSaveSelection = useCallback(() => {
@@ -277,7 +240,6 @@ export default function PostosVinculadosPage() {
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setTipoRecursoFilter("todos");
-        setSelectionFilter("todos"); // Resetar filtro de seleção
         setNotification("Filtros resetados.");
     }, []);
 
@@ -296,12 +258,6 @@ export default function PostosVinculadosPage() {
             }))
         ];
 
-        const selectionOptions: FilterOption[] = [
-            { value: "todos", label: "Todos" },
-            { value: "selecionados", label: "Selecionados", color: "bg-green-100 text-green-800" },
-            { value: "nao-selecionados", label: "Não Selecionados", color: "bg-red-100 text-red-800" },
-        ];
-
         return [
             {
                 id: "tipoRecurso",
@@ -309,16 +265,9 @@ export default function PostosVinculadosPage() {
                 value: tipoRecursoFilter,
                 options: tipoRecursoOptions,
                 onChange: setTipoRecursoFilter,
-            },
-            {
-                id: "selection",
-                label: "Seleção",
-                value: selectionFilter,
-                options: selectionOptions,
-                onChange: setSelectionFilter,
-            },
+            }
         ];
-    }, [tipoRecursoFilter, tiposRecurso, selectionFilter]);
+    }, [tipoRecursoFilter, tiposRecurso]);
 
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
@@ -341,17 +290,8 @@ export default function PostosVinculadosPage() {
             });
         }
 
-        if (selectionFilter !== "todos") {
-            filters.push({
-                id: "selection",
-                value: selectionFilter,
-                label: `Seleção: ${selectionFilter === "selecionados" ? "Selecionados" : "Não Selecionados"}`,
-                color: selectionFilter === "selecionados" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800",
-            });
-        }
-
         return filters;
-    }, [searchTerm, tipoRecursoFilter, selectionFilter]);
+    }, [searchTerm, tipoRecursoFilter]);
 
     const tableColumns = useMemo(() => [
         {
@@ -485,7 +425,6 @@ export default function PostosVinculadosPage() {
                     <DataTable
                         data={postos}
                         columns={tableColumns}
-                        renderKey={renderCount} // Passando o renderCount como renderKey
                     />
                 ) : (
                     <DataCards
