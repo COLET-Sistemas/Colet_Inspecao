@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import React, { memo, ReactNode, useMemo } from "react";
+import React, { memo, ReactNode, useEffect, useMemo, useState } from "react";
 
 interface DataTableProps<T> {
     data: T[];
@@ -7,9 +7,37 @@ interface DataTableProps<T> {
         key: string;
         title: string;
         render: (item: T, index: number) => ReactNode;
-        className?: string; 
+        className?: string;
+        headerClassName?: string;
+        isSelectable?: boolean; // Indica se a coluna contém células selecionáveis
     }[];
+    renderKey?: number; // Mantido para compatibilidade, mas será usado de maneira mais eficiente
 }
+
+// Componente de célula selecionável que gerencia seu próprio estado
+const SelectableCell = memo(({
+    children,
+    itemId,
+    columnKey
+}: {
+    children: ReactNode;
+    itemId: string | number;
+    columnKey: string;
+}) => {
+    // Cada célula selecionável mantém sua própria chave de renderização
+    const [cellKey, setCellKey] = useState(0);
+
+    // Detecta mudanças nos children e atualiza apenas esta célula quando necessário
+    useEffect(() => {
+        setCellKey(prev => prev + 1);
+    }, [children]);
+
+    return (
+        <div key={`selectable-${itemId}-${columnKey}-${cellKey}`}>
+            {children}
+        </div>
+    );
+});
 
 // Componente de linha da tabela memoizado para evitar re-renderizações desnecessárias
 const TableRow = memo(({
@@ -23,6 +51,7 @@ const TableRow = memo(({
         title: string;
         render: (item: any, index: number) => ReactNode;
         className?: string;
+        isSelectable?: boolean;
     }>;
     index: number;
 }) => {
@@ -40,7 +69,13 @@ const TableRow = memo(({
                     key={`${item.id}-${column.key}`}
                     className={`px-3 sm:px-4 md:px-6 py-2 sm:py-4 text-sm ${column.className || ""}`}
                 >
-                    {column.render(item, index)}
+                    {column.isSelectable ? (
+                        <SelectableCell itemId={item.id} columnKey={column.key}>
+                            {column.render(item, index)}
+                        </SelectableCell>
+                    ) : (
+                        column.render(item, index)
+                    )}
                 </td>
             ))}
         </motion.tr>
@@ -56,6 +91,7 @@ const TableHeader = memo(({
         title: string;
         render: (item: any, index: number) => ReactNode;
         className?: string;
+        headerClassName?: string;
     }>;
 }) => {
     return (
@@ -65,7 +101,7 @@ const TableHeader = memo(({
                     <th
                         key={column.key}
                         scope="col"
-                        className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.className || ""}`}
+                        className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.headerClassName || ""}`}
                     >
                         {column.title}
                     </th>
@@ -79,10 +115,10 @@ const TableHeader = memo(({
 export const DataTable = memo(<T extends { id: string | number }>({
     data,
     columns,
+    renderKey = 0,
 }: DataTableProps<T>) => {
     // Memoize columns para garantir estabilidade de referência
     const memoizedColumns = useMemo(() => columns, [
-        // hash simplificado das colunas para evitar re-renderizações desnecessárias
         columns.map(col => col.key).join(',')
     ]);
 
@@ -93,7 +129,7 @@ export const DataTable = memo(<T extends { id: string | number }>({
                 <tbody className="bg-white divide-y divide-gray-200">
                     {data.map((item, index) => (
                         <TableRow
-                            key={item.id}
+                            key={`row-${item.id}`} // Não depende mais do renderKey global
                             item={item}
                             columns={memoizedColumns}
                             index={index}

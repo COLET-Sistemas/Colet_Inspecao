@@ -59,7 +59,7 @@ export default function Navbar() {
                 { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" /> },
                 { label: "Cotas Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
                 { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" /> },
-                { label: "Máquinas", href: "/cadastros/maquinas", icon: <Drill className="w-4 h-4" /> }
+                { label: "Postos Vinculados", href: "/cadastros/postos_vinculados", icon: <Drill className="w-4 h-4" /> }
             ]
         }
     ], []);
