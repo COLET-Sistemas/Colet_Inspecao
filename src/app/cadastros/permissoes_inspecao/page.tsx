@@ -31,6 +31,12 @@ interface PermissaoInspecaoExtended extends ApiPermissaoInspecao {
     id: string; // ID obrigatório para compatibilidade com DataTable/DataCards
 }
 
+// Interface para filtro de permissão
+interface PermissaoFilterOption {
+    value: string;
+    label: string;
+}
+
 // Interface e criação do contexto
 interface PermissoesContextType {
     parseInspecaoIds: (inspecoesStr: string) => Array<{ id: string, descricao: string }>;
@@ -131,6 +137,16 @@ export default function PermissoesInspecaoPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState(0);
     const [sortField, setSortField] = useState<"operador" | "nome_operador">("operador");
+    const [selectedPermissionFilter, setSelectedPermissionFilter] = useState<string | null>(null);
+
+    // Observa alterações nos filtros para atualizar o contador de filtros ativos
+    useEffect(() => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (selectedPermissionFilter) count++;
+
+        setActiveFilters(count);
+    }, [searchTerm, selectedPermissionFilter]);
 
     // Handler para mudança de campo de ordenação com type safety
     const handleSortFieldChange = useCallback((field: string) => {
@@ -219,6 +235,12 @@ export default function PermissoesInspecaoPage() {
                 );
             }
 
+            if (selectedPermissionFilter) {
+                filtered = filtered.filter(item =>
+                    item.inspecoes.includes(selectedPermissionFilter)
+                );
+            }
+
             // Aplicar ordenação
             filtered.sort((a, b) => {
                 const fieldA = a[sortField];
@@ -245,7 +267,7 @@ export default function PermissoesInspecaoPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders, searchTerm, sortField, tiposInspecao, loadTiposInspecao]); // Incluindo dependência de tipos de inspeção
+    }, [getAuthHeaders, searchTerm, sortField, tiposInspecao, loadTiposInspecao, selectedPermissionFilter]);
 
     useEffect(() => {
         // Evitar o loop infinito usando a referência
@@ -270,7 +292,9 @@ export default function PermissoesInspecaoPage() {
                     String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
                     String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase());
 
-                return matchesSearch;
+                const matchesPermission = !selectedPermissionFilter || item.inspecoes.includes(selectedPermissionFilter);
+
+                return matchesSearch && matchesPermission;
             });
 
             // Aplicar ordenação
@@ -292,7 +316,7 @@ export default function PermissoesInspecaoPage() {
                 setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
         }
-    }, [searchTerm, sortField, allData]);
+    }, [searchTerm, sortField, allData, selectedPermissionFilter]);
 
     // Manipulação de operações CRUD com feedback
     const handleEdit = useCallback((id: string) => {
@@ -405,6 +429,7 @@ export default function PermissoesInspecaoPage() {
     // Reset filtros
     const resetFilters = useCallback(() => {
         setSearchTerm("");
+        setSelectedPermissionFilter(null);
         setNotification("Filtros resetados.");
     }, []);
 
@@ -464,7 +489,32 @@ export default function PermissoesInspecaoPage() {
     }, [parseInspecaoIds]);
 
     // Preparar opções de filtro para o componente FilterPanel
-    const filterOptions = useMemo(() => [], []);
+    const filterOptions = useMemo(() => {
+        // Criar a opção "Ver todos" que será a primeira na lista
+        const allOption: PermissaoFilterOption = {
+            value: "",
+            label: "Ver todos",
+        };
+
+        // Mapear os tipos de inspeção para opções de filtro
+        const permissionOptions: PermissaoFilterOption[] = tiposInspecao.map(tipo => ({
+            value: tipo.id,
+            label: tipo.descricao_tipo_inspecao,
+        }));
+
+        // Adicionar a opção "Ver todos" no início do array
+        const options = [allOption, ...permissionOptions];
+
+        return [
+            {
+                id: "permission",
+                label: "Permissão",
+                value: selectedPermissionFilter || "",
+                options: options,
+                onChange: (value: string) => setSelectedPermissionFilter(value === "" ? null : value),
+            },
+        ];
+    }, [tiposInspecao, selectedPermissionFilter]);
 
     // Preparar filtros selecionados para exibição
     const selectedFiltersForDisplay = useMemo(() => {
@@ -479,8 +529,18 @@ export default function PermissoesInspecaoPage() {
             });
         }
 
+        if (selectedPermissionFilter) {
+            const permissionLabel = tiposInspecao.find(tipo => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
+            filters.push({
+                id: "permission",
+                value: selectedPermissionFilter,
+                label: `Permissão: "${permissionLabel}"`,
+                color: "bg-blue-100 text-blue-800",
+            });
+        }
+
         return filters;
-    }, [searchTerm]);
+    }, [searchTerm, selectedPermissionFilter, tiposInspecao]);
 
     // Definição das colunas da tabela
     const tableColumns = useMemo(() => [
