@@ -113,77 +113,13 @@ export default function PermissoesInspecaoPage() {
 
     const { getAuthHeaders } = useApiConfig();
 
-    // Função separada para filtrar dados - declarada antes de ser usada por outras funções
-    const filterData = useCallback((search: string, status: string, tipoUsuario: string) => {
-        let filtered = [...allData];
-
-        if (search) {
-            filtered = filtered.filter(item =>
-                String(item.operador).toLowerCase().includes(search.toLowerCase()) || // operador
-                String(item.nome_operador).toLowerCase().includes(search.toLowerCase())  // nome_operador
-            );
-        }
-
-        if (status !== "todos") {
-            filtered = filtered.filter(item =>
-                (status === "ativo" && item.situacao === "A") ||
-                (status === "inativo" && item.situacao === "I")
-            );
-        }
-
-        // O filtro por tipo de usuário foi mantido para compatibilidade com a interface,
-        // mas como os dados da API não incluem esse campo, ele não tem efeito prático
-
-        setPermissoes(filtered);
-
-        // Notificações para leitores de tela
-        if (filtered.length === 0) {
-            setNotification('Nenhum resultado encontrado para os filtros atuais.');
-        } else {
-            setNotification(`${filtered.length} permissões de inspeção encontradas.`);
-        }
-    }, [allData]);
-
-    // Aplica filtro em tempo real conforme digita
-    const handleSearchChange = useCallback((value: string) => {
-        setSearchTerm(value);
-        // Aplicando filtro instantaneamente
-        startTransition(() => {
-            filterData(value, statusFilter, tipoUsuarioFilter);
-        });
-    }, [statusFilter, tipoUsuarioFilter, filterData]);
-
-    // Manipuladores de filtros em tempo real
-    const handleStatusFilterChange = useCallback((value: string) => {
-        setStatusFilter(value);
-        startTransition(() => {
-            filterData(searchTerm, value, tipoUsuarioFilter);
-        });
-    }, [searchTerm, tipoUsuarioFilter, filterData]);
-
-    const handleTipoUsuarioFilterChange = useCallback((value: string) => {
-        setTipoUsuarioFilter(value);
-        startTransition(() => {
-            filterData(searchTerm, statusFilter, value);
-        });
-    }, [searchTerm, statusFilter, filterData]);
-
-    // Calcula filtros ativos
-    useEffect(() => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (statusFilter !== "todos") count++;
-        if (tipoUsuarioFilter !== "todos") count++;
-        setActiveFilters(count);
-    }, [searchTerm, statusFilter, tipoUsuarioFilter]);
-
-    // Carrega dados
+    // Carrega dados - Removendo dependências de estado para evitar recriações constantes
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
 
         try {
-            const headers = await getAuthHeaders();
+            const headers = getAuthHeaders();
             console.log('Iniciando busca de permissões de inspeção');
             const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
             console.log('Dados recebidos da API:', apiData);
@@ -205,26 +141,82 @@ export default function PermissoesInspecaoPage() {
             console.log('Dados mapeados:', mappedData);
             setAllData(mappedData);
 
-            // Usar a mesma função de filtragem para garantir consistência
-            startTransition(() => {
-                filterData(searchTerm, statusFilter, tipoUsuarioFilter);
-                setIsLoading(false);
-                setIsRefreshing(false);
-            });
+            // Aplicar filtros manualmente sem reconstruir a função filterData
+            let filtered = [...mappedData];
+
+            if (searchTerm) {
+                filtered = filtered.filter(item =>
+                    String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            if (statusFilter !== "todos") {
+                filtered = filtered.filter(item =>
+                    (statusFilter === "ativo" && item.situacao === "A") ||
+                    (statusFilter === "inativo" && item.situacao === "I")
+                );
+            }
+
+            setPermissoes(filtered);
+
+            if (filtered.length === 0) {
+                setNotification('Nenhum resultado encontrado para os filtros atuais.');
+            } else {
+                setNotification(`${filtered.length} permissões de inspeção encontradas.`);
+            }
+
+            setIsLoading(false);
+            setIsRefreshing(false);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             setApiError(error instanceof Error ? error.message : "Erro desconhecido ao carregar dados");
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [searchTerm, statusFilter, tipoUsuarioFilter, filterData]);
+    }, [getAuthHeaders]); // Apenas dependência estável
 
     useEffect(() => {
+        // Evitar o loop infinito usando a referência
         if (!dataFetchedRef.current) {
             dataFetchedRef.current = true;
             loadData();
         }
-    }, [loadData]);
+
+        // Limpeza - se necessário abortar requisições pendentes no futuro
+        return () => {
+            // Cleanup function if needed
+        };
+    }, []); // Sem dependência do loadData
+
+    // Atualizar o controle manual dos filtros quando eles mudarem
+    useEffect(() => {
+        if (dataFetchedRef.current) {
+            // Somente aplica filtros se os dados já foram carregados
+            const filteredData = [...allData].filter(item => {
+                // Filtro por termo de busca
+                const matchesSearch = !searchTerm ||
+                    String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase());
+
+                // Filtro por status
+                const matchesStatus = statusFilter === "todos" ||
+                    (statusFilter === "ativo" && item.situacao === "A") ||
+                    (statusFilter === "inativo" && item.situacao === "I");
+
+                return matchesSearch && matchesStatus;
+            });
+
+            setPermissoes(filteredData);
+
+            // Atualiza notificação
+            if (filteredData.length === 0) {
+                setNotification('Nenhum resultado encontrado para os filtros atuais.');
+            } else {
+                setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
+            }
+        }
+    }, [searchTerm, statusFilter, tipoUsuarioFilter, allData]);
 
     // Lista de tipos de usuário para o filtro - memoizada
     const tiposUsuario = useMemo(() => [
@@ -339,7 +331,6 @@ export default function PermissoesInspecaoPage() {
         setNotification("Exclusão cancelada.");
     }, []);
 
-
     // Reset filtros
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -400,17 +391,17 @@ export default function PermissoesInspecaoPage() {
                 label: "Status",
                 value: statusFilter,
                 options: statusOptions,
-                onChange: handleStatusFilterChange,
+                onChange: (value: string) => setStatusFilter(value),
             },
             {
                 id: "tipoUsuario",
                 label: "Tipo de Usuário",
                 value: tipoUsuarioFilter,
                 options: tipoUsuarioOptions,
-                onChange: handleTipoUsuarioFilterChange,
+                onChange: (value: string) => setTipoUsuarioFilter(value),
             }
         ];
-    }, [statusFilter, tiposUsuario, tipoUsuarioFilter, handleStatusFilterChange, handleTipoUsuarioFilterChange]);
+    }, [statusFilter, tiposUsuario, tipoUsuarioFilter]);
 
     // Preparar filtros selecionados para exibição
     const selectedFiltersForDisplay = useMemo(() => {
@@ -546,7 +537,7 @@ export default function PermissoesInspecaoPage() {
             {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
-                onSearchChange={handleSearchChange}
+                onSearchChange={(value: string) => setSearchTerm(value)}
                 searchPlaceholder="Buscar por operador ou nome do operador..."
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}

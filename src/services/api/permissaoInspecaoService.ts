@@ -83,7 +83,7 @@ export const updatePermissaoInspecao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/operadore`, {
+    const response = await fetch(`${apiUrl}/inspecao/operadores`, {
         method: 'PUT',
         headers: {
             ...authHeaders,
