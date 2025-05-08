@@ -166,7 +166,8 @@ export default function PostosVinculadosPage() {
             const filtered = filterData(postsWithId, searchTerm, tipoRecursoFilter);
             setPostos(filtered);
 
-            const uniqueTiposRecurso = [...new Set(postsWithId.map((posto: Posto) => posto.tipo_recurso))] as string[];
+            // Extrair e ordenar os tipos de recurso em ordem alfabética
+            const uniqueTiposRecurso = [...new Set(postsWithId.map((posto: Posto) => posto.tipo_recurso))].sort() as string[];
             setTiposRecurso(uniqueTiposRecurso);
 
             const savedSelected = localStorage.getItem(localStorageKey);
@@ -273,26 +274,6 @@ export default function PostosVinculadosPage() {
             setNotification(`Erro ao salvar postos.`);
         }
     }, [selectedPostos]);
-
-    const handleClearAll = useCallback(() => {
-        // Limpa o conjunto de postos selecionados
-        setSelectedPostos(new Set());
-
-        // Remove as seleções do localStorage para garantir que não sejam restauradas
-        localStorage.removeItem(localStorageKey);
-
-        // Incrementa o contador de renderização para forçar atualização visual
-        setRenderCount(prevCount => prevCount + 1);
-
-        // Atualiza a notificação para o usuário
-        setNotification("Todas as seleções foram limpas.");
-
-        // Exibe alerta visual de sucesso
-        setAlert({
-            message: "Todos os postos foram desmarcados com sucesso!",
-            type: "success"
-        });
-    }, [localStorageKey]);
 
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -452,14 +433,6 @@ export default function PostosVinculadosPage() {
                             </p>
                         </div>
                     </div>
-                    {selectedPostos.size > 0 && (
-                        <button
-                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded border border-blue-300 transition-colors text-sm flex items-center hidden md:flex"
-                            onClick={handleClearAll}
-                        >
-                            Limpar Todos
-                        </button>
-                    )}
                 </div>
             </div>
 
