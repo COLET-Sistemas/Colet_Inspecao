@@ -17,7 +17,7 @@ import { PermissaoInspecao as ApiPermissaoInspecao } from "@/types/cadastros/per
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { IterationCcw, Pencil, SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Interfaces para o componente
 interface AlertState {
@@ -31,6 +31,22 @@ interface PermissaoInspecaoExtended extends ApiPermissaoInspecao {
     id: string; // ID obrigatório para compatibilidade com DataTable/DataCards
 }
 
+// Interface e criação do contexto
+interface PermissoesContextType {
+    parseInspecaoIds: (inspecoesStr: string) => Array<{ id: string, descricao: string }>;
+}
+
+const PermissoesContext = createContext<PermissoesContextType | undefined>(undefined);
+
+// Hook para usar o contexto
+function usePermissoesContext() {
+    const context = useContext(PermissoesContext);
+    if (!context) {
+        throw new Error('usePermissoesContext must be used within a PermissoesProvider');
+    }
+    return context;
+}
+
 // Componente Card para exibição em modo de cartões
 const Card = ({ permissao, onEdit, onDelete }: {
     permissao: PermissaoInspecaoExtended;
@@ -42,6 +58,10 @@ const Card = ({ permissao, onEdit, onDelete }: {
         const date = new Date(dateString);
         return new Intl.DateTimeFormat('pt-BR').format(date);
     };
+
+    // Usar o hook useContext para acessar o parseInspecaoIds
+    const { parseInspecaoIds } = usePermissoesContext();
+    const inspecoesInfo = parseInspecaoIds(permissao.inspecoes);
 
     return (
         <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
@@ -58,9 +78,22 @@ const Card = ({ permissao, onEdit, onDelete }: {
                     {permissao.nome_operador}
                 </h3>
 
-                <p className="text-xs text-gray-600 mb-3">
-                    {permissao.inspecoes}
-                </p>
+                {/* Permissões como badges (responsivos) */}
+                <div className="flex flex-wrap gap-1 mb-3 min-h-[40px]">
+                    {inspecoesInfo.map((inspecao, index) => (
+                        <span
+                            key={`${inspecao.id}-${index}`}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                            title={inspecao.descricao}
+                        >
+                            {inspecao.descricao}
+                        </span>
+                    ))}
+
+                    {inspecoesInfo.length === 0 && (
+                        <span className="text-xs text-gray-500">Sem permissões atribuídas</span>
+                    )}
+                </div>
 
                 <div className="flex justify-between items-end mt-3">
                     <div className="flex space-x-1">
@@ -413,7 +446,7 @@ export default function PermissoesInspecaoPage() {
         const inspecoesInfo = parseInspecaoIds(permissoes);
 
         return (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 max-w-sm">
                 {inspecoesInfo.map((inspecao, index) => (
                     <span
                         key={`${inspecao.id}-${index}`}
@@ -423,6 +456,9 @@ export default function PermissoesInspecaoPage() {
                         {inspecao.descricao}
                     </span>
                 ))}
+                {inspecoesInfo.length === 0 && (
+                    <span className="text-xs text-gray-500">Sem permissões</span>
+                )}
             </div>
         );
     }, [parseInspecaoIds]);
@@ -488,131 +524,133 @@ export default function PermissoesInspecaoPage() {
     ], [formatPermissoes, handleEdit]);
 
     return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* ARIA Live region for accessibility */}
-            <div className="sr-only" role="status" aria-live="polite">
-                {notification}
-            </div>
+        <PermissoesContext.Provider value={{ parseInspecaoIds }}>
+            <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
+                {/* ARIA Live region for accessibility */}
+                <div className="sr-only" role="status" aria-live="polite">
+                    {notification}
+                </div>
 
-            {/* Alerta para mensagens de sucesso */}
-            <AlertMessage
-                message={alert.message}
-                type={alert.type}
-                onDismiss={clearAlert}
-                autoDismiss={true}
-                dismissDuration={5000}
-            />
-
-            {/* Modal de edição de permissão */}
-            {currentPermissao && (
-                <PermissaoInspecaoModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => {
-                        setIsEditModalOpen(false);
-                        setCurrentPermissao(null);
-                    }}
-                    permissaoInspecao={currentPermissao}
-                    tiposInspecao={tiposInspecao}
-                    onSuccess={handleEditSuccess}
-                    onError={handleEditError}
+                {/* Alerta para mensagens de sucesso */}
+                <AlertMessage
+                    message={alert.message}
+                    type={alert.type}
+                    onDismiss={clearAlert}
+                    autoDismiss={true}
+                    dismissDuration={5000}
                 />
-            )}
 
-            {/* Modal de confirmação de exclusão */}
-            <ConfirmDeleteModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onConfirm={confirmDelete}
-                isDeleting={isDeleting}
-                title="Confirmar Exclusão"
-                message={
-                    deletingId !== null
-                        ? `Você está prestes a excluir permanentemente a permissão de inspeção:`
-                        : "Deseja realmente excluir este item?"
-                }
-                itemName={
-                    deletingId !== null
-                        ? permissoes.find(perm => perm.operador === deletingId)?.nome_operador
-                        : undefined
-                }
-            />
-
-            {/* Page Header Component */}
-            <PageHeader
-                title="Permissões de Inspeção"
-                subtitle="Cadastro e edição de permissões de acesso para inspeção"
-                showButton={false}
-            />
-
-            {/* Filters Component */}
-            <FilterPanel
-                searchTerm={searchTerm}
-                onSearchChange={(value: string) => setSearchTerm(value)}
-                searchPlaceholder="Buscar por operador ou nome do operador..."
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                filters={filterOptions}
-                activeFilters={activeFilters}
-                onResetFilters={resetFilters}
-                selectedFilters={selectedFiltersForDisplay}
-                onRefresh={handleRefresh}
-                isRefreshing={isRefreshing}
-                sortField={sortField}
-                onSortFieldChange={handleSortFieldChange}
-            />
-
-            {/* Data Container with Dynamic View */}
-            <DataListContainer
-                isLoading={isLoading || isPending}
-                isEmpty={permissoes.length === 0}
-                emptyState={
-                    apiError ? (
-                        <EmptyState
-                            icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
-                            title="Erro ao carregar dados"
-                            description={apiError}
-                            primaryAction={{
-                                label: "Tentar novamente",
-                                onClick: loadData,
-                                icon: <IterationCcw className="mr-2 h-4 w-4" />,
-                                disabled: false,
-                            }}
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                            title="Nenhum resultado encontrado"
-                            description="Não encontramos permissões de inspeção que correspondam aos seus filtros atuais."
-                            secondaryAction={{
-                                label: "Limpar filtros",
-                                onClick: resetFilters,
-                            }}
-                        />
-                    )
-                }
-                totalItems={allData.length}
-                totalFilteredItems={permissoes.length}
-                activeFilters={activeFilters}
-                onResetFilters={resetFilters}
-            >
-                {viewMode === "table" ? (
-                    // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
-                    <DataTable data={permissoes} columns={tableColumns} />
-                ) : (
-                    // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
-                    <DataCards
-                        data={permissoes}
-                        renderCard={(permissao: any) => (
-                            <Card
-                                key={permissao.operador}
-                                permissao={permissao as PermissaoInspecaoExtended}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                            />
-                        )}
+                {/* Modal de edição de permissão */}
+                {currentPermissao && (
+                    <PermissaoInspecaoModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => {
+                            setIsEditModalOpen(false);
+                            setCurrentPermissao(null);
+                        }}
+                        permissaoInspecao={currentPermissao}
+                        tiposInspecao={tiposInspecao}
+                        onSuccess={handleEditSuccess}
+                        onError={handleEditError}
                     />
                 )}
-            </DataListContainer>
-        </div>
+
+                {/* Modal de confirmação de exclusão */}
+                <ConfirmDeleteModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={handleCloseDeleteModal}
+                    onConfirm={confirmDelete}
+                    isDeleting={isDeleting}
+                    title="Confirmar Exclusão"
+                    message={
+                        deletingId !== null
+                            ? `Você está prestes a excluir permanentemente a permissão de inspeção:`
+                            : "Deseja realmente excluir este item?"
+                    }
+                    itemName={
+                        deletingId !== null
+                            ? permissoes.find(perm => perm.operador === deletingId)?.nome_operador
+                            : undefined
+                    }
+                />
+
+                {/* Page Header Component */}
+                <PageHeader
+                    title="Permissões de Inspeção"
+                    subtitle="Cadastro e edição de permissões de acesso para inspeção"
+                    showButton={false}
+                />
+
+                {/* Filters Component */}
+                <FilterPanel
+                    searchTerm={searchTerm}
+                    onSearchChange={(value: string) => setSearchTerm(value)}
+                    searchPlaceholder="Buscar por operador ou nome do operador..."
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    filters={filterOptions}
+                    activeFilters={activeFilters}
+                    onResetFilters={resetFilters}
+                    selectedFilters={selectedFiltersForDisplay}
+                    onRefresh={handleRefresh}
+                    isRefreshing={isRefreshing}
+                    sortField={sortField}
+                    onSortFieldChange={handleSortFieldChange}
+                />
+
+                {/* Data Container with Dynamic View */}
+                <DataListContainer
+                    isLoading={isLoading || isPending}
+                    isEmpty={permissoes.length === 0}
+                    emptyState={
+                        apiError ? (
+                            <EmptyState
+                                icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
+                                title="Erro ao carregar dados"
+                                description={apiError}
+                                primaryAction={{
+                                    label: "Tentar novamente",
+                                    onClick: loadData,
+                                    icon: <IterationCcw className="mr-2 h-4 w-4" />,
+                                    disabled: false,
+                                }}
+                            />
+                        ) : (
+                            <EmptyState
+                                icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
+                                title="Nenhum resultado encontrado"
+                                description="Não encontramos permissões de inspeção que correspondam aos seus filtros atuais."
+                                secondaryAction={{
+                                    label: "Limpar filtros",
+                                    onClick: resetFilters,
+                                }}
+                            />
+                        )
+                    }
+                    totalItems={allData.length}
+                    totalFilteredItems={permissoes.length}
+                    activeFilters={activeFilters}
+                    onResetFilters={resetFilters}
+                >
+                    {viewMode === "table" ? (
+                        // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
+                        <DataTable data={permissoes} columns={tableColumns} />
+                    ) : (
+                        // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
+                        <DataCards
+                            data={permissoes}
+                            renderCard={(permissao: any) => (
+                                <Card
+                                    key={permissao.operador}
+                                    permissao={permissao as PermissaoInspecaoExtended}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                />
+                            )}
+                        />
+                    )}
+                </DataListContainer>
+            </div>
+        </PermissoesContext.Provider>
     );
 }

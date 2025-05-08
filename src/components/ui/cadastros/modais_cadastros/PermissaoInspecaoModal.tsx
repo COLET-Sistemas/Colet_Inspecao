@@ -35,7 +35,6 @@ export function PermissaoInspecaoModal({
     // Inicializa os tipos de inspeção selecionados quando o modal é aberto
     useEffect(() => {
         if (isOpen && permissaoInspecao) {
-            // Parse current selected inspections from the string
             const currentInspecoes = permissaoInspecao.inspecoes || '';
             const selectedIds = Array.from(currentInspecoes).map(char => char);
             setSelectedInspecoes(selectedIds);
@@ -43,7 +42,6 @@ export function PermissaoInspecaoModal({
         }
     }, [isOpen, permissaoInspecao]);
 
-    // Handle checkbox change
     const handleCheckboxChange = (id: string) => {
         setSelectedInspecoes(prev => {
             if (prev.includes(id)) {
@@ -65,7 +63,7 @@ export function PermissaoInspecaoModal({
                 const payload: PermissaoInspecao = {
                     operador: permissaoInspecao.operador,
                     nome_operador: permissaoInspecao.nome_operador,
-                    situacao: permissaoInspecao.situacao, // Maintain the original status
+                    situacao: permissaoInspecao.situacao, 
                     inspecoes: sortedInspecoes,
                 };
 
@@ -90,9 +88,7 @@ export function PermissaoInspecaoModal({
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
                 const errorMessage = err.message || "Ocorreu um erro inesperado";
-                // Fechar o modal em caso de erro
                 onClose();
-                // Propagar o erro para o componente pai
                 if (onError) {
                     onError(errorMessage);
                 }
