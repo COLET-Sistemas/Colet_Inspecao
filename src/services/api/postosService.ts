@@ -1,6 +1,6 @@
 import { Posto } from "@/types/cadastros/posto";
 
-export const getPostos = async (): Promise<Posto[]> => {
+export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
@@ -8,6 +8,7 @@ export const getPostos = async (): Promise<Posto[]> => {
 
     const response = await fetch(`${apiUrl}/postos`, {
         method: 'GET',
+        headers: authHeaders,
     });
 
     if (!response.ok) {
