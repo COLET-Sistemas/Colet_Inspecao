@@ -75,6 +75,8 @@ interface FilterPanelProps {
         label: string;
         color?: string;
     }[];
+    sortField?: string;
+    onSortFieldChange?: (field: string) => void;
 }
 
 export function FilterPanel({
@@ -89,6 +91,8 @@ export function FilterPanel({
     onRefresh,
     isRefreshing = false,
     selectedFilters = [],
+    sortField,
+    onSortFieldChange,
 }: FilterPanelProps) {
     const [showFilters, setShowFilters] = useState(false);
 
@@ -245,6 +249,33 @@ export function FilterPanel({
                                             </div>
                                         </div>
                                     ))}
+
+                                    {/* Opções de ordenação */}
+                                    {onSortFieldChange && (
+                                        <div className="relative">
+                                            <label
+                                                htmlFor="sort-field"
+                                                className="block text-xs font-medium text-gray-700 mb-1 ml-1"
+                                            >
+                                                Ordenar por
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    id="sort-field"
+                                                    className="appearance-none pl-3 pr-10 h-10 border border-gray-300 rounded-md focus:ring-[#1ABC9C] focus:border-[#1ABC9C] text-sm bg-white transition-shadow duration-200 w-full"
+                                                    value={sortField}
+                                                    onChange={(e) => onSortFieldChange(e.target.value)}
+                                                    aria-label="Ordenar por campo"
+                                                >
+                                                    <option value="operador">ID do Operador</option>
+                                                    <option value="nome_operador">Nome Operador</option>
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {activeFilters > 0 && (
                                         <motion.button

@@ -7,13 +7,13 @@ import { PermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface PermissaoInspecaoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    permissaoInspecao: PermissaoInspecao; // Object is required
+    permissaoInspecao: PermissaoInspecao;
     onSuccess?: (data: PermissaoInspecao) => void;
     onError?: (error: string) => void;
 }
@@ -32,31 +32,81 @@ export function PermissaoInspecaoModal({
     const [loading, setLoading] = useState(true);
     const [selectedInspecoes, setSelectedInspecoes] = useState<string[]>([]);
 
-    // Fetch inspection types when modal is opened
-    useEffect(() => {
-        if (isOpen) {
-            const fetchTiposInspecao = async () => {
-                try {
-                    setLoading(true);
-                    const headers = await getAuthHeaders();
-                    const data = await getTiposInspecao(headers);
-                    setTiposInspecao(data.filter(item => item.situacao === 'A'));
+    // Variável de referência para controlar a requisição única
+    const requestMadeRef = useRef(false);
+    // ID de sessão único para cada abertura do modal
+    const sessionIdRef = useRef<string>("");
 
-                    // Parse current selected inspections from the string
-                    const currentInspecoes = permissaoInspecao.inspecoes || '';
-                    const selectedIds = Array.from(currentInspecoes).map(char => char);
-                    setSelectedInspecoes(selectedIds);
-                } catch (err) {
-                    console.error('Erro ao buscar tipos de inspeção:', err);
-                    setError('Não foi possível carregar os tipos de inspeção');
-                } finally {
+    // Efeito que detecta quando o modal é aberto/fechado
+    useEffect(() => {
+        // Quando o modal é aberto, geramos um novo ID de sessão
+        if (isOpen) {
+            sessionIdRef.current = Date.now().toString();
+            // Mas não fazemos o reset da flag de requisição aqui
+        } else {
+            // Quando o modal é fechado, resetamos a flag
+            requestMadeRef.current = false;
+        }
+    }, [isOpen]);
+
+    // Efeito separado para fazer a requisição
+    useEffect(() => {
+        // Se o modal não estiver aberto ou a requisição já foi feita, não faz nada
+        if (!isOpen || requestMadeRef.current) return;
+
+        // Flag para evitar atualizações de estado após o componente ser desmontado
+        let isMounted = true;
+
+        const fetchTiposInspecao = async () => {
+            // Captura o ID da sessão atual para verificação posterior
+            const currentSessionId = sessionIdRef.current;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                const headers = await getAuthHeaders();
+                console.log(`[${currentSessionId}] Requisitando tipos de inspeção...`);
+
+                // Se o ID de sessão mudou ou o componente foi desmontado, não continua
+                if (currentSessionId !== sessionIdRef.current || !isMounted) return;
+
+                const data = await getTiposInspecao(headers);
+
+                // Verifica novamente se ainda estamos na mesma sessão e se o componente está montado
+                if (currentSessionId !== sessionIdRef.current || !isMounted) return;
+
+                // Marca que a requisição foi feita para esta sessão
+                requestMadeRef.current = true;
+
+                setTiposInspecao(data.filter(item => item.situacao === 'A'));
+
+                // Parse current selected inspections from the string
+                const currentInspecoes = permissaoInspecao.inspecoes || '';
+                const selectedIds = Array.from(currentInspecoes).map(char => char);
+                setSelectedInspecoes(selectedIds);
+            } catch (err) {
+                // Verifica se o componente ainda está montado
+                if (!isMounted) return;
+
+                console.error('Erro ao buscar tipos de inspeção:', err);
+                setError('Não foi possível carregar os tipos de inspeção');
+            } finally {
+                // Verifica se o componente ainda está montado
+                if (isMounted) {
                     setLoading(false);
                 }
-            };
+            }
+        };
 
-            fetchTiposInspecao();
-        }
-    }, [isOpen, getAuthHeaders, permissaoInspecao.inspecoes]);
+        // Inicia a busca dos tipos de inspeção
+        fetchTiposInspecao();
+
+        // Função de limpeza do useEffect
+        return () => {
+            isMounted = false;
+        };
+    }, [isOpen, getAuthHeaders, permissaoInspecao]); // Mantemos permissaoInspecao para garantir dados corretos
 
     // Handle checkbox change
     const handleCheckboxChange = (id: string) => {
@@ -74,11 +124,7 @@ export function PermissaoInspecaoModal({
             try {
                 setError(null);
 
-                if (selectedInspecoes.length === 0) {
-                    setError("Selecione pelo menos um tipo de inspeção");
-                    return;
-                }
-
+                // Remove the validation for requiring at least one inspection type
                 // Sort inspection IDs numerically and join them without separators
                 const sortedInspecoes = [...selectedInspecoes].sort((a, b) => parseInt(a) - parseInt(b)).join('');
 
@@ -153,21 +199,21 @@ export function PermissaoInspecaoModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Informações do Operador (não editáveis) */}
-                    <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <div className="mb-3 p-3 bg-gray-50 rounded-md border border-gray-200">
                         <div className="mb-2">
                             <h3 className="text-sm font-medium text-gray-700">Informações do Operador</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
+                        <div className="grid grid-cols-4 gap-4">
+                            <div className="col-span-1">
                                 <p className="text-xs font-medium text-gray-500">Código</p>
                                 <p className="text-sm text-gray-900">{permissaoInspecao.operador}</p>
                             </div>
-                            <div>
+                            <div className="col-span-3">
                                 <p className="text-xs font-medium text-gray-500">Nome</p>
                                 <p className="text-sm text-gray-900">{permissaoInspecao.nome_operador}</p>
                             </div>
                         </div>
+
                     </div>
 
                     {/* Campo de permissões */}
@@ -176,7 +222,7 @@ export function PermissaoInspecaoModal({
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
                                 <label className="text-sm font-medium text-gray-700">
-                                    Tipos de Inspeção <span className="text-red-500">*</span>
+                                    Tipos de Inspeção
                                 </label>
                             </div>
                         </div>
@@ -224,11 +270,6 @@ export function PermissaoInspecaoModal({
                             name="inspecoes"
                             value={selectedInspecoes.sort((a, b) => parseInt(a) - parseInt(b)).join('')}
                         />
-                    </div>
-
-                    {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-4">
-                        <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
                 </div>
             </div>

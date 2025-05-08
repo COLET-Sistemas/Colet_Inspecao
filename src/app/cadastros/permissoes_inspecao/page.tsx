@@ -5,7 +5,7 @@ import { DataCards } from "@/components/ui/cadastros/DataCards";
 import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal";
@@ -91,11 +91,17 @@ export default function PermissoesInspecaoPage() {
     const [allData, setAllData] = useState<PermissaoInspecaoExtended[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-    // Estados para filtros
+    // Estados para filtros e ordenação
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("todos");
-    const [tipoUsuarioFilter, setTipoUsuarioFilter] = useState("todos");
     const [activeFilters, setActiveFilters] = useState(0);
+    const [sortField, setSortField] = useState<"operador" | "nome_operador">("operador");
+
+    // Handler para mudança de campo de ordenação com type safety
+    const handleSortFieldChange = useCallback((field: string) => {
+        if (field === "operador" || field === "nome_operador") {
+            setSortField(field);
+        }
+    }, []);
 
     // Estados para modais
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -151,12 +157,15 @@ export default function PermissoesInspecaoPage() {
                 );
             }
 
-            if (statusFilter !== "todos") {
-                filtered = filtered.filter(item =>
-                    (statusFilter === "ativo" && item.situacao === "A") ||
-                    (statusFilter === "inativo" && item.situacao === "I")
-                );
-            }
+            // Aplicar ordenação
+            filtered.sort((a, b) => {
+                const fieldA = a[sortField];
+                const fieldB = b[sortField];
+
+                if (fieldA < fieldB) return -1;
+                if (fieldA > fieldB) return 1;
+                return 0;
+            });
 
             setPermissoes(filtered);
 
@@ -174,7 +183,7 @@ export default function PermissoesInspecaoPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders]); // Apenas dependência estável
+    }, [getAuthHeaders, searchTerm, sortField]); // Apenas dependência estável
 
     useEffect(() => {
         // Evitar o loop infinito usando a referência
@@ -199,12 +208,17 @@ export default function PermissoesInspecaoPage() {
                     String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
                     String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase());
 
-                // Filtro por status
-                const matchesStatus = statusFilter === "todos" ||
-                    (statusFilter === "ativo" && item.situacao === "A") ||
-                    (statusFilter === "inativo" && item.situacao === "I");
+                return matchesSearch;
+            });
 
-                return matchesSearch && matchesStatus;
+            // Aplicar ordenação
+            filteredData.sort((a, b) => {
+                const fieldA = a[sortField];
+                const fieldB = b[sortField];
+
+                if (fieldA < fieldB) return -1;
+                if (fieldA > fieldB) return 1;
+                return 0;
             });
 
             setPermissoes(filteredData);
@@ -216,12 +230,7 @@ export default function PermissoesInspecaoPage() {
                 setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
         }
-    }, [searchTerm, statusFilter, tipoUsuarioFilter, allData]);
-
-    // Lista de tipos de usuário para o filtro - memoizada
-    const tiposUsuario = useMemo(() => [
-        "Operador", "Supervisor", "Administrador", "Qualidade", "Analista", "Temporário"
-    ], []);
+    }, [searchTerm, sortField, allData]);
 
     // Manipulação de operações CRUD com feedback
     const handleEdit = useCallback((id: string) => {
@@ -334,8 +343,6 @@ export default function PermissoesInspecaoPage() {
     // Reset filtros
     const resetFilters = useCallback(() => {
         setSearchTerm("");
-        setStatusFilter("todos");
-        setTipoUsuarioFilter("todos");
         setNotification("Filtros resetados.");
     }, []);
 
@@ -367,41 +374,7 @@ export default function PermissoesInspecaoPage() {
     }, []);
 
     // Preparar opções de filtro para o componente FilterPanel
-    const filterOptions = useMemo(() => {
-        // Opções de filtro de status
-        const statusOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os status" },
-            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" }
-        ];
-
-        // Opções de filtro de tipo de usuário
-        const tipoUsuarioOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os tipos" },
-            ...tiposUsuario.map(tipo => ({
-                value: tipo,
-                label: tipo,
-                color: "bg-blue-100 text-blue-800"
-            }))
-        ];
-
-        return [
-            {
-                id: "status",
-                label: "Status",
-                value: statusFilter,
-                options: statusOptions,
-                onChange: (value: string) => setStatusFilter(value),
-            },
-            {
-                id: "tipoUsuario",
-                label: "Tipo de Usuário",
-                value: tipoUsuarioFilter,
-                options: tipoUsuarioOptions,
-                onChange: (value: string) => setTipoUsuarioFilter(value),
-            }
-        ];
-    }, [statusFilter, tiposUsuario, tipoUsuarioFilter]);
+    const filterOptions = useMemo(() => [], []);
 
     // Preparar filtros selecionados para exibição
     const selectedFiltersForDisplay = useMemo(() => {
@@ -416,26 +389,8 @@ export default function PermissoesInspecaoPage() {
             });
         }
 
-        if (statusFilter !== "todos") {
-            filters.push({
-                id: "status",
-                value: statusFilter,
-                label: `Status: ${statusFilter === "ativo" ? "Ativo" : "Inativo"}`,
-                color: statusFilter === "ativo" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800",
-            });
-        }
-
-        if (tipoUsuarioFilter !== "todos") {
-            filters.push({
-                id: "tipoUsuario",
-                value: tipoUsuarioFilter,
-                label: `Tipo de Usuário: ${tipoUsuarioFilter}`,
-                color: "bg-blue-100 text-blue-800",
-            });
-        }
-
         return filters;
-    }, [searchTerm, statusFilter, tipoUsuarioFilter]);
+    }, [searchTerm]);
 
     // Definição das colunas da tabela
     const tableColumns = useMemo(() => [
@@ -547,6 +502,8 @@ export default function PermissoesInspecaoPage() {
                 selectedFilters={selectedFiltersForDisplay}
                 onRefresh={handleRefresh}
                 isRefreshing={isRefreshing}
+                sortField={sortField}
+                onSortFieldChange={handleSortFieldChange}
             />
 
             {/* Data Container with Dynamic View */}
