@@ -19,12 +19,21 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
 
     return Array.isArray(data) ? data.map(item => {
         const id_tipo_instrumento = item.id_tipo_instrumento !== undefined && item.id_tipo_instrumento !== null ? Number(item.id_tipo_instrumento) : 0;
+        const id_instrumento = item.id_instrumento !== undefined && item.id_instrumento !== null ? Number(item.id_instrumento) : 0;
+
         return {
-            id_tipo_instrumento: id_tipo_instrumento,
-            id: id_tipo_instrumento, // Adicionado para compatibilidade com DataTable/DataCards
+            id_instrumento,
+            id_tipo_instrumento,
+            id: id_instrumento, // Usando id_instrumento como id para compatibilidade com DataTable/DataCards
             tag: item.tag || '',
             nome_instrumento: item.nome_instrumento || '',
+            codigo_artigo: item.codigo_artigo || '',
+            numero_patrimonio: item.numero_patrimonio || '',
+            numero_serie: item.numero_serie || '',
             situacao: item.situacao || '',
+            data_validade: item.data_validade || '',
+            data_ultima_calibracao: item.data_ultima_calibracao || '',
+            frequencia_calibracao: item.frequencia_calibracao || '',
         };
     }) : [];
 };

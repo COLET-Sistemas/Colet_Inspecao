@@ -32,8 +32,8 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                     </span>
                 </div>
                 <span className={`text-xs font-medium px-2 py-1 rounded ${instrumento.situacao === "A"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-gray-100 text-gray-600"
                     }`}>
                     {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
                 </span>
@@ -384,10 +384,17 @@ export default function InstrumentosMedicaoPage() {
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "id_tipo_instrumento",
+            key: "id_instrumento",
             title: "ID",
             render: (instrumento: InstrumentoMedicao) => (
-                <span className="text-sm font-medium text-gray-900">#{instrumento.id_tipo_instrumento}</span>
+                <span className="text-sm font-medium text-gray-900">#{instrumento.id_instrumento}</span>
+            ),
+        },
+        {
+            key: "nome_instrumento",
+            title: "Nome",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900 max-w-md truncate">{instrumento.nome_instrumento}</div>
             ),
         },
         {
@@ -398,10 +405,45 @@ export default function InstrumentosMedicaoPage() {
             ),
         },
         {
-            key: "nome_instrumento",
-            title: "Nome",
+            key: "numero_patrimonio",
+            title: "Nº Patrimônio",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{instrumento.nome_instrumento}</div>
+                <div className="text-sm text-gray-900">{instrumento.numero_patrimonio || '-'}</div>
+            ),
+        },
+        {
+            key: "numero_serie",
+            title: "Nº Série",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.numero_serie || '-'}</div>
+            ),
+        },
+        {
+            key: "codigo_artigo",
+            title: "Código Artigo",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.codigo_artigo || '-'}</div>
+            ),
+        },
+        {
+            key: "data_validade",
+            title: "Data Validade",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.data_validade || '-'}</div>
+            ),
+        },
+        {
+            key: "data_ultima_calibracao",
+            title: "Última Calibração",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.data_ultima_calibracao || '-'}</div>
+            ),
+        },
+        {
+            key: "frequencia_calibracao",
+            title: "Freq. Calibração",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.frequencia_calibracao || '-'}</div>
             ),
         },
         {
@@ -426,7 +468,7 @@ export default function InstrumentosMedicaoPage() {
                         <motion.button
                             whileTap={{ scale: 0.95 }}
                             className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
-                            onClick={() => handleEdit(instrumento.id_tipo_instrumento)}
+                            onClick={() => handleEdit(instrumento.id_instrumento)}
                             aria-label="Editar"
                         >
                             <Pencil className="h-4 w-4" />
@@ -436,7 +478,7 @@ export default function InstrumentosMedicaoPage() {
                         <motion.button
                             whileTap={{ scale: 0.95 }}
                             className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
-                            onClick={() => handleDelete(instrumento.id_tipo_instrumento)}
+                            onClick={() => handleDelete(instrumento.id_instrumento)}
                             aria-label="Excluir"
                         >
                             <Trash2 className="h-4 w-4" />
