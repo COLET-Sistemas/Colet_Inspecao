@@ -12,7 +12,9 @@ import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/C
 import { PermissaoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/PermissaoInspecaoModal";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { getPermissoesInspecao } from "@/services/api/permissaoInspecaoService";
+import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { PermissaoInspecao as ApiPermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
+import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { IterationCcw, Pencil, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -89,6 +91,7 @@ export default function PermissoesInspecaoPage() {
 
     const [permissoes, setPermissoes] = useState<PermissaoInspecaoExtended[]>([]);
     const [allData, setAllData] = useState<PermissaoInspecaoExtended[]>([]);
+    const [tiposInspecao, setTiposInspecao] = useState<TipoInspecao[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode>("table");
 
     // Estados para filtros e ordenação
@@ -116,8 +119,25 @@ export default function PermissoesInspecaoPage() {
 
     // Referência para controlar requisições
     const dataFetchedRef = useRef(false);
+    const tiposInspecaoFetchedRef = useRef(false);
 
     const { getAuthHeaders } = useApiConfig();
+
+    // Carrega tipos de inspeção
+    const loadTiposInspecao = useCallback(async () => {
+        try {
+            console.log('Iniciando busca dos tipos de inspeção');
+            const headers = getAuthHeaders();
+            const data = await getTiposInspecao(headers);
+            console.log('Tipos de inspeção recebidos:', data);
+            // Não filtrar mais, mostrar todos os tipos de inspeção
+            setTiposInspecao(data);
+            return data;
+        } catch (error) {
+            console.error('Erro ao carregar tipos de inspeção:', error);
+            return [];
+        }
+    }, [getAuthHeaders]);
 
     // Carrega dados - Removendo dependências de estado para evitar recriações constantes
     const loadData = useCallback(async () => {
@@ -127,6 +147,15 @@ export default function PermissoesInspecaoPage() {
         try {
             const headers = getAuthHeaders();
             console.log('Iniciando busca de permissões de inspeção');
+
+            // Carregar tipos de inspeção se ainda não foram carregados
+            let tiposAtivos = tiposInspecao;
+            if (!tiposInspecaoFetchedRef.current || tiposInspecao.length === 0) {
+                tiposAtivos = await loadTiposInspecao();
+                tiposInspecaoFetchedRef.current = true;
+            }
+
+            // Carregar permissões
             const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
             console.log('Dados recebidos da API:', apiData);
 
@@ -183,7 +212,7 @@ export default function PermissoesInspecaoPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders, searchTerm, sortField]); // Apenas dependência estável
+    }, [getAuthHeaders, searchTerm, sortField, tiposInspecao, loadTiposInspecao]); // Incluindo dependência de tipos de inspeção
 
     useEffect(() => {
         // Evitar o loop infinito usando a referência
@@ -196,7 +225,7 @@ export default function PermissoesInspecaoPage() {
         return () => {
             // Cleanup function if needed
         };
-    }, []); // Sem dependência do loadData
+    }, [loadData]); // Dependência do loadData é necessária
 
     // Atualizar o controle manual dos filtros quando eles mudarem
     useEffect(() => {
@@ -355,23 +384,48 @@ export default function PermissoesInspecaoPage() {
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
         dataFetchedRef.current = false;
+        tiposInspecaoFetchedRef.current = false;
         loadData();
         setNotification("Atualizando dados...");
     }, [loadData]);
+
+    // Função para encontrar os nomes dos tipos de inspeção a partir dos IDs
+    const parseInspecaoIds = useCallback((inspecoesStr: string) => {
+        if (!inspecoesStr || !tiposInspecao.length) return [];
+
+        // Separa cada caractere como um ID separado
+        const idsArray = Array.from(inspecoesStr);
+
+        return idsArray.map(id => {
+            // Encontra o tipo de inspeção correspondente pelo id
+            const tipoInspecao = tiposInspecao.find(tipo => tipo.id === id);
+            return {
+                id,
+                descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`
+            };
+        });
+    }, [tiposInspecao]);
 
     // Funções utilitárias para formatar os dados na tabela
     const formatPermissoes = useCallback((permissoes: string) => {
         if (!permissoes) return null;
 
-        // Se for uma única string e não uma lista
+        const inspecoesInfo = parseInspecaoIds(permissoes);
+
         return (
             <div className="flex flex-wrap gap-1">
-                <span className="inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                    {permissoes}
-                </span>
+                {inspecoesInfo.map((inspecao, index) => (
+                    <span
+                        key={`${inspecao.id}-${index}`}
+                        className="inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                        title={inspecao.descricao}
+                    >
+                        {inspecao.descricao}
+                    </span>
+                ))}
             </div>
         );
-    }, []);
+    }, [parseInspecaoIds]);
 
     // Preparar opções de filtro para o componente FilterPanel
     const filterOptions = useMemo(() => [], []);
@@ -458,6 +512,7 @@ export default function PermissoesInspecaoPage() {
                         setCurrentPermissao(null);
                     }}
                     permissaoInspecao={currentPermissao}
+                    tiposInspecao={tiposInspecao}
                     onSuccess={handleEditSuccess}
                     onError={handleEditError}
                 />
