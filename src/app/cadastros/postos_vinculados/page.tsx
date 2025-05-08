@@ -16,10 +16,11 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
-const Card = React.memo(({ posto, isSelected, onToggleSelect }: {
+const Card = React.memo(({ posto, isSelected, onToggleSelect, renderKey }: {
     posto: Posto;
     isSelected: boolean;
     onToggleSelect: (posto: string) => void;
+    renderKey?: number;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
@@ -33,6 +34,7 @@ const Card = React.memo(({ posto, isSelected, onToggleSelect }: {
                     id={posto.posto}
                     isSelected={isSelected}
                     onToggle={onToggleSelect}
+                    renderKey={renderKey}
                 />
             </div>
 
@@ -88,6 +90,7 @@ export default function PostosVinculadosPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
+    const [renderCount, setRenderCount] = useState(0); // Estado para forçar renderização
 
     // Selected postos state
     const [selectedPostos, setSelectedPostos] = useState<Set<string>>(new Set());
@@ -271,6 +274,26 @@ export default function PostosVinculadosPage() {
         }
     }, [selectedPostos]);
 
+    const handleClearAll = useCallback(() => {
+        // Limpa o conjunto de postos selecionados
+        setSelectedPostos(new Set());
+
+        // Remove as seleções do localStorage para garantir que não sejam restauradas
+        localStorage.removeItem(localStorageKey);
+
+        // Incrementa o contador de renderização para forçar atualização visual
+        setRenderCount(prevCount => prevCount + 1);
+
+        // Atualiza a notificação para o usuário
+        setNotification("Todas as seleções foram limpas.");
+
+        // Exibe alerta visual de sucesso
+        setAlert({
+            message: "Todos os postos foram desmarcados com sucesso!",
+            type: "success"
+        });
+    }, [localStorageKey]);
+
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setTipoRecursoFilter("todos");
@@ -364,6 +387,7 @@ export default function PostosVinculadosPage() {
                         id={posto.posto}
                         isSelected={selectedPostos.has(posto.posto)}
                         onToggle={handleToggleSelect}
+                        renderKey={renderCount}
                     />
                 </div>
             ),
@@ -389,7 +413,7 @@ export default function PostosVinculadosPage() {
                 <div className="text-sm text-gray-600">{posto.tipo_recurso}</div>
             ),
         },
-    ], [handleToggleSelect, selectedPostos]);
+    ], [handleToggleSelect, selectedPostos, renderCount]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
@@ -416,16 +440,26 @@ export default function PostosVinculadosPage() {
 
             {/* Exibir contagem de postos selecionados */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <CheckSquare className="h-5 w-5 text-blue-500" />
+                <div className="flex justify-between items-center">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <CheckSquare className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-blue-700">
+                                <span className="font-medium">{selectedPostos.size} postos selecionados</span> de {allData.length} disponíveis.
+                                As seleções são automaticamente salvas no navegador.
+                            </p>
+                        </div>
                     </div>
-                    <div className="ml-3">
-                        <p className="text-sm text-blue-700">
-                            <span className="font-medium">{selectedPostos.size} postos selecionados</span> de {allData.length} disponíveis.
-                            As seleções são automaticamente salvas no navegador.
-                        </p>
-                    </div>
+                    {selectedPostos.size > 0 && (
+                        <button
+                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded border border-blue-300 transition-colors text-sm flex items-center hidden md:flex"
+                            onClick={handleClearAll}
+                        >
+                            Limpar Todos
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -484,6 +518,7 @@ export default function PostosVinculadosPage() {
                     <DataTable
                         data={postos}
                         columns={tableColumns}
+                        renderKey={renderCount}
                     />
                 ) : (
                     <DataCards
@@ -494,6 +529,7 @@ export default function PostosVinculadosPage() {
                                 posto={posto}
                                 isSelected={selectedPostos.has(posto.posto)}
                                 onToggleSelect={handleToggleSelect}
+                                renderKey={renderCount}
                             />
                         )}
                     />

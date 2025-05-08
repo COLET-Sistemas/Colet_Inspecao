@@ -18,11 +18,13 @@ interface DataTableProps<T> {
 const SelectableCell = memo(({
     children,
     itemId,
-    columnKey
+    columnKey,
+    renderKey, // Adicionando renderKey como prop
 }: {
     children: ReactNode;
     itemId: string | number;
     columnKey: string;
+    renderKey?: number;
 }) => {
     // Cada célula selecionável mantém sua própria chave de renderização
     const [cellKey, setCellKey] = useState(0);
@@ -30,10 +32,10 @@ const SelectableCell = memo(({
     // Detecta mudanças nos children e atualiza apenas esta célula quando necessário
     useEffect(() => {
         setCellKey(prev => prev + 1);
-    }, [children]);
+    }, [children, renderKey]); // Adicionando renderKey como dependência para forçar atualização
 
     return (
-        <div key={`selectable-${itemId}-${columnKey}-${cellKey}`}>
+        <div key={`selectable-${itemId}-${columnKey}-${renderKey || 0}-${cellKey}`}>
             {children}
         </div>
     );
@@ -44,6 +46,7 @@ const TableRow = memo(({
     item,
     columns,
     index,
+    renderKey, // Adicionando renderKey como prop
 }: {
     item: any;
     columns: Array<{
@@ -54,10 +57,11 @@ const TableRow = memo(({
         isSelectable?: boolean;
     }>;
     index: number;
+    renderKey?: number;
 }) => {
     return (
         <motion.tr
-            key={item.id}
+            key={`${item.id}-${renderKey || 0}`} // Usando renderKey na key para forçar re-renderização
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -66,11 +70,11 @@ const TableRow = memo(({
         >
             {columns.map((column) => (
                 <td
-                    key={`${item.id}-${column.key}`}
+                    key={`${item.id}-${column.key}-${renderKey || 0}`} // Usando renderKey na key para forçar re-renderização
                     className={`px-3 sm:px-4 md:px-6 py-2 sm:py-4 text-sm ${column.className || ""}`}
                 >
                     {column.isSelectable ? (
-                        <SelectableCell itemId={item.id} columnKey={column.key}>
+                        <SelectableCell itemId={item.id} columnKey={column.key} renderKey={renderKey}>
                             {column.render(item, index)}
                         </SelectableCell>
                     ) : (
@@ -129,10 +133,11 @@ export const DataTable = memo(<T extends { id: string | number }>({
                 <tbody className="bg-white divide-y divide-gray-200">
                     {data.map((item, index) => (
                         <TableRow
-                            key={`row-${item.id}`} // Não depende mais do renderKey global
+                            key={`row-${item.id}-${renderKey}`}
                             item={item}
                             columns={memoizedColumns}
                             index={index}
+                            renderKey={renderKey}
                         />
                     ))}
                 </tbody>
