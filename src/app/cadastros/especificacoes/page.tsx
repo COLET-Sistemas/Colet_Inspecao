@@ -1,610 +1,282 @@
-"use client";
+'use client';
 
-import { AlertMessage } from "@/components/ui/AlertMessage";
-import { DataCards } from "@/components/ui/cadastros/DataCards";
-import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
-import { DataTable } from "@/components/ui/cadastros/DataTable";
-import { EmptyState } from "@/components/ui/cadastros/EmptyState";
-import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
-import { PageHeader } from "@/components/ui/cadastros/PageHeader";
-import { Tooltip } from "@/components/ui/cadastros/Tooltip";
-import { motion } from "framer-motion";
-import { Eye, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { AlertMessage } from '@/components/ui/AlertMessage';
+import { PageHeader } from '@/components/ui/cadastros/PageHeader';
+import { useApiConfig } from '@/hooks/useApiConfig';
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, CheckCircle2, ChevronRight, Search } from "lucide-react";
+import { useCallback, useMemo, useState } from 'react';
 
+// Define tipos para os dados que virão da API
 interface Especificacao {
-    id: number;
-    codigo: string;
-    descricao: string;
-    tipo: string;
-    unidadeMedida: string;
-    status: "ativo" | "inativo";
-    dataCriacao: string;
-    valorMinimo: number;
-    valorNominal: number;
-    valorMaximo: number;
+    processo: number;
+    tipo_acao: string;
+    recurso: string;
+    setor: string;
+    especificacoes_inspecao: number;
 }
 
+interface Roteiro {
+    roteiro: string;
+    nome_roteiro: string;
+    processos: Especificacao[];
+}
+
+interface DadosReferencia {
+    referencia: string;
+    descricao: string;
+    unidade_estoque: string;
+    roteiros: Roteiro[];
+}
+
+// Define estado para alertas
 interface AlertState {
     message: string | null;
-    type: "success" | "error" | "warning";
+    type: "success" | "error" | "warning" | "info";
 }
 
-// Card component for list item
-const Card = ({ especificacao, onView, onEdit, onDelete }: {
-    especificacao: Especificacao;
-    onView: (id: number) => void;
-    onEdit: (id: number) => void;
-    onDelete: (id: number) => void;
-}) => {
-    const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'bg-green-50 text-green-700';
-            case 'inativo':
-                return 'bg-red-50 text-red-700';
-            default:
-                return 'bg-gray-50 text-gray-700';
+// Constantes de animação
+const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+};
+
+const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
         }
-    };
+    }
+};
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('pt-BR');
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'Ativo';
-            case 'inativo':
-                return 'Inativo';
-            default:
-                return status;
-        }
-    };
-
+// Componente para linha da tabela com memoização
+const ProcessoRow = ({ processo }: { processo: Especificacao }) => {
     return (
-        <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-            <div className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                            {especificacao.codigo}
-                        </span>
-                    </div>
-                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getStatusClass(especificacao.status)}`}>
-                        {getStatusLabel(especificacao.status)}
+        <motion.tr
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="hover:bg-gray-50 transition-colors"
+        >
+            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
+                {processo.especificacoes_inspecao > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {processo.especificacoes_inspecao}
                     </span>
-                </div>
-
-                <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                    {especificacao.descricao}
-                </h3>
-
-                <div className="flex justify-between items-center mt-2 mb-3">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 inline-block">
-                        {especificacao.tipo}
+                ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                        0
                     </span>
-                    <span className="text-xs text-gray-600">
-                        {especificacao.unidadeMedida}
-                    </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 mt-3">
-                    <div className="text-center">
-                        <div className="font-medium">Min</div>
-                        <div>{especificacao.valorMinimo}</div>
-                    </div>
-                    <div className="text-center bg-green-50 rounded-md py-1">
-                        <div className="font-medium text-green-700">Nominal</div>
-                        <div className="text-green-800 font-semibold">{especificacao.valorNominal}</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="font-medium">Max</div>
-                        <div>{especificacao.valorMaximo}</div>
-                    </div>
-                </div>
-
-                <div className="flex justify-between items-end mt-3">
-                    <div className="text-xs text-gray-500">
-                        Criado em: {formatDate(especificacao.dataCriacao)}
-                    </div>
-
-                    <div className="flex space-x-1">
-                        <Tooltip text="Visualizar">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50"
-                                onClick={() => onView(especificacao.id)}
-                                aria-label="Visualizar"
-                            >
-                                <Eye className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-
-                        <Tooltip text="Editar">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-[#1ABC9C] hover:bg-[#1ABC9C]/5"
-                                onClick={() => onEdit(especificacao.id)}
-                                aria-label="Editar"
-                            >
-                                <Pencil className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-
-                        <Tooltip text="Excluir">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
-                                onClick={() => onDelete(especificacao.id)}
-                                aria-label="Excluir"
-                            >
-                                <Trash2 className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-                    </div>
-                </div>
-            </div>
-        </div>
+                )}
+            </td>
+        </motion.tr>
     );
 };
 
-export default function EspecificacoesPage() {
-    // State for filters
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("todos");
-    const [tipoFilter, setTipoFilter] = useState<string>("todos");
+// Componente memoizado para o roteiro
+const RoteiroAccordion = ({
+    roteiro,
+    isExpanded,
+    onToggle
+}: {
+    roteiro: Roteiro;
+    isExpanded: boolean;
+    onToggle: (roteiroId: string) => void;
+}) => {
+    return (
+        <motion.div
+            key={roteiro.roteiro}
+            className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow transition-shadow duration-200"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            layout
+        >
+            <motion.div
+                className="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => onToggle(roteiro.roteiro)}
+                whileHover={{ backgroundColor: 'rgba(0,0,0,0.03)' }}
+                whileTap={{ scale: 0.99 }}
+            >
+                <div className="font-medium flex items-center">
+                    <div className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-md bg-[#1ABC9C]/10 text-[#1ABC9C] mr-3">
+                        <span className="font-bold">{roteiro.roteiro}</span>
+                    </div>
+                    <span className="text-gray-800">{roteiro.nome_roteiro}</span>
+                </div>
+                <div>
+                    <motion.div
+                        animate={{ rotate: isExpanded ? 90 : 0 }}
+                        transition={{ duration: 0.2, type: "tween" }}
+                    >
+                        <ChevronRight className="h-5 w-5 text-gray-500" />
+                    </motion.div>
+                </div>
+            </motion.div>
 
-    const [isPending, startTransition] = useTransition();
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        className="overflow-hidden"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        <div className="p-4 border-t border-gray-200">
+                            <div className="overflow-x-auto rounded-lg border border-gray-100">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Processo</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo Ação</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Especificações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        <AnimatePresence>
+                                            {roteiro.processos.map((processo) => (
+                                                <ProcessoRow key={processo.processo} processo={processo} />
+                                            ))}
+                                        </AnimatePresence>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
 
-    // View toggle state
-    const [viewMode, setViewMode] = useState<ViewMode>("table");
-
-    // State for data and loading
-    const [especificacoes, setEspecificacoes] = useState<Especificacao[]>([]);
-    const [allData, setAllData] = useState<Especificacao[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [activeFilters, setActiveFilters] = useState(0);
-
-    // Alert state para mensagens de sucesso ou erro
+export default function Especificacoes() {
+    const [codigoReferencia, setCodigoReferencia] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
+    const [dadosReferencia, setDadosReferencia] = useState<DadosReferencia | null>(null);
+    const [expandedRoteiros, setExpandedRoteiros] = useState<Record<string, boolean>>({});
+    const [loadingState, setLoadingState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-    // ARIA Live region for screen readers
-    const [notification, setNotification] = useState('');
+    // Obter headers de autenticação para chamadas à API
+    const { apiUrl, getAuthHeaders } = useApiConfig();
 
-    // Calculate active filters
-    useEffect(() => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (statusFilter !== "todos") count++;
-        if (tipoFilter !== "todos") count++;
-        setActiveFilters(count);
-    }, [searchTerm, statusFilter, tipoFilter]);
-
-    const loadData = useCallback(() => {
-        setIsLoading(true);
-
-        const timer = setTimeout(() => {
-            const mockData: Especificacao[] = [
-                {
-                    id: 1,
-                    codigo: "ESP-001",
-                    descricao: "Diâmetro do Furo 10mm",
-                    tipo: "Dimensional",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    dataCriacao: "2023-06-15",
-                    valorMinimo: 9.95,
-                    valorNominal: 10.0,
-                    valorMaximo: 10.05
-                },
-                {
-                    id: 2,
-                    codigo: "ESP-002",
-                    descricao: "Profundidade do Rasgo",
-                    tipo: "Dimensional",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    dataCriacao: "2023-07-22",
-                    valorMinimo: 5.8,
-                    valorNominal: 6.0,
-                    valorMaximo: 6.2
-                },
-                {
-                    id: 3,
-                    codigo: "ESP-003",
-                    descricao: "Rugosidade Superfície Lateral",
-                    tipo: "Superficial",
-                    unidadeMedida: "Ra",
-                    status: "ativo",
-                    dataCriacao: "2023-08-10",
-                    valorMinimo: 0,
-                    valorNominal: 1.2,
-                    valorMaximo: 1.6
-                },
-                {
-                    id: 4,
-                    codigo: "ESP-004",
-                    descricao: "Dureza Superficial",
-                    tipo: "Material",
-                    unidadeMedida: "HRC",
-                    status: "inativo",
-                    dataCriacao: "2023-09-05",
-                    valorMinimo: 42,
-                    valorNominal: 45,
-                    valorMaximo: 48
-                },
-                {
-                    id: 5,
-                    codigo: "ESP-005",
-                    descricao: "Diâmetro Externo",
-                    tipo: "Dimensional",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    dataCriacao: "2023-10-18",
-                    valorMinimo: 24.95,
-                    valorNominal: 25.0,
-                    valorMaximo: 25.05
-                },
-                {
-                    id: 6,
-                    codigo: "ESP-006",
-                    descricao: "Planicidade da Base",
-                    tipo: "Geométrica",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    dataCriacao: "2023-11-03",
-                    valorMinimo: 0,
-                    valorNominal: 0,
-                    valorMaximo: 0.05
-                },
-                {
-                    id: 7,
-                    codigo: "ESP-007",
-                    descricao: "Perpendicularidade",
-                    tipo: "Geométrica",
-                    unidadeMedida: "mm",
-                    status: "ativo",
-                    dataCriacao: "2023-11-15",
-                    valorMinimo: 0,
-                    valorNominal: 0,
-                    valorMaximo: 0.08
-                },
-                {
-                    id: 8,
-                    codigo: "ESP-008",
-                    descricao: "Resistência à Tração",
-                    tipo: "Material",
-                    unidadeMedida: "MPa",
-                    status: "inativo",
-                    dataCriacao: "2023-11-27",
-                    valorMinimo: 420,
-                    valorNominal: 450,
-                    valorMaximo: 480
-                }
-            ];
-
-            setAllData(mockData);
-
-            startTransition(() => {
-                let filtered = [...mockData];
-
-                if (searchTerm) {
-                    filtered = filtered.filter(item =>
-                        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                }
-
-                if (statusFilter !== "todos") {
-                    filtered = filtered.filter(item => item.status === statusFilter);
-                }
-
-                if (tipoFilter !== "todos") {
-                    filtered = filtered.filter(item => item.tipo === tipoFilter);
-                }
-
-                setEspecificacoes(filtered);
-                setIsLoading(false);
-
-                // Notifications for screen readers
-                if (filtered.length === 0) {
-                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
-                } else {
-                    setNotification(`${filtered.length} especificações encontradas.`);
-                }
-            });
-        }, 600);
-
-        return () => clearTimeout(timer);
-    }, [searchTerm, statusFilter, tipoFilter]);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    // List of unique specification types for filter dropdown - memoized
-    const tipos = useMemo(() => [
-        "Dimensional", "Superficial", "Material", "Geométrica"
-    ], []);
-
-    // Handle CRUD operations with feedback
-    const handleView = useCallback((id: number) => {
-        console.log(`Visualizando especificação ${id}`);
-        setNotification(`Visualizando detalhes da especificação ${id}.`);
-        // Implementar a lógica de visualização
-    }, []);
-
-    const handleEdit = useCallback((id: number) => {
-        console.log(`Editando especificação ${id}`);
-        setNotification(`Iniciando edição da especificação ${id}.`);
-
-        // Simulando uma edição bem-sucedida após um tempo
-        setTimeout(() => {
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Especificação ${id} atualizada com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Especificação ${id} atualizada com sucesso.`);
-        }, 1000);
-    }, []);
-
-    const handleDelete = useCallback((id: number) => {
-        console.log(`Excluindo especificação ${id}`);
-        // Aqui você pode implementar um modal de confirmação
-        if (confirm('Tem certeza que deseja excluir esta especificação?')) {
-            // Remove a especificação da lista
-            setEspecificacoes(prev => prev.filter(especificacao => especificacao.id !== id));
-
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Especificação ${id} excluída com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Especificação ${id} excluída com sucesso.`);
-        }
-    }, []);
-
-    const handleCreateNew = useCallback(() => {
-        console.log("Nova especificação");
-        // Simulando uma criação bem-sucedida após um tempo
-        setTimeout(() => {
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Nova especificação criada com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Nova especificação criada com sucesso.`);
-        }, 1000);
-    }, []);
-
-    // Reset filters function
-    const resetFilters = useCallback(() => {
-        setSearchTerm("");
-        setStatusFilter("todos");
-        setTipoFilter("todos");
-        setNotification("Filtros resetados.");
-    }, []);
-
-    // Limpar alerta
+    // Função para limpar alertas
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
 
-    // Prepare filter options for the FilterPanel component
-    const filterOptions = useMemo(() => {
-        // Status filter options
-        const statusOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os status" },
-            { value: "ativo", label: "Ativos", color: "bg-green-100 text-green-800" },
-            { value: "inativo", label: "Inativos", color: "bg-red-100 text-red-800" },
-        ];
+    // Toggle para expandir/colapsar roteiros
+    const toggleRoteiro = useCallback((roteiroId: string) => {
+        setExpandedRoteiros(prev => ({
+            ...prev,
+            [roteiroId]: !prev[roteiroId]
+        }));
+    }, []);
 
-        // Type filter options
-        const tipoOptions: FilterOption[] = [
-            { value: "todos", label: "Todos os tipos" },
-            ...tipos.map(tipo => ({ value: tipo, label: tipo })),
-        ];
+    // Expandir/colapsar todos os roteiros
+    const toggleAllRoteiros = useCallback((expandAll: boolean) => {
+        if (!dadosReferencia?.roteiros) return;
 
-        return [
-            {
-                id: "status",
-                label: "Status",
-                value: statusFilter,
-                options: statusOptions,
-                onChange: setStatusFilter,
-            },
-            {
-                id: "tipo",
-                label: "Tipo",
-                value: tipoFilter,
-                options: tipoOptions,
-                onChange: setTipoFilter,
-            },
-        ];
-    }, [statusFilter, tipoFilter, tipos]);
+        const newState: Record<string, boolean> = {};
+        dadosReferencia.roteiros.forEach(roteiro => {
+            newState[roteiro.roteiro] = expandAll;
+        });
 
-    // Prepare selected filters for display in the filter panel
-    const selectedFiltersForDisplay = useMemo(() => {
-        const filters = [];
+        setExpandedRoteiros(newState);
+    }, [dadosReferencia]);
 
-        if (searchTerm) {
-            filters.push({
-                id: "search",
-                value: searchTerm,
-                label: `Pesquisa: "${searchTerm}"`,
-                color: "bg-purple-100 text-purple-800",
+    // Função para transformar input em maiúsculas
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setCodigoReferencia(e.target.value.toUpperCase());
+    }, []);
+
+    const handleSearch = useCallback(async () => {
+        if (!codigoReferencia.trim()) {
+            setAlert({
+                message: "Por favor, digite um código de referência",
+                type: "warning"
             });
+            return;
         }
 
-        if (statusFilter !== "todos") {
-            let label = "Status", color = "bg-gray-100 text-gray-800";
+        setIsLoading(true);
+        setLoadingState('loading');
+        setDadosReferencia(null);
 
-            switch (statusFilter) {
-                case "ativo":
-                    label = "Ativos";
-                    color = "bg-green-100 text-green-800";
-                    break;
-                case "inativo":
-                    label = "Inativos";
-                    color = "bg-red-100 text-red-800";
-                    break;
+        try {
+            if (!apiUrl) {
+                throw new Error("URL da API não configurada");
             }
 
-            filters.push({
-                id: "status",
-                value: statusFilter,
-                label,
-                color,
+            const response = await fetch(
+                `${apiUrl}/inspecao/processos_ft?referencia=${encodeURIComponent(codigoReferencia.trim())}`,
+                {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setDadosReferencia(data);
+            setLoadingState('success');
+
+            // Inicializa o estado expandido para os roteiros
+            const inicialExpandidos: Record<string, boolean> = {};
+            if (data.roteiros) {
+                data.roteiros.forEach((roteiro: Roteiro) => {
+                    inicialExpandidos[roteiro.roteiro] = false; // Inicialmente colapsados
+                });
+            }
+            setExpandedRoteiros(inicialExpandidos);
+
+            // Se não houver roteiros, mostra um alerta
+            if (!data.roteiros || data.roteiros.length === 0) {
+                setAlert({
+                    message: `Nenhuma informação encontrada para a referência: ${codigoReferencia}`,
+                    type: "info"
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao buscar dados:', error);
+            setLoadingState('error');
+            setAlert({
+                message: error instanceof Error ? error.message : 'Erro desconhecido ao buscar dados',
+                type: "error"
             });
+        } finally {
+            setIsLoading(false);
         }
+    }, [codigoReferencia, apiUrl, getAuthHeaders]);
 
-        if (tipoFilter !== "todos") {
-            filters.push({
-                id: "tipo",
-                value: tipoFilter,
-                label: tipoFilter,
-                color: "bg-blue-100 text-blue-800",
-            });
-        }
+    // Memoização para evitar re-renderizações desnecessárias
+    const totalEspecificacoes = useMemo(() => {
+        if (!dadosReferencia?.roteiros) return 0;
 
-        return filters;
-    }, [searchTerm, statusFilter, tipoFilter]);
-
-    // Function to get status class for table
-    const getStatusClass = useCallback((status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'bg-green-100 text-green-800';
-            case 'inativo':
-                return 'bg-red-100 text-red-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    }, []);
-
-    const getStatusLabel = useCallback((status: string) => {
-        switch (status) {
-            case 'ativo':
-                return 'Ativo';
-            case 'inativo':
-                return 'Inativo';
-            default:
-                return status;
-        }
-    }, []);
-
-    // Table columns configuration
-    const tableColumns = useMemo(() => [
-        {
-            key: "codigo",
-            title: "Código",
-            render: (especificacao: Especificacao) => (
-                <span className="text-sm font-medium text-gray-900">{especificacao.codigo}</span>
-            ),
-        },
-        {
-            key: "descricao",
-            title: "Descrição",
-            render: (especificacao: Especificacao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{especificacao.descricao}</div>
-            ),
-        },
-        {
-            key: "tipo",
-            title: "Tipo",
-            render: (especificacao: Especificacao) => (
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {especificacao.tipo}
-                </span>
-            ),
-        },
-        {
-            key: "unidadeMedida",
-            title: "Unidade",
-            render: (especificacao: Especificacao) => (
-                <span className="text-sm text-gray-500">
-                    {especificacao.unidadeMedida}
-                </span>
-            ),
-        },
-        {
-            key: "valores",
-            title: "Valores (Min | Nom | Max)",
-            render: (especificacao: Especificacao) => (
-                <div className="text-sm text-gray-500">
-                    <span className="text-gray-700">{especificacao.valorMinimo}</span>
-                    {' | '}
-                    <span className="font-medium text-green-700">{especificacao.valorNominal}</span>
-                    {' | '}
-                    <span className="text-gray-700">{especificacao.valorMaximo}</span>
-                </div>
-            ),
-        },
-        {
-            key: "status",
-            title: "Status",
-            render: (especificacao: Especificacao) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(especificacao.status)}`}>
-                    {getStatusLabel(especificacao.status)}
-                </span>
-            ),
-        },
-        {
-            key: "acoes",
-            title: "Ações",
-            render: (especificacao: Especificacao) => (
-                <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Visualizar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleView(especificacao.id)}
-                            aria-label="Visualizar"
-                        >
-                            <Eye className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-[#1ABC9C] hover:text-[#16A085] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleEdit(especificacao.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:text-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleDelete(especificacao.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
-            ),
-        },
-    ], [handleView, handleEdit, handleDelete, getStatusClass, getStatusLabel]);
+        return dadosReferencia.roteiros.reduce((total, roteiro) => {
+            return total + roteiro.processos.reduce((processoTotal, processo) => {
+                return processoTotal + processo.especificacoes_inspecao;
+            }, 0);
+        }, 0);
+    }, [dadosReferencia]);
 
     return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* ARIA Live region for accessibility */}
-            <div className="sr-only" role="status" aria-live="polite">
-                {notification}
-            </div>
-
-            {/* Alerta para mensagens de sucesso */}
+        <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">
+            {/* Alerta para mensagens */}
             <AlertMessage
                 message={alert.message}
                 type={alert.type}
@@ -613,67 +285,245 @@ export default function EspecificacoesPage() {
                 dismissDuration={5000}
             />
 
-            {/* Page Header Component */}
-            <PageHeader
-                title="Especificações da Inspeção"
-                buttonLabel="Nova Especificação"
-                onButtonClick={handleCreateNew}
-            />
+            {/* Cabeçalho da página com campo de pesquisa */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <PageHeader
+                    title="Especificações"
+                    subtitle="Pesquise pelo código da referência"
+                    showButton={false}
+                />
 
-            {/* Filters Component */}
-            <FilterPanel
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar por código ou descrição... (Ctrl+F)"
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                filters={filterOptions}
-                activeFilters={activeFilters}
-                onResetFilters={resetFilters}
-                selectedFilters={selectedFiltersForDisplay}
-            />
-
-            {/* Data Container with Dynamic View */}
-            <DataListContainer
-                isLoading={isLoading || isPending}
-                isEmpty={especificacoes.length === 0}
-                emptyState={
-                    <EmptyState
-                        icon={<SlidersHorizontal className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                        title="Nenhum resultado encontrado"
-                        description="Não encontramos especificações que correspondam aos seus filtros atuais."
-                        primaryAction={{
-                            label: "Nova Especificação",
-                            onClick: handleCreateNew,
-                            icon: <Plus className="mr-2 h-4 w-4" />,
-                        }}
-                        secondaryAction={{
-                            label: "Limpar filtros",
-                            onClick: resetFilters,
-                        }}
-                    />
-                }
-                totalItems={allData.length}
-                totalFilteredItems={especificacoes.length}
-                activeFilters={activeFilters}
-                onResetFilters={resetFilters}
-            >
-                {viewMode === "table" ? (
-                    <DataTable data={especificacoes} columns={tableColumns} />
-                ) : (
-                    <DataCards
-                        data={especificacoes}
-                        renderCard={(especificacao) => (
-                            <Card
-                                especificacao={especificacao}
-                                onView={handleView}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
+                {/* Campo de pesquisa */}
+                <motion.div
+                    className="flex flex-col sm:flex-row items-center gap-2 md:w-1/2 lg:w-2/5"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                >
+                    <div className="relative flex-grow w-full">
+                        <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-100 flex items-center">
+                            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="DIGITE O CÓDIGO DA REFERÊNCIA"
+                                value={codigoReferencia}
+                                onChange={handleInputChange}
+                                className="block w-full rounded-md bg-gray-50 border-0 pl-8 py-3 text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#1ABC9C]/50 transition-all duration-300"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSearch();
+                                }}
+                                disabled={isLoading}
+                                aria-label="Código de referência"
                             />
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                disabled={isLoading}
+                                onClick={handleSearch}
+                                className="ml-1 hidden sm:inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-md text-white bg-[#1ABC9C] hover:bg-[#16A085] shadow-md shadow-[#1ABC9C]/20 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#1ABC9C] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                                aria-label="Pesquisar referência"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin mr-1"></div>
+                                        <span>Buscando...</span>
+                                    </>
+                                ) : (
+                                    <span>Pesquisar</span>
+                                )}
+                            </motion.button>
+                        </div>
+                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        disabled={isLoading}
+                        onClick={handleSearch}
+                        className="w-full sm:hidden inline-flex items-center justify-center px-4 py-2 text-xs font-medium rounded-md text-white bg-[#1ABC9C] hover:bg-[#16A085] shadow-md shadow-[#1ABC9C]/20 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#1ABC9C] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                        aria-label="Pesquisar referência"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin mr-1"></div>
+                                <span>Buscando...</span>
+                            </>
+                        ) : (
+                            <span>Pesquisar</span>
                         )}
-                    />
+                    </motion.button>
+                </motion.div>
+            </div>
+
+            {/* Exibição dos dados */}
+            <AnimatePresence mode="wait">
+                {dadosReferencia && (
+                    <motion.div
+                        key="dados-referencia"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4 }}
+                        className="bg-white rounded-xl shadow-lg p-3 sm:p-5 border border-gray-100"
+                    >
+                        <div className="mb-5 sm:mb-6">
+                            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex items-center">
+                                <span className="h-5 w-1.5 bg-[#1ABC9C] rounded-full mr-2 inline-block"></span>
+                                Informações da Referência
+                            </h2>
+                            <div className="bg-gray-50 p-2.5 sm:p-3 rounded-lg">
+                                <div className="flex flex-col md:flex-row">
+                                    <div className="md:w-1/2 order-2 md:order-1">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Descrição</p>
+                                        <p className="font-medium text-xs sm:text-sm" title={dadosReferencia.descricao}>{dadosReferencia.descricao}</p>
+                                    </div>
+                                    <div className="md:w-1/2 flex md:flex-row flex-col order-1 md:order-2 mb-3 md:mb-0">
+                                        <div className="md:w-1/2 md:pr-2">
+                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Referência</p>
+                                            <p className="font-medium text-xs sm:text-sm">{dadosReferencia.referencia}</p>
+                                        </div>
+                                        <div className="md:w-1/2 md:pl-2 mt-3 md:mt-0">
+                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Unidade de Estoque</p>
+                                            <p className="font-medium text-xs sm:text-sm">{dadosReferencia.unidade_estoque}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Roteiros */}
+                        {dadosReferencia.roteiros?.length > 0 && (
+                            <motion.div
+                                variants={staggerContainer}
+                                initial="hidden"
+                                animate="visible"
+                            >
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-base sm:text-lg font-bold text-gray-800 flex items-center">
+                                        <span className="h-5 w-1.5 bg-[#1ABC9C] rounded-full mr-2 inline-block"></span>
+                                        Roteiros
+                                    </h3>
+
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => toggleAllRoteiros(true)}
+                                            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                        >
+                                            Expandir todos
+                                        </button>
+                                        <button
+                                            onClick={() => toggleAllRoteiros(false)}
+                                            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                        >
+                                            Recolher todos
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {totalEspecificacoes > 0 && (
+                                    <div className="mb-3 flex items-center justify-end">
+                                        <div className="bg-green-50 border border-green-100 rounded-lg px-2.5 py-1 flex items-center text-xs text-green-800">
+                                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                            <span>Total de especificações: <b>{totalEspecificacoes}</b></span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-3">
+                                    {dadosReferencia.roteiros.map((roteiro) => (
+                                        <RoteiroAccordion
+                                            key={roteiro.roteiro}
+                                            roteiro={roteiro}
+                                            isExpanded={expandedRoteiros[roteiro.roteiro]}
+                                            onToggle={toggleRoteiro}
+                                        />
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Estado vazio caso não tenha roteiros */}
+                        {(!dadosReferencia.roteiros || dadosReferencia.roteiros.length === 0) && (
+                            <div className="py-6 flex flex-col items-center justify-center text-center">
+                                <div className="rounded-full bg-gray-100 p-2.5 mb-3">
+                                    <AlertCircle className="h-6 w-6 text-gray-400" />
+                                </div>
+                                <h3 className="text-base font-medium text-gray-900 mb-1">Nenhum roteiro encontrado</h3>
+                                <p className="text-gray-500 text-sm">Não existem roteiros disponíveis para esta referência.</p>
+                            </div>
+                        )}
+                    </motion.div>
                 )}
-            </DataListContainer>
+
+                {/* Estado vazio inicial */}
+                {!isLoading && !dadosReferencia && loadingState === 'idle' && (
+                    <motion.div
+                        key="estado-inicial"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sm:p-8 mt-4 flex flex-col items-center justify-center text-center"
+                    >
+                        <div className="rounded-full bg-[#1ABC9C]/10 p-3 mb-3">
+                            <Search className="h-6 w-6 text-[#1ABC9C]" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Pesquise por uma referência</h3>
+                        <p className="text-gray-500 text-xs sm:text-sm max-w-md">Digite o código da referência no campo acima para visualizar seus roteiros e processos.</p>
+                    </motion.div>
+                )}
+
+                {/* Loading state */}
+                {isLoading && !dadosReferencia && (
+                    <motion.div
+                        key="estado-carregando"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sm:p-8 mt-4 flex flex-col items-center justify-center text-center"
+                    >
+                        <motion.div
+                            className="rounded-full bg-[#1ABC9C]/10 p-3 mb-3"
+                            animate={{
+                                scale: [1, 1.05, 1],
+                                opacity: [1, 0.8, 1]
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            <div className="w-6 h-6 rounded-full border-2 border-[#1ABC9C]/80 border-t-transparent animate-spin"></div>
+                        </motion.div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Buscando dados...</h3>
+                        <p className="text-gray-500 text-xs sm:text-sm">Aguarde enquanto buscamos as informações da referência.</p>
+                    </motion.div>
+                )}
+
+                {/* Error state quando não está carregando mas teve erro */}
+                {!isLoading && !dadosReferencia && loadingState === 'error' && (
+                    <motion.div
+                        key="estado-erro"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="bg-white rounded-xl shadow-lg border border-red-100 p-6 sm:p-8 mt-4 flex flex-col items-center justify-center text-center"
+                    >
+                        <div className="rounded-full bg-red-100 p-3 mb-3">
+                            <AlertCircle className="h-6 w-6 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Erro ao buscar dados</h3>
+                        <p className="text-gray-500 text-xs sm:text-sm max-w-md">Tente novamente ou contate o administrador se o problema persistir.</p>
+                        <button
+                            onClick={handleSearch}
+                            className="mt-3 px-3 py-1.5 bg-[#1ABC9C] text-white rounded-md hover:bg-[#16A085] transition-colors text-xs"
+                        >
+                            Tentar novamente
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
