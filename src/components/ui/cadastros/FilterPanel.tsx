@@ -95,6 +95,8 @@ export function FilterPanel({
     onSortFieldChange,
 }: FilterPanelProps) {
     const [showFilters, setShowFilters] = useState(false);
+    // Detecta se o dispositivo é móvel ou tablet (width < 768px)
+    const isMobileOrTablet = useMediaQuery('(max-width: 768px)');
 
     // Debounce search input
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,13 +162,17 @@ export function FilterPanel({
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => setShowFilters(!showFilters)}
-                                className={buttonBaseClass}
+                                className={isMobileOrTablet ?
+                                    `${buttonBaseClass} justify-center w-10` :
+                                    buttonBaseClass}
                                 aria-label="Mostrar filtros avançados"
                             >
-                                <SlidersHorizontal size={16} className="mr-2" />
-                                <span className="whitespace-nowrap">Filtros</span>
+                                <SlidersHorizontal size={16} className={isMobileOrTablet ? "" : "mr-2"} />
+                                {!isMobileOrTablet && (
+                                    <span className="whitespace-nowrap">Filtros</span>
+                                )}
                                 {activeFilters > 0 && (
-                                    <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white">
+                                    <span className={`${isMobileOrTablet ? "ml-0" : "ml-2"} px-1.5 py-0.5 text-xs font-medium rounded-full bg-[#1ABC9C] text-white absolute ${isMobileOrTablet ? "-top-1 -right-1" : "relative"}`}>
                                         {activeFilters}
                                     </span>
                                 )}

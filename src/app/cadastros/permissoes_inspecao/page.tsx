@@ -37,9 +37,32 @@ interface PermissaoFilterOption {
     label: string;
 }
 
+// Função para gerar cores consistentes baseadas no ID
+const getInspecaoColor = (id: string): { bg: string, text: string } => {
+    // Array de combinações de cores (fundo/texto) pré-definidas para badges
+    const colorOptions = [
+        { bg: "bg-blue-50", text: "text-blue-700" },
+        { bg: "bg-green-50", text: "text-green-700" },
+        { bg: "bg-purple-50", text: "text-purple-700" },
+        { bg: "bg-amber-50", text: "text-amber-700" },
+        { bg: "bg-rose-50", text: "text-rose-700" },
+        { bg: "bg-cyan-50", text: "text-cyan-700" },
+        { bg: "bg-indigo-50", text: "text-indigo-700" },
+        { bg: "bg-emerald-50", text: "text-emerald-700" },
+        { bg: "bg-orange-50", text: "text-orange-700" },
+        { bg: "bg-pink-50", text: "text-pink-700" },
+    ];
+
+    // Usar o código do caractere como índice para selecionar uma cor consistentemente
+    const charCode = id.charCodeAt(0);
+    const index = charCode % colorOptions.length;
+
+    return colorOptions[index];
+};
+
 // Interface e criação do contexto
 interface PermissoesContextType {
-    parseInspecaoIds: (inspecoesStr: string) => Array<{ id: string, descricao: string }>;
+    parseInspecaoIds: (inspecoesStr: string) => Array<{ id: string, descricao: string, color: { bg: string, text: string } }>;
 }
 
 const PermissoesContext = createContext<PermissoesContextType | undefined>(undefined);
@@ -89,7 +112,7 @@ const Card = ({ permissao, onEdit, onDelete }: {
                     {inspecoesInfo.map((inspecao, index) => (
                         <span
                             key={`${inspecao.id}-${index}`}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
                             title={inspecao.descricao}
                         >
                             {inspecao.descricao}
@@ -475,7 +498,8 @@ export default function PermissoesInspecaoPage() {
             const tipoInspecao = tiposInspecao.find(tipo => tipo.id === id);
             return {
                 id,
-                descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`
+                descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`,
+                color: getInspecaoColor(id),
             };
         });
     }, [tiposInspecao]);
@@ -491,7 +515,7 @@ export default function PermissoesInspecaoPage() {
                 {inspecoesInfo.map((inspecao, index) => (
                     <span
                         key={`${inspecao.id}-${index}`}
-                        className="inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                        className={`inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
                         title={inspecao.descricao}
                     >
                         {inspecao.descricao}
