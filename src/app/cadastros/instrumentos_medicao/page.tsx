@@ -65,9 +65,9 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                 <div className="flex items-center text-xs">
                     <span className="w-24 font-medium text-gray-600">Validade:</span>
                     <span className={`${instrumento.data_validade ?
-                            new Date(instrumento.data_validade) < new Date() ?
-                                'text-red-600 font-medium' : 'text-gray-900'
-                            : 'text-gray-400'
+                        new Date(instrumento.data_validade) < new Date() ?
+                            'text-red-600 font-medium' : 'text-gray-900'
+                        : 'text-gray-400'
                         }`}>
                         {instrumento.data_validade || '-'}
                     </span>
@@ -77,7 +77,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                     <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
                 </div>
                 <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Frequência:</span>
+                    <span className="w-24 font-medium text-gray-600">Frequência dia:</span>
                     <span className="text-gray-900">{instrumento.frequencia_calibracao || '-'}</span>
                 </div>
             </div>
@@ -85,8 +85,8 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
             {/* Rodapé: Status + Ações */}
             <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
                 <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"
                     }`}>
                     <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
                         }`}></div>
@@ -505,7 +505,7 @@ export default function InstrumentosMedicaoPage() {
                         <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
                     </div>
                     <div className="flex items-center text-xs">
-                        <span className="font-medium text-gray-600 mr-1">Frequência:</span>
+                        <span className="font-medium text-gray-600 mr-1">Frequência dia:</span>
                         <span className="text-gray-900">{instrumento.frequencia_calibracao || '-'}</span>
                     </div>
                 </div>
