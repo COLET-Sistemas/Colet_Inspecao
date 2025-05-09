@@ -524,14 +524,22 @@ export function InstrumentoMedicaoModal({
                             </div>
                             <div className={`relative transition-all duration-200 ${isFocused === 'frequencia_calibracao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                                 <input
-                                    type="text"
+                                    type="number"
                                     id="frequencia_calibracao"
                                     name="frequencia_calibracao"
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Frequência calibração"
+                                    placeholder="Dias entre calibrações"
                                     defaultValue={instrumentoMedicao?.frequencia_calibracao || ""}
+                                    min="0"
+                                    step="1"
                                     onFocus={() => setIsFocused('frequencia_calibracao')}
                                     onBlur={() => setIsFocused(null)}
+                                    onKeyPress={(e) => {
+                                        // Permitir apenas números inteiros
+                                        if (!/[0-9]/.test(e.key)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>
