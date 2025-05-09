@@ -137,9 +137,9 @@ export function InstrumentoMedicaoModal({
                     numero_patrimonio: string;
                     numero_serie: string;
                     situacao: "A" | "I";
-                    data_validade: string;
-                    data_ultima_calibracao: string;
-                    frequencia_calibracao: string;
+                    data_validade: string | null;
+                    data_ultima_calibracao: string | null;
+                    frequencia_calibracao: string | null;
                     id_tipo_instrumento?: number;
                     id_instrumento?: number;
                 } = {
@@ -149,9 +149,9 @@ export function InstrumentoMedicaoModal({
                     numero_patrimonio: formData.numero_patrimonio?.trim() || "",
                     numero_serie: formData.numero_serie?.trim() || "",
                     situacao: formData.situacao || "A",
-                    data_validade: formData.data_validade || "",
-                    data_ultima_calibracao: formData.data_ultima_calibracao || "",
-                    frequencia_calibracao: formData.frequencia_calibracao || ""
+                    data_validade: formData.data_validade?.trim() ? formData.data_validade : null,
+                    data_ultima_calibracao: formData.data_ultima_calibracao?.trim() ? formData.data_ultima_calibracao : null,
+                    frequencia_calibracao: formData.frequencia_calibracao ? formData.frequencia_calibracao : null
                 };
 
                 // Adicionar ID se estiver editando
