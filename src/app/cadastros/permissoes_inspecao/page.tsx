@@ -236,9 +236,15 @@ export default function PermissoesInspecaoPage() {
             }
 
             if (selectedPermissionFilter) {
-                filtered = filtered.filter(item =>
-                    item.inspecoes.includes(selectedPermissionFilter)
-                );
+                if (selectedPermissionFilter === "com_permissao") {
+                    filtered = filtered.filter(item => item.inspecoes.length > 0);
+                } else if (selectedPermissionFilter === "sem_permissao") {
+                    filtered = filtered.filter(item => item.inspecoes.length === 0);
+                } else {
+                    filtered = filtered.filter(item =>
+                        item.inspecoes.includes(selectedPermissionFilter)
+                    );
+                }
             }
 
             // Aplicar ordenação
@@ -292,7 +298,17 @@ export default function PermissoesInspecaoPage() {
                     String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
                     String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase());
 
-                const matchesPermission = !selectedPermissionFilter || item.inspecoes.includes(selectedPermissionFilter);
+                // Filtro por permissão com novos casos especiais
+                let matchesPermission = true;
+                if (selectedPermissionFilter) {
+                    if (selectedPermissionFilter === "com_permissao") {
+                        matchesPermission = item.inspecoes.length > 0;
+                    } else if (selectedPermissionFilter === "sem_permissao") {
+                        matchesPermission = item.inspecoes.length === 0;
+                    } else {
+                        matchesPermission = item.inspecoes.includes(selectedPermissionFilter);
+                    }
+                }
 
                 return matchesSearch && matchesPermission;
             });
@@ -496,14 +512,26 @@ export default function PermissoesInspecaoPage() {
             label: "Ver todos",
         };
 
+        // Opções especiais para filtrar por status de permissão
+        const specialOptions: PermissaoFilterOption[] = [
+            {
+                value: "com_permissao",
+                label: "Usuários com permissões"
+            },
+            {
+                value: "sem_permissao",
+                label: "Usuários sem permissões"
+            }
+        ];
+
         // Mapear os tipos de inspeção para opções de filtro
         const permissionOptions: PermissaoFilterOption[] = tiposInspecao.map(tipo => ({
             value: tipo.id,
             label: tipo.descricao_tipo_inspecao,
         }));
 
-        // Adicionar a opção "Ver todos" no início do array
-        const options = [allOption, ...permissionOptions];
+        // Adicionar todas as opções na ordem correta
+        const options = [allOption, ...specialOptions, ...permissionOptions];
 
         return [
             {
@@ -530,12 +558,24 @@ export default function PermissoesInspecaoPage() {
         }
 
         if (selectedPermissionFilter) {
-            const permissionLabel = tiposInspecao.find(tipo => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
+            let permissionLabel;
+            let color = "bg-blue-100 text-blue-800";
+
+            if (selectedPermissionFilter === "com_permissao") {
+                permissionLabel = "Usuários com permissões";
+                color = "bg-green-100 text-green-800";
+            } else if (selectedPermissionFilter === "sem_permissao") {
+                permissionLabel = "Usuários sem permissões";
+                color = "bg-orange-100 text-orange-800";
+            } else {
+                permissionLabel = tiposInspecao.find(tipo => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
+            }
+
             filters.push({
                 id: "permission",
                 value: selectedPermissionFilter,
-                label: `Permissão: "${permissionLabel}"`,
-                color: "bg-blue-100 text-blue-800",
+                label: `Filtro: ${permissionLabel}`,
+                color,
             });
         }
 

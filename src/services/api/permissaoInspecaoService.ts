@@ -66,12 +66,20 @@ export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<P
 function mapPermissoesData(data: any[]): PermissaoInspecao[] {
     if (!Array.isArray(data)) return [];
 
-    return data.map(item => ({
-        operador: item.operador || '',
-        nome_operador: item.nome_operador || '',
-        situacao: item.situacao || 'A',
-        inspecoes: item.inspecoes || '',
-    }));
+    return data.map(item => {
+        // Ensure inspecoes is always a string, never undefined or null
+        let inspecoes = '';
+        if (item.inspecoes !== undefined && item.inspecoes !== null) {
+            inspecoes = String(item.inspecoes);
+        }
+
+        return {
+            operador: item.operador || '',
+            nome_operador: item.nome_operador || '',
+            situacao: item.situacao || 'A',
+            inspecoes: inspecoes,
+        };
+    });
 }
 
 export const updatePermissaoInspecao = async (
@@ -96,9 +104,39 @@ export const updatePermissaoInspecao = async (
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro ao atualizar: ${response.status}`);
+        // First try to get error as text to avoid JSON parse errors
+        const errorText = await response.text();
+        let errorMessage = `Erro ao atualizar: ${response.status}`;
+
+        // Only try to parse as JSON if it looks like JSON
+        if (errorText && (errorText.startsWith('{') || errorText.startsWith('['))) {
+            try {
+                const errorData = JSON.parse(errorText);
+                if (errorData && errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (parseError) {
+                console.error("Erro ao parsear resposta de erro:", parseError);
+            }
+        }
+
+        throw new Error(errorMessage);
     }
 
-    return await response.json();
+    try {
+        // Handle potentially empty or invalid JSON responses
+        const text = await response.text();
+
+        // If response is empty, return the original request data
+        if (!text.trim()) {
+            return permissao;
+        }
+
+        // Try to parse as JSON
+        return JSON.parse(text);
+    } catch (parseError) {
+        console.error("Erro ao parsear resposta:", parseError);
+        // Return the original request data if we can't parse the response
+        return permissao;
+    }
 };

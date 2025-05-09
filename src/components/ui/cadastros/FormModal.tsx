@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface FormModalProps {
@@ -14,6 +14,7 @@ interface FormModalProps {
     onSubmit?: (data: any) => Promise<void>;
     submitLabel?: string;
     size?: "sm" | "md" | "lg" | "xl";
+    isSubmitting?: boolean;
 }
 
 export function FormModal({
@@ -25,9 +26,13 @@ export function FormModal({
     onSubmit,
     submitLabel = isEditing ? "Salvar alterações" : "Criar",
     size = "md",
+    isSubmitting: externalIsSubmitting,
 }: FormModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+
+    // Usa o estado de submissão externo se fornecido, senão usa o interno
+    const isSubmitting = externalIsSubmitting !== undefined ? externalIsSubmitting : internalIsSubmitting;
 
     const modalSizes = {
         sm: "max-w-md",
@@ -77,14 +82,21 @@ export function FormModal({
         e.preventDefault();
         if (onSubmit) {
             try {
-                setIsSubmitting(true);
+                // Só altera o estado interno se não estiver usando um estado externo
+                if (externalIsSubmitting === undefined) {
+                    setInternalIsSubmitting(true);
+                }
+
                 const formData = new FormData(e.target as HTMLFormElement);
                 const data = Object.fromEntries(formData.entries());
                 await onSubmit(data);
             } catch (error) {
                 console.error("Erro ao submeter formulário:", error);
             } finally {
-                setIsSubmitting(false);
+                // Só altera o estado interno se não estiver usando um estado externo
+                if (externalIsSubmitting === undefined) {
+                    setInternalIsSubmitting(false);
+                }
             }
         }
     };
@@ -139,6 +151,7 @@ export function FormModal({
                                 onClick={onClose}
                                 aria-label="Fechar"
                                 className="rounded-md p-1 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+                                disabled={isSubmitting}
                             >
                                 <X className="h-5 w-5 text-gray-500" />
                             </button>
@@ -162,18 +175,23 @@ export function FormModal({
                                 </button>
 
                                 <motion.button
-                                    whileTap={{ scale: 0.97 }}
+                                    whileTap={{ scale: isSubmitting ? 1 : 0.97 }}
                                     type="submit"
                                     disabled={isSubmitting}
                                     className={cn(
-                                        "w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2",
+                                        "w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 flex items-center justify-center",
                                         isEditing
                                             ? "bg-amber-500 hover:bg-amber-600 focus:ring-amber-400/50"
                                             : "bg-[#09A08D] hover:bg-[#1ABC9E] focus:ring-[#09A08D]/50",
                                         isSubmitting && "opacity-70 cursor-not-allowed"
                                     )}
                                 >
-                                    {isSubmitting ? "Processando..." : submitLabel}
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Processando...
+                                        </>
+                                    ) : submitLabel}
                                 </motion.button>
                             </div>
                         </form>

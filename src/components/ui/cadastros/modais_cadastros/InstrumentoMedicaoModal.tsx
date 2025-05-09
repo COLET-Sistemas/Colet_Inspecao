@@ -4,7 +4,7 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, Tag } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface InstrumentoMedicaoModalProps {
@@ -23,20 +23,56 @@ export function InstrumentoMedicaoModal({
     const { apiUrl, getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const codigoArtigoRef = useRef<HTMLInputElement>(null);
+
+    // Função para validar o código do artigo
+    const validateArticleCode = async (codigoArtigo: string): Promise<boolean> => {
+        if (!codigoArtigo || codigoArtigo.trim() === "") {
+            return true;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/produtos?referencia=${encodeURIComponent(codigoArtigo)}`, {
+                headers: getAuthHeaders(),
+                method: 'GET'
+            });
+
+            // Status 200 significa válido
+            return response.status === 200;
+        } catch (error) {
+            console.error("Erro ao validar código do artigo:", error);
+            return false;
+        }
+    };
 
     const handleSubmit = useCallback(
         async (formData: any) => {
             try {
                 setError(null);
+                setIsSubmitting(true);
 
                 // Validar campos obrigatórios
                 if (!formData.nome_instrumento?.trim()) {
                     setError("O nome do instrumento é obrigatório");
+                    setIsSubmitting(false);
                     return;
                 }
 
                 if (!formData.tag?.trim()) {
                     setError("A TAG do instrumento é obrigatória");
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                // Validar o código do artigo se estiver preenchido
+                const codigoArtigo = formData.codigo_artigo?.trim() || "";
+                const isArticleCodeValid = await validateArticleCode(codigoArtigo);
+
+                if (codigoArtigo && !isArticleCodeValid) {
+                    setError("Código do artigo inválido. Por favor, verifique o código informado.");
+                    setIsSubmitting(false);
                     return;
                 }
 
@@ -55,7 +91,7 @@ export function InstrumentoMedicaoModal({
                 } = {
                     tag: formData.tag.trim(),
                     nome_instrumento: formData.nome_instrumento.trim(),
-                    codigo_artigo: formData.codigo_artigo?.trim() || "",
+                    codigo_artigo: codigoArtigo,
                     numero_patrimonio: formData.numero_patrimonio?.trim() || "",
                     numero_serie: formData.numero_serie?.trim() || "",
                     situacao: formData.situacao || "A",
@@ -131,9 +167,11 @@ export function InstrumentoMedicaoModal({
             } catch (err: any) {
                 console.error("Erro ao processar formulário:", err);
                 setError(err.message || "Ocorreu um erro inesperado");
+            } finally {
+                setIsSubmitting(false);
             }
         },
-        [apiUrl, onClose, onSuccess, instrumentoMedicao, getAuthHeaders]
+        [apiUrl, onClose, onSuccess, instrumentoMedicao, getAuthHeaders, validateArticleCode]
     );
 
     // Feedback visual para erros
@@ -166,6 +204,7 @@ export function InstrumentoMedicaoModal({
             isEditing={!!instrumentoMedicao?.id_instrumento}
             onSubmit={handleSubmit}
             submitLabel={instrumentoMedicao?.id_instrumento ? "Salvar alterações" : "Criar instrumento"}
+            isSubmitting={isSubmitting}
             size="md"
         >
             {renderFeedback()}
@@ -255,7 +294,7 @@ export function InstrumentoMedicaoModal({
                             </div>
                         </div>
 
-                        {/* Campo de código do artigo */}
+                        {/* Campo de código do artigo - sem botão de validação */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
@@ -270,6 +309,7 @@ export function InstrumentoMedicaoModal({
                                     type="text"
                                     id="codigo_artigo"
                                     name="codigo_artigo"
+                                    ref={codigoArtigoRef}
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                     placeholder="Código do artigo"
                                     defaultValue={instrumentoMedicao?.codigo_artigo || ""}
