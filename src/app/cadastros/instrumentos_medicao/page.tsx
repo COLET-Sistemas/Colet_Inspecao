@@ -86,9 +86,9 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
             <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
                 <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
                     ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-600"
+                    : "bg-red-100 text-red-800"
                     }`}>
-                    <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
+                    <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-red-500"
                         }`}></div>
                     <span className="text-xs font-medium">
                         {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
@@ -234,7 +234,8 @@ export default function InstrumentosMedicaoPage() {
     }, [searchTerm, statusFilter, allData]);
 
     const handleEdit = useCallback((id: number) => {
-        const instrumentoToEdit = instrumentosMedicao.find(item => item.id_tipo_instrumento === id);
+        // Find instrument by id_instrumento instead of id_tipo_instrumento
+        const instrumentoToEdit = instrumentosMedicao.find(item => item.id_instrumento === id);
         if (instrumentoToEdit) {
             setSelectedInstrumentoMedicao(instrumentoToEdit);
             setIsModalOpen(true);
@@ -245,7 +246,7 @@ export default function InstrumentosMedicaoPage() {
     const handleDelete = useCallback((id: number) => {
         setDeletingId(id);
         setIsDeleteModalOpen(true);
-        const instrumentoToDelete = instrumentosMedicao.find(item => item.id_tipo_instrumento === id);
+        const instrumentoToDelete = instrumentosMedicao.find(item => item.id_instrumento === id);
         if (instrumentoToDelete) {
             setNotification(`Preparando para excluir o instrumento de medição: ${instrumentoToDelete.nome_instrumento}`);
         }
@@ -307,27 +308,38 @@ export default function InstrumentosMedicaoPage() {
     const handleModalSuccess = useCallback(async (data: any) => {
         console.log("Dados recebidos do modal:", data);
 
-        // Atualizar o estado local com os dados recebidos do modal
         if (selectedInstrumentoMedicao) {
-            // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
+            // Caso de edição - O modal já fez a chamada PUT
+            try {
+                setNotification(`Atualizando lista de instrumentos de medição após edição...`);
 
-            // Atualiza o item em ambas as listas de forma consistente, usando os dados retornados pelo modal
-            setInstrumentosMedicao(prev => prev.map(item =>
-                item.id_tipo_instrumento === data.id_tipo_instrumento ? data : item
-            ));
-            setAllData(prev => prev.map(item =>
-                item.id_tipo_instrumento === data.id_tipo_instrumento ? data : item
-            ));
+                // Recarrega os dados do servidor após a edição
+                await loadData();
 
-            // Mostrar mensagem de sucesso na página
-            setAlert({
-                message: `Instrumento de medição ${data.id_tipo_instrumento} atualizado com sucesso!`,
-                type: "success"
-            });
+                // Mostrar mensagem de sucesso na página
+                setAlert({
+                    message: `Instrumento de medição atualizado com sucesso!`,
+                    type: "success"
+                });
 
-            // Para leitores de tela
-            setNotification(`Instrumento de medição ${data.id_tipo_instrumento} atualizado com sucesso.`);
+                // Para leitores de tela
+                setNotification(`Instrumento de medição atualizado com sucesso.`);
+            } catch (error) {
+                console.error("Erro ao atualizar lista após editar item:", error);
 
+                // Como fallback, atualiza o item nas listas locais
+                setInstrumentosMedicao(prev => prev.map(item =>
+                    item.id_instrumento === data.id_instrumento ? data : item
+                ));
+                setAllData(prev => prev.map(item =>
+                    item.id_instrumento === data.id_instrumento ? data : item
+                ));
+
+                setAlert({
+                    message: `Item editado com sucesso, mas houve um erro ao atualizar a lista.`,
+                    type: "warning"
+                });
+            }
         } else if (data) {
             // Caso de criação - O modal já fez a chamada POST
             console.log("Item criado com sucesso:", data);
@@ -418,7 +430,7 @@ export default function InstrumentosMedicaoPage() {
                 label: `Status: ${statusFilter === "ativos" ? "Ativos" : "Inativos"}`,
                 color: statusFilter === "ativos"
                     ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800",
+                    : "bg-red-100 text-red-800",
             });
         }
 
@@ -519,9 +531,9 @@ export default function InstrumentosMedicaoPage() {
                 <div className="flex items-center">
                     <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
                         ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                        : "bg-red-100 text-red-800"
                         }`}>
-                        <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
+                        <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-red-500"
                             }`}></div>
                         <span className="text-xs font-medium">
                             {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
@@ -599,7 +611,7 @@ export default function InstrumentosMedicaoPage() {
                 }
                 itemName={
                     deletingId !== null
-                        ? instrumentosMedicao.find(item => item.id_tipo_instrumento === deletingId)?.nome_instrumento
+                        ? instrumentosMedicao.find(item => item.id_instrumento === deletingId)?.nome_instrumento
                         : undefined
                 }
             />

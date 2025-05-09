@@ -8,6 +8,24 @@ import { AlertCircle, FileText, Tag } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FormModal } from "../FormModal";
 
+// Função para formatar data de DD/MM/YYYY para YYYY-MM-DD (formato esperado pelo input type="date")
+const formatDateForInput = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+
+    // Verificar se a data já está no formato ISO
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return dateString;
+    }
+
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+
+    return "";
+};
+
 interface InstrumentoMedicaoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -253,28 +271,61 @@ export function InstrumentoMedicaoModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Linha 1: Nome (ocupando toda a linha) */}
+                    {/* Linha 1: Nome (ocupando toda a linha ou parcial se estiver editando) */}
                     <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="nome_instrumento" className="text-sm font-medium text-gray-700">
-                                    Nome <span className="text-red-500">*</span>
-                                </label>
+                        <div className={`grid ${instrumentoMedicao?.id_instrumento ? 'grid-cols-1 md:grid-cols-2 gap-4' : 'grid-cols-1'}`}>
+                            {/* Campo de Nome */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <FileText className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="nome_instrumento" className="text-sm font-medium text-gray-700">
+                                            Nome <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'nome' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="text"
+                                        id="nome_instrumento"
+                                        name="nome_instrumento"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Nome do instrumento"
+                                        defaultValue={instrumentoMedicao?.nome_instrumento || ""}
+                                        required
+                                        onFocus={() => setIsFocused('nome')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'nome' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="nome_instrumento"
-                                name="nome_instrumento"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Nome do instrumento"
-                                defaultValue={instrumentoMedicao?.nome_instrumento || ""}
-                                required
-                                onFocus={() => setIsFocused('nome')}
-                                onBlur={() => setIsFocused(null)}
-                            />
+
+                            {/* Campo de situação (status) - visível apenas na edição e na mesma linha do nome */}
+                            {instrumentoMedicao?.id_instrumento && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <FileText className="h-4 w-4 text-gray-500" />
+                                            <label htmlFor="situacao" className="text-sm font-medium text-gray-700">
+                                                Situação <span className="text-red-500">*</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className={`relative transition-all duration-200 ${isFocused === 'situacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                        <select
+                                            id="situacao"
+                                            name="situacao"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                            defaultValue={instrumentoMedicao?.situacao || "A"}
+                                            required
+                                            onFocus={() => setIsFocused('situacao')}
+                                            onBlur={() => setIsFocused(null)}
+                                        >
+                                            <option value="A">Ativo</option>
+                                            <option value="I">Inativo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -431,7 +482,7 @@ export function InstrumentoMedicaoModal({
                                     id="data_validade"
                                     name="data_validade"
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={instrumentoMedicao?.data_validade || ""}
+                                    defaultValue={formatDateForInput(instrumentoMedicao?.data_validade)}
                                     onFocus={() => setIsFocused('data_validade')}
                                     onBlur={() => setIsFocused(null)}
                                 />
@@ -454,7 +505,7 @@ export function InstrumentoMedicaoModal({
                                     id="data_ultima_calibracao"
                                     name="data_ultima_calibracao"
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={instrumentoMedicao?.data_ultima_calibracao || ""}
+                                    defaultValue={formatDateForInput(instrumentoMedicao?.data_ultima_calibracao)}
                                     onFocus={() => setIsFocused('data_ultima_calibracao')}
                                     onBlur={() => setIsFocused(null)}
                                 />
@@ -485,34 +536,6 @@ export function InstrumentoMedicaoModal({
                             </div>
                         </div>
                     </div>
-
-                    {/* Campo de situação (status) - visível apenas na edição */}
-                    {instrumentoMedicao?.id_instrumento && (
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="situacao" className="text-sm font-medium text-gray-700">
-                                        Situação <span className="text-red-500">*</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'situacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="situacao"
-                                    name="situacao"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={instrumentoMedicao?.situacao || "A"}
-                                    required
-                                    onFocus={() => setIsFocused('situacao')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="A">Ativo</option>
-                                    <option value="I">Inativo</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Mensagem sobre campos obrigatórios */}
                     <div className="text-xs text-gray-500 mt-4">

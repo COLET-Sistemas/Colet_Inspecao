@@ -19,16 +19,13 @@ import { motion } from "framer-motion";
 import { IterationCcw, Pencil, SlidersHorizontal } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-// Interfaces para o componente
 interface AlertState {
     message: string | null;
     type: "success" | "error" | "warning" | "info";
 }
 
-// Removendo a interface intermediária e usando diretamente a interface do arquivo types
-// O componente Card ainda precisa de algumas propriedades adicionais, então vamos extender a interface
 interface PermissaoInspecaoExtended extends ApiPermissaoInspecao {
-    id: string; // ID obrigatório para compatibilidade com DataTable/DataCards
+    id: string; 
 }
 
 // Interface para filtro de permissão
@@ -39,7 +36,6 @@ interface PermissaoFilterOption {
 
 // Função para gerar cores consistentes baseadas no ID
 const getInspecaoColor = (id: string): { bg: string, text: string } => {
-    // Array de combinações de cores (fundo/texto) pré-definidas para badges
     const colorOptions = [
         { bg: "bg-blue-50", text: "text-blue-700" },
         { bg: "bg-green-50", text: "text-green-700" },
@@ -48,12 +44,11 @@ const getInspecaoColor = (id: string): { bg: string, text: string } => {
         { bg: "bg-rose-50", text: "text-rose-700" },
         { bg: "bg-cyan-50", text: "text-cyan-700" },
         { bg: "bg-indigo-50", text: "text-indigo-700" },
-        { bg: "bg-emerald-50", text: "text-emerald-700" },
+        { bg: "bg-yellow-50", text: "text-yellow-700" },
         { bg: "bg-orange-50", text: "text-orange-700" },
-        { bg: "bg-pink-50", text: "text-pink-700" },
+        { bg: "bg-lime-100", text: "text-lime-700" },
     ];
 
-    // Usar o código do caractere como índice para selecionar uma cor consistentemente
     const charCode = id.charCodeAt(0);
     const index = charCode % colorOptions.length;
 
@@ -373,24 +368,6 @@ export default function PermissoesInspecaoPage() {
     }, [permissoes]);
 
     const handleEditSuccess = useCallback((updatedPermissao: ApiPermissaoInspecao) => {
-        // Atualizar os dados locais
-        setAllData(prev =>
-            prev.map(item =>
-                item.operador === updatedPermissao.operador
-                    ? { ...item, ...updatedPermissao, id: updatedPermissao.operador }
-                    : item
-            )
-        );
-
-        // Replicar a atualização para a lista filtrada
-        setPermissoes(prev =>
-            prev.map(item =>
-                item.operador === updatedPermissao.operador
-                    ? { ...item, ...updatedPermissao, id: updatedPermissao.operador }
-                    : item
-            )
-        );
-
         // Fechar modal e mostrar mensagem de sucesso
         setIsEditModalOpen(false);
         setCurrentPermissao(null);
@@ -399,7 +376,11 @@ export default function PermissoesInspecaoPage() {
             type: "success"
         });
         setNotification(`Permissões de inspeção para ${updatedPermissao.nome_operador} atualizadas com sucesso.`);
-    }, []);
+
+        // Recarregar os dados da API após edição bem-sucedida
+        dataFetchedRef.current = false;
+        loadData();
+    }, [loadData]);
 
     const handleEditError = useCallback((errorMessage: string) => {
         setAlert({
