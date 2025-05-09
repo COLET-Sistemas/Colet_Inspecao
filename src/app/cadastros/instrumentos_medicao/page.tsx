@@ -25,34 +25,74 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
-            <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                    <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                        #{instrumento.id_tipo_instrumento}
-                    </span>
-                </div>
-                <span className={`text-xs font-medium px-2 py-1 rounded ${instrumento.situacao === "A"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-gray-100 text-gray-600"
-                    }`}>
-                    {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
-                </span>
-            </div>
-
+            {/* Nome do instrumento */}
             <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
                 {instrumento.nome_instrumento}
             </h3>
 
-            <div className="text-sm text-gray-600 mb-1">
-                <span className="font-medium">TAG:</span> {instrumento.tag}
+            {/* Tag como badge */}
+            <div className="mb-3">
+                <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md text-xs font-medium">
+                    {instrumento.tag}
+                </div>
             </div>
 
-            <div className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">Tipo:</span> {instrumento.nome_tipo_instrumento || 'Não especificado'}
+            {/* Tipo de instrumento */}
+            <div className="bg-gray-50 rounded-md px-3 py-2 mb-3">
+                <div className="text-sm text-gray-800 font-medium">
+                    {instrumento.nome_tipo_instrumento || 'Tipo não especificado'}
+                </div>
             </div>
 
-            <div className="flex justify-between items-end mt-3">
-                <div className="flex flex-col space-y-1">
+            {/* Dados patrimoniais */}
+            <div className="mb-3 space-y-1">
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Nº Patrimônio:</span>
+                    <span className="text-gray-900">{instrumento.numero_patrimonio || '-'}</span>
+                </div>
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Cód. Artigo:</span>
+                    <span className="text-gray-900">{instrumento.codigo_artigo || '-'}</span>
+                </div>
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Série:</span>
+                    <span className="text-gray-900">{instrumento.numero_serie || '-'}</span>
+                </div>
+            </div>
+
+            {/* Informações de calibração */}
+            <div className="mb-3 space-y-1">
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Validade:</span>
+                    <span className={`${instrumento.data_validade ?
+                            new Date(instrumento.data_validade) < new Date() ?
+                                'text-red-600 font-medium' : 'text-gray-900'
+                            : 'text-gray-400'
+                        }`}>
+                        {instrumento.data_validade || '-'}
+                    </span>
+                </div>
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Calibração:</span>
+                    <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
+                </div>
+                <div className="flex items-center text-xs">
+                    <span className="w-24 font-medium text-gray-600">Frequência:</span>
+                    <span className="text-gray-900">{instrumento.frequencia_calibracao || '-'}</span>
+                </div>
+            </div>
+
+            {/* Rodapé: Status + Ações */}
+            <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
+                <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}>
+                    <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
+                        }`}></div>
+                    <span className="text-xs font-medium">
+                        {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
+                    </span>
                 </div>
 
                 <div className="flex space-x-1">
@@ -63,7 +103,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                             onClick={() => onEdit(instrumento.id_instrumento)}
                             aria-label="Editar"
                         >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
                     <Tooltip text="Excluir">
@@ -73,7 +113,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                             onClick={() => onDelete(instrumento.id_instrumento)}
                             aria-label="Excluir"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
                 </div>
@@ -388,97 +428,118 @@ export default function InstrumentosMedicaoPage() {
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "id_instrumento",
-            title: "ID",
-            render: (instrumento: InstrumentoMedicao) => (
-                <span className="text-sm font-medium text-gray-900">#{instrumento.id_instrumento}</span>
-            ),
-        },
-        {
             key: "nome_instrumento",
             title: "Nome",
+            width: "200px",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{instrumento.nome_instrumento}</div>
+                <div className="flex items-center">
+                    <span className="font-medium text-sm text-gray-900">{instrumento.nome_instrumento}</span>
+                </div>
             ),
         },
         {
             key: "tag",
             title: "TAG",
+            width: "120px",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900 font-medium">{instrumento.tag}</div>
+                <div className="flex items-center">
+                    <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md font-medium">
+                        {instrumento.tag}
+                    </span>
+                </div>
             ),
         },
         {
-            key: "nome_tipo_instrumento",
+            key: "tipo_instrumento",
             title: "Tipo de Instrumento",
+            width: "180px",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.nome_tipo_instrumento || 'Não especificado'}</div>
+                <div className="flex items-center">
+                    <div className="rounded-md bg-gray-50 px-2 py-1 w-full">
+                        <span className="text-sm text-gray-800 font-medium truncate block">
+                            {instrumento.nome_tipo_instrumento || 'Não especificado'}
+                        </span>
+                    </div>
+                </div>
             ),
         },
         {
-            key: "numero_patrimonio",
-            title: "Nº Patrimônio",
+            key: "dados_patrimoniais",
+            title: "Dados Patrimoniais",
+            width: "180px",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.numero_patrimonio || '-'}</div>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Nº Patrimônio:</span>
+                        <span className="text-gray-900">{instrumento.numero_patrimonio || '-'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Cód. Artigo:</span>
+                        <span className="text-gray-900">{instrumento.codigo_artigo || '-'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Série:</span>
+                        <span className="text-gray-900">{instrumento.numero_serie || '-'}</span>
+                    </div>
+                </div>
             ),
         },
         {
-            key: "numero_serie",
-            title: "Nº Série",
+            key: "calibracao",
+            title: "Calibração",
+            width: "200px",
             render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.numero_serie || '-'}</div>
-            ),
-        },
-        {
-            key: "codigo_artigo",
-            title: "Código Artigo",
-            render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.codigo_artigo || '-'}</div>
-            ),
-        },
-        {
-            key: "data_validade",
-            title: "Data Validade",
-            render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.data_validade || '-'}</div>
-            ),
-        },
-        {
-            key: "data_ultima_calibracao",
-            title: "Última Calibração",
-            render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.data_ultima_calibracao || '-'}</div>
-            ),
-        },
-        {
-            key: "frequencia_calibracao",
-            title: "Freq. Calibração",
-            render: (instrumento: InstrumentoMedicao) => (
-                <div className="text-sm text-gray-900">{instrumento.frequencia_calibracao || '-'}</div>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Data de Validade:</span>
+                        <span className={`text-sm ${instrumento.data_validade ?
+                            new Date(instrumento.data_validade) < new Date() ?
+                                'text-red-600 font-medium' : 'text-gray-900'
+                            : 'text-gray-400'
+                            }`}>
+                            {instrumento.data_validade || '-'}
+                        </span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Última Calibração:</span>
+                        <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
+                    </div>
+                    <div className="flex items-center text-xs">
+                        <span className="font-medium text-gray-600 mr-1">Frequência:</span>
+                        <span className="text-gray-900">{instrumento.frequencia_calibracao || '-'}</span>
+                    </div>
+                </div>
             ),
         },
         {
             key: "situacao",
-            title: "Situação",
+            title: "Status",
+            width: "80px",
             render: (instrumento: InstrumentoMedicao) => (
                 <div className="flex items-center">
-                    <span className={`inline-block w-2 h-2 rounded-full mr-2 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
-                        }`}></span>
-                    <span className="text-sm text-gray-700">
-                        {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
-                    </span>
+                    <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                        }`}>
+                        <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-gray-400"
+                            }`}></div>
+                        <span className="text-xs font-medium">
+                            {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
+                        </span>
+                    </div>
                 </div>
             ),
         },
         {
             key: "acoes",
             title: "Ações",
+            width: "100px",
             render: (instrumento: InstrumentoMedicao) => (
                 <div className="flex items-center justify-end gap-2">
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
                             onClick={() => handleEdit(instrumento.id_instrumento)}
                             aria-label="Editar"
                         >
@@ -488,7 +549,7 @@ export default function InstrumentosMedicaoPage() {
                     <Tooltip text="Excluir">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
                             onClick={() => handleDelete(instrumento.id_instrumento)}
                             aria-label="Excluir"
                         >
