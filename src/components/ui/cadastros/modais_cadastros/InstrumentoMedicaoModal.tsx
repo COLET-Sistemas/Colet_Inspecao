@@ -2,9 +2,10 @@
 
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
+import { TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, Tag } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FormModal } from "../FormModal";
 
 interface InstrumentoMedicaoModalProps {
@@ -24,8 +25,43 @@ export function InstrumentoMedicaoModal({
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [tiposInstrumentos, setTiposInstrumentos] = useState<TipoInstrumentoMedicao[]>([]);
+    const [isLoadingTipos, setIsLoadingTipos] = useState(true);
 
     const codigoArtigoRef = useRef<HTMLInputElement>(null);
+
+    // Carregar os tipos de instrumentos de medição quando o modal abrir
+    useEffect(() => {
+        if (isOpen) {
+            const fetchTiposInstrumentos = async () => {
+                setIsLoadingTipos(true);
+                try {
+                    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+                        headers: getAuthHeaders(),
+                        method: 'GET'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Erro ao buscar tipos de instrumentos: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    setTiposInstrumentos(Array.isArray(data) ? data.map(item => ({
+                        id: item.id !== undefined && item.id !== null ? Number(item.id) : 0,
+                        nome_tipo_instrumento: item.nome_tipo_instrumento || '',
+                        observacao: item.observacao || ''
+                    })) : []);
+                } catch (err) {
+                    console.error("Erro ao buscar tipos de instrumentos de medição:", err);
+                    setError("Não foi possível carregar os tipos de instrumentos de medição.");
+                } finally {
+                    setIsLoadingTipos(false);
+                }
+            };
+
+            fetchTiposInstrumentos();
+        }
+    }, [isOpen, apiUrl, getAuthHeaders]);
 
     // Função para validar o código do artigo
     const validateArticleCode = async (codigoArtigo: string): Promise<boolean> => {
@@ -104,11 +140,17 @@ export function InstrumentoMedicaoModal({
                 if (instrumentoMedicao?.id_instrumento) {
                     payload.id_instrumento = instrumentoMedicao.id_instrumento;
                 }
-                if (instrumentoMedicao?.id_tipo_instrumento) {
+
+                // Adicionar id_tipo_instrumento com base na seleção do usuário
+                if (formData.id_tipo_instrumento) {
+                    payload.id_tipo_instrumento = Number(formData.id_tipo_instrumento);
+                } else if (instrumentoMedicao?.id_tipo_instrumento) {
                     payload.id_tipo_instrumento = instrumentoMedicao.id_tipo_instrumento;
                 } else {
-                    // Quando estiver criando um novo instrumento (POST), define id_tipo_instrumento como 1
-                    payload.id_tipo_instrumento = 25;
+                    // Se nenhum tipo foi selecionado, mostrar erro
+                    setError("Selecione um tipo de instrumento de medição");
+                    setIsSubmitting(false);
+                    return;
                 }
 
                 let response;
@@ -441,6 +483,37 @@ export function InstrumentoMedicaoModal({
                                 onFocus={() => setIsFocused('frequencia_calibracao')}
                                 onBlur={() => setIsFocused(null)}
                             />
+                        </div>
+                    </div>
+
+                    {/* Linha 6: Tipo de instrumento */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
+                                    Tipo de Instrumento
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'id_tipo_instrumento' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <select
+                                id="id_tipo_instrumento"
+                                name="id_tipo_instrumento"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                defaultValue={instrumentoMedicao?.id_tipo_instrumento || ""}
+                                onFocus={() => setIsFocused('id_tipo_instrumento')}
+                                onBlur={() => setIsFocused(null)}
+                            >
+                                <option value="" disabled>
+                                    {isLoadingTipos ? "Carregando tipos..." : "Selecione um tipo"}
+                                </option>
+                                {tiposInstrumentos.map(tipo => (
+                                    <option key={tipo.id} value={tipo.id}>
+                                        {tipo.nome_tipo_instrumento}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

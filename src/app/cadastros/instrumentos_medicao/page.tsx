@@ -43,8 +43,12 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                 {instrumento.nome_instrumento}
             </h3>
 
-            <div className="text-sm text-gray-600 mb-2">
+            <div className="text-sm text-gray-600 mb-1">
                 <span className="font-medium">TAG:</span> {instrumento.tag}
+            </div>
+
+            <div className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Tipo:</span> {instrumento.nome_tipo_instrumento || 'Não especificado'}
             </div>
 
             <div className="flex justify-between items-end mt-3">
@@ -56,7 +60,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                         <motion.button
                             whileTap={{ scale: 0.97 }}
                             className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
-                            onClick={() => onEdit(instrumento.id_tipo_instrumento)}
+                            onClick={() => onEdit(instrumento.id_instrumento)}
                             aria-label="Editar"
                         >
                             <Pencil className="h-3.5 w-3.5" />
@@ -66,7 +70,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                         <motion.button
                             whileTap={{ scale: 0.97 }}
                             className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
-                            onClick={() => onDelete(instrumento.id_tipo_instrumento)}
+                            onClick={() => onDelete(instrumento.id_instrumento)}
                             aria-label="Excluir"
                         >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -402,6 +406,13 @@ export default function InstrumentosMedicaoPage() {
             title: "TAG",
             render: (instrumento: InstrumentoMedicao) => (
                 <div className="text-sm text-gray-900 font-medium">{instrumento.tag}</div>
+            ),
+        },
+        {
+            key: "nome_tipo_instrumento",
+            title: "Tipo de Instrumento",
+            render: (instrumento: InstrumentoMedicao) => (
+                <div className="text-sm text-gray-900">{instrumento.nome_tipo_instrumento || 'Não especificado'}</div>
             ),
         },
         {

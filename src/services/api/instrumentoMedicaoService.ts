@@ -6,20 +6,51 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+    // Buscar instrumentos de medição
+    const instrumentosResponse = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'GET',
         headers: authHeaders,
     });
 
-    if (!response.ok) {
-        throw new Error(`Erro ao buscar dados: ${response.status}`);
+    if (!instrumentosResponse.ok) {
+        throw new Error(`Erro ao buscar dados: ${instrumentosResponse.status}`);
     }
 
-    const data = await response.json();
+    const instrumentosData = await instrumentosResponse.json();
 
-    return Array.isArray(data) ? data.map(item => {
+    // Buscar tipos de instrumentos de medição
+    const tiposResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+        method: 'GET',
+        headers: authHeaders,
+    });
+
+    if (!tiposResponse.ok) {
+        throw new Error(`Erro ao buscar tipos de instrumentos: ${tiposResponse.status}`);
+    }
+
+    const tiposData = await tiposResponse.json();
+
+    // Criar um mapa para rápida consulta de tipos por ID
+    const tiposMap = new Map();
+    if (Array.isArray(tiposData)) {
+        tiposData.forEach((tipo: any) => {
+            if (tipo.id !== undefined && tipo.id !== null) {
+                tiposMap.set(Number(tipo.id), {
+                    id: Number(tipo.id),
+                    nome_tipo_instrumento: tipo.nome_tipo_instrumento || '',
+                    observacao: tipo.observacao || ''
+                });
+            }
+        });
+    }
+
+    return Array.isArray(instrumentosData) ? instrumentosData.map(item => {
         const id_tipo_instrumento = item.id_tipo_instrumento !== undefined && item.id_tipo_instrumento !== null ? Number(item.id_tipo_instrumento) : 0;
         const id_instrumento = item.id_instrumento !== undefined && item.id_instrumento !== null ? Number(item.id_instrumento) : 0;
+
+        // Buscar o tipo de instrumento correspondente no mapa
+        const tipoInstrumento = tiposMap.get(id_tipo_instrumento);
+        const nome_tipo_instrumento = tipoInstrumento ? tipoInstrumento.nome_tipo_instrumento : '';
 
         return {
             id_instrumento,
@@ -34,6 +65,7 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
             data_validade: item.data_validade || '',
             data_ultima_calibracao: item.data_ultima_calibracao || '',
             frequencia_calibracao: item.frequencia_calibracao || '',
+            nome_tipo_instrumento // Adicionando o nome do tipo de instrumento
         };
     }) : [];
 };
