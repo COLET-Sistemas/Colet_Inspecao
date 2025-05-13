@@ -300,7 +300,7 @@ export default function InstrumentosMedicaoPage() {
     }, []);
 
     const handleCreateNew = useCallback(() => {
-        setSelectedInstrumentoMedicao(undefined); // Limpa qualquer seleção anterior
+        setSelectedInstrumentoMedicao(undefined);
         setIsModalOpen(true);
     }, []);
 
@@ -503,7 +503,7 @@ export default function InstrumentosMedicaoPage() {
             render: (instrumento: InstrumentoMedicao) => (
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center text-xs">
-                        <span className="font-medium text-gray-600 mr-1">Data de Validade:</span>
+                        <span className="font-medium text-gray-600 mr-1">Data Validade:</span>
                         <span className={`text-sm ${instrumento.data_validade ?
                             new Date(instrumento.data_validade) < new Date() ?
                                 'text-red-600 font-medium' : 'text-gray-900'
@@ -513,7 +513,7 @@ export default function InstrumentosMedicaoPage() {
                         </span>
                     </div>
                     <div className="flex items-center text-xs">
-                        <span className="font-medium text-gray-600 mr-1">Última Calibração:</span>
+                        <span className="font-medium text-gray-600 mr-1">Última Calibr.:</span>
                         <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
                     </div>
                     <div className="flex items-center text-xs">

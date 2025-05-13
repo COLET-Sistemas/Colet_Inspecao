@@ -10,8 +10,8 @@ export interface InstrumentoMedicao {
     data_validade: string;
     data_ultima_calibracao: string;
     frequencia_calibracao: string;
-    id: number; // Adicionado para compatibilidade com DataTable e DataCards
-    nome_tipo_instrumento?: string; // Nome do tipo de instrumento para exibição
+    id: number; 
+    nome_tipo_instrumento?: string; 
 }
 
 export interface InstrumentoMedicaoFilter {

@@ -84,6 +84,18 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
 
                 <div className="flex justify-between items-end mt-3">
                     <div className="flex flex-col space-y-1">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-600">Rejeita Menor:</span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${cota.rejeita_menor ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                                {cota.rejeita_menor ? "Sim" : "Não"}
+                            </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-600">Rejeita Maior:</span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${cota.rejeita_maior ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                                {cota.rejeita_maior ? "Sim" : "Não"}
+                            </span>
+                        </div>
                     </div>
 
                     <div className="flex space-x-1">
@@ -497,6 +509,24 @@ export default function CotasCaracteristicasPage() {
             render: (cota: CotaCaracteristica) => (
                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
                     {getTipoLabel(cota.tipo)}
+                </span>
+            ),
+        },
+        {
+            key: "rejeita_menor",
+            title: "Rejeita Menor",
+            render: (cota: CotaCaracteristica) => (
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${cota.rejeita_menor ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                    {cota.rejeita_menor ? "Sim" : "Não"}
+                </span>
+            ),
+        },
+        {
+            key: "rejeita_maior",
+            title: "Rejeita Maior",
+            render: (cota: CotaCaracteristica) => (
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${cota.rejeita_maior ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                    {cota.rejeita_maior ? "Sim" : "Não"}
                 </span>
             ),
         },

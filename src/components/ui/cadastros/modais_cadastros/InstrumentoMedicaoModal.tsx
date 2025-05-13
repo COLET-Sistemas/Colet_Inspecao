@@ -176,7 +176,7 @@ export function InstrumentoMedicaoModal({
 
                 if (instrumentoMedicao?.id_instrumento) {
                     // Modo de edição - PUT
-                    response = await fetch(`${url}?id=${instrumentoMedicao.id_instrumento}`, {
+                    response = await fetch(url, {
                         method: "PUT",
                         headers: {
                             ...getAuthHeaders(),

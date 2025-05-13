@@ -114,7 +114,7 @@ export const updateInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao?id=${tipoInstrumento.id_tipo_instrumento}`, {
+    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'PUT',
         headers: {
             ...authHeaders,
@@ -150,9 +150,13 @@ export const deleteInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao?id=${id}`, {
+    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'DELETE',
-        headers: authHeaders
+        headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id })
     });
 
     if (!response.ok) {

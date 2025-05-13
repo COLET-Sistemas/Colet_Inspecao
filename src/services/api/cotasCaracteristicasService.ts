@@ -25,6 +25,8 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
             tipo: item.tipo || '',
             simbolo_path_svg: item.simbolo_path_svg || '',
             unidade_medida: item.unidade_medida || '',
+            rejeita_menor: item.rejeita_menor === true || item.rejeita_menor === "Sim" || item.rejeita_menor === "sim",
+            rejeita_maior: item.rejeita_maior === true || item.rejeita_maior === "Sim" || item.rejeita_maior === "sim"
         };
     }) : [];
 };
@@ -48,7 +50,9 @@ export const createCotaCaracteristica = async (
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
             simbolo_path_svg: cotaCaracteristica.simbolo_path_svg,
-            unidade_medida: cotaCaracteristica.unidade_medida
+            unidade_medida: cotaCaracteristica.unidade_medida,
+            rejeita_menor: cotaCaracteristica.rejeita_menor ? "sim" : "nao",
+            rejeita_maior: cotaCaracteristica.rejeita_maior ? "sim" : "nao"
         }),
     });
 
@@ -80,7 +84,9 @@ export const updateCotaCaracteristica = async (
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
             simbolo_path_svg: cotaCaracteristica.simbolo_path_svg,
-            unidade_medida: cotaCaracteristica.unidade_medida
+            unidade_medida: cotaCaracteristica.unidade_medida,
+            rejeita_menor: cotaCaracteristica.rejeita_menor ? "sim" : "nao",
+            rejeita_maior: cotaCaracteristica.rejeita_maior ? "sim" : "nao"
         }),
     });
 
@@ -116,7 +122,7 @@ export const deleteCotaCaracteristica = async (
                 errorMessage = errorData.error;
             }
         } catch (e) {
-            // Erro silencioso - já temos uma mensagem padrão
+
         }
 
         throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);
