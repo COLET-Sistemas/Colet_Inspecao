@@ -260,12 +260,13 @@ export default function ProcessoPage() {
     // Função para limpar alertas
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
-    }, []);
-
-    // Função para voltar à tela anterior
+    }, []);    // Função para voltar à tela de especificações com a referência já preenchida
     const handleVoltar = useCallback(() => {
-        router.back();
-    }, [router]);
+        // Navega diretamente para a página de especificações com a referência já preenchida
+        // A URL não inclui um parâmetro de busca automática, então precisamos implementar isso
+        // com state ou context em uma abordagem mais abrangente
+        router.push(`/cadastros/especificacoes?referencia=${encodeURIComponent(referencia)}&autoSearch=true`);
+    }, [router, referencia]);
 
     // Carregar dados do processo
     const fetchProcessoData = useCallback(async () => {
@@ -361,55 +362,89 @@ export default function ProcessoPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="space-y-4"
-                    >
-                        {/* Informações do processo */}
-                        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h3 className="text-xs font-bold uppercase text-gray-500 mb-1">Referência</h3>
-                                    <div className="flex items-baseline">
-                                        <div className="flex items-baseline">
-                                            <p className="text-sm font-semibold text-gray-900">{dadosProcesso.roteiro}</p>
-                                            <span className="mx-2 text-gray-400">•</span>
-                                            <p className="text-xs text-gray-600">{dadosProcesso.nome_roteiro}</p>
+                        className="space-y-6"
+                    >                        {/* Informações do processo - Card informativo com design minimalista */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex items-center border-b border-gray-100 px-4 py-3">
+                                <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
+                                <h2 className="text-sm font-medium text-gray-800">Informações do Processo</h2>
+                            </div>                            <div className="p-5">
+                                <div className="grid grid-cols-1 gap-5">
+                                    {/* Linha 1: Referência e Roteiro */}
+                                    <div className="grid md:grid-cols-2 gap-5">
+                                        {/* Referência */}
+                                        <div className="flex">
+                                            <div className="mr-3 pt-1">
+                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Referência: {dadosProcesso.referencia}</h3>
+                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.descricao}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Roteiro */}
+                                        <div className="flex">
+                                            <div className="mr-3 pt-1">
+                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Roteiro: {dadosProcesso.roteiro}</h3>
+                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.nome_roteiro}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xs font-bold uppercase text-gray-500 mb-1">Processo</h3>
-                                        <div className="flex items-baseline">
-                                            <p className="text-sm font-semibold text-gray-900">{dadosProcesso.processo}</p>
-                                            <span className="mx-2 text-gray-400">•</span>
-                                            <p className="text-xs text-gray-600">{dadosProcesso.tipo_acao}</p>
+
+                                    {/* Linha 2: Processo e Detalhes */}
+                                    <div className="grid md:grid-cols-2 gap-5">
+                                        {/* Processo */}
+                                        <div className="flex">
+                                            <div className="mr-3 pt-1">
+                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Processo: {dadosProcesso.processo}</h3>
+                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.tipo_acao}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xs font-bold uppercase text-gray-500 mb-1">Detalhes</h3>
-                                        <div className="flex items-baseline">
-                                            <p className="text-xs text-gray-600">Recurso: <span className="font-medium">{dadosProcesso.recurso}</span></p>
-                                            <span className="mx-2 text-gray-400">•</span>
-                                            <p className="text-xs text-gray-600">Setor: <span className="font-medium">{dadosProcesso.setor}</span></p>
+
+                                        {/* Detalhes */}
+                                        <div className="flex">
+                                            <div className="mr-3 pt-1">
+                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Detalhes</h3>
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-slate-800">Recurso: {dadosProcesso.recurso}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-slate-800">Setor: {dadosProcesso.setor}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Operações e especificações */}
-                            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                                <div className="mb-4 flex justify-between items-center">
-                                    <h2 className="text-base font-bold text-gray-800 flex items-center">
-                                        <span className="h-5 w-1.5 bg-[#1ABC9C] rounded-full mr-2 inline-block"></span>
-                                        Operações e Especificações
-                                    </h2>
-
-                                    {dadosProcesso.operacoes.length > 0 && (
-                                        <div className="bg-green-50 border border-green-100 rounded-lg px-2.5 py-1 flex items-center text-xs text-green-800">
-                                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                            <span><b>{dadosProcesso.operacoes.length}</b> operação(ões)</span>
-                                        </div>
-                                    )}
+                        </div>                        {/* Operações e especificações */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                <div className="flex items-center">
+                                    <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
+                                    <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
                                 </div>
 
+                                {dadosProcesso.operacoes.length > 0 && (
+                                    <div className="flex items-center text-xs text-green-800 font-medium">
+                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-green-700" />
+                                        <span>{dadosProcesso.operacoes.length} operação(ões)</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4">
                                 {dadosProcesso.operacoes.length > 0 ? (
                                     <div className="space-y-6">
                                         {dadosProcesso.operacoes.map(operacao => (
@@ -428,7 +463,8 @@ export default function ProcessoPage() {
                                         <h3 className="text-base font-medium text-gray-900 mb-1">Nenhuma operação encontrada</h3>
                                         <p className="text-gray-500 text-sm">Não existem operações disponíveis para este processo.</p>
                                     </div>
-                                )}                            </div>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 ) : (

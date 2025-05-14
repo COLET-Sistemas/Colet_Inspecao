@@ -14,8 +14,8 @@ import {
 } from '@/types/cadastros/especificacao';
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Constantes de animação
 const fadeInUp = {
@@ -241,6 +241,10 @@ const RoteiroAccordion = ({
 
 export default function Especificacoes() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const urlReferencia = searchParams?.get('referencia') || '';
+    const autoSearch = searchParams?.get('autoSearch') === 'true';
+
     const [codigoReferencia, setCodigoReferencia] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
@@ -278,12 +282,11 @@ export default function Especificacoes() {
         });
 
         setExpandedRoteiros(newState);
-    }, [dadosReferencia]);
-
-    // Função para transformar input em maiúsculas
+    }, [dadosReferencia]);    // Função para transformar input em maiúsculas
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setCodigoReferencia(e.target.value.toUpperCase());
     }, []);
+
 
     const handleSearch = useCallback(async () => {
         if (!codigoReferencia.trim()) {
@@ -346,6 +349,26 @@ export default function Especificacoes() {
             setIsLoading(false);
         }
     }, [codigoReferencia, apiUrl, getAuthHeaders]);
+
+    // Efeito para inicializar o código de referência da URL e auto-pesquisar se necessário
+    useEffect(() => {
+        if (urlReferencia) {
+            setCodigoReferencia(urlReferencia);
+
+            // Se autoSearch estiver habilitado, executa a pesquisa automaticamente
+            if (autoSearch) {                // Atualizamos a URL para remover o parâmetro autoSearch mas manter a referência
+                router.replace(`/cadastros/especificacoes?referencia=${encodeURIComponent(urlReferencia)}`, {
+                    scroll: false
+                });
+
+                // Adicionamos um pequeno delay para garantir que o estado foi atualizado
+                const timer = setTimeout(() => {
+                    handleSearch();
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [urlReferencia, autoSearch, handleSearch]);
 
     // Memoização para evitar re-renderizações desnecessárias
     const totalEspecificacoes = useMemo(() => {
