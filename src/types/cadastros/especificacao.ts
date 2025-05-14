@@ -2,6 +2,14 @@
  * Tipos para a tela de especificações
  */
 
+// Interface para operações do processo
+export interface Operacao {
+    id_operacao: number;
+    operacao: string;
+    descricao: string;
+    frequencia: number;
+}
+
 // Interface para os processos de inspeção
 export interface Especificacao {
     processo: number;
@@ -9,6 +17,7 @@ export interface Especificacao {
     recurso: string;
     setor: string;
     especificacoes_inspecao: number;
+    operacoes?: Operacao[];
 }
 
 // Interface para os roteiros de inspeção

@@ -78,7 +78,7 @@ export default function Navbar() {
                 { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" /> },
                 { label: "Tipos Inst. de Medição", href: "/cadastros/tipos_instrumentos_medicao", icon: <Archive className="w-4 h-4" /> },
                 { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" /> },
-                { label: "Cotas Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
+                { label: "Cotas e Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
                 { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" /> },
                 { label: "Postos Vinculados", href: "/cadastros/postos_vinculados", icon: <Drill className="w-4 h-4" />, requiredPermission: "G" },
                 { label: "Permissões Inspeção", href: "/cadastros/permissoes_inspecao", icon: <Contact className="w-4 h-4" />, requiredPermission: "G" }

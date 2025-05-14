@@ -256,7 +256,7 @@ export function CotaCaracteristicaModal({
                                 >
                                     <option value="" disabled>Selecione o tipo</option>
                                     <option value="O">Cota</option>
-                                    <option value="A">Característica</option>
+                                    <option value="A">Característica Especial</option>
                                 </select>
                             </div>
                         </div>

@@ -8,11 +8,13 @@ import {
     DadosReferencia,
     Especificacao,
     ModalOperacoesState,
+    Operacao,
     Roteiro
 } from '@/types/cadastros/especificacao';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, CheckCircle2, ChevronRight, Search } from "lucide-react";
-import { useCallback, useMemo, useState } from 'react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Constantes de animação
 const fadeInUp = {
@@ -30,50 +32,131 @@ const staggerContainer = {
     }
 };
 
+const OperacaoItem = ({ operacao }: { operacao: Operacao }) => {
+    return (
+        <div className="px-3 py-2 border-b border-gray-100 last:border-b-0">
+            <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                    <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs font-medium mr-2">
+                        {operacao.operacao}
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-gray-700">{operacao.descricao} - ({operacao.id_operacao})</p>
+                    </div>
+                </div>
+                <div className="flex items-center text-xs text-gray-600">
+                    <Clock className="w-3 h-3 mr-1" />
+                    <span>Frequência: {operacao.frequencia} min</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ProcessoRow = ({
     processo,
     referencia,
     roteiro,
-    onClickVerProcessos
+    onClickVerProcessos,
+    onCadastrarOperacoes
 }: {
     processo: Especificacao;
     referencia: string;
     roteiro: string;
     onClickVerProcessos: (referencia: string, roteiro: string, processo: number) => void;
+    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number) => void;
 }) => {
+    const [showOperacoes, setShowOperacoes] = useState(false);
+
+    const hasOperacoes = processo.operacoes && processo.operacoes.length > 0;
+    const operacoesCount = processo.operacoes?.length || 0;
+
     return (
-        <motion.tr
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.2 }}
-            className="hover:bg-gray-50 transition-colors"
-        >
-            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
-                {processo.especificacoes_inspecao > 0 ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        {processo.especificacoes_inspecao}
-                    </span>
-                ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                        0
-                    </span>
-                )}
-            </td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
-                <button
-                    onClick={() => onClickVerProcessos(referencia, roteiro, processo.processo)}
-                    className="inline-flex items-center px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors text-xs"
+        <>
+            <motion.tr
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2 }}
+                className="hover:bg-gray-50 transition-colors"
+            >
+                <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
+                    {processo.especificacoes_inspecao > 0 ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            {processo.especificacoes_inspecao}
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                            0
+                        </span>
+                    )}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">                    {/* Botão de operações - desabilitado quando não tem operações */}
+                    {hasOperacoes ? (
+                        <button
+                            onClick={() => setShowOperacoes(!showOperacoes)}
+                            className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
+                        >
+                            <FileText className="w-3 h-3 mr-1" />
+                            <span>Operações ({operacoesCount})</span>
+                            <ChevronDown
+                                className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                    ) : (
+                        <button
+                            className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-400 cursor-default text-xs"
+                            disabled
+                        >
+                            <FileText className="w-3 h-3 mr-1" />
+                            <span>Sem Operações</span>
+                        </button>
+                    )}                    {/* Botão de editar ou cadastrar operações */}
+                    {hasOperacoes ? (
+                        <button
+                            onClick={() => onClickVerProcessos(referencia, roteiro, processo.processo)}
+                            className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs"
+                        >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            <span>Editar</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => onClickVerProcessos(referencia, roteiro, processo.processo)}
+                            className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
+                        >
+                            <PlusCircle className="w-3 h-3 mr-1" />
+                            <span>Cadastrar</span>
+                        </button>
+                    )}
+                </td>
+            </motion.tr>
+
+            {/* Operações dropdown */}
+            {showOperacoes && hasOperacoes && (
+                <motion.tr
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
                 >
-                    <span>Ver</span>
-                </button>
-            </td>
-        </motion.tr>
+                    <td colSpan={6} className="bg-gray-50 px-4 py-2">
+                        <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">                            <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100">
+                            <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
+                        </div>
+                            {processo.operacoes?.map((op) => (
+                                <OperacaoItem key={op.id_operacao} operacao={op} />
+                            ))}
+                        </div>
+                    </td>
+                </motion.tr>
+            )}
+        </>
     );
 };
 
@@ -83,13 +166,15 @@ const RoteiroAccordion = ({
     isExpanded,
     onToggle,
     referencia,
-    onClickVerProcessos
+    onClickVerProcessos,
+    onCadastrarOperacoes
 }: {
     roteiro: Roteiro;
     isExpanded: boolean;
     onToggle: (roteiroId: string) => void;
     referencia: string;
     onClickVerProcessos: (referencia: string, roteiro: string, processo: number) => void;
+    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number) => void;
 }) => {
     return (
         <motion.div
@@ -153,6 +238,7 @@ const RoteiroAccordion = ({
                                                     referencia={referencia}
                                                     roteiro={roteiro.roteiro}
                                                     onClickVerProcessos={onClickVerProcessos}
+                                                    onCadastrarOperacoes={onCadastrarOperacoes}
                                                 />
                                             ))}
                                         </AnimatePresence>
@@ -167,7 +253,250 @@ const RoteiroAccordion = ({
     );
 };
 
+// Modal para cadastro de operações
+const OperacoesModal = ({
+    isOpen,
+    onClose,
+    dados
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    dados: {
+        referencia: string;
+        roteiro: string;
+        processo: number;
+    } | null;
+}) => {
+    const [formData, setFormData] = useState({
+        descricao: '',
+        frequencia: 100
+    });
+    const [isSaving, setIsSaving] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+
+    const { apiUrl, getAuthHeaders } = useApiConfig();    // Reset form when modal opens/closes
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                descricao: '',
+                frequencia: 100
+            });
+            setFormError(null);
+        }
+    }, [isOpen]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+
+        if (name === 'frequencia') {
+            const numValue = parseInt(value) || 0;
+            setFormData(prev => ({
+                ...prev,
+                [name]: numValue
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Validação
+        if (!formData.descricao.trim()) {
+            setFormError("A descrição da operação é obrigatória");
+            return;
+        }
+
+        if (formData.frequencia <= 0) {
+            setFormError("A frequência deve ser maior que zero");
+            return;
+        }
+
+        if (!dados) return;
+
+        setIsSaving(true);
+        setFormError(null);
+
+        try {            // TODO: Implementar chamada à API para salvar a operação
+            // Aqui seria feita uma chamada POST para a API salvando a nova operação
+
+            try {
+                console.log("Simulando cadastro de operação:", {
+                    referencia: dados.referencia,
+                    roteiro: dados.roteiro,
+                    processo: dados.processo,
+                    descricao: formData.descricao,
+                    frequencia: formData.frequencia
+                });
+
+                // Exemplo (quando a API estiver implementada):
+                /*
+                const response = await fetch(`${apiUrl}/inspecao/operacoes`, {
+                    method: 'POST',
+                    headers: {
+                        ...getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        referencia: dados.referencia,
+                        roteiro: dados.roteiro,
+                        processo: dados.processo,
+                        descricao: formData.descricao,
+                        frequencia: formData.frequencia
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.message || `Erro ao cadastrar: ${response.status}`);
+                }
+                
+                // A resposta da API seria algo como:
+                // const data = await response.json();
+                */
+
+                // Simulação de tempo de processamento
+                await new Promise(resolve => setTimeout(resolve, 600));
+
+                // Mostrar alerta de sucesso e fechar o modal
+                //setAlert({
+                //    message: "Operação cadastrada com sucesso!",
+                //    type: "success"
+                //});
+
+                // Fechamento do modal após salvamento
+                onClose();
+
+                // Aqui seria feita uma chamada para atualizar os dados
+                // window.location.reload(); // Recarregar a página como solução temporária
+                // Ou idealmente
+                // await handleSearch();
+            } catch (apiError) {
+                console.error("Erro na API:", apiError);
+                throw new Error("Erro ao processar a requisição na API");
+            }
+        } catch (error) {
+            console.error('Erro ao salvar operação:', error);
+            setFormError('Ocorreu um erro ao salvar a operação. Tente novamente.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen || !dados) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+                <div className="flex justify-between items-center px-4 py-3 bg-[#1ABC9C]/10 border-b border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-800">
+                        Operações do Processo {dados.processo}
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        disabled={isSaving}
+                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="p-4">
+                    <div className="mb-4 bg-blue-50 p-3 rounded-md">
+                        <div className="text-xs font-medium">
+                            <span className="text-blue-800">Referência:</span> {dados.referencia}
+                        </div>
+                        <div className="text-xs font-medium">
+                            <span className="text-blue-800">Roteiro:</span> {dados.roteiro}
+                        </div>
+                        <div className="text-xs font-medium">
+                            <span className="text-blue-800">Processo:</span> {dados.processo}
+                        </div>
+                    </div>
+
+                    {formError && (
+                        <div className="mb-4 p-2 bg-red-50 border border-red-100 rounded-md text-xs text-red-600">
+                            <div className="flex items-center">
+                                <AlertCircle className="w-3.5 h-3.5 mr-1.5" />
+                                {formError}
+                            </div>
+                        </div>
+                    )}
+
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        <div className="border rounded-md p-3 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h4 className="text-xs font-semibold text-gray-700">Nova Operação</h4>
+                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">Sequência: 1</span>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Descrição</label>
+                                <input
+                                    type="text"
+                                    name="descricao"
+                                    value={formData.descricao}
+                                    onChange={handleInputChange}
+                                    className="w-full text-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1ABC9C]"
+                                    placeholder="Descreva a operação"
+                                    disabled={isSaving}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Frequência</label>
+                                <input
+                                    type="number"
+                                    name="frequencia"
+                                    value={formData.frequencia}
+                                    onChange={handleInputChange}
+                                    min="1"
+                                    className="w-full text-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#1ABC9C]"
+                                    placeholder="Ex: 100"
+                                    disabled={isSaving}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-0 py-3 flex justify-end space-x-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={isSaving}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-md border border-gray-300 disabled:opacity-70"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md disabled:opacity-70 flex items-center"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin mr-1.5"></div>
+                                        <span>Salvando...</span>
+                                    </>
+                                ) : (
+                                    <span>Salvar</span>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function Especificacoes() {
+    const router = useRouter();
     const [codigoReferencia, setCodigoReferencia] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
@@ -285,9 +614,14 @@ export default function Especificacoes() {
         }, 0);
     }, [dadosReferencia]);
 
+    // Funções para manipulação do modal de operações
     const handleCloseModalOperacoes = useCallback(() => {
         setModalOperacoes({ isOpen: false, dados: null });
-    }, []);
+    }, []);    // Função para navegar para a página de especificações de processo
+    const handleNavigateToProcesso = useCallback((referencia: string, roteiro: string, processo: number) => {
+        // Navega para a página de processos com os parâmetros
+        router.push(`/cadastros/especificacoes/processos?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`);
+    }, [router]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">
@@ -440,15 +774,15 @@ export default function Especificacoes() {
                                 )} */}
 
                                 <div className="space-y-3">
-                                    {dadosReferencia.roteiros.map((roteiro) => (
-                                        <RoteiroAccordion
-                                            key={roteiro.roteiro}
-                                            roteiro={roteiro}
-                                            isExpanded={expandedRoteiros[roteiro.roteiro]}
-                                            onToggle={toggleRoteiro}
-                                            referencia={dadosReferencia.referencia}
-                                            onClickVerProcessos={() => { }}
-                                        />
+                                    {dadosReferencia.roteiros.map((roteiro) => (<RoteiroAccordion
+                                        key={roteiro.roteiro}
+                                        roteiro={roteiro}
+                                        isExpanded={expandedRoteiros[roteiro.roteiro]}
+                                        onToggle={toggleRoteiro}
+                                        referencia={dadosReferencia.referencia}
+                                        onClickVerProcessos={handleNavigateToProcesso}
+                                        onCadastrarOperacoes={handleNavigateToProcesso}
+                                    />
                                     ))}
                                 </div>
                             </motion.div>
@@ -535,6 +869,13 @@ export default function Especificacoes() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Modal de operações */}
+            <OperacoesModal
+                isOpen={modalOperacoes.isOpen}
+                onClose={handleCloseModalOperacoes}
+                dados={modalOperacoes.dados}
+            />
         </div>
     );
 }

@@ -612,8 +612,8 @@ export default function CotasCaracteristicasPage() {
 
             {/* Page Header Component */}
             <PageHeader
-                title="Cotas e Características"
-                subtitle="Cadastro e edição de cotas e características"
+                title="Cotas e Características Especiais"
+                subtitle="Cadastro e edição de cotas e características especiais"
                 buttonLabel="Nova Cota/Característica"
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
