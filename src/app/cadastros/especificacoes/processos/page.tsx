@@ -94,16 +94,15 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
                             {especificacao.tipo_instrumento}
-                        </span>
-                    </div>                    {especificacao.svg_caracteristicas && (
-                        <div className="mt-2 w-8 h-8 mx-auto">
-                            <div
-                                dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristicas}</svg>` }}
-                                className="w-full h-full"
-                                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
-                            />
-                        </div>
-                    )}
+                        </span>                    </div>                    {especificacao.svg_caracteristica && (
+                            <div className="mt-2 w-8 h-8 mx-auto">
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
+                                    className="w-full h-full"
+                                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
+                                />
+                            </div>
+                        )}
                 </div>
             </td>            <td className="px-3 py-3">
                 <div className="flex flex-col">
@@ -161,53 +160,84 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
 };
 
 // Componente para mostrar uma operação e suas especificações
-const OperacaoSection = ({ operacao }: { operacao: OperacaoProcesso }) => {
+const OperacaoSection = ({
+    operacao,
+    initialExpanded = false
+}: {
+    operacao: OperacaoProcesso;
+    initialExpanded?: boolean;
+}) => {
+    const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
     const [especificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
-    const especificacoesCount = especificacoes.length || 0;// As funções de ordenação foram removidas pois não são mais necessárias
-    // já que os botões de setas para mover os itens foram retirados da interface
+    const especificacoesCount = especificacoes.length || 0;
+
+    // Função para alternar expansão
+    const toggleExpand = () => {
+        setIsExpanded(prev => !prev);
+    };
 
     return (
-        <div className="mb-6">            <div className="flex justify-between items-center mb-3">
-            <h3 className="flex items-center text-sm font-medium text-gray-800">
-                <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center mr-2">
-                    {operacao.operacao}
+        <div className="mb-6 border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+            <div
+                className="flex justify-between items-center p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={toggleExpand}
+            >
+                <h3 className="flex items-center text-sm font-medium text-gray-800">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center mr-2">
+                        {operacao.operacao}
+                    </div>
+                    {operacao.descricao_operacao}
+                </h3>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center text-xs text-gray-600">
+                        <Clock className="w-3.5 h-3.5 mr-1" />
+                        Frequência: {operacao.frequencia_minutos} min
+                    </div>
+                    {especificacoesCount > 0 && (
+                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    )}
                 </div>
-                {operacao.descricao_operacao}
-            </h3>
-            <div className="flex items-center">
-                <div className="flex items-center text-xs text-gray-600">
-                    <Clock className="w-3.5 h-3.5 mr-1" />
-                    Frequência: {operacao.frequencia_minutos} min
-                </div>
             </div>
-        </div>{especificacoesCount > 0 ? (
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                <table className="w-full">                    <thead className="bg-gray-50 text-[11px] font-medium text-gray-700 uppercase tracking-wider">
-                    <tr>
-                        <th className="w-12 px-2 py-3 text-center">Ordem</th>
-                        <th className="w-12 px-2 py-3 text-center">Cota</th>
-                        <th className="px-3 py-3 text-left">Especificação</th>
-                        <th className="px-3 py-3 text-left">Instrumento</th>
-                        <th className="px-3 py-3 text-left">Valores</th>
-                        <th className="w-16 px-2 py-3 text-center">Setup</th>
-                        <th className="w-16 px-2 py-3 text-center">Qualidade</th>
-                        <th className="w-16 px-2 py-3 text-center">Processo</th>
-                    </tr>
-                </thead><tbody className="divide-y divide-gray-100">
-                        {especificacoes.map((esp, index) => (<React.Fragment key={esp.id}>
-                            <EspecificacaoCard especificacao={esp} />
-                        </React.Fragment>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        ) : (
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <p className="text-xs text-gray-500">Nenhuma especificação de inspeção cadastrada para esta operação.</p>
-            </div>
-        )}
+
+            {isExpanded && (
+                <>
+                    {especificacoesCount > 0 ? (
+                        <div className="border-t border-gray-100">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 text-[11px] font-medium text-gray-700 uppercase tracking-wider">
+                                    <tr>
+                                        <th className="w-12 px-2 py-3 text-center">Ordem</th>
+                                        <th className="w-12 px-2 py-3 text-center">Cota</th>
+                                        <th className="px-3 py-3 text-left">Especificação</th>
+                                        <th className="px-3 py-3 text-left">Instrumento</th>
+                                        <th className="px-3 py-3 text-left">Valores</th>
+                                        <th className="w-16 px-2 py-3 text-center">Setup</th>
+                                        <th className="w-16 px-2 py-3 text-center">Qualidade</th>
+                                        <th className="w-16 px-2 py-3 text-center">Processo</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {especificacoes.map((esp) => (
+                                        <React.Fragment key={esp.id}>
+                                            <EspecificacaoCard especificacao={esp} />
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
+                            <p className="text-xs text-gray-500">Nenhuma especificação de inspeção cadastrada para esta operação.</p>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };
@@ -383,7 +413,11 @@ export default function ProcessoPage() {
                                 {dadosProcesso.operacoes.length > 0 ? (
                                     <div className="space-y-6">
                                         {dadosProcesso.operacoes.map(operacao => (
-                                            <OperacaoSection key={operacao.id_operacao} operacao={operacao} />
+                                            <OperacaoSection
+                                                key={operacao.id_operacao}
+                                                operacao={operacao}
+                                                initialExpanded={dadosProcesso.operacoes.length === 1}
+                                            />
                                         ))}
                                     </div>
                                 ) : (
