@@ -131,7 +131,7 @@ const ProcessoRow = ({
                             className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
                         >
                             <PlusCircle className="w-3 h-3 mr-1" />
-                            <span>Cadastrar</span>
+                            <span>Adicionar</span>
                         </button>
                     )}
                 </td>

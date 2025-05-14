@@ -2,7 +2,6 @@
 
 import { AlertMessage } from "@/components/ui/AlertMessage";
 import { DataCards } from "@/components/ui/cadastros/DataCards";
-import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
@@ -13,9 +12,9 @@ import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
 import { AlertState, CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
-import { motion } from "framer-motion";
-import { IterationCcw, Pencil, Plus, RulerIcon, SlidersHorizontal, Trash2 } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { motion } from 'framer-motion';
+import { Pencil, Trash2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 // Card component for list item
 const Card = React.memo(({ cota, onEdit, onDelete }: {
@@ -25,18 +24,27 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
 }) => {
     const getTipoLabel = (tipo: string) => {
         switch (tipo) {
-            case 'O': return 'Cota';
-            case 'A': return 'Característica';
+            case 'O':
+            case 'A':
             default: return 'Outro';
         }
     };
 
     const getTipoClass = (tipo: string) => {
         switch (tipo) {
-            case 'O': return 'bg-blue-50 text-blue-700';
-            case 'A': return 'bg-green-50 text-green-700';
+            case 'O':
+            case 'A':
             default: return 'bg-gray-50 text-gray-700';
         }
+    };    // Convert any value to string for comparison
+    const stringValue = (value: any): string => {
+        return value !== undefined && value !== null ? String(value).toLowerCase() : '';
+    };
+
+    // Check if the value is "Sim" (true)
+    const isRejeita = (value: any): boolean => {
+        const strVal = stringValue(value);
+        return strVal === 's' || strVal === 'S';
     };
 
     // Renderiza o SVG de maneira segura, dentro de um wrapper SVG
@@ -59,67 +67,76 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
     return (
         <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
             <div className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                            #{cota.id}
+                <header className="mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">#{cota.id}</span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${getTipoClass(cota.tipo)}`}>
+                            {getTipoLabel(cota.tipo)}
                         </span>
                     </div>
-                    <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full ${getTipoClass(cota.tipo)}`}>
-                        {getTipoLabel(cota.tipo)}
-                    </span>
+                    <h3 className="font-semibold text-gray-900">{cota.descricao}</h3>
+                </header>
+
+                {renderSvg()}
+
+                <div className="space-y-2 mt-3">
+                    {cota.unidade_medida && (
+                        <div className="text-sm">
+                            <span className="font-medium text-gray-700">Unidade: </span>
+                            <span className="text-gray-600">{cota.unidade_medida}</span>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="text-sm">
+                            <span className="font-medium text-gray-700">Rejeita menor: </span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full 
+                                ${['s', 'S'].includes(stringValue(cota.rejeita_menor))
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : 'bg-gray-100 text-gray-700'}`}>
+                                {['s', 'S'].includes(stringValue(cota.rejeita_menor))
+                                    ? "Sim"
+                                    : ['n', 'N'].includes(stringValue(cota.rejeita_menor))
+                                        ? "Não"
+                                        : "-"}
+                            </span>
+                        </div>
+                        <div className="text-sm">
+                            <span className="font-medium text-gray-700">Rejeita maior: </span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full 
+                                ${['s', 'S'].includes(stringValue(cota.rejeita_maior))
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : 'bg-gray-100 text-gray-700'}`}>
+                                {['s', 'S'].includes(stringValue(cota.rejeita_maior))
+                                    ? "Sim"
+                                    : ['n', 'N'].includes(stringValue(cota.rejeita_maior))
+                                        ? "Não"
+                                        : "-"}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                {cota.simbolo_path_svg && renderSvg()}
-
-                <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                    {cota.descricao}
-                </h3>
-
-                {cota.unidade_medida && (
-                    <p className="text-sm text-gray-500 mb-2">
-                        Unidade: {cota.unidade_medida}
-                    </p>
-                )}
-
-                <div className="flex justify-between items-end mt-3">
-                    <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-600">Rejeita Menor:</span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${cota.rejeita_menor ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
-                                {cota.rejeita_menor ? "Sim" : "Não"}
-                            </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-600">Rejeita Maior:</span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${cota.rejeita_maior ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
-                                {cota.rejeita_maior ? "Sim" : "Não"}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex space-x-1">
-                        <Tooltip text="Editar">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
-                                onClick={() => onEdit(cota.id)}
-                                aria-label="Editar"
-                            >
-                                <Pencil className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-                        <Tooltip text="Excluir">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
-                                onClick={() => onDelete(cota.id)}
-                                aria-label="Excluir"
-                            >
-                                <Trash2 className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-                    </div>
+                <div className="flex justify-end gap-2 mt-4">
+                    <button
+                        onClick={() => onEdit(cota.id)}
+                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                        aria-label="Editar"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => onDelete(cota.id)}
+                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
+                        aria-label="Excluir"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -459,6 +476,11 @@ export default function CotasCaracteristicasPage() {
         }
     }, []);
 
+    // Helper function for consistent string conversion
+    const stringValue = (value: any): string => {
+        return value !== undefined && value !== null ? String(value).toLowerCase() : '';
+    };
+
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
@@ -511,24 +533,33 @@ export default function CotasCaracteristicasPage() {
                     {getTipoLabel(cota.tipo)}
                 </span>
             ),
-        },
-        {
+        }, {
             key: "rejeita_menor",
             title: "Rejeita Menor",
-            render: (cota: CotaCaracteristica) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${cota.rejeita_menor ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
-                    {cota.rejeita_menor ? "Sim" : "Não"}
-                </span>
-            ),
+            render: (cota: CotaCaracteristica) => {
+                const strValue = stringValue(cota.rejeita_menor);
+                const isRejeita = ['s', 'S'].includes(strValue);
+
+                return (
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isRejeita ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {['s', 'S'].includes(strValue) ? "Sim" : ['n', 'N'].includes(strValue) ? "Não" : "-"}
+                    </span>
+                );
+            },
         },
         {
             key: "rejeita_maior",
             title: "Rejeita Maior",
-            render: (cota: CotaCaracteristica) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${cota.rejeita_maior ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
-                    {cota.rejeita_maior ? "Sim" : "Não"}
-                </span>
-            ),
+            render: (cota: CotaCaracteristica) => {
+                const strValue = stringValue(cota.rejeita_maior);
+                const isRejeita = ['s', 'S'].includes(strValue);
+
+                return (
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isRejeita ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {['s', 'S'].includes(strValue) ? "Sim" : ['n', 'N'].includes(strValue) ? "Não" : "-"}
+                    </span>
+                );
+            },
         },
         {
             key: "acoes",
@@ -538,7 +569,7 @@ export default function CotasCaracteristicasPage() {
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
                             onClick={() => handleEdit(cota.id)}
                             aria-label="Editar"
                         >
@@ -548,7 +579,7 @@ export default function CotasCaracteristicasPage() {
                     <Tooltip text="Excluir">
                         <motion.button
                             whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
                             onClick={() => handleDelete(cota.id)}
                             aria-label="Excluir"
                         >
@@ -636,62 +667,53 @@ export default function CotasCaracteristicasPage() {
             />
 
             {/* Data Container with Dynamic View */}
-            <DataListContainer
-                isLoading={isLoading || isPending}
-                isEmpty={cotasCaracteristicas.length === 0}
-                emptyState={
-                    apiError ? (
-                        <EmptyState
-                            icon={<SlidersHorizontal className="h-8 w-8 text-red-500" strokeWidth={1.5} />}
-                            title="Erro ao carregar dados"
-                            description={apiError}
-                            primaryAction={{
-                                label: "Tentar novamente",
-                                onClick: loadData,
-                                icon: <IterationCcw className="mr-2 h-4 w-4" />,
-                                disabled: false,
-                            }}
-
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={<RulerIcon className="h-8 w-8 text-gray-500" strokeWidth={1.5} />}
-                            title="Nenhum resultado encontrado"
-                            description="Não encontramos cotas e características que correspondam aos seus filtros atuais."
-                            primaryAction={{
-                                label: "Nova Cota/Característica",
-                                onClick: handleCreateNew,
-                                icon: <Plus className="mr-2 h-4 w-4" />,
-                                disabled: false,
-                            }}
-                            secondaryAction={{
-                                label: "Limpar filtros",
-                                onClick: resetFilters,
-                            }}
-                        />
-                    )
-                }
-                totalItems={allData.length}
-                totalFilteredItems={cotasCaracteristicas.length}
-                activeFilters={activeFilters}
-                onResetFilters={resetFilters}
-            >
-                {viewMode === "table" ? (
-                    <DataTable data={cotasCaracteristicas} columns={tableColumns} />
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-t-blue-500 border-r-blue-500 border-b-gray-300 border-l-gray-300 mb-4"></div>
+                            <p className="text-gray-600">Carregando cotas e características...</p>
+                        </div>
+                    </div>
+                ) : apiError ? (
+                    <EmptyState
+                        icon={<svg className="w-12 h-12 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
+                        title="Ocorreu um erro"
+                        description={apiError}
+                        primaryAction={{
+                            label: "Tentar novamente",
+                            onClick: handleRefresh
+                        }}
+                    />
+                ) : cotasCaracteristicas.length === 0 ? (
+                    <EmptyState
+                        icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
+                        title="Nenhuma cota ou característica encontrada"
+                        description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
+                        primaryAction={{
+                            label: activeFilters > 0 ? "Limpar filtros" : "Criar primeira cota/característica",
+                            onClick: activeFilters > 0 ? resetFilters : handleCreateNew
+                        }}
+                    />
+                ) : viewMode === "table" ? (
+                    <DataTable
+                        data={cotasCaracteristicas}
+                        columns={tableColumns}
+                    />
                 ) : (
                     <DataCards
                         data={cotasCaracteristicas}
-                        renderCard={(cota) => (
+                        renderCard={(cota, index) => (
                             <Card
                                 key={cota.id}
-                                cota={cota}
+                                cota={cota as CotaCaracteristica}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                             />
                         )}
                     />
                 )}
-            </DataListContainer>
+            </div>
         </div>
     );
 }

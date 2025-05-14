@@ -65,23 +65,21 @@ export function CotaCaracteristicaModal({
                 // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
                 let svgContent = formData.simbolo_path_svg?.trim() || "";
                 // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
-                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim();
-
-                const payload: {
+                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim(); const payload: {
                     descricao: string;
                     tipo: string;
                     simbolo_path_svg: string;
                     unidade_medida: string;
-                    rejeita_menor: boolean;
-                    rejeita_maior: boolean;
+                    rejeita_menor: string;
+                    rejeita_maior: string;
                     id?: number;
                 } = {
                     descricao: formData.descricao.trim(),
                     tipo: formData.tipo.trim(),
                     simbolo_path_svg: svgContent,
                     unidade_medida: formData.unidade_medida?.trim() || "",
-                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim",
-                    rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim"
+                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n",
+                    rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n"
                 };
 
                 let responseData;
@@ -130,9 +128,7 @@ export function CotaCaracteristicaModal({
                         ...payload,
                         id: cotaCaracteristica?.id || Math.floor(Math.random() * 10000) + 1 // Usa o ID existente ou cria um temporário
                     };
-                }
-
-                if (onSuccess) {
+                } if (onSuccess) {
                     // Garantir que todos os campos necessários estejam presentes
                     const successData = {
                         ...responseData,
@@ -141,8 +137,8 @@ export function CotaCaracteristicaModal({
                         tipo: responseData.tipo || formData.tipo.trim(),
                         simbolo_path_svg: responseData.simbolo_path_svg || formData.simbolo_path_svg?.trim() || "",
                         unidade_medida: responseData.unidade_medida || formData.unidade_medida?.trim() || "",
-                        rejeita_menor: responseData.rejeita_menor || formData.rejeita_menor === "true",
-                        rejeita_maior: responseData.rejeita_maior || formData.rejeita_maior === "true"
+                        rejeita_menor: responseData.rejeita_menor || (formData.rejeita_menor === "true" ? "s" : "n"),
+                        rejeita_maior: responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n")
                     };
                     onSuccess(successData);
                 }
@@ -299,18 +295,23 @@ export function CotaCaracteristicaModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="rejeita_menor"
-                                    name="rejeita_menor"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={cotaCaracteristica?.rejeita_menor ? "true" : "false"}
-                                    onFocus={() => setIsFocused('rejeita_menor')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="true">Sim</option>
-                                    <option value="false">Não</option>
-                                </select>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
+                                id="rejeita_menor"
+                                name="rejeita_menor"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                defaultValue={
+                                    cotaCaracteristica?.rejeita_menor === true ||
+                                        cotaCaracteristica?.rejeita_menor === "s" ||
+                                        cotaCaracteristica?.rejeita_menor === "S"
+                                        ? "true"
+                                        : "false"
+                                }
+                                onFocus={() => setIsFocused('rejeita_menor')}
+                                onBlur={() => setIsFocused(null)}
+                            >
+                                <option value="true">Sim</option>
+                                <option value="false">Não</option>
+                            </select>
                             </div>
                         </div>
 
@@ -324,18 +325,23 @@ export function CotaCaracteristicaModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="rejeita_maior"
-                                    name="rejeita_maior"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={cotaCaracteristica?.rejeita_maior ? "true" : "false"}
-                                    onFocus={() => setIsFocused('rejeita_maior')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="true">Sim</option>
-                                    <option value="false">Não</option>
-                                </select>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
+                                id="rejeita_maior"
+                                name="rejeita_maior"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                defaultValue={
+                                    cotaCaracteristica?.rejeita_maior === true ||
+                                        cotaCaracteristica?.rejeita_maior === "s" ||
+                                        cotaCaracteristica?.rejeita_maior === "S"
+                                        ? "true"
+                                        : "false"
+                                }
+                                onFocus={() => setIsFocused('rejeita_maior')}
+                                onBlur={() => setIsFocused(null)}
+                            >
+                                <option value="true">Sim</option>
+                                <option value="false">Não</option>
+                            </select>
                             </div>
                         </div>
                     </div>

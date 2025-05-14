@@ -15,9 +15,7 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
         throw new Error(`Erro ao buscar dados: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    return Array.isArray(data) ? data.map(item => {
+    const data = await response.json(); return Array.isArray(data) ? data.map(item => {
         const id = item.id !== undefined && item.id !== null ? Number(item.id) : 0;
         return {
             id: id,
@@ -25,8 +23,8 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
             tipo: item.tipo || '',
             simbolo_path_svg: item.simbolo_path_svg || '',
             unidade_medida: item.unidade_medida || '',
-            rejeita_menor: item.rejeita_menor === true || item.rejeita_menor === "Sim" || item.rejeita_menor === "sim",
-            rejeita_maior: item.rejeita_maior === true || item.rejeita_maior === "Sim" || item.rejeita_maior === "sim"
+            rejeita_menor: item.rejeita_menor || '',
+            rejeita_maior: item.rejeita_maior || ''
         };
     }) : [];
 };
@@ -45,14 +43,13 @@ export const createCotaCaracteristica = async (
         headers: {
             ...authHeaders,
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        }, body: JSON.stringify({
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
             simbolo_path_svg: cotaCaracteristica.simbolo_path_svg,
             unidade_medida: cotaCaracteristica.unidade_medida,
-            rejeita_menor: cotaCaracteristica.rejeita_menor ? "sim" : "nao",
-            rejeita_maior: cotaCaracteristica.rejeita_maior ? "sim" : "nao"
+            rejeita_menor: cotaCaracteristica.rejeita_menor === true || cotaCaracteristica.rejeita_menor === "s" || cotaCaracteristica.rejeita_menor === "S" ? "s" : "n",
+            rejeita_maior: cotaCaracteristica.rejeita_maior === true || cotaCaracteristica.rejeita_maior === "s" || cotaCaracteristica.rejeita_maior === "S" ? "s" : "n"
         }),
     });
 
@@ -78,15 +75,14 @@ export const updateCotaCaracteristica = async (
         headers: {
             ...authHeaders,
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        }, body: JSON.stringify({
             id: cotaCaracteristica.id,
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
             simbolo_path_svg: cotaCaracteristica.simbolo_path_svg,
             unidade_medida: cotaCaracteristica.unidade_medida,
-            rejeita_menor: cotaCaracteristica.rejeita_menor ? "sim" : "nao",
-            rejeita_maior: cotaCaracteristica.rejeita_maior ? "sim" : "nao"
+            rejeita_menor: cotaCaracteristica.rejeita_menor === true || cotaCaracteristica.rejeita_menor === "s" || cotaCaracteristica.rejeita_menor === "S" ? "s" : "n",
+            rejeita_maior: cotaCaracteristica.rejeita_maior === true || cotaCaracteristica.rejeita_maior === "s" || cotaCaracteristica.rejeita_maior === "S" ? "s" : "n"
         }),
     });
 

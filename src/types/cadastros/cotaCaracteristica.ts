@@ -4,8 +4,8 @@ export interface CotaCaracteristica {
     tipo: string;
     simbolo_path_svg: string;
     unidade_medida: string;
-    rejeita_menor: boolean;
-    rejeita_maior: boolean;
+    rejeita_menor: boolean | 's' | 'n' | string | null;
+    rejeita_maior: boolean | 's' | 'n' | string | null;
 }
 
 export interface CotaCaracteristicaFilter {
