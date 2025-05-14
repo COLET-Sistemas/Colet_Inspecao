@@ -12,7 +12,7 @@ import {
     Roteiro
 } from '@/types/cadastros/especificacao';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -82,21 +82,8 @@ const ProcessoRow = ({
             >
                 <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
-                    {processo.especificacoes_inspecao > 0 ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            {processo.especificacoes_inspecao}
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                            0
-                        </span>
-                    )}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">                    {/* Botão de operações - desabilitado quando não tem operações */}
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">{/* Botão de operações - desabilitado quando não tem operações */}
                     {hasOperacoes ? (
                         <button
                             onClick={() => setShowOperacoes(!showOperacoes)}
@@ -144,11 +131,18 @@ const ProcessoRow = ({
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                >
-                    <td colSpan={6} className="bg-gray-50 px-4 py-2">
-                        <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">                            <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100">
-                            <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
-                        </div>
+                >                    <td colSpan={6} className="bg-gray-50 px-4 py-2">
+                        <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">
+                            <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+                                <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
+                                <button
+                                    onClick={() => onClickVerProcessos(referencia, roteiro, processo.processo)}
+                                    className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs"
+                                >
+                                    <Pencil className="w-3 h-3 mr-1" />
+                                    <span>Editar Processos</span>
+                                </button>
+                            </div>
                             {processo.operacoes?.map((op) => (
                                 <OperacaoItem key={op.id_operacao} operacao={op} />
                             ))}
@@ -223,9 +217,7 @@ const RoteiroAccordion = ({
                                         <tr>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Processo</th>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo Ação</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Especif.</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
                                         </tr>
                                     </thead>
