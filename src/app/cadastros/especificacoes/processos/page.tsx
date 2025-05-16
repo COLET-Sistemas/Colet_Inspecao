@@ -32,6 +32,19 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
         );
     };
 
+    // Função para obter nome completo do tipo de valor
+    const getTipoValorDescricao = () => {
+        switch (especificacao.tipo_valor) {
+            case 'F': return 'Faixa';
+            case 'U': return 'Único';
+            case 'A': return 'Aprovado/Reprovado';
+            case 'C': return 'Conforme/Não Conforme';
+            case 'S': return 'Sim/Não';
+            case 'L': return 'Liberado/Retido';
+            default: return especificacao.tipo_valor;
+        }
+    };
+
     // Função para renderizar valores conforme o tipo
     const renderValor = () => {
         switch (especificacao.tipo_valor) {
@@ -104,17 +117,18 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
                             </div>
                         )}
                 </div>
-            </td>            <td className="px-3 py-3">
-                <div className="flex flex-col">
-                    <div className="text-xs bg-gray-50 rounded-md px-2 py-1 inline-block mb-1">
-                        <span className="text-gray-500">Tipo: </span>
-                        <span className="font-medium text-gray-800">{especificacao.tipo_valor}</span>
-                    </div>
+            </td>            <td className="px-3 py-3">                <div className="flex flex-col">
+                <div className="text-xs bg-gray-50 rounded-md px-2 py-1 inline-block mb-1">
+                    <span className="text-gray-500">Tipo: </span>
+                    <span className="font-medium text-gray-800">{getTipoValorDescricao()}</span>
+                </div>
+                {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
                     <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-2 py-1 rounded-md inline-block">
                         {renderValor()}
                     </div>
-                    {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
-                </div>
+                )}
+                {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
+            </div>
             </td>
             <td className="text-center py-3">
                 <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_setup === 'S'
