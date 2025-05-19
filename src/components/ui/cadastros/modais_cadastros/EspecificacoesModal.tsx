@@ -2,44 +2,47 @@
 
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { motion } from 'framer-motion';
-import { AlertCircle, FileText, Timer } from 'lucide-react';
+import { AlertCircle, FileText, Ruler } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FormModal } from '../FormModal';
 
 // Interface para os dados do modal
-interface OperacaoDados {
+interface EspecificacaoDados {
     referencia: string;
     roteiro: string;
     processo: number;
     operacao: number;
     id?: number;
-    descricao?: string;
-    frequencia_minutos?: number;
+    especificacao_cota?: string;
+    tipo_valor?: string;
+    ordem?: number;
 }
 
 // Interface para os dados do formulário
 interface FormData {
-    descricao: string;
-    frequencia: string;
-    operacao: string;
+    especificacao: string;
+    tipo_valor: string;
+    valor_minimo?: string;
+    valor_maximo?: string;
+    unidade_medida?: string;
 }
 
 // Props do componente
-interface OperacoesModalProps {
+interface EspecificacoesModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (message: string) => void;
-    dados: OperacaoDados | null;
+    dados: EspecificacaoDados | null;
     modo?: 'cadastro' | 'edicao';
 }
 
-export function OperacoesModal({
+export function EspecificacoesModal({
     isOpen,
     onClose,
     dados,
     onSuccess,
     modo = 'cadastro'
-}: OperacoesModalProps) {
+}: EspecificacoesModalProps) {
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,23 +71,17 @@ export function OperacoesModal({
         async (formData: FormData) => {
             try {
                 setFormError(null);
-                setIsSubmitting(true);                // Validação
-                if (!formData.descricao?.trim()) {
-                    setFormError("A descrição da operação é obrigatória");
+                setIsSubmitting(true);
+
+                // Validação
+                if (!formData.especificacao?.trim()) {
+                    setFormError("A especificação é obrigatória");
                     setIsSubmitting(false);
                     return;
                 }
 
-                const operacao = parseInt(formData.operacao) || 0;
-                if (operacao <= 0) {
-                    setFormError("O número da operação deve ser maior que zero");
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const frequencia = parseInt(formData.frequencia) || 0;
-                if (frequencia <= 0) {
-                    setFormError("A frequência deve ser maior que zero");
+                if (!formData.tipo_valor) {
+                    setFormError("O tipo de valor é obrigatório");
                     setIsSubmitting(false);
                     return;
                 }
@@ -98,16 +95,21 @@ export function OperacoesModal({
                 const roteiroNum = typeof dados.roteiro === 'string' ? parseInt(dados.roteiro) : dados.roteiro;
 
                 const endpoint = modo === 'edicao'
-                    ? `${apiUrl}/inspecao/operacoes_processos/${dados.id}`
-                    : `${apiUrl}/inspecao/operacoes_processos`;
+                    ? `${apiUrl}/inspecao/especificacoes/${dados.id}`
+                    : `${apiUrl}/inspecao/especificacoes`;
 
-                const method = modo === 'edicao' ? 'PUT' : 'POST'; const payload = {
+                const method = modo === 'edicao' ? 'PUT' : 'POST';
+
+                const payload = {
                     referencia: dados.referencia,
                     roteiro: roteiroNum,
                     processo: dados.processo,
-                    operacao: parseInt(formData.operacao),
-                    descricao: formData.descricao,
-                    frequencia_minutos: parseInt(formData.frequencia),
+                    operacao: dados.operacao,
+                    especificacao_cota: formData.especificacao,
+                    tipo_valor: formData.tipo_valor,
+                    valor_minimo: formData.valor_minimo,
+                    valor_maximo: formData.valor_maximo,
+                    unidade_medida: formData.unidade_medida
                 };
 
                 const response = await fetch(endpoint, {
@@ -124,16 +126,14 @@ export function OperacoesModal({
                     throw new Error(errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
                 }
 
-                // Chama o callback onSuccess com a mensagem de sucesso
                 onSuccess(modo === 'edicao'
-                    ? "Operação atualizada com sucesso!"
-                    : "Operação cadastrada com sucesso!");
+                    ? "Especificação atualizada com sucesso!"
+                    : "Especificação cadastrada com sucesso!");
 
-                // Fechamento do modal após salvamento
                 onClose();
             } catch (error: Error | unknown) {
-                console.error(`Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} operação:`, error);
-                setFormError(`Ocorreu um erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} a operação. Tente novamente.`);
+                console.error(`Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} especificação:`, error);
+                setFormError(`Ocorreu um erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} a especificação. Tente novamente.`);
             } finally {
                 setIsSubmitting(false);
             }
@@ -147,16 +147,16 @@ export function OperacoesModal({
         <FormModal
             isOpen={isOpen}
             onClose={onClose}
-            title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Operação - Processo ${dados.processo}`}
+            title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Especificação - Operação ${dados.operacao}`}
             isEditing={modo === 'edicao'}
             onSubmit={handleSubmit}
             submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
             isSubmitting={isSubmitting}
-            size="sm"
+            size="md"
         >
             {/* Informações do contexto */}
             <div className="mb-5 bg-gray-50 p-3 rounded-md border border-gray-100">
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-4 gap-2 text-xs">
                     <div>
                         <span className="text-gray-500 block">Referência</span>
                         <span className="font-medium">{dados.referencia}</span>
@@ -169,6 +169,10 @@ export function OperacoesModal({
                         <span className="text-gray-500 block">Processo</span>
                         <span className="font-medium">{dados.processo}</span>
                     </div>
+                    <div>
+                        <span className="text-gray-500 block">Operação</span>
+                        <span className="font-medium">{dados.operacao}</span>
+                    </div>
                 </div>
             </div>
 
@@ -177,83 +181,61 @@ export function OperacoesModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Campo de operação */}
+                    {/* Campo de especificação */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
-                                <Timer className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
-                                    Operação <span className="text-red-500">*</span>
+                                <Ruler className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="especificacao" className="text-sm font-medium text-gray-700">
+                                    Especificação <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'especificacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                             <input
-                                type="number"
-                                id="operacao"
-                                name="operacao"
+                                type="text"
+                                id="especificacao"
+                                name="especificacao"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Número da operação"
-                                defaultValue={dados.operacao || ''}
+                                placeholder="Descreva a especificação"
+                                defaultValue={dados.especificacao_cota || ''}
                                 required
-                                min="1"
-                                onFocus={() => setIsFocused('operacao')}
+                                onFocus={() => setIsFocused('especificacao')}
                                 onBlur={() => setIsFocused(null)}
                             />
                         </div>
                     </div>
 
-                    {/* Campo de descrição */}
+                    {/* Campo de tipo de valor */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="descricao" className="text-sm font-medium text-gray-700">
-                                    Descrição <span className="text-red-500">*</span>
+                                <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
+                                    Tipo de Valor <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="descricao"
-                                name="descricao"
+                        <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <select
+                                id="tipo_valor"
+                                name="tipo_valor"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Descreva a operação"
-                                defaultValue={dados.descricao || ''}
+                                defaultValue={dados.tipo_valor || ''}
                                 required
-                                onFocus={() => setIsFocused('descricao')}
+                                onFocus={() => setIsFocused('tipo_valor')}
                                 onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campo de frequência */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Timer className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="frequencia" className="text-sm font-medium text-gray-700">
-                                    Frequência <span className="text-xs text-gray-500">(em minutos)</span> <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className={`relative transition-all duration-200 ${isFocused === 'frequencia' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="number"
-                                id="frequencia"
-                                name="frequencia"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Ex: 100"
-                                min="1"
-                                defaultValue={dados.frequencia_minutos || 100}
-                                required
-                                onFocus={() => setIsFocused('frequencia')}
-                                onBlur={() => setIsFocused(null)}
-                            />
+                            >
+                                <option value="">Selecione o tipo de valor</option>
+                                <option value="F">Faixa</option>
+                                <option value="U">Único</option>
+                                <option value="A">Aprovado/Reprovado</option>
+                                <option value="C">Conforme/Não Conforme</option>
+                                <option value="S">Sim/Não</option>
+                                <option value="L">Liberado/Retido</option>
+                            </select>
                         </div>
                     </div>
 

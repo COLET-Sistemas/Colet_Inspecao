@@ -2,12 +2,15 @@
 
 import { AlertMessage } from '@/components/ui/AlertMessage';
 import { PageHeader } from '@/components/ui/cadastros/PageHeader';
+import { EspecificacoesModal } from '@/components/ui/cadastros/modais_cadastros/EspecificacoesModal';
+import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
 import { useApiConfig } from '@/hooks/useApiConfig';
+import { atualizarOrdemEspecificacoes } from '@/services/api/especificacaoService';
 import { getProcessoDetalhes } from '@/services/api/processoService';
 import { AlertState } from '@/types/cadastros/especificacao';
 import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/types/cadastros/processo';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ListFilter } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, ListFilter } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -174,23 +177,59 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
 };
 
 // Componente para mostrar uma operação e suas especificações
-const OperacaoSection = ({
-    operacao,
-    initialExpanded = false
-}: {
+interface OperacaoSectionProps {
     operacao: OperacaoProcesso;
     initialExpanded?: boolean;
-}) => {
+    referencia: string;
+    roteiro: string;
+    processo: string;
+    onReorder: (newOrder: EspecificacaoInspecao[]) => Promise<void>;
+    onAlert: (message: string, type: "success" | "error") => void;
+    onRefresh: () => Promise<void>;
+}
+
+const OperacaoSection = ({
+    operacao,
+    initialExpanded = false,
+    referencia,
+    roteiro,
+    processo,
+    onReorder,
+    onAlert,
+    onRefresh
+}: OperacaoSectionProps) => {
     const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
+    const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
+    const [isReordering, setIsReordering] = useState(false);
     const [especificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
     const especificacoesCount = especificacoes.length || 0;
 
     // Função para alternar expansão
-    const toggleExpand = () => {
+    const toggleExpand = useCallback(() => {
         setIsExpanded(prev => !prev);
-    };
+    }, []);
+
+    // Handler para reordenação
+    const handleReorder = useCallback(async () => {
+        if (!isReordering || !especificacoes.length) return;
+
+        try {
+            await onReorder(especificacoes);
+            onAlert("Ordem das especificações atualizada com sucesso!", "success");
+            setIsReordering(false);
+        } catch (error) {
+            console.error('Erro ao atualizar ordem:', error);
+            onAlert("Erro ao atualizar a ordem das especificações", "error");
+        }
+    }, [isReordering, especificacoes, onReorder, onAlert]);
+
+    // Effect para lidar com a reordenação
+    useEffect(() => {
+        if (!isReordering) return;
+        handleReorder();
+    }, [isReordering, handleReorder]);
 
     return (
         <div className="mb-6 border border-gray-100 rounded-xl overflow-hidden shadow-sm">
@@ -221,6 +260,57 @@ const OperacaoSection = ({
 
             {isExpanded && (
                 <>
+                    <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsSpecModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors"
+                            >
+                                Cadastrar Especificações
+                            </button>
+                            {especificacoesCount > 0 && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsReordering(!isReordering);
+                                    }}
+                                    className={`px-3 py-1.5 text-xs font-medium border rounded-md transition-colors ${isReordering
+                                        ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    Reordenar
+                                </button>
+                            )}
+                        </div>
+                        {especificacoesCount > 0 && (
+                            <span className="text-xs text-gray-500">
+                                {especificacoesCount} especificação(ões)
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Modal de Especificações */}
+                    <EspecificacoesModal
+                        isOpen={isSpecModalOpen}
+                        onClose={() => setIsSpecModalOpen(false)}
+                        dados={{
+                            referencia,
+                            roteiro,
+                            processo: parseInt(processo, 10),
+                            operacao: operacao.operacao
+                        }}
+                        onSuccess={(message: string) => {
+                            onAlert(message, "success");
+                            onRefresh();
+                            setIsSpecModalOpen(false);
+                        }}
+                        modo="cadastro"
+                    />
+
                     {especificacoesCount > 0 ? (
                         <div className="border-t border-gray-100">
                             <table className="w-full">
@@ -259,17 +349,16 @@ const OperacaoSection = ({
 export default function ProcessoPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const { getAuthHeaders } = useApiConfig();
 
     // Parâmetros da URL
     const referencia = searchParams?.get('referencia') || '';
     const roteiro = searchParams?.get('roteiro') || '';
-    const processo = searchParams?.get('processo') || '';
-
-    // Estados
+    const processo = searchParams?.get('processo') || '';    // Estados
     const [isLoading, setIsLoading] = useState(true);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     const [dadosProcesso, setDadosProcesso] = useState<ProcessoDetalhes | null>(null);
+    const [isOperacaoModalOpen, setIsOperacaoModalOpen] = useState(false);
 
     // Função para limpar alertas
     const clearAlert = useCallback(() => {
@@ -444,18 +533,17 @@ export default function ProcessoPage() {
                             </div>
                         </div>                        {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-                                <div className="flex items-center">
-                                    <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
-                                    <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
-                                </div>
+                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">                                <div className="flex items-center">
+                                <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
+                                <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
+                            </div>
 
-                                {dadosProcesso.operacoes.length > 0 && (
-                                    <div className="flex items-center text-xs text-green-800 font-medium">
-                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-green-700" />
-                                        <span>{dadosProcesso.operacoes.length} operação(ões)</span>
-                                    </div>
-                                )}
+                                <button
+                                    onClick={() => setIsOperacaoModalOpen(true)}
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors"
+                                >
+                                    Cadastrar Operações
+                                </button>
                             </div>
 
                             <div className="p-4">
@@ -466,6 +554,20 @@ export default function ProcessoPage() {
                                                 key={operacao.id_operacao}
                                                 operacao={operacao}
                                                 initialExpanded={dadosProcesso.operacoes.length === 1}
+                                                referencia={referencia}
+                                                roteiro={roteiro}
+                                                processo={processo}
+                                                onAlert={(message, type) => setAlert({ message, type })}
+                                                onRefresh={fetchProcessoData}
+                                                onReorder={async (newOrder) => {
+                                                    await atualizarOrdemEspecificacoes(
+                                                        newOrder.map((esp, index) => ({
+                                                            id: esp.id,
+                                                            ordem: index + 1
+                                                        })),
+                                                        getAuthHeaders()
+                                                    );
+                                                }}
                                             />
                                         ))}
                                     </div>
@@ -503,6 +605,25 @@ export default function ProcessoPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Modal de Operações */}
+            {dadosProcesso && (
+                <OperacoesModal
+                    isOpen={isOperacaoModalOpen}
+                    onClose={() => setIsOperacaoModalOpen(false)}
+                    dados={{
+                        referencia: referencia,
+                        roteiro: roteiro,
+                        processo: parseInt(processo, 10)
+                    }}
+                    onSuccess={(message) => {
+                        setAlert({ message, type: 'success' });
+                        fetchProcessoData();
+                        setIsOperacaoModalOpen(false);
+                    }}
+                    modo="cadastro"
+                />
+            )}
         </div>
     );
 }
