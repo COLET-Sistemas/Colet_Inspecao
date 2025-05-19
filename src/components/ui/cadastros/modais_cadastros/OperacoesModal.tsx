@@ -2,7 +2,7 @@
 
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { motion } from 'framer-motion';
-import { AlertCircle, FileText, Timer } from 'lucide-react';
+import { AlertCircle, FileText, IdCard, Timer } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FormModal } from '../FormModal';
 
@@ -102,7 +102,7 @@ export function OperacoesModal({
                 // Garantir que roteiro seja enviado como número
                 const roteiroNum = typeof dados.roteiro === 'string' ? parseInt(dados.roteiro) : dados.roteiro;
 
-                const endpoint = `${apiUrl}/operacoes_processos${modo === 'edicao' ? `/${dados.id}` : ''}`;
+                const endpoint = `${apiUrl}/inspecao/operacoes_processos`;
                 const method = modo === 'edicao' ? 'PUT' : 'POST';
 
                 // Payload diferente para edição e cadastro
@@ -189,38 +189,8 @@ export function OperacoesModal({
             </div>
 
             {/* Feedback de erro */}
-            {renderFeedback()}
-
-            <div className="space-y-4">
+            {renderFeedback()}            <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Campo de operação - mostrado apenas em modo cadastro */}
-                    {modo === 'cadastro' && (
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <Timer className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
-                                        Operação <span className="text-red-500">*</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <input
-                                    type="number"
-                                    id="operacao"
-                                    name="operacao"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Número da operação"
-                                    defaultValue={dados.operacao || ''}
-                                    onFocus={() => setIsFocused('operacao')}
-                                    onBlur={() => setIsFocused(null)}
-                                    required={modo === 'cadastro'}
-                                />
-                            </div>
-                        </div>
-                    )}
-
                     {/* Campo de descrição */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
@@ -247,6 +217,34 @@ export function OperacoesModal({
                         </div>
                     </div>
 
+                    {/* Campo de operação - mostrado apenas em modo cadastro */}
+                    {modo === 'cadastro' && (
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <IdCard className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
+                                        Operação <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="number"
+                                    id="operacao"
+                                    name="operacao"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Número da operação"
+                                    defaultValue={dados.operacao || ''}
+                                    onFocus={() => setIsFocused('operacao')}
+                                    onBlur={() => setIsFocused(null)}
+                                    required={modo === 'cadastro'}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* Campo de frequência */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
@@ -266,7 +264,7 @@ export function OperacoesModal({
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Ex: 100"
                                 min="1"
-                                defaultValue={dados.frequencia_minutos || 100}
+                                defaultValue={dados.frequencia_minutos}
                                 required
                                 onFocus={() => setIsFocused('frequencia')}
                                 onBlur={() => setIsFocused(null)}
