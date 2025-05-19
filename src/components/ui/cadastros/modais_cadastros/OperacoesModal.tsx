@@ -68,18 +68,23 @@ export function OperacoesModal({
         async (formData: FormData) => {
             try {
                 setFormError(null);
-                setIsSubmitting(true);                // Validação
+                setIsSubmitting(true);
+
+                // Validação
                 if (!formData.descricao?.trim()) {
                     setFormError("A descrição da operação é obrigatória");
                     setIsSubmitting(false);
                     return;
                 }
 
-                const operacao = parseInt(formData.operacao) || 0;
-                if (operacao <= 0) {
-                    setFormError("O número da operação deve ser maior que zero");
-                    setIsSubmitting(false);
-                    return;
+                // Valida operação apenas em modo cadastro
+                if (modo === 'cadastro') {
+                    const operacao = parseInt(formData.operacao) || 0;
+                    if (operacao <= 0) {
+                        setFormError("O número da operação deve ser maior que zero");
+                        setIsSubmitting(false);
+                        return;
+                    }
                 }
 
                 const frequencia = parseInt(formData.frequencia) || 0;
@@ -97,17 +102,21 @@ export function OperacoesModal({
                 // Garantir que roteiro seja enviado como número
                 const roteiroNum = typeof dados.roteiro === 'string' ? parseInt(dados.roteiro) : dados.roteiro;
 
-                const endpoint = modo === 'edicao'
-                    ? `${apiUrl}/inspecao/operacoes_processos/${dados.id}`
-                    : `${apiUrl}/inspecao/operacoes_processos`;
+                const endpoint = `${apiUrl}/operacoes_processos${modo === 'edicao' ? `/${dados.id}` : ''}`;
+                const method = modo === 'edicao' ? 'PUT' : 'POST';
 
-                const method = modo === 'edicao' ? 'PUT' : 'POST'; const payload = {
+                // Payload diferente para edição e cadastro
+                const payload = modo === 'edicao' ? {
+                    id: dados.id,
+                    descricao: formData.descricao,
+                    frequencia_minutos: parseInt(formData.frequencia)
+                } : {
                     referencia: dados.referencia,
                     roteiro: roteiroNum,
                     processo: dados.processo,
                     operacao: parseInt(formData.operacao),
                     descricao: formData.descricao,
-                    frequencia_minutos: parseInt(formData.frequencia),
+                    frequencia_minutos: parseInt(formData.frequencia)
                 };
 
                 const response = await fetch(endpoint, {
@@ -184,32 +193,33 @@ export function OperacoesModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Campo de operação */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Timer className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
-                                    Operação <span className="text-red-500">*</span>
-                                </label>
+                    {/* Campo de operação - mostrado apenas em modo cadastro */}
+                    {modo === 'cadastro' && (
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <Timer className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
+                                        Operação <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="number"
+                                    id="operacao"
+                                    name="operacao"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Número da operação"
+                                    defaultValue={dados.operacao || ''}
+                                    onFocus={() => setIsFocused('operacao')}
+                                    onBlur={() => setIsFocused(null)}
+                                    required={modo === 'cadastro'}
+                                />
                             </div>
                         </div>
-
-                        <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="number"
-                                id="operacao"
-                                name="operacao"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Número da operação"
-                                defaultValue={dados.operacao || ''}
-                                required
-                                min="1"
-                                onFocus={() => setIsFocused('operacao')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
+                    )}
 
                     {/* Campo de descrição */}
                     <div className="mb-4">
@@ -230,9 +240,9 @@ export function OperacoesModal({
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                 placeholder="Descreva a operação"
                                 defaultValue={dados.descricao || ''}
-                                required
                                 onFocus={() => setIsFocused('descricao')}
                                 onBlur={() => setIsFocused(null)}
+                                required
                             />
                         </div>
                     </div>

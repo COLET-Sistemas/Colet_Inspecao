@@ -125,3 +125,29 @@ export const getRoteirosByReferencia = async (
     const data = await response.json();
     return Array.isArray(data) ? data.map(item => item.roteiro || '') : [];
 };
+
+/**
+ * Deleta uma operação de processo específica
+ * @param id ID da operação a ser deletada
+ * @param authHeaders Headers de autenticação
+ * @returns void
+ */
+export const deleteOperacaoProcesso = async (
+    id: number,
+    authHeaders: HeadersInit
+): Promise<void> => {
+    const apiUrl = localStorage.getItem("apiUrl");
+    if (!apiUrl) {
+        throw new Error("URL da API não está configurada");
+    }
+
+    const response = await fetch(`${apiUrl}/inspecao/operacoes_processos?id=${id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || errorData?.erro || `Erro ao excluir: ${response.status}`);
+    }
+};

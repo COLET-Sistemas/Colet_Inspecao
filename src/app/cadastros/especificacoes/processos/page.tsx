@@ -1,16 +1,18 @@
 'use client';
 
 import { AlertMessage } from '@/components/ui/AlertMessage';
-import { PageHeader } from '@/components/ui/cadastros/PageHeader';
+import { ConfirmDeleteModal } from '@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal';
 import { EspecificacoesModal } from '@/components/ui/cadastros/modais_cadastros/EspecificacoesModal';
 import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
+import { PageHeader } from '@/components/ui/cadastros/PageHeader';
+import { Tooltip } from '@/components/ui/cadastros/Tooltip';
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { atualizarOrdemEspecificacoes } from '@/services/api/especificacaoService';
-import { getProcessoDetalhes } from '@/services/api/processoService';
+import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/processoService';
 import { AlertState } from '@/types/cadastros/especificacao';
 import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/types/cadastros/processo';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowLeft, Clock, ListFilter } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -186,6 +188,8 @@ interface OperacaoSectionProps {
     onReorder: (newOrder: EspecificacaoInspecao[]) => Promise<void>;
     onAlert: (message: string, type: "success" | "error") => void;
     onRefresh: () => Promise<void>;
+    onEdit?: (operacao: OperacaoProcesso) => void;
+    onDelete?: (operacao: OperacaoProcesso) => void;
 }
 
 const OperacaoSection = ({
@@ -196,7 +200,9 @@ const OperacaoSection = ({
     processo,
     onReorder,
     onAlert,
-    onRefresh
+    onRefresh,
+    onEdit,
+    onDelete
 }: OperacaoSectionProps) => {
     const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
     const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
@@ -225,7 +231,6 @@ const OperacaoSection = ({
         }
     }, [isReordering, especificacoes, onReorder, onAlert]);
 
-    // Effect para lidar com a reordenação
     useEffect(() => {
         if (!isReordering) return;
         handleReorder();
@@ -234,8 +239,10 @@ const OperacaoSection = ({
     return (
         <div className="mb-6 border border-gray-100 rounded-xl overflow-hidden shadow-sm">
             <div
-                className="flex justify-between items-center p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex justify-between items-center p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors group"
+                role="button"
                 onClick={toggleExpand}
+                aria-expanded={isExpanded}
             >
                 <h3 className="flex items-center text-sm font-medium text-gray-800">
                     <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center mr-2">
@@ -248,51 +255,115 @@ const OperacaoSection = ({
                         <Clock className="w-3.5 h-3.5 mr-1" />
                         Frequência: {operacao.frequencia_minutos} min
                     </div>
-                    {especificacoesCount > 0 && (
-                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 relative z-10 transition-opacity group-hover:opacity-100">
+                        {/* Grupo 1: Reordenar e Cadastrar */}
+                        <div className="flex items-center gap-2">
+                            {/* Reordenar */}
+                            <Tooltip text="Reordenar Especificações">
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={especificacoesCount === 0}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsReordering(!isReordering);
+                                    }}
+                                    className={`p-1.5 rounded-md transition-colors border ${especificacoesCount === 0
+                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                                            : isReordering
+                                                ? 'text-blue-700 bg-blue-100 border-blue-300'
+                                                : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
+                                        }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="21" y1="10" x2="3" y2="10"></line>
+                                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                                    </svg>
+                                </motion.button>
+                            </Tooltip>
+
+                            {/* Cadastrar */}
+                            <Tooltip text="Cadastrar Especificações">
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsSpecModalOpen(true);
+                                    }}
+                                    className="p-1.5 rounded-md text-white bg-[#1ABC9C] hover:bg-[#16a085] transition-colors shadow-sm"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                </motion.button>
+                            </Tooltip>
                         </div>
-                    )}
+
+                        {/* Separador visual */}
+                        <div className="w-px h-6 bg-gray-200 mx-1" />
+
+                        {/* Grupo 2: Editar e Excluir */}
+                        <div className="flex items-center gap-2">
+                            {/* Editar */}
+                            <Tooltip text="Editar operação">
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={!onEdit}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (onEdit) onEdit(operacao);
+                                    }}
+                                    className={`p-1.5 rounded-md transition-colors ${!onEdit
+                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                            : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
+                                        }`}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                </motion.button>
+                            </Tooltip>
+
+                            {/* Excluir */}
+                            <Tooltip text="Excluir operação">
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={!onDelete}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (onDelete) onDelete(operacao);
+                                    }}
+                                    className={`p-1.5 rounded-md transition-colors ${!onDelete
+                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                            : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
+                                        }`}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </motion.button>
+                            </Tooltip>
+                        </div>
+                    </div>
+
+
+
+
+                    {/* Chevron indicator */}
+                    <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
             {isExpanded && (
                 <>
-                    <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsSpecModalOpen(true);
-                                }}
-                                className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors"
-                            >
-                                Cadastrar Especificações
-                            </button>
-                            {especificacoesCount > 0 && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsReordering(!isReordering);
-                                    }}
-                                    className={`px-3 py-1.5 text-xs font-medium border rounded-md transition-colors ${isReordering
-                                        ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    Reordenar
-                                </button>
-                            )}
-                        </div>
-                        {especificacoesCount > 0 && (
-                            <span className="text-xs text-gray-500">
-                                {especificacoesCount} especificação(ões)
-                            </span>
-                        )}
-                    </div>
-
                     {/* Modal de Especificações */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
@@ -354,24 +425,22 @@ export default function ProcessoPage() {
     // Parâmetros da URL
     const referencia = searchParams?.get('referencia') || '';
     const roteiro = searchParams?.get('roteiro') || '';
-    const processo = searchParams?.get('processo') || '';    // Estados
+    const processo = searchParams?.get('processo') || '';
+
+    // Estados
     const [isLoading, setIsLoading] = useState(true);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     const [dadosProcesso, setDadosProcesso] = useState<ProcessoDetalhes | null>(null);
     const [isOperacaoModalOpen, setIsOperacaoModalOpen] = useState(false);
+    const [selectedOperacao, setSelectedOperacao] = useState<OperacaoProcesso | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [operacaoToDelete, setOperacaoToDelete] = useState<OperacaoProcesso | null>(null);
 
     // Função para limpar alertas
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
-    }, []);    // Função para voltar à tela de especificações com a referência já preenchida
-    const handleVoltar = useCallback(() => {
-        // Navega diretamente para a página de especificações com a referência já preenchida
-        // A URL não inclui um parâmetro de busca automática, então precisamos implementar isso
-        // com state ou context em uma abordagem mais abrangente
-        router.push(`/cadastros/especificacoes?referencia=${encodeURIComponent(referencia)}&autoSearch=true`);
-    }, [router, referencia]);
-
-    // Carregar dados do processo
+    }, []);    // Carregar dados do processo
     const fetchProcessoData = useCallback(async () => {
         if (!referencia || !roteiro || !processo) {
             setAlert({
@@ -398,6 +467,56 @@ export default function ProcessoPage() {
             setIsLoading(false);
         }
     }, [referencia, roteiro, processo, getAuthHeaders]);
+
+    // Função para voltar à tela de especificações
+    const handleVoltar = useCallback(() => {
+        router.push(`/cadastros/especificacoes?referencia=${encodeURIComponent(referencia)}&autoSearch=true`);
+    }, [router, referencia]);
+
+    // Função para editar operação
+    const handleEditOperacao = useCallback((operacao: OperacaoProcesso) => {
+        setSelectedOperacao(operacao);
+        setIsOperacaoModalOpen(true);
+    }, []);
+
+    // Função para excluir operação
+    const handleDeleteOperacao = useCallback((operacao: OperacaoProcesso) => {
+        setOperacaoToDelete(operacao);
+        setIsDeleteModalOpen(true);
+    }, []);
+
+    // Função para confirmar a exclusão
+    const confirmDeleteOperacao = useCallback(async () => {
+        if (!operacaoToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await deleteOperacaoProcesso(operacaoToDelete.id_operacao, getAuthHeaders());
+            setAlert({
+                message: "Operação excluída com sucesso!",
+                type: "success"
+            });
+            fetchProcessoData();
+        } catch (error) {
+            console.error('Erro ao excluir operação:', error);
+            setAlert({
+                message: error instanceof Error ? error.message : 'Erro ao excluir operação',
+                type: "error"
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+            setOperacaoToDelete(null);
+        }
+    }, [operacaoToDelete, getAuthHeaders, fetchProcessoData]);
+
+    // Função para fechar modal de exclusão
+    const handleCloseDeleteModal = useCallback(() => {
+        if (!isDeleting) {
+            setIsDeleteModalOpen(false);
+            setOperacaoToDelete(null);
+        }
+    }, [isDeleting]);
 
     // Efeito para carregar os dados do processo
     useEffect(() => {
@@ -466,7 +585,8 @@ export default function ProcessoPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="space-y-6"
-                    >                        {/* Informações do processo - Card informativo com design minimalista */}
+                    >
+                        {/* Informações do processo - Card informativo com design minimalista */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="flex items-center border-b border-gray-100 px-4 py-3">
                                 <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
@@ -559,6 +679,8 @@ export default function ProcessoPage() {
                                                 processo={processo}
                                                 onAlert={(message, type) => setAlert({ message, type })}
                                                 onRefresh={fetchProcessoData}
+                                                onEdit={handleEditOperacao}
+                                                onDelete={handleDeleteOperacao}
                                                 onReorder={async (newOrder) => {
                                                     await atualizarOrdemEspecificacoes(
                                                         newOrder.map((esp, index) => ({
@@ -610,18 +732,48 @@ export default function ProcessoPage() {
             {dadosProcesso && (
                 <OperacoesModal
                     isOpen={isOperacaoModalOpen}
-                    onClose={() => setIsOperacaoModalOpen(false)}
-                    dados={{
-                        referencia: referencia,
-                        roteiro: roteiro,
-                        processo: parseInt(processo, 10)
+                    onClose={() => {
+                        setIsOperacaoModalOpen(false);
+                        setSelectedOperacao(null);
+                    }}
+                    dados={selectedOperacao ? {
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        operacao: selectedOperacao.operacao,
+                        id: selectedOperacao.id_operacao,
+                        descricao: selectedOperacao.descricao_operacao,
+                        frequencia_minutos: selectedOperacao.frequencia_minutos
+                    } : {
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        operacao: 0 // Valor padrão para nova operação
                     }}
                     onSuccess={(message) => {
                         setAlert({ message, type: 'success' });
                         fetchProcessoData();
                         setIsOperacaoModalOpen(false);
+                        setSelectedOperacao(null);
                     }}
-                    modo="cadastro"
+                    modo={selectedOperacao ? 'edicao' : 'cadastro'}
+                />
+            )}
+
+            {/* Modal de confirmação de exclusão */}
+            {isDeleteModalOpen && (
+                <ConfirmDeleteModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={handleCloseDeleteModal}
+                    onConfirm={confirmDeleteOperacao}
+                    isDeleting={isDeleting}
+                    title="Confirmar Exclusão"
+                    message={
+                        operacaoToDelete
+                            ? `Você está prestes a excluir permanentemente a operação: ${operacaoToDelete.descricao_operacao}`
+                            : "Deseja realmente excluir esta operação?"
+                    }
+                    itemName={operacaoToDelete?.descricao_operacao}
                 />
             )}
         </div>
