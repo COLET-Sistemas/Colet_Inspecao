@@ -121,7 +121,10 @@ export function OperacoesModal({
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => null);
-                    throw new Error(errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
+                    if (response.status === 409) {
+                        throw new Error(errorData?.erro || 'Operação já existe para este processo');
+                    }
+                    throw new Error(errorData?.erro || errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
                 }
 
                 // Chama o callback onSuccess com a mensagem de sucesso
@@ -131,9 +134,13 @@ export function OperacoesModal({
 
                 // Fechamento do modal após salvamento
                 onClose();
-            } catch (error: Error | unknown) {
+            } catch (error) {
                 console.error(`Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} operação:`, error);
-                setFormError(`Ocorreu um erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} a operação. Tente novamente.`);
+                if (error instanceof Error) {
+                    setFormError(error.message);
+                } else {
+                    setFormError(`Ocorreu um erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} a operação. Tente novamente.`);
+                }
             } finally {
                 setIsSubmitting(false);
             }
