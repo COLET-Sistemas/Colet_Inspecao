@@ -254,100 +254,97 @@ const OperacaoSection = ({
                     <div className="flex items-center text-xs text-gray-600">
                         <Clock className="w-3.5 h-3.5 mr-1" />
                         Frequência: {operacao.frequencia_minutos} min
-                    </div>
-
-                    {/* Action buttons */}
+                    </div>                    {/* Action buttons */}
                     <div className="flex items-center gap-2 relative z-10 transition-opacity group-hover:opacity-100">
-                        {/* Grupo 1: Reordenar e Cadastrar */}
-                        <div className="flex items-center gap-2">
-                            {/* Reordenar */}
-                            <Tooltip text="Reordenar Especificações">
-                                <motion.button
-                                    whileTap={{ scale: 0.97 }}
-                                    disabled={especificacoesCount === 0}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsReordering(!isReordering);
-                                    }}
-                                    className={`p-1.5 rounded-md transition-colors border ${especificacoesCount === 0
-                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                                            : isReordering
-                                                ? 'text-blue-700 bg-blue-100 border-blue-300'
-                                                : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
-                                        }`}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="21" y1="10" x2="3" y2="10"></line>
-                                        <line x1="21" y1="6" x2="3" y2="6"></line>
-                                        <line x1="21" y1="14" x2="3" y2="14"></line>
-                                        <line x1="21" y1="18" x2="3" y2="18"></line>
-                                    </svg>
-                                </motion.button>
-                            </Tooltip>
+                        {isExpanded ? (
+                            // Botões quando expandido (Reordenar e Cadastrar)
+                            <div className="flex items-center gap-2">
+                                {/* Reordenar */}
+                                <Tooltip text="Reordenar Especificações">
+                                    <motion.button
+                                        whileTap={{ scale: 0.97 }}
+                                        disabled={especificacoesCount === 0}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsReordering(!isReordering);
+                                        }}
+                                        className={`p-1.5 rounded-md transition-colors border ${especificacoesCount === 0
+                                                ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                                                : isReordering
+                                                    ? 'text-blue-700 bg-blue-100 border-blue-300'
+                                                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
+                                            }`}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="21" y1="10" x2="3" y2="10"></line>
+                                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                                            <line x1="21" y1="18" x2="3" y2="18"></line>
+                                        </svg>
+                                    </motion.button>
+                                </Tooltip>
 
-                            {/* Cadastrar */}
-                            <Tooltip text="Cadastrar Especificações">
-                                <motion.button
-                                    whileTap={{ scale: 0.97 }}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsSpecModalOpen(true);
-                                    }}
-                                    className="p-1.5 rounded-md text-white bg-[#1ABC9C] hover:bg-[#16a085] transition-colors shadow-sm"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                </motion.button>
-                            </Tooltip>
-                        </div>
+                                {/* Cadastrar */}
+                                <Tooltip text="Cadastrar Especificações">
+                                    <motion.button
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsSpecModalOpen(true);
+                                        }}
+                                        className="p-1.5 rounded-md text-white bg-[#1ABC9C] hover:bg-[#16a085] transition-colors shadow-sm"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                        </svg>
+                                    </motion.button>
+                                </Tooltip>
+                            </div>
+                        ) : (
+                            // Botões quando fechado (Editar e Excluir)
+                            <div className="flex items-center gap-2">
+                                {/* Editar */}
+                                <Tooltip text="Editar operação">
+                                    <motion.button
+                                        whileTap={{ scale: 0.97 }}
+                                        disabled={!onEdit}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (onEdit) onEdit(operacao);
+                                        }}
+                                        className={`p-1.5 rounded-md transition-colors ${!onEdit
+                                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                                : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
+                                            }`}
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                    </motion.button>
+                                </Tooltip>
 
-                        {/* Separador visual */}
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                        {/* Grupo 2: Editar e Excluir */}
-                        <div className="flex items-center gap-2">
-                            {/* Editar */}
-                            <Tooltip text="Editar operação">
-                                <motion.button
-                                    whileTap={{ scale: 0.97 }}
-                                    disabled={!onEdit}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        if (onEdit) onEdit(operacao);
-                                    }}
-                                    className={`p-1.5 rounded-md transition-colors ${!onEdit
-                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                            : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
-                                        }`}
-                                >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                </motion.button>
-                            </Tooltip>
-
-                            {/* Excluir */}
-                            <Tooltip text="Excluir operação">
-                                <motion.button
-                                    whileTap={{ scale: 0.97 }}
-                                    disabled={!onDelete}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        if (onDelete) onDelete(operacao);
-                                    }}
-                                    className={`p-1.5 rounded-md transition-colors ${!onDelete
-                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                            : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
-                                        }`}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </motion.button>
-                            </Tooltip>
-                        </div>
+                                {/* Excluir */}
+                                <Tooltip text="Excluir operação">
+                                    <motion.button
+                                        whileTap={{ scale: 0.97 }}
+                                        disabled={!onDelete}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (onDelete) onDelete(operacao);
+                                        }}
+                                        className={`p-1.5 rounded-md transition-colors ${!onDelete
+                                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                                : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
+                                            }`}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </motion.button>
+                                </Tooltip>
+                            </div>
+                        )}
                     </div>
 
 

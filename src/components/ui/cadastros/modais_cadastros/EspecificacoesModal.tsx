@@ -16,6 +16,16 @@ interface EspecificacaoDados {
     especificacao_cota?: string;
     tipo_valor?: string;
     ordem?: number;
+    id_cota?: number;
+    complemento_cota?: string;
+    id_caracteristica_especial?: number;
+    id_tipo_instrumento?: number;
+    valor_minimo?: number;
+    valor_maximo?: number;
+    unidade_medida?: string;
+    uso_inspecao_setup?: string;
+    uso_inspecao_processo?: string;
+    uso_inspecao_qualidade?: string;
 }
 
 // Interface para os dados do formulário
@@ -25,6 +35,14 @@ interface FormData {
     valor_minimo?: string;
     valor_maximo?: string;
     unidade_medida?: string;
+    id_cota?: number;
+    complemento_cota?: string;
+    id_caracteristica_especial?: number;
+    id_tipo_instrumento?: number;
+    ordem?: number;
+    uso_inspecao_setup: boolean;
+    uso_inspecao_processo: boolean;
+    uso_inspecao_qualidade: boolean;
 }
 
 // Props do componente
@@ -46,6 +64,7 @@ export function EspecificacoesModal({
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedTipoValor, setSelectedTipoValor] = useState(dados?.tipo_valor || '');
 
     const { apiUrl, getAuthHeaders } = useApiConfig();
 
@@ -94,6 +113,17 @@ export function EspecificacoesModal({
                 // Garantir que roteiro seja enviado como número
                 const roteiroNum = typeof dados.roteiro === 'string' ? parseInt(dados.roteiro) : dados.roteiro;
 
+                // Determinar os valores mínimo e máximo com base no tipo de valor
+                let valorMinimo = null;
+                let valorMaximo = null;
+
+                if (formData.tipo_valor === 'F') {
+                    valorMinimo = formData.valor_minimo ? parseFloat(formData.valor_minimo) : null;
+                    valorMaximo = formData.valor_maximo ? parseFloat(formData.valor_maximo) : null;
+                } else if (formData.tipo_valor === 'U') {
+                    valorMaximo = formData.valor_maximo ? parseFloat(formData.valor_maximo) : null;
+                }
+
                 const endpoint = modo === 'edicao'
                     ? `${apiUrl}/inspecao/especificacoes/${dados.id}`
                     : `${apiUrl}/inspecao/especificacoes`;
@@ -107,9 +137,15 @@ export function EspecificacoesModal({
                     operacao: dados.operacao,
                     especificacao_cota: formData.especificacao,
                     tipo_valor: formData.tipo_valor,
-                    valor_minimo: formData.valor_minimo,
-                    valor_maximo: formData.valor_maximo,
-                    unidade_medida: formData.unidade_medida
+                    valor_minimo: valorMinimo,
+                    valor_maximo: valorMaximo,
+                    unidade_medida: formData.unidade_medida,
+                    id_cota: formData.id_cota,
+                    complemento_cota: formData.complemento_cota,
+                    ordem: formData.ordem,
+                    uso_inspecao_setup: formData.uso_inspecao_setup ? 'S' : 'N',
+                    uso_inspecao_processo: formData.uso_inspecao_processo ? 'S' : 'N',
+                    uso_inspecao_qualidade: formData.uso_inspecao_qualidade ? 'S' : 'N',
                 };
 
                 const response = await fetch(endpoint, {
@@ -148,11 +184,10 @@ export function EspecificacoesModal({
             isOpen={isOpen}
             onClose={onClose}
             title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Especificação - Operação ${dados.operacao}`}
-            isEditing={modo === 'edicao'}
-            onSubmit={handleSubmit}
+            isEditing={modo === 'edicao'} onSubmit={handleSubmit}
             submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
             isSubmitting={isSubmitting}
-            size="md"
+            size="xl"
         >
             {/* Informações do contexto */}
             <div className="mb-5 bg-gray-50 p-3 rounded-md border border-gray-100">
@@ -181,6 +216,55 @@ export function EspecificacoesModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
+                    {/* Campo de ID da Cota */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="id_cota" className="text-sm font-medium text-gray-700">
+                                    ID da Cota <span className="text-red-500">*</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="number"
+                                id="id_cota"
+                                name="id_cota"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Digite o ID da cota"
+                                defaultValue={dados.id_cota || ''}
+                                required
+                                onFocus={() => setIsFocused('id_cota')}
+                                onBlur={() => setIsFocused(null)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Campo de Complemento da Cota */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="complemento_cota" className="text-sm font-medium text-gray-700">
+                                    Complemento da Cota
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'complemento_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="text"
+                                id="complemento_cota"
+                                name="complemento_cota"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Digite o complemento da cota"
+                                defaultValue={dados.complemento_cota || ''}
+                                onFocus={() => setIsFocused('complemento_cota')}
+                                onBlur={() => setIsFocused(null)}
+                            />
+                        </div>
+                    </div>
+
                     {/* Campo de especificação */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
@@ -227,6 +311,7 @@ export function EspecificacoesModal({
                                 required
                                 onFocus={() => setIsFocused('tipo_valor')}
                                 onBlur={() => setIsFocused(null)}
+                                onChange={(e) => setSelectedTipoValor(e.target.value)}
                             >
                                 <option value="">Selecione o tipo de valor</option>
                                 <option value="F">Faixa</option>
@@ -236,6 +321,145 @@ export function EspecificacoesModal({
                                 <option value="S">Sim/Não</option>
                                 <option value="L">Liberado/Retido</option>
                             </select>
+                        </div>
+                    </div>
+
+                    {/* Campo de Valores Mínimo e Máximo */}
+                    {(selectedTipoValor === 'F' || selectedTipoValor === 'U') && (
+                        <div className="mb-4 grid grid-cols-2 gap-4">
+                            {selectedTipoValor === 'F' && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Ruler className="h-4 w-4 text-gray-500" />
+                                            <label htmlFor="valor_minimo" className="text-sm font-medium text-gray-700">
+                                                Valor Mínimo
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className={`relative transition-all duration-200 ${isFocused === 'valor_minimo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            id="valor_minimo"
+                                            name="valor_minimo"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                            placeholder="Digite o valor mínimo"
+                                            defaultValue={dados.valor_minimo || ''}
+                                            onFocus={() => setIsFocused('valor_minimo')}
+                                            onBlur={() => setIsFocused(null)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className={selectedTipoValor === 'U' ? 'col-span-2' : ''}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="valor_maximo" className="text-sm font-medium text-gray-700">
+                                            {selectedTipoValor === 'U' ? 'Valor' : 'Valor Máximo'}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'valor_maximo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="valor_maximo"
+                                        name="valor_maximo"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder={selectedTipoValor === 'U' ? 'Digite o valor' : 'Digite o valor máximo'}
+                                        defaultValue={dados.valor_maximo || ''}
+                                        onFocus={() => setIsFocused('valor_maximo')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Campo de Unidade de Medida */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <Ruler className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                    Unidade de Medida
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="text"
+                                id="unidade_medida"
+                                name="unidade_medida"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Ex: mm, cm, etc"
+                                defaultValue={dados.unidade_medida || ''}
+                                onFocus={() => setIsFocused('unidade_medida')}
+                                onBlur={() => setIsFocused(null)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Campos de Uso de Inspeção */}
+                    <div className="mb-4 space-y-3">
+                        <div className="flex items-center space-x-4">
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    name="uso_inspecao_setup"
+                                    defaultChecked={dados.uso_inspecao_setup === 'S'}
+                                    className="rounded border-gray-300 text-[#09A08D] focus:ring-[#09A08D]"
+                                />
+                                <span className="text-sm text-gray-700">Uso Inspeção Setup</span>
+                            </label>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    name="uso_inspecao_processo"
+                                    defaultChecked={dados.uso_inspecao_processo === 'S'}
+                                    className="rounded border-gray-300 text-[#09A08D] focus:ring-[#09A08D]"
+                                />
+                                <span className="text-sm text-gray-700">Uso Inspeção Processo</span>
+                            </label>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    name="uso_inspecao_qualidade"
+                                    defaultChecked={dados.uso_inspecao_qualidade === 'S'}
+                                    className="rounded border-gray-300 text-[#09A08D] focus:ring-[#09A08D]"
+                                />
+                                <span className="text-sm text-gray-700">Uso Inspeção Qualidade</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Campo de Ordem */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
+                                    Ordem
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'ordem' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="number"
+                                id="ordem"
+                                name="ordem"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Digite a ordem"
+                                defaultValue={dados.ordem || ''}
+                                onFocus={() => setIsFocused('ordem')}
+                                onBlur={() => setIsFocused(null)}
+                            />
                         </div>
                     </div>
 
