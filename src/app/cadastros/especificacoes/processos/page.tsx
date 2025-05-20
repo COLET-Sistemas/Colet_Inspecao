@@ -14,7 +14,7 @@ import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/typ
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Ruler, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // Componente para card de especificação
 interface EspecificacaoCardProps {
@@ -23,21 +23,20 @@ interface EspecificacaoCardProps {
     onDelete?: (especificacao: EspecificacaoInspecao) => void;
 }
 
-const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCardProps) => {
-    // Função para mostrar SVG com melhor tratamento visual (usar dangerouslySetInnerHTML com cautela)
+const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCardProps) => {    // Função para mostrar SVG com melhor tratamento visual
     const renderSVG = (svgString: string | undefined) => {
         if (!svgString) return (
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto shadow-sm">
+            <div className="w-9 h-9 flex items-center justify-center mx-auto">
                 <span className="text-gray-400 text-xs font-medium">N/A</span>
             </div>
         );
         return (
             <div
                 dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${svgString}</svg>` }}
-                className="w-8 h-8 mx-auto"
+                className="w-9 h-9 mx-auto"
                 style={{
-                    filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.15))',
-                    transform: 'scale(1.2)'
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))',
+                    transform: 'scale(1.3)'
                 }}
             />
         );
@@ -86,129 +85,139 @@ const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCar
         );
     };
 
+    // Renderiza indicador de uso (Setup, Qualidade ou Processo)
+    const renderUsoIndicator = (value: string, label: string) => {
+        const isActive = value === 'S';
+        return (
+            <div className="flex flex-col items-center">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm
+                    ${isActive
+                        ? 'bg-[#1ABC9C] text-white'
+                        : 'bg-gray-100 text-gray-300'}`
+                }>
+                    {isActive ? (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    )}
+                </div>
+                <span className="text-[10px] font-medium mt-1 text-gray-600">{label}</span>
+            </div>
+        );
+    };
+
     return (
-        <tr className="hover:bg-blue-50/30 transition-all duration-150 border-b border-gray-100">
-            <td className="w-8 py-3 text-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-medium text-xs">
-                    {especificacao.ordem}
-                </span>
-            </td>
-            <td className="w-12 py-3 px-2">
-                <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-50">
-                    {renderSVG(especificacao.svg_cota)}
+        <tr className="hover:bg-blue-50/30 transition-colors duration-200 border-b border-gray-100">
+            <td className="py-4 text-center">
+                <div className="flex justify-center">
+                    <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-medium text-xs flex items-center justify-center">
+                        {especificacao.ordem}
+                    </span>
+                </div>
+            </td>            <td className="py-4">
+                <div className="flex justify-center">
+                    <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
+                        {renderSVG(especificacao.svg_cota)}
+                    </div>
                 </div>
             </td>
-            <td className="px-3 py-3">
+            <td className="px-4 py-4">
                 <div className="flex flex-col">
                     <div className="flex items-center">
-                        <span className="font-medium text-gray-800">
+                        <span className="font-medium text-gray-800 text-sm">
                             {especificacao.especificacao_cota}
                         </span>
-                    </div>
-                    {especificacao.complemento_cota && (
-                        <div className="mt-1">
-                            <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md">
+                    </div>                    {especificacao.complemento_cota && (
+                        <div className="mt-1.5">
+                            <span className="text-xs text-gray-500">
                                 {especificacao.complemento_cota}
                             </span>
                         </div>
                     )}
                 </div>
+            </td>            <td className="py-4">
+                <div className="flex justify-center">
+                    {especificacao.svg_caracteristica ? (
+                        <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
+                            <div
+                                dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
+                                className="w-full h-full"
+                                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-9 h-9 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">N/A</span>
+                        </div>
+                    )}
+                </div>
             </td>
-            <td className="w-16 px-2 py-3">
-                {especificacao.svg_caracteristica && (
-                    <div className="w-8 h-8 mx-auto">
-                        <div
-                            dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
-                            className="w-full h-full"
-                            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
-                        />
-                    </div>
-                )}
-            </td>
-            <td className="px-3 py-3">
-                <div className="flex flex-col gap-1">
-                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-xs inline-flex items-center">
-                        <Ruler className="h-3 w-3 mr-1" />
-                        {especificacao.tipo_instrumento}
+            <td className="px-4 py-4">
+                <div className="flex flex-col gap-1.5">
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs inline-flex items-center">
+                        <Ruler className="h-3 w-3 mr-1.5" />
+                        <span className="font-medium">{especificacao.tipo_instrumento}</span>
                     </span>
                     {especificacao.especificacao_caracteristica && (
-                        <span className="text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded-md">
+                        <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md flex items-center">
+                            <span className="w-1 h-1 bg-gray-400 rounded-full mr-1.5"></span>
                             {especificacao.especificacao_caracteristica}
                         </span>
                     )}
                 </div>
             </td>
-            <td className="px-3 py-3">
-                <div className="flex flex-col">
-                    <div className="text-xs bg-gray-50 rounded-md px-2 py-1 inline-block mb-1">
-                        <span className="text-gray-500">Tipo: </span>
-                        <span className="font-medium text-gray-800">{getTipoValorDescricao()}</span>
+            <td className="px-4 py-4">
+                <div className="flex flex-col gap-2">
+                    <div className="text-xs bg-gray-50 rounded-md px-3 py-1.5 flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
+                        <span className="text-gray-800 font-medium">{getTipoValorDescricao()}</span>
                     </div>
                     {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
-                        <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-2 py-1 rounded-md inline-block">
+                        <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-md flex items-center shadow-sm">
+                            <span className="w-2 h-2 bg-yellow-400 rounded-full mr-1.5"></span>
                             {renderValor()}
                         </div>
                     )}
                     {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
                 </div>
             </td>
-            <td className="text-center py-3">
-                <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_setup === 'S'
-                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
-                    : 'bg-red-500 ring-2 ring-red-100'
-                    }`}>
-                    {especificacao.uso_inspecao_setup === 'S' && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    )}
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_setup, 'Setup')}
                 </div>
-                <div className="text-[9px] font-medium text-gray-500 mt-1">Setup</div>
             </td>
-            <td className="text-center py-3">
-                <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_qualidade === 'S'
-                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
-                    : 'bg-red-500 ring-2 ring-red-100'
-                    }`}>
-                    {especificacao.uso_inspecao_qualidade === 'S' && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    )}
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_qualidade, 'Qualidade')}
                 </div>
-                <div className="text-[9px] font-medium text-gray-500 mt-1">Qualidade</div>
             </td>
-            <td className="text-center py-3">
-                <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_processo === 'S'
-                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
-                    : 'bg-red-500 ring-2 ring-red-100'
-                    }`}>
-                    {especificacao.uso_inspecao_processo === 'S' && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    )}
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_processo, 'Processo')}
                 </div>
-                <div className="text-[9px] font-medium text-gray-500 mt-1">Processo</div>
             </td>
-            <td className="px-2 py-3">
+            <td className="py-4">
                 <div className="flex items-center justify-center gap-2">
                     <Tooltip text="Editar especificação">
                         <motion.button
-                            whileTap={{ scale: 0.97 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => onEdit && onEdit(especificacao)}
-                            className="p-1.5 rounded-md text-gray-700 hover:text-yellow-500 hover:bg-yellow-50 transition-colors"
+                            className="p-2 rounded-md text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 transition-colors"
                         >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
                     <Tooltip text="Excluir especificação">
                         <motion.button
-                            whileTap={{ scale: 0.97 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => onDelete && onDelete(especificacao)}
-                            className="p-1.5 rounded-md text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            className="p-2 rounded-md text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                         </motion.button>
                     </Tooltip>
                 </div>
@@ -472,41 +481,48 @@ const OperacaoSection = ({
                                 : "Deseja realmente excluir esta especificação?"
                         }
                         itemName={selectedSpec?.especificacao_cota}
-                    />
-
-                    {especificacoesCount > 0 ? (
-                        <div className="border-t border-gray-100">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 text-[11px] font-medium text-gray-700 uppercase tracking-wider">
-                                    <tr>
-                                        <th className="w-12 px-2 py-3 text-center">Ordem</th>
-                                        <th className="w-12 px-2 py-3 text-center">Cota</th>
-                                        <th className="px-3 py-3 text-left">Especificação</th>
-                                        <th className="w-16 px-2 py-3 text-center">Característica</th>
-                                        <th className="px-3 py-3 text-left">Instrumento</th>
-                                        <th className="px-3 py-3 text-left">Valores</th>
-                                        <th className="w-16 px-2 py-3 text-center">Setup</th>
-                                        <th className="w-16 px-2 py-3 text-center">Qualidade</th>
-                                        <th className="w-16 px-2 py-3 text-center">Processo</th>
-                                        <th className="w-20 px-2 py-3 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {especificacoes.map((esp) => (
-                                        <React.Fragment key={esp.id}>
+                    />                    {especificacoesCount > 0 ? (
+                        <div className="border-t border-gray-100 rounded-md overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gradient-to-r from-gray-50 to-gray-100 text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                                            <th className="w-12 px-3 py-3.5 text-center">Ordem</th>
+                                            <th className="w-14 px-3 py-3.5 text-center">Cota</th>
+                                            <th className="px-4 py-3.5 text-left">Especificação</th>
+                                            <th className="w-16 px-3 py-3.5 text-center">Caract.</th>
+                                            <th className="px-4 py-3.5 text-left">Instrumento</th>
+                                            <th className="px-4 py-3.5 text-left">Valores</th>
+                                            <th className="w-20 px-3 py-3.5 text-center">Setup</th>
+                                            <th className="w-20 px-3 py-3.5 text-center">Qualidade</th>
+                                            <th className="w-20 px-3 py-3.5 text-center">Processo</th>
+                                            <th className="w-24 px-3 py-3.5 text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                        {especificacoes.map((esp) => (
                                             <EspecificacaoCard
+                                                key={esp.id}
                                                 especificacao={esp}
                                                 onEdit={handleEditSpec}
                                                 onDelete={handleDeleteSpec}
                                             />
-                                        </React.Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
-                            <p className="text-xs text-gray-500">Nenhuma especificação de inspeção cadastrada para esta operação.</p>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>) : (
+                        <div className="bg-white p-8 text-center border-t border-gray-100 rounded-md">
+                            <div className="flex flex-col items-center justify-center">
+                                <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-sm font-medium text-gray-700 mb-1">Nenhuma especificação cadastrada</h3>
+                                <p className="text-xs text-gray-500 mb-3">Clique em "Cadastrar Especificação" para começar.</p>
+                            </div>
                         </div>
                     )}
                 </>
@@ -774,7 +790,7 @@ export default function ProcessoPage() {
                                     onClick={() => setIsOperacaoModalOpen(true)}
                                     className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors"
                                 >
-                                    Cadastrar Operações
+                                    Adicionar Operação
                                 </button>
                             </div>
 
