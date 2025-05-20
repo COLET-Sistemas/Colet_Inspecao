@@ -3,8 +3,9 @@
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { motion } from 'framer-motion';
 import { AlertCircle, FileText, Ruler } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FormModal } from '../FormModal';
+import { Option, SelectWithSvg } from '../SelectWithSvg';
 
 // Interface para os dados do modal
 interface EspecificacaoDados {
@@ -19,6 +20,7 @@ interface EspecificacaoDados {
     id_cota?: number;
     complemento_cota?: string;
     id_caracteristica_especial?: number;
+    caracteristica_especial?: string;
     id_tipo_instrumento?: number;
     valor_minimo?: number;
     valor_maximo?: number;
@@ -38,6 +40,7 @@ interface FormData {
     id_cota?: number;
     complemento_cota?: string;
     id_caracteristica_especial?: number;
+    caracteristica_especial?: string;
     id_tipo_instrumento?: number;
     ordem?: number;
     uso_inspecao_setup: boolean;
@@ -65,8 +68,70 @@ export function EspecificacoesModal({
     const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedTipoValor, setSelectedTipoValor] = useState(dados?.tipo_valor || '');
+    const [selectedCota, setSelectedCota] = useState<Option | null>(null);
+    const [selectedCaracteristica, setSelectedCaracteristica] = useState<Option | null>(null);
+
+    const [cotasOptions, setCotasOptions] = useState<Option[]>([]);
+    const [caracteristicasOptions, setCaracteristicasOptions] = useState<Option[]>([]);
+    const [instrumentOptions, setInstrumentOptions] = useState<{ id: number, label: string }[]>([]);
+    const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
     const { apiUrl, getAuthHeaders } = useApiConfig();
+
+    // Função para buscar as opções de cotas, características e instrumentos
+    const fetchOptions = useCallback(async () => {
+        if (!isOpen) return;
+
+        setIsLoadingOptions(true);
+        try {
+            // Buscar cotas
+            const cotasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`, {
+                headers: getAuthHeaders()
+            });
+            const cotasData = await cotasResponse.json();
+            setCotasOptions(cotasData);
+
+            // Buscar características especiais
+            const caracteristicasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=caracteristicas`, {
+                headers: getAuthHeaders()
+            });
+            const caracteristicasData = await caracteristicasResponse.json();
+            setCaracteristicasOptions(caracteristicasData);
+
+            // Buscar instrumentos de medição
+            const instrumentsResponse = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+                headers: getAuthHeaders()
+            });
+            const instrumentsData = await instrumentsResponse.json();
+            setInstrumentOptions(Array.isArray(instrumentsData) ? instrumentsData.map(item => ({
+                id: item.id_instrumento,
+                label: `${item.tag} - ${item.nome_instrumento}`
+            })) : []);
+        } catch (error) {
+            console.error("Erro ao carregar opções:", error);
+            setFormError("Erro ao carregar as opções de cotas e instrumentos.");
+        } finally {
+            setIsLoadingOptions(false);
+        }
+    }, [apiUrl, getAuthHeaders, isOpen]);
+
+    // Carregar opções quando o modal abrir
+    useEffect(() => {
+        if (isOpen) {
+            fetchOptions();
+        }
+    }, [isOpen, fetchOptions]);
+
+    // Efeito para inicializar as seleções quando os dados são carregados
+    useEffect(() => {
+        if (dados && cotasOptions.length > 0 && caracteristicasOptions.length > 0) {
+            const cota = cotasOptions.find(c => c.id === dados.id_cota);
+            if (cota) setSelectedCota(cota);
+
+            const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
+            if (caracteristica) setSelectedCaracteristica(caracteristica);
+        }
+    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions]);
 
     // Renderiza mensagens de erro
     const renderFeedback = () => {
@@ -141,7 +206,9 @@ export function EspecificacoesModal({
                     valor_maximo: valorMaximo,
                     unidade_medida: formData.unidade_medida,
                     id_cota: formData.id_cota,
-                    complemento_cota: formData.complemento_cota,
+                    complemento_cota: formData.complemento_cota, id_caracteristica_especial: selectedCaracteristica?.id || null,
+                    caracteristica_especial: selectedCaracteristica?.descricao || null,
+                    id_tipo_instrumento: formData.id_tipo_instrumento,
                     ordem: formData.ordem,
                     uso_inspecao_setup: formData.uso_inspecao_setup ? 'S' : 'N',
                     uso_inspecao_processo: formData.uso_inspecao_processo ? 'S' : 'N',
@@ -174,7 +241,7 @@ export function EspecificacoesModal({
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess]
+        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess, selectedCaracteristica]
     );
 
     if (!isOpen || !dados) return null;
@@ -184,7 +251,8 @@ export function EspecificacoesModal({
             isOpen={isOpen}
             onClose={onClose}
             title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Especificação - Operação ${dados.operacao}`}
-            isEditing={modo === 'edicao'} onSubmit={handleSubmit}
+            isEditing={modo === 'edicao'}
+            onSubmit={handleSubmit}
             submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
             isSubmitting={isSubmitting}
             size="xl"
@@ -216,52 +284,111 @@ export function EspecificacoesModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Campo de ID da Cota */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="id_cota" className="text-sm font-medium text-gray-700">
-                                    ID da Cota <span className="text-red-500">*</span>
-                                </label>
+                    {/* Primeira linha: Cota e Complemento da Cota */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="id_cota" className="text-sm font-medium text-gray-700">
+                                        Cota <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <SelectWithSvg
+                                    id="id_cota"
+                                    options={cotasOptions}
+                                    value={selectedCota}
+                                    onChange={(option) => {
+                                        setSelectedCota(option);
+                                        const form = document.querySelector('form') as HTMLFormElement;
+                                        if (form) {
+                                            let input = form.querySelector('input[name="id_cota"]') as HTMLInputElement;
+                                            if (!input) {
+                                                input = document.createElement('input');
+                                                input.type = 'hidden';
+                                                input.name = 'id_cota';
+                                                form.appendChild(input);
+                                            }
+                                            input.value = option.id.toString();
+                                        }
+                                    }}
+                                    placeholder="Selecione uma cota"
+                                    isLoading={isLoadingOptions}
+                                    required={true}
+                                />
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="number"
-                                id="id_cota"
-                                name="id_cota"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Digite o ID da cota"
-                                defaultValue={dados.id_cota || ''}
-                                required
-                                onFocus={() => setIsFocused('id_cota')}
-                                onBlur={() => setIsFocused(null)}
-                            />
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="complemento_cota" className="text-sm font-medium text-gray-700">
+                                        Complemento da Cota
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'complemento_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="text"
+                                    id="complemento_cota"
+                                    name="complemento_cota"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Digite o complemento da cota"
+                                    defaultValue={dados.complemento_cota || ''}
+                                    onFocus={() => setIsFocused('complemento_cota')}
+                                    onBlur={() => setIsFocused(null)}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Campo de Complemento da Cota */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="complemento_cota" className="text-sm font-medium text-gray-700">
-                                    Complemento da Cota
-                                </label>
+                    {/* Segunda linha: Característica Especial e Instrumento de Medição */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label className="text-sm font-medium text-gray-700">
+                                        Característica Especial
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'complemento_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="complemento_cota"
-                                name="complemento_cota"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Digite o complemento da cota"
-                                defaultValue={dados.complemento_cota || ''}
-                                onFocus={() => setIsFocused('complemento_cota')}
-                                onBlur={() => setIsFocused(null)}
+                            <SelectWithSvg
+                                options={caracteristicasOptions}
+                                value={selectedCaracteristica}
+                                onChange={setSelectedCaracteristica}
+                                placeholder="Selecione uma característica especial"
+                                isLoading={isLoadingOptions}
                             />
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
+                                        Instrumento de Medição
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'id_tipo_instrumento' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="id_tipo_instrumento"
+                                    name="id_tipo_instrumento"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
+                                    defaultValue={dados.id_tipo_instrumento || ''}
+                                    onFocus={() => setIsFocused('id_tipo_instrumento')}
+                                    onBlur={() => setIsFocused(null)}
+                                >
+                                    <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
+                                    {!isLoadingOptions && instrumentOptions.map(option => (
+                                        <option key={option.id} value={option.id} className="text-gray-900">
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
