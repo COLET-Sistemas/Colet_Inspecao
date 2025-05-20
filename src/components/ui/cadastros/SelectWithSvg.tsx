@@ -6,6 +6,7 @@ export interface Option {
     id: number;
     descricao: string;
     simbolo_path_svg: string;
+    unidade_medida?: string;
 }
 
 interface SelectWithSvgProps {

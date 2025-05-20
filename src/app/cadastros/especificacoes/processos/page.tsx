@@ -270,10 +270,10 @@ const OperacaoSection = ({
                                             setIsReordering(!isReordering);
                                         }}
                                         className={`p-1.5 rounded-md transition-colors border ${especificacoesCount === 0
-                                                ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                                                : isReordering
-                                                    ? 'text-blue-700 bg-blue-100 border-blue-300'
-                                                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
+                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                                            : isReordering
+                                                ? 'text-blue-700 bg-blue-100 border-blue-300'
+                                                : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
                                             }`}
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -317,8 +317,8 @@ const OperacaoSection = ({
                                             if (onEdit) onEdit(operacao);
                                         }}
                                         className={`p-1.5 rounded-md transition-colors ${!onEdit
-                                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                                : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
+                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                            : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
                                             }`}
                                     >
                                         <Pencil className="h-3.5 w-3.5" />
@@ -336,8 +336,8 @@ const OperacaoSection = ({
                                             if (onDelete) onDelete(operacao);
                                         }}
                                         className={`p-1.5 rounded-md transition-colors ${!onDelete
-                                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                                : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
+                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                                            : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
                                             }`}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
@@ -583,12 +583,13 @@ export default function ProcessoPage() {
                         exit={{ opacity: 0 }}
                         className="space-y-6"
                     >
-                        {/* Informações do processo - Card informativo com design minimalista */}
+                        {/* Informações do processo */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="flex items-center border-b border-gray-100 px-4 py-3">
                                 <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
                                 <h2 className="text-sm font-medium text-gray-800">Informações do Processo</h2>
-                            </div>                            <div className="p-5">
+                            </div>
+                            <div className="p-5">
                                 <div className="grid grid-cols-1 gap-5">
                                     {/* Linha 1: Referência e Roteiro */}
                                     <div className="grid md:grid-cols-2 gap-5">
@@ -648,7 +649,8 @@ export default function ProcessoPage() {
                                     </div>
                                 </div>
                             </div>
-                        </div>                        {/* Operações e especificações */}
+                        </div>
+                        {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">                                <div className="flex items-center">
                                 <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
@@ -663,7 +665,7 @@ export default function ProcessoPage() {
                                 </button>
                             </div>
 
-                            <div className="p-4">
+                            <div className="p-3">
                                 {dadosProcesso.operacoes.length > 0 ? (
                                     <div className="space-y-6">
                                         {dadosProcesso.operacoes.map(operacao => (

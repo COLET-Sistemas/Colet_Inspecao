@@ -96,16 +96,14 @@ export function EspecificacoesModal({
                 headers: getAuthHeaders()
             });
             const caracteristicasData = await caracteristicasResponse.json();
-            setCaracteristicasOptions(caracteristicasData);
-
-            // Buscar instrumentos de medição
-            const instrumentsResponse = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+            setCaracteristicasOptions(caracteristicasData);            // Buscar tipos de instrumentos de medição
+            const instrumentsResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
                 headers: getAuthHeaders()
             });
             const instrumentsData = await instrumentsResponse.json();
             setInstrumentOptions(Array.isArray(instrumentsData) ? instrumentsData.map(item => ({
-                id: item.id_instrumento,
-                label: `${item.tag} - ${item.nome_instrumento}`
+                id: item.id_tipo_instrumento,
+                label: item.nome_tipo_instrumento
             })) : []);
         } catch (error) {
             console.error("Erro ao carregar opções:", error);
@@ -155,17 +153,15 @@ export function EspecificacoesModal({
         async (formData: FormData) => {
             try {
                 setFormError(null);
-                setIsSubmitting(true);
-
-                // Validação
-                if (!formData.especificacao?.trim()) {
-                    setFormError("A especificação é obrigatória");
+                setIsSubmitting(true);                // Validação
+                if (!formData.tipo_valor) {
+                    setFormError("O tipo de valor é obrigatório");
                     setIsSubmitting(false);
                     return;
                 }
 
-                if (!formData.tipo_valor) {
-                    setFormError("O tipo de valor é obrigatório");
+                if (!selectedCaracteristica) {
+                    setFormError("A característica especial é obrigatória");
                     setIsSubmitting(false);
                     return;
                 }
@@ -190,8 +186,8 @@ export function EspecificacoesModal({
                 }
 
                 const endpoint = modo === 'edicao'
-                    ? `${apiUrl}/inspecao/especificacoes/${dados.id}`
-                    : `${apiUrl}/inspecao/especificacoes`;
+                    ? `${apiUrl}/inspecao/especificacoes_inspecao_ft/${dados.id}`
+                    : `${apiUrl}/inspecao/especificacoes_inspecao_ft`;
 
                 const method = modo === 'edicao' ? 'PUT' : 'POST';
 
@@ -200,7 +196,6 @@ export function EspecificacoesModal({
                     roteiro: roteiroNum,
                     processo: dados.processo,
                     operacao: dados.operacao,
-                    especificacao_cota: formData.especificacao,
                     tipo_valor: formData.tipo_valor,
                     valor_minimo: valorMinimo,
                     valor_maximo: valorMaximo,
@@ -295,29 +290,35 @@ export function EspecificacoesModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <SelectWithSvg
-                                    id="id_cota"
-                                    options={cotasOptions}
-                                    value={selectedCota}
-                                    onChange={(option) => {
-                                        setSelectedCota(option);
-                                        const form = document.querySelector('form') as HTMLFormElement;
-                                        if (form) {
-                                            let input = form.querySelector('input[name="id_cota"]') as HTMLInputElement;
-                                            if (!input) {
-                                                input = document.createElement('input');
-                                                input.type = 'hidden';
-                                                input.name = 'id_cota';
-                                                form.appendChild(input);
-                                            }
-                                            input.value = option.id.toString();
+                            <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <SelectWithSvg
+                                id="id_cota"
+                                options={cotasOptions}
+                                value={selectedCota}
+                                onChange={(option) => {
+                                    setSelectedCota(option);
+                                    const form = document.querySelector('form') as HTMLFormElement;
+                                    if (form) {
+                                        // Atualiza o campo id_cota oculto
+                                        let input = form.querySelector('input[name="id_cota"]') as HTMLInputElement;
+                                        if (!input) {
+                                            input = document.createElement('input');
+                                            input.type = 'hidden';
+                                            input.name = 'id_cota';
+                                            form.appendChild(input);
                                         }
-                                    }}
-                                    placeholder="Selecione uma cota"
-                                    isLoading={isLoadingOptions}
-                                    required={true}
-                                />
+                                        input.value = option.id.toString();
+
+                                        // Atualiza o campo unidade_medida
+                                        const unidadeMedidaInput = form.querySelector('input[name="unidade_medida"]') as HTMLInputElement;
+                                        if (unidadeMedidaInput && option.unidade_medida) {
+                                            unidadeMedidaInput.value = option.unidade_medida;
+                                        }
+                                    }
+                                }}
+                                placeholder="Selecione uma cota"
+                                isLoading={isLoadingOptions}
+                                required={true}
+                            />
                             </div>
                         </div>
                         <div>
@@ -351,7 +352,7 @@ export function EspecificacoesModal({
                                 <div className="flex items-center space-x-2">
                                     <FileText className="h-4 w-4 text-gray-500" />
                                     <label className="text-sm font-medium text-gray-700">
-                                        Característica Especial
+                                        Característica Especial <span className="text-red-500">*</span>
                                     </label>
                                 </div>
                             </div>
@@ -361,14 +362,14 @@ export function EspecificacoesModal({
                                 onChange={setSelectedCaracteristica}
                                 placeholder="Selecione uma característica especial"
                                 isLoading={isLoadingOptions}
+                                required
                             />
                         </div>
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
-                                        Instrumento de Medição
+                                    <FileText className="h-4 w-4 text-gray-500" />                                    <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
+                                        Instrumento de Medição <span className="text-red-500">*</span>
                                     </label>
                                 </div>
                             </div>
@@ -376,6 +377,7 @@ export function EspecificacoesModal({
                                 <select
                                     id="id_tipo_instrumento"
                                     name="id_tipo_instrumento"
+                                    required
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
                                     defaultValue={dados.id_tipo_instrumento || ''}
                                     onFocus={() => setIsFocused('id_tipo_instrumento')}
@@ -390,64 +392,81 @@ export function EspecificacoesModal({
                                 </select>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Campo de especificação */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Ruler className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="especificacao" className="text-sm font-medium text-gray-700">
-                                    Especificação <span className="text-red-500">*</span>
-                                </label>
+                    </div>                    {/* Linha: Tipo de Valor, Unidade de Medida e Ordem */}
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
+                                        Tipo de Valor <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="tipo_valor"
+                                    name="tipo_valor"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    defaultValue={dados.tipo_valor || ''}
+                                    required
+                                    onFocus={() => setIsFocused('tipo_valor')}
+                                    onBlur={() => setIsFocused(null)}
+                                    onChange={(e) => setSelectedTipoValor(e.target.value)}
+                                >
+                                    <option value="">Selecione o tipo de valor</option>
+                                    <option value="F">Faixa</option>
+                                    <option value="U">Único</option>
+                                    <option value="A">Aprovado/Reprovado</option>
+                                    <option value="C">Conforme/Não Conforme</option>
+                                    <option value="S">Sim/Não</option>
+                                    <option value="L">Liberado/Retido</option>
+                                </select>
                             </div>
                         </div>
-
-                        <div className={`relative transition-all duration-200 ${isFocused === 'especificacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="especificacao"
-                                name="especificacao"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Descreva a especificação"
-                                defaultValue={dados.especificacao_cota || ''}
-                                required
-                                onFocus={() => setIsFocused('especificacao')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campo de tipo de valor */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
-                                    Tipo de Valor <span className="text-red-500">*</span>
-                                </label>
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <Ruler className="h-4 w-4 text-gray-500" />                                    <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                        Unidade de Medida <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="text"
+                                    id="unidade_medida"
+                                    name="unidade_medida"
+                                    required
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Ex: mm, cm, etc"
+                                    defaultValue={dados.unidade_medida || ''}
+                                    onFocus={() => setIsFocused('unidade_medida')}
+                                    onBlur={() => setIsFocused(null)}
+                                />
                             </div>
                         </div>
-
-                        <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <select
-                                id="tipo_valor"
-                                name="tipo_valor"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                defaultValue={dados.tipo_valor || ''}
-                                required
-                                onFocus={() => setIsFocused('tipo_valor')}
-                                onBlur={() => setIsFocused(null)}
-                                onChange={(e) => setSelectedTipoValor(e.target.value)}
-                            >
-                                <option value="">Selecione o tipo de valor</option>
-                                <option value="F">Faixa</option>
-                                <option value="U">Único</option>
-                                <option value="A">Aprovado/Reprovado</option>
-                                <option value="C">Conforme/Não Conforme</option>
-                                <option value="S">Sim/Não</option>
-                                <option value="L">Liberado/Retido</option>
-                            </select>
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <FileText className="h-4 w-4 text-gray-500" />                                    <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
+                                        Ordem <span className="text-red-500">*</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'ordem' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <input
+                                    type="number"
+                                    id="ordem"
+                                    name="ordem"
+                                    required
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    placeholder="Digite a ordem"
+                                    defaultValue={dados.ordem || ''}
+                                    onFocus={() => setIsFocused('ordem')}
+                                    onBlur={() => setIsFocused(null)}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -503,33 +522,7 @@ export function EspecificacoesModal({
                                 </div>
                             </div>
                         </div>
-                    )}
-
-                    {/* Campo de Unidade de Medida */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Ruler className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
-                                    Unidade de Medida
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="unidade_medida"
-                                name="unidade_medida"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Ex: mm, cm, etc"
-                                defaultValue={dados.unidade_medida || ''}
-                                onFocus={() => setIsFocused('unidade_medida')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campos de Uso de Inspeção */}
+                    )}                    {/* Campos de Uso de Inspeção */}
                     <div className="mb-4 space-y-3">
                         <div className="flex items-center space-x-4">
                             <label className="flex items-center space-x-2">
@@ -563,32 +556,7 @@ export function EspecificacoesModal({
                                 />
                                 <span className="text-sm text-gray-700">Uso Inspeção Qualidade</span>
                             </label>
-                        </div>
-                    </div>
-
-                    {/* Campo de Ordem */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
-                                    Ordem
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'ordem' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="number"
-                                id="ordem"
-                                name="ordem"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Digite a ordem"
-                                defaultValue={dados.ordem || ''}
-                                onFocus={() => setIsFocused('ordem')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                        </div>
-                    </div>
+                        </div>                    </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
                     <div className="text-xs text-gray-500 mt-4">
