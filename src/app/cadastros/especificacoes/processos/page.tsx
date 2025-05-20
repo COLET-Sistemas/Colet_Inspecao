@@ -12,7 +12,7 @@ import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/proc
 import { AlertState } from '@/types/cadastros/especificacao';
 import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/types/cadastros/processo';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Trash2, Ruler } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Ruler, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
