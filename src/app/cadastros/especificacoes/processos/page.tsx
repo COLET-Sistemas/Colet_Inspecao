@@ -7,7 +7,7 @@ import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/Opera
 import { PageHeader } from '@/components/ui/cadastros/PageHeader';
 import { Tooltip } from '@/components/ui/cadastros/Tooltip';
 import { useApiConfig } from '@/hooks/useApiConfig';
-import { atualizarOrdemEspecificacoes } from '@/services/api/especificacaoService';
+import { atualizarOrdemEspecificacoes, deleteEspecificacaoInspecao } from '@/services/api/especificacaoService';
 import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/processoService';
 import { AlertState } from '@/types/cadastros/especificacao';
 import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/types/cadastros/processo';
@@ -17,7 +17,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
 // Componente para card de especificação
-const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInspecao }) => {
+interface EspecificacaoCardProps {
+    especificacao: EspecificacaoInspecao;
+    onEdit?: (especificacao: EspecificacaoInspecao) => void;
+    onDelete?: (especificacao: EspecificacaoInspecao) => void;
+}
+
+const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCardProps) => {
     // Função para mostrar SVG com melhor tratamento visual (usar dangerouslySetInnerHTML com cautela)
     const renderSVG = (svgString: string | undefined) => {
         if (!svgString) return (
@@ -81,20 +87,24 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
     };
 
     return (
-        <tr className="hover:bg-blue-50/30 transition-all duration-150 border-b border-gray-100">            <td className="w-8 py-3 text-center">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-medium text-xs">
-                {especificacao.ordem}
-            </span>
-        </td>
+        <tr className="hover:bg-blue-50/30 transition-all duration-150 border-b border-gray-100">
+            <td className="w-8 py-3 text-center">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-medium text-xs">
+                    {especificacao.ordem}
+                </span>
+            </td>
             <td className="w-12 py-3 px-2">
                 <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-50">
                     {renderSVG(especificacao.svg_cota)}
-                </div>            </td><td className="px-3 py-3">
+                </div>
+            </td>
+            <td className="px-3 py-3">
                 <div className="flex flex-col">
                     <div className="flex items-center">
                         <span className="font-medium text-gray-800">
                             {especificacao.especificacao_cota}
-                        </span>                    </div>
+                        </span>
+                    </div>
                     {especificacao.complemento_cota && (
                         <div className="mt-1">
                             <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md">
@@ -112,28 +122,32 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
                             {especificacao.tipo_instrumento}
-                        </span>                    </div>                    {especificacao.svg_caracteristica && (
-                            <div className="mt-2 w-8 h-8 mx-auto">
-                                <div
-                                    dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
-                                    className="w-full h-full"
-                                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
-                                />
-                            </div>
-                        )}
-                </div>
-            </td>            <td className="px-3 py-3">                <div className="flex flex-col">
-                <div className="text-xs bg-gray-50 rounded-md px-2 py-1 inline-block mb-1">
-                    <span className="text-gray-500">Tipo: </span>
-                    <span className="font-medium text-gray-800">{getTipoValorDescricao()}</span>
-                </div>
-                {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
-                    <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-2 py-1 rounded-md inline-block">
-                        {renderValor()}
+                        </span>
                     </div>
-                )}
-                {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
-            </div>
+                    {especificacao.svg_caracteristica && (
+                        <div className="mt-2 w-8 h-8 mx-auto">
+                            <div
+                                dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
+                                className="w-full h-full"
+                                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
+                            />
+                        </div>
+                    )}
+                </div>
+            </td>
+            <td className="px-3 py-3">
+                <div className="flex flex-col">
+                    <div className="text-xs bg-gray-50 rounded-md px-2 py-1 inline-block mb-1">
+                        <span className="text-gray-500">Tipo: </span>
+                        <span className="font-medium text-gray-800">{getTipoValorDescricao()}</span>
+                    </div>
+                    {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
+                        <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-2 py-1 rounded-md inline-block">
+                            {renderValor()}
+                        </div>
+                    )}
+                    {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
+                </div>
             </td>
             <td className="text-center py-3">
                 <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_setup === 'S'
@@ -174,6 +188,28 @@ const EspecificacaoCard = ({ especificacao }: { especificacao: EspecificacaoInsp
                 </div>
                 <div className="text-[9px] font-medium text-gray-500 mt-1">Processo</div>
             </td>
+            <td className="px-2 py-3">
+                <div className="flex items-center justify-center gap-2">
+                    <Tooltip text="Editar especificação">
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => onEdit && onEdit(especificacao)}
+                            className="p-1.5 rounded-md text-gray-700 hover:text-yellow-500 hover:bg-yellow-50 transition-colors"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </motion.button>
+                    </Tooltip>
+                    <Tooltip text="Excluir especificação">
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => onDelete && onDelete(especificacao)}
+                            className="p-1.5 rounded-md text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </motion.button>
+                    </Tooltip>
+                </div>
+            </td>
         </tr>
     );
 };
@@ -206,7 +242,11 @@ const OperacaoSection = ({
 }: OperacaoSectionProps) => {
     const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
     const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
+    const [selectedSpec, setSelectedSpec] = useState<EspecificacaoInspecao | null>(null);
     const [isReordering, setIsReordering] = useState(false);
+    const [isDeleteSpecModalOpen, setIsDeleteSpecModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { getAuthHeaders } = useApiConfig();
     const [especificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
@@ -231,6 +271,37 @@ const OperacaoSection = ({
         }
     }, [isReordering, especificacoes, onReorder, onAlert]);
 
+    // Handler para editar especificação
+    const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
+        setSelectedSpec(spec);
+        setIsSpecModalOpen(true);
+    }, []);
+
+    // Handler para excluir especificação
+    const handleDeleteSpec = useCallback((spec: EspecificacaoInspecao) => {
+        setSelectedSpec(spec);
+        setIsDeleteSpecModalOpen(true);
+    }, []);
+
+    // Handler para confirmar exclusão de especificação
+    const confirmDeleteSpec = useCallback(async () => {
+        if (!selectedSpec) return;
+        setIsDeleting(true);
+
+        try {
+            await deleteEspecificacaoInspecao(selectedSpec.id, getAuthHeaders());
+            onAlert("Especificação excluída com sucesso!", "success");
+            onRefresh();
+        } catch (error) {
+            console.error('Erro ao excluir especificação:', error);
+            onAlert("Erro ao excluir especificação", "error");
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteSpecModalOpen(false);
+            setSelectedSpec(null);
+        }
+    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);
+
     useEffect(() => {
         if (!isReordering) return;
         handleReorder();
@@ -254,7 +325,8 @@ const OperacaoSection = ({
                     <div className="flex items-center text-xs text-gray-600">
                         <Clock className="w-3.5 h-3.5 mr-1" />
                         Frequência: {operacao.frequencia_minutos} min
-                    </div>                    {/* Action buttons */}
+                    </div>
+                    {/* Action buttons */}
                     <div className="flex items-center gap-2 relative z-10 transition-opacity group-hover:opacity-100">
                         {isExpanded ? (
                             // Botões quando expandido (Reordenar e Cadastrar)
@@ -364,19 +436,44 @@ const OperacaoSection = ({
                     {/* Modal de Especificações */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
-                        onClose={() => setIsSpecModalOpen(false)}
+                        onClose={() => {
+                            setIsSpecModalOpen(false);
+                            setSelectedSpec(null);
+                        }}
                         dados={{
                             referencia,
                             roteiro,
                             processo: parseInt(processo, 10),
-                            operacao: operacao.operacao
+                            operacao: operacao.operacao,
+                            id: selectedSpec?.id
                         }}
                         onSuccess={(message: string) => {
                             onAlert(message, "success");
                             onRefresh();
                             setIsSpecModalOpen(false);
+                            setSelectedSpec(null);
                         }}
-                        modo="cadastro"
+                        modo={selectedSpec ? "edicao" : "cadastro"}
+                    />
+
+                    {/* Modal de confirmação de exclusão de especificação */}
+                    <ConfirmDeleteModal
+                        isOpen={isDeleteSpecModalOpen}
+                        onClose={() => {
+                            if (!isDeleting) {
+                                setIsDeleteSpecModalOpen(false);
+                                setSelectedSpec(null);
+                            }
+                        }}
+                        onConfirm={confirmDeleteSpec}
+                        isDeleting={isDeleting}
+                        title="Confirmar Exclusão"
+                        message={
+                            selectedSpec
+                                ? `Você está prestes a excluir permanentemente a especificação: ${selectedSpec.especificacao_cota}`
+                                : "Deseja realmente excluir esta especificação?"
+                        }
+                        itemName={selectedSpec?.especificacao_cota}
                     />
 
                     {especificacoesCount > 0 ? (
@@ -392,12 +489,17 @@ const OperacaoSection = ({
                                         <th className="w-16 px-2 py-3 text-center">Setup</th>
                                         <th className="w-16 px-2 py-3 text-center">Qualidade</th>
                                         <th className="w-16 px-2 py-3 text-center">Processo</th>
+                                        <th className="w-20 px-2 py-3 text-center">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {especificacoes.map((esp) => (
                                         <React.Fragment key={esp.id}>
-                                            <EspecificacaoCard especificacao={esp} />
+                                            <EspecificacaoCard
+                                                especificacao={esp}
+                                                onEdit={handleEditSpec}
+                                                onDelete={handleDeleteSpec}
+                                            />
                                         </React.Fragment>
                                     ))}
                                 </tbody>
@@ -585,33 +687,35 @@ export default function ProcessoPage() {
                     >
                         {/* Informações do processo */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="flex items-center border-b border-gray-100 px-4 py-3">
-                                <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
-                                <h2 className="text-sm font-medium text-gray-800">Informações do Processo</h2>
-                            </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <div className="grid grid-cols-1 gap-5">
                                     {/* Linha 1: Referência e Roteiro */}
                                     <div className="grid md:grid-cols-2 gap-5">
                                         {/* Referência */}
-                                        <div className="flex">
-                                            <div className="mr-3 pt-1">
-                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                        <div className="flex items-start">
+                                            <div className="mr-3 pt-1.5">
+                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                             </div>
                                             <div>
-                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Referência: {dadosProcesso.referencia}</h3>
-                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.descricao}</p>
+                                                <p className="text-sm">
+                                                    <span className="font-medium text-slate-600">Referência: </span>
+                                                    <span className="font-medium text-slate-800">{dadosProcesso.referencia}</span>
+                                                </p>
+                                                <p className="text-sm text-slate-700">{dadosProcesso.descricao}</p>
                                             </div>
                                         </div>
 
                                         {/* Roteiro */}
-                                        <div className="flex">
-                                            <div className="mr-3 pt-1">
-                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                        <div className="flex items-start">
+                                            <div className="mr-3 pt-1.5">
+                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                             </div>
                                             <div>
-                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Roteiro: {dadosProcesso.roteiro}</h3>
-                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.nome_roteiro}</p>
+                                                <p className="text-sm">
+                                                    <span className="font-medium text-slate-600">Roteiro: </span>
+                                                    <span className="font-medium text-slate-800">{dadosProcesso.roteiro}</span>
+                                                </p>
+                                                <p className="text-sm text-slate-700">{dadosProcesso.nome_roteiro}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -619,43 +723,53 @@ export default function ProcessoPage() {
                                     {/* Linha 2: Processo e Detalhes */}
                                     <div className="grid md:grid-cols-2 gap-5">
                                         {/* Processo */}
-                                        <div className="flex">
-                                            <div className="mr-3 pt-1">
-                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                        <div className="flex items-start space-x-3">
+                                            <div className="pt-1.5">
+                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                             </div>
                                             <div>
-                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Processo: {dadosProcesso.processo}</h3>
-                                                <p className="text-sm font-medium text-slate-800">{dadosProcesso.tipo_acao}</p>
+                                                <p className="text-sm">
+                                                    <span className="font-medium text-slate-600">Processo: </span>
+                                                    <span className="font-medium text-slate-800">{dadosProcesso.processo}</span>
+                                                    <span className="text-slate-600"> ({dadosProcesso.tipo_acao})</span>
+                                                </p>
                                             </div>
                                         </div>
 
                                         {/* Detalhes */}
-                                        <div className="flex">
-                                            <div className="mr-3 pt-1">
-                                                <div className="w-1.5 h-1.5 bg-slate-500 rounded-full"></div>
+                                        <div className="flex items-start space-x-3">
+                                            <div className="pt-1.5">
+                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1.5">Detalhes</h3>
                                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                                     <div>
-                                                        <p className="text-sm font-medium text-slate-800">Recurso: {dadosProcesso.recurso}</p>
+                                                        <p className="text-sm">
+                                                            <span className="font-medium text-slate-600">Recurso: </span>
+                                                            <span className="font-medium text-slate-800">{dadosProcesso.recurso}</span>
+                                                        </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-slate-800">Setor: {dadosProcesso.setor}</p>
+                                                        <p className="text-sm">
+                                                            <span className="font-medium text-slate-600">Setor: </span>
+                                                            <span className="font-medium text-slate-800">{dadosProcesso.setor}</span>
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
                         {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">                                <div className="flex items-center">
-                                <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
-                                <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
-                            </div>
+                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                <div className="flex items-center">
+                                    <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
+                                    <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
+                                </div>
 
                                 <button
                                     onClick={() => setIsOperacaoModalOpen(true)}

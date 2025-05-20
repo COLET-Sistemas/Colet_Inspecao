@@ -34,3 +34,37 @@ export const atualizarOrdemEspecificacoes = async (
         throw new Error('Erro desconhecido ao atualizar ordem das especificações');
     }
 };
+
+/**
+ * Exclui uma especificação de inspeção
+ * @param id ID da especificação a ser excluída
+ * @param headers Cabeçalhos de autenticação
+ * @returns Promise com confirmação da exclusão
+ */
+export const deleteEspecificacaoInspecao = async (
+    id: number,
+    headers: HeadersInit
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/especificacoes/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Erro ao excluir a especificação');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(`Erro ao excluir especificação: ${error.message}`);
+        }
+        throw new Error('Erro desconhecido ao excluir especificação');
+    }
+};
