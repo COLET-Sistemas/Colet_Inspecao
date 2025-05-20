@@ -12,7 +12,7 @@ import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/proc
 import { AlertState } from '@/types/cadastros/especificacao';
 import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/types/cadastros/processo';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, ListFilter, Pencil, Trash2, Ruler } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -114,24 +114,27 @@ const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCar
                     )}
                 </div>
             </td>
-            <td className="px-3 py-3">
-                <div className="flex flex-col">
-                    <div className="flex items-center">
-                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-xs inline-flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                            </svg>
-                            {especificacao.tipo_instrumento}
-                        </span>
+            <td className="w-16 px-2 py-3">
+                {especificacao.svg_caracteristica && (
+                    <div className="w-8 h-8 mx-auto">
+                        <div
+                            dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
+                            className="w-full h-full"
+                            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
+                        />
                     </div>
-                    {especificacao.svg_caracteristica && (
-                        <div className="mt-2 w-8 h-8 mx-auto">
-                            <div
-                                dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
-                                className="w-full h-full"
-                                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
-                            />
-                        </div>
+                )}
+            </td>
+            <td className="px-3 py-3">
+                <div className="flex flex-col gap-1">
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-xs inline-flex items-center">
+                        <Ruler className="h-3 w-3 mr-1" />
+                        {especificacao.tipo_instrumento}
+                    </span>
+                    {especificacao.especificacao_caracteristica && (
+                        <span className="text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded-md">
+                            {especificacao.especificacao_caracteristica}
+                        </span>
                     )}
                 </div>
             </td>
@@ -151,7 +154,7 @@ const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCar
             </td>
             <td className="text-center py-3">
                 <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_setup === 'S'
-                    ? 'bg-green-500 ring-2 ring-green-100'
+                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
                     : 'bg-red-500 ring-2 ring-red-100'
                     }`}>
                     {especificacao.uso_inspecao_setup === 'S' && (
@@ -164,7 +167,7 @@ const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCar
             </td>
             <td className="text-center py-3">
                 <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_qualidade === 'S'
-                    ? 'bg-green-500 ring-2 ring-green-100'
+                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
                     : 'bg-red-500 ring-2 ring-red-100'
                     }`}>
                     {especificacao.uso_inspecao_qualidade === 'S' && (
@@ -177,7 +180,7 @@ const EspecificacaoCard = ({ especificacao, onEdit, onDelete }: EspecificacaoCar
             </td>
             <td className="text-center py-3">
                 <div className={`w-5 h-5 rounded-full mx-auto flex items-center justify-center ${especificacao.uso_inspecao_processo === 'S'
-                    ? 'bg-green-500 ring-2 ring-green-100'
+                    ? 'bg-[#1ABC9C] ring-2 ring-green-100'
                     : 'bg-red-500 ring-2 ring-red-100'
                     }`}>
                     {especificacao.uso_inspecao_processo === 'S' && (
@@ -341,12 +344,7 @@ const OperacaoSection = ({
                                             e.stopPropagation();
                                             setIsReordering(!isReordering);
                                         }}
-                                        className={`p-1.5 rounded-md transition-colors border ${especificacoesCount === 0
-                                            ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                                            : isReordering
-                                                ? 'text-blue-700 bg-blue-100 border-blue-300'
-                                                : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
-                                            }`}
+                                        className="p-1.5 rounded-md text-white bg-blue-500 hover:bg-blue-600 transition-colors shadow-sm"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="21" y1="10" x2="3" y2="10"></line>
@@ -366,7 +364,7 @@ const OperacaoSection = ({
                                             e.stopPropagation();
                                             setIsSpecModalOpen(true);
                                         }}
-                                        className="p-1.5 rounded-md text-white bg-[#1ABC9C] hover:bg-[#16a085] transition-colors shadow-sm"
+                                        className="p-1.5 rounded-md text-white bg-green-500 hover:bg-green-600 transition-colors shadow-sm"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -484,6 +482,7 @@ const OperacaoSection = ({
                                         <th className="w-12 px-2 py-3 text-center">Ordem</th>
                                         <th className="w-12 px-2 py-3 text-center">Cota</th>
                                         <th className="px-3 py-3 text-left">Especificação</th>
+                                        <th className="w-16 px-2 py-3 text-center">Característica</th>
                                         <th className="px-3 py-3 text-left">Instrumento</th>
                                         <th className="px-3 py-3 text-left">Valores</th>
                                         <th className="w-16 px-2 py-3 text-center">Setup</th>
