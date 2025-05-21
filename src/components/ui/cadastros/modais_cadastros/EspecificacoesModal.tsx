@@ -96,13 +96,14 @@ export function EspecificacoesModal({
                 headers: getAuthHeaders()
             });
             const caracteristicasData = await caracteristicasResponse.json();
-            setCaracteristicasOptions(caracteristicasData);            // Buscar tipos de instrumentos de medição
+            setCaracteristicasOptions(caracteristicasData);
+            // Buscar tipos de instrumentos de medição
             const instrumentsResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
                 headers: getAuthHeaders()
             });
             const instrumentsData = await instrumentsResponse.json();
             setInstrumentOptions(Array.isArray(instrumentsData) ? instrumentsData.map(item => ({
-                id: item.id_tipo_instrumento,
+                id: item.id,
                 label: item.nome_tipo_instrumento
             })) : []);
         } catch (error) {
@@ -153,7 +154,8 @@ export function EspecificacoesModal({
         async (formData: FormData) => {
             try {
                 setFormError(null);
-                setIsSubmitting(true);                // Validação
+                setIsSubmitting(true);
+                // Validação
                 if (!formData.tipo_valor) {
                     setFormError("O tipo de valor é obrigatório");
                     setIsSubmitting(false);
@@ -195,13 +197,13 @@ export function EspecificacoesModal({
                     referencia: dados.referencia,
                     roteiro: roteiroNum,
                     processo: dados.processo,
-                    operacao: dados.operacao,
-                    tipo_valor: formData.tipo_valor,
+                    operacao: dados.operacao, tipo_valor: formData.tipo_valor,
                     valor_minimo: valorMinimo,
                     valor_maximo: valorMaximo,
                     unidade_medida: formData.unidade_medida,
                     id_cota: formData.id_cota,
-                    complemento_cota: formData.complemento_cota, id_caracteristica_especial: selectedCaracteristica?.id || null,
+                    complemento_cota: formData.complemento_cota,
+                    id_caracteristica_especial: selectedCaracteristica?.id || null,
                     caracteristica_especial: selectedCaracteristica?.descricao || null,
                     id_tipo_instrumento: formData.id_tipo_instrumento,
                     ordem: formData.ordem,
@@ -290,35 +292,36 @@ export function EspecificacoesModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <SelectWithSvg
-                                id="id_cota"
-                                options={cotasOptions}
-                                value={selectedCota}
-                                onChange={(option) => {
-                                    setSelectedCota(option);
-                                    const form = document.querySelector('form') as HTMLFormElement;
-                                    if (form) {
-                                        // Atualiza o campo id_cota oculto
-                                        let input = form.querySelector('input[name="id_cota"]') as HTMLInputElement;
-                                        if (!input) {
-                                            input = document.createElement('input');
-                                            input.type = 'hidden';
-                                            input.name = 'id_cota';
-                                            form.appendChild(input);
-                                        }
-                                        input.value = option.id.toString();
+                            <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <SelectWithSvg
+                                    id="id_cota"
+                                    options={cotasOptions}
+                                    value={selectedCota}
+                                    onChange={(option) => {
+                                        setSelectedCota(option);
+                                        const form = document.querySelector('form') as HTMLFormElement;
+                                        if (form) {
+                                            // Atualiza o campo id_cota oculto
+                                            let input = form.querySelector('input[name="id_cota"]') as HTMLInputElement;
+                                            if (!input) {
+                                                input = document.createElement('input');
+                                                input.type = 'hidden';
+                                                input.name = 'id_cota';
+                                                form.appendChild(input);
+                                            }
+                                            input.value = option.id.toString();
 
-                                        // Atualiza o campo unidade_medida
-                                        const unidadeMedidaInput = form.querySelector('input[name="unidade_medida"]') as HTMLInputElement;
-                                        if (unidadeMedidaInput && option.unidade_medida) {
-                                            unidadeMedidaInput.value = option.unidade_medida;
+                                            // Atualiza o campo unidade_medida
+                                            const unidadeMedidaInput = form.querySelector('input[name="unidade_medida"]') as HTMLInputElement;
+                                            if (unidadeMedidaInput && option.unidade_medida) {
+                                                unidadeMedidaInput.value = option.unidade_medida;
+                                            }
                                         }
-                                    }
-                                }}
-                                placeholder="Selecione uma cota"
-                                isLoading={isLoadingOptions}
-                                required={true}
-                            />
+                                    }}
+                                    placeholder="Selecione uma cota"
+                                    isLoading={isLoadingOptions}
+                                    required={true}
+                                />
                             </div>
                         </div>
                         <div>
@@ -368,7 +371,8 @@ export function EspecificacoesModal({
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
-                                    <FileText className="h-4 w-4 text-gray-500" />                                    <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
                                         Instrumento de Medição <span className="text-red-500">*</span>
                                     </label>
                                 </div>
@@ -381,9 +385,16 @@ export function EspecificacoesModal({
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
                                     defaultValue={dados.id_tipo_instrumento || ''}
                                     onFocus={() => setIsFocused('id_tipo_instrumento')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
+                                    onBlur={() => setIsFocused(null)} onChange={(e) => {
+                                        const rawValue = e.target.value;
+                                        const selectedText = e.target.options[e.target.selectedIndex].text;
+                                        console.log('Instrumento selecionado:', {
+                                            id: Number(rawValue) || rawValue,
+                                            rawValue: rawValue,
+                                            texto: selectedText
+                                        });
+                                    }}
+                                >                                    <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
                                     {!isLoadingOptions && instrumentOptions.map(option => (
                                         <option key={option.id} value={option.id} className="text-gray-900">
                                             {option.label}
@@ -392,7 +403,9 @@ export function EspecificacoesModal({
                                 </select>
                             </div>
                         </div>
-                    </div>                    {/* Linha: Tipo de Valor, Unidade de Medida e Ordem */}
+                    </div>
+
+                    {/* Linha: Tipo de Valor, Unidade de Medida e Ordem */}
                     <div className="grid grid-cols-3 gap-4 mb-4">
                         <div>
                             <div className="flex items-center justify-between mb-2">
@@ -427,7 +440,8 @@ export function EspecificacoesModal({
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
-                                    <Ruler className="h-4 w-4 text-gray-500" />                                    <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                    <Ruler className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
                                         Unidade de Medida <span className="text-red-500">*</span>
                                     </label>
                                 </div>
@@ -449,7 +463,8 @@ export function EspecificacoesModal({
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
-                                    <FileText className="h-4 w-4 text-gray-500" />                                    <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
                                         Ordem <span className="text-red-500">*</span>
                                     </label>
                                 </div>
@@ -535,6 +550,18 @@ export function EspecificacoesModal({
                                 <span className="text-sm text-gray-700">Uso Inspeção Setup</span>
                             </label>
                         </div>
+
+                        <div className="flex items-center space-x-4">
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    name="uso_inspecao_qualidade"
+                                    defaultChecked={dados.uso_inspecao_qualidade === 'S'}
+                                    className="rounded border-gray-300 text-[#09A08D] focus:ring-[#09A08D]"
+                                />
+                                <span className="text-sm text-gray-700">Uso Inspeção Qualidade</span>
+                            </label>
+                        </div>
                         <div className="flex items-center space-x-4">
                             <label className="flex items-center space-x-2">
                                 <input
@@ -546,17 +573,7 @@ export function EspecificacoesModal({
                                 <span className="text-sm text-gray-700">Uso Inspeção Processo</span>
                             </label>
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    name="uso_inspecao_qualidade"
-                                    defaultChecked={dados.uso_inspecao_qualidade === 'S'}
-                                    className="rounded border-gray-300 text-[#09A08D] focus:ring-[#09A08D]"
-                                />
-                                <span className="text-sm text-gray-700">Uso Inspeção Qualidade</span>
-                            </label>
-                        </div>                    </div>
+                    </div>
 
                     {/* Mensagem sobre campos obrigatórios */}
                     <div className="text-xs text-gray-500 mt-4">
