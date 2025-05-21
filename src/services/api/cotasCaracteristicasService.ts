@@ -109,16 +109,15 @@ export const deleteCotaCaracteristica = async (
     });
 
     if (!response.ok) {
-        let errorMessage = 'Erro desconhecido ao excluir o registro';
-        try {
+        let errorMessage = 'Erro desconhecido ao excluir o registro'; try {
             const errorData = await response.json();
             if (errorData && errorData.message) {
                 errorMessage = errorData.message;
             } else if (errorData && errorData.error) {
                 errorMessage = errorData.error;
             }
-        } catch (e) {
-
+        } catch {
+        
         }
 
         throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);

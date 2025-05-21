@@ -10,14 +10,15 @@ export const atualizarOrdemEspecificacoes = async (
     especificacoes: Pick<EspecificacaoInspecao, 'id' | 'ordem'>[],
     headers: HeadersInit
 ): Promise<{ success: boolean; message: string }> => {
+    const apiUrl = localStorage.getItem("apiUrl");
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/especificacoes/ordem`, {
+        const response = await fetch(`${apiUrl}/inspecao/especificacoes_inspecao_ft_ordem`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 ...headers,
             },
-            body: JSON.stringify({ especificacoes }),
+            body: JSON.stringify(especificacoes),
         });
 
         if (!response.ok) {

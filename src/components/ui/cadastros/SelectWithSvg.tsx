@@ -1,6 +1,5 @@
 import { Listbox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
-import { Fragment } from 'react';
 
 export interface Option {
     id: number;
@@ -69,11 +68,9 @@ export function SelectWithSvg({
                                 aria-hidden="true"
                             />
                             </span>
-                        </Listbox.Button>
-
-                        <Transition
+                        </Listbox.Button>                        <Transition
                             show={open}
-                            as={Fragment}
+                            as="div"
                             leave="transition ease-in duration-100"
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
