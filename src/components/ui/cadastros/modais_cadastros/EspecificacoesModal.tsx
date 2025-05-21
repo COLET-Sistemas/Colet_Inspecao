@@ -72,11 +72,47 @@ export function EspecificacoesModal({
     const [selectedCaracteristica, setSelectedCaracteristica] = useState<Option | null>(null);
 
     const [cotasOptions, setCotasOptions] = useState<Option[]>([]);
-    const [caracteristicasOptions, setCaracteristicasOptions] = useState<Option[]>([]);
-    const [instrumentOptions, setInstrumentOptions] = useState<{ id: number, label: string }[]>([]);
+    const [caracteristicasOptions, setCaracteristicasOptions] = useState<Option[]>([]);    const [instrumentOptions, setInstrumentOptions] = useState<{ id: number, label: string }[]>([]);
     const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+    const [nextOrder, setNextOrder] = useState<number | null>(null);
 
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const { apiUrl, getAuthHeaders } = useApiConfig();    // Função para buscar o próximo valor de ordem
+    const fetchNextOrder = useCallback(async () => {
+        if (!isOpen || !dados || modo !== 'cadastro') return;
+
+        try {
+            // Buscar especificações existentes para determinar o próximo valor de ordem
+            const response = await fetch(
+                `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(dados.referencia)}&roteiro=${encodeURIComponent(dados.roteiro)}&processo=${dados.processo}`, 
+                { headers: getAuthHeaders() }
+            );
+            
+            if (response.ok) {
+                const processoData = await response.json();
+                
+                // Verificar se o processo tem operações
+                if (processoData && Array.isArray(processoData.operacoes)) {
+                    // Encontrar a operação correta pelo número da operação
+                    const operacao = processoData.operacoes.find(op => op.operacao === dados.operacao);
+                    
+                    if (operacao && Array.isArray(operacao.especificacoes_inspecao) && operacao.especificacoes_inspecao.length > 0) {                        // Encontra a maior ordem nas especificações dessa operação e adiciona 1
+                        const maxOrder = Math.max(...operacao.especificacoes_inspecao.map(esp => esp.ordem || 0));
+                        setNextOrder(maxOrder + 1);
+                    } else {
+                        // Se não houver especificações para essa operação, começa com ordem 1
+                        setNextOrder(1);
+                    }
+                } else {
+                    // Se não houver operações, começa com ordem 1
+                    setNextOrder(1);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao buscar próxima ordem:", error);
+            // Em caso de erro, definimos ordem 1 como padrão
+            setNextOrder(1);
+        }
+    }, [apiUrl, getAuthHeaders, isOpen, dados, modo]);
 
     // Função para buscar as opções de cotas, características e instrumentos
     const fetchOptions = useCallback(async () => {
@@ -106,22 +142,23 @@ export function EspecificacoesModal({
                 id: item.id,
                 label: item.nome_tipo_instrumento
             })) : []);
+            
+            // Buscar próximo valor de ordem
+            await fetchNextOrder();
         } catch (error) {
             console.error("Erro ao carregar opções:", error);
             setFormError("Erro ao carregar as opções de cotas e instrumentos.");
         } finally {
             setIsLoadingOptions(false);
         }
-    }, [apiUrl, getAuthHeaders, isOpen]);
+    }, [apiUrl, getAuthHeaders, isOpen, fetchNextOrder]);
 
     // Carregar opções quando o modal abrir
     useEffect(() => {
         if (isOpen) {
             fetchOptions();
         }
-    }, [isOpen, fetchOptions]);
-
-    // Efeito para inicializar as seleções quando os dados são carregados
+    }, [isOpen, fetchOptions]);    // Efeito para inicializar as seleções quando os dados são carregados
     useEffect(() => {
         if (dados && cotasOptions.length > 0 && caracteristicasOptions.length > 0) {
             const cota = cotasOptions.find(c => c.id === dados.id_cota);
@@ -131,6 +168,16 @@ export function EspecificacoesModal({
             if (caracteristica) setSelectedCaracteristica(caracteristica);
         }
     }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions]);
+    
+    // Efeito para atualizar o valor do campo de ordem quando nextOrder for definido
+    useEffect(() => {
+        if (isOpen && modo === 'cadastro' && nextOrder !== null) {
+            // Acessar diretamente o input pelo DOM e atualizar seu valor
+            const ordemInput = document.getElementById('ordem') as HTMLInputElement;            if (ordemInput) {
+                ordemInput.value = nextOrder.toString();
+            }
+        }
+    }, [nextOrder, isOpen, modo]);
 
     // Renderiza mensagens de erro
     const renderFeedback = () => {
@@ -383,17 +430,8 @@ export function EspecificacoesModal({
                                     name="id_tipo_instrumento"
                                     required
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
-                                    defaultValue={dados.id_tipo_instrumento || ''}
-                                    onFocus={() => setIsFocused('id_tipo_instrumento')}
-                                    onBlur={() => setIsFocused(null)} onChange={(e) => {
-                                        const rawValue = e.target.value;
-                                        const selectedText = e.target.options[e.target.selectedIndex].text;
-                                        console.log('Instrumento selecionado:', {
-                                            id: Number(rawValue) || rawValue,
-                                            rawValue: rawValue,
-                                            texto: selectedText
-                                        });
-                                    }}
+                                    defaultValue={dados.id_tipo_instrumento || ''}                                    onFocus={() => setIsFocused('id_tipo_instrumento')}
+                                    onBlur={() => setIsFocused(null)}
                                 >                                    <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
                                     {!isLoadingOptions && instrumentOptions.map(option => (
                                         <option key={option.id} value={option.id} className="text-gray-900">
@@ -476,8 +514,7 @@ export function EspecificacoesModal({
                                     name="ordem"
                                     required
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Digite a ordem"
-                                    defaultValue={dados.ordem || ''}
+                                    placeholder="Digite a ordem"                                    defaultValue={modo === 'cadastro' ? nextOrder || '' : dados.ordem || ''}
                                     onFocus={() => setIsFocused('ordem')}
                                     onBlur={() => setIsFocused(null)}
                                 />
