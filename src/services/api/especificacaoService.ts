@@ -46,8 +46,9 @@ export const deleteEspecificacaoInspecao = async (
     id: number,
     headers: HeadersInit
 ): Promise<{ success: boolean; message: string }> => {
+    const apiUrl = localStorage.getItem("apiUrl");
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/especificacoes/${id}`, {
+        const response = await fetch(`${apiUrl}/inspecao/especificacoes_inspecao_ft?id=${id}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
