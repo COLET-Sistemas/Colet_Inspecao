@@ -14,7 +14,7 @@ import { EspecificacaoInspecao, OperacaoProcesso, ProcessoDetalhes } from '@/typ
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, Clock, ListFilter, Pencil, Ruler, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import './reordering-styles.css';
 
 // Componente para card de especificação
@@ -28,7 +28,8 @@ interface EspecificacaoCardProps {
     index?: number;
 }
 
-const EspecificacaoCard = ({
+// Define the component first, then memoize it with explicit equality check
+const EspecificacaoCardBase = ({
     especificacao,
     onEdit,
     onDelete,
@@ -36,8 +37,8 @@ const EspecificacaoCard = ({
     onMoveUp,
     onMoveDown,
     index = 0
-}: EspecificacaoCardProps) => {   
-    const renderSVG = (svgString: string | undefined) => {
+}: EspecificacaoCardProps) => {
+    const renderSVG = useCallback((svgString: string | undefined) => {
         if (!svgString) return (
             <div className="w-9 h-9 flex items-center justify-center mx-auto">
                 <span className="text-gray-400 text-xs font-medium">N/A</span>
@@ -53,10 +54,8 @@ const EspecificacaoCard = ({
                 }}
             />
         );
-    };
-
-    // Função para obter nome completo do tipo de valor
-    const getTipoValorDescricao = () => {
+    }, []);    // Função para obter nome completo do tipo de valor
+    const getTipoValorDescricao = useCallback(() => {
         switch (especificacao.tipo_valor) {
             case 'F': return 'Faixa';
             case 'U': return 'Único';
@@ -66,10 +65,8 @@ const EspecificacaoCard = ({
             case 'L': return 'Liberado/Retido';
             default: return especificacao.tipo_valor;
         }
-    };
-
-    // Função para renderizar valores conforme o tipo
-    const renderValor = () => {
+    }, [especificacao.tipo_valor]);    // Função para renderizar valores conforme o tipo
+    const renderValor = useCallback(() => {
         switch (especificacao.tipo_valor) {
             case 'F':
                 return `${especificacao.valor_minimo} a ${especificacao.valor_maximo} ${especificacao.unidade_medida}`;
@@ -82,10 +79,13 @@ const EspecificacaoCard = ({
             default:
                 return '';
         }
-    };
-
-    // Render checkbox para "Cota de Segurança"
-    const renderCotaSeguranca = () => {
+    }, [
+        especificacao.tipo_valor,
+        especificacao.valor_minimo,
+        especificacao.valor_maximo,
+        especificacao.unidade_medida
+    ]);    // Render checkbox para "Cota de Segurança"
+    const renderCotaSeguranca = useCallback(() => {
         if (!especificacao.cota_seguranca || especificacao.cota_seguranca !== 'S') return null;
 
         return (
@@ -96,10 +96,8 @@ const EspecificacaoCard = ({
                 <span className="text-xs text-blue-700 font-medium">Cota de Segurança</span>
             </div>
         );
-    };
-
-    // Renderiza indicador de uso (Setup, Qualidade ou Processo)
-    const renderUsoIndicator = (value: string, label: string) => {
+    }, [especificacao.cota_seguranca]);    // Renderiza indicador de uso (Setup, Qualidade ou Processo)
+    const renderUsoIndicator = useCallback((value: string, label: string) => {
         const isActive = value === 'S';
         return (
             <div className="flex flex-col items-center">
@@ -121,7 +119,7 @@ const EspecificacaoCard = ({
                 <span className="text-[10px] font-medium mt-1 text-gray-600">{label}</span>
             </div>
         );
-    };
+    }, []);
 
     return (<tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering
         ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md'
@@ -263,10 +261,24 @@ const EspecificacaoCard = ({
                     </>
                 )}
             </div>
-        </td>
-    </tr>
+        </td>    </tr>
     );
 };
+
+// Custom equality function for EspecificacaoCard component
+const arePropsEqual = (prevProps: EspecificacaoCardProps, nextProps: EspecificacaoCardProps) => {
+    // Compare only the properties we care about
+    return (
+        prevProps.especificacao.id === nextProps.especificacao.id &&
+        prevProps.especificacao.ordem === nextProps.especificacao.ordem &&
+        prevProps.isReordering === nextProps.isReordering &&
+        prevProps.index === nextProps.index
+        // Not comparing callbacks as they should be memoized by parent
+    );
+};
+
+// Create the memoized version of the component
+const EspecificacaoCard = memo(EspecificacaoCardBase, arePropsEqual);
 
 // Componente para mostrar uma operação e suas especificações
 interface OperacaoSectionProps {
@@ -299,18 +311,17 @@ const OperacaoSection = ({
     const [selectedSpec, setSelectedSpec] = useState<EspecificacaoInspecao | null>(null);
     const [isReordering, setIsReordering] = useState(false);
     const [isDeleteSpecModalOpen, setIsDeleteSpecModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const { getAuthHeaders } = useApiConfig();
+    const [isDeleting, setIsDeleting] = useState(false); const { getAuthHeaders } = useApiConfig();
     const [especificacoes, setEspecificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
-    const especificacoesCount = especificacoes.length || 0;
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Reset especificacoes when operacao.especificacoes_inspecao changes
+    const [isSaving, setIsSaving] = useState(false);// Reset especificacoes when operacao.especificacoes_inspecao changes
     useEffect(() => {
         setEspecificacoes(operacao.especificacoes_inspecao || []);
     }, [operacao.especificacoes_inspecao]);
+
+    // Memoized value for especificacoesCount to avoid re-calculations
+    const especificacoesCountValue = useMemo(() => especificacoes.length || 0, [especificacoes]);
 
     // Função para alternar expansão
     const toggleExpand = useCallback(() => {
@@ -339,9 +350,7 @@ const OperacaoSection = ({
             [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
             return newOrder;
         });
-    }, [especificacoes.length]);
-
-    // Handler para reordenação
+    }, [especificacoes.length]);    // Handler para reordenação
     const handleReorder = useCallback(async () => {
         if (!isReordering || !especificacoes.length) return;
 
@@ -349,6 +358,7 @@ const OperacaoSection = ({
             setIsSaving(true);
 
             // Prepara os dados para enviar à API com ordem sequencial começando de 1
+            // Use a memoized mapping function to avoid creating new object on each render
             const updatedEspecificacoes = especificacoes.map((esp, index) => ({
                 ...esp,
                 ordem: index + 1
@@ -358,10 +368,10 @@ const OperacaoSection = ({
             await onReorder(updatedEspecificacoes);
             onAlert("Ordem das especificações atualizada com sucesso!", "success");
             setIsReordering(false);
-            setIsSaving(false);
         } catch (error) {
             console.error('Erro ao atualizar ordem:', error);
             onAlert("Erro ao atualizar a ordem das especificações", "error");
+        } finally {
             setIsSaving(false);
         }
     }, [isReordering, especificacoes, onReorder, onAlert]);
@@ -424,7 +434,7 @@ const OperacaoSection = ({
                             <div className="flex items-center gap-2">
                                 {/* Reordenar */}                                <Tooltip text={isReordering ? "Modo de reordenação ativo" : "Reordenar Especificações"}>                                    <motion.button
                                     whileTap={{ scale: 0.97 }}
-                                    disabled={especificacoesCount <= 1}
+                                    disabled={especificacoesCountValue <= 1}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -433,7 +443,7 @@ const OperacaoSection = ({
                                     className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering
                                         ? 'bg-amber-500 hover:bg-amber-600'
                                         : 'bg-blue-500 hover:bg-blue-600'
-                                        } ${especificacoesCount <= 1 ? 'opacity-50 cursor-not-allowed' : ''
+                                        } ${especificacoesCountValue <= 1 ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -567,7 +577,7 @@ const OperacaoSection = ({
                                 : "Deseja realmente excluir esta especificação?"
                         }
                         itemName={selectedSpec?.especificacao_cota}
-                    />                    {especificacoesCount > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
+                    />                    {especificacoesCountValue > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
@@ -753,9 +763,7 @@ export default function ProcessoPage() {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [operacaoToDelete, getAuthHeaders, fetchProcessoData]);
-
-    // Função para fechar modal de exclusão
+    }, [operacaoToDelete, getAuthHeaders, fetchProcessoData]);    // Função para fechar modal de exclusão
     const handleCloseDeleteModal = useCallback(() => {
         if (!isDeleting) {
             setIsDeleteModalOpen(false);
@@ -763,10 +771,34 @@ export default function ProcessoPage() {
         }
     }, [isDeleting]);
 
-    // Efeito para carregar os dados do processo
+    // Memoized handler for modal success
+    const handleOperacaoModalSuccess = useCallback((message: string) => {
+        setAlert({ message, type: 'success' });
+        fetchProcessoData();
+        setIsOperacaoModalOpen(false);
+        setSelectedOperacao(null);
+    }, [fetchProcessoData]);// Efeito para carregar os dados do processo
     useEffect(() => {
         fetchProcessoData();
     }, [fetchProcessoData]);
+
+    // Memoize the handler for reordering especificacoes to avoid recreating on each render
+    const handleReorderEspecificacoes = useCallback(async (newOrder: EspecificacaoInspecao[]) => {
+        // Prepare data for the API - just id and ordem fields
+        const ordenedSpecs = newOrder.map((esp, index) => ({
+            id: esp.id,
+            ordem: index + 1  // Ensure sequential order starting from 1
+        }));
+
+        // Send the update to the API
+        await atualizarOrdemEspecificacoes(
+            ordenedSpecs,
+            getAuthHeaders()
+        );
+
+        // Reload data to reflect the changes
+        return fetchProcessoData();
+    }, [getAuthHeaders, fetchProcessoData]);
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">
@@ -938,23 +970,8 @@ export default function ProcessoPage() {
                                                 processo={processo}
                                                 onAlert={(message, type) => setAlert({ message, type })}
                                                 onRefresh={fetchProcessoData}
-                                                onEdit={handleEditOperacao}
-                                                onDelete={handleDeleteOperacao} onReorder={async (newOrder) => {
-                                                    // Prepare data for the API - just id and ordem fields
-                                                    const ordenedSpecs = newOrder.map((esp, index) => ({
-                                                        id: esp.id,
-                                                        ordem: index + 1  // Ensure sequential order starting from 1
-                                                    }));
-
-                                                    // Send the update to the API
-                                                    await atualizarOrdemEspecificacoes(
-                                                        ordenedSpecs,
-                                                        getAuthHeaders()
-                                                    );
-
-                                                    // Reload data to reflect the changes
-                                                    return fetchProcessoData();
-                                                }}
+                                                onEdit={handleEditOperacao} onDelete={handleDeleteOperacao}
+                                                onReorder={handleReorderEspecificacoes}
                                             />
                                         ))}
                                     </div>
@@ -992,8 +1009,6 @@ export default function ProcessoPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Modal de Operações */}
             {dadosProcesso && (
                 <OperacoesModal
                     isOpen={isOperacaoModalOpen}
@@ -1013,14 +1028,8 @@ export default function ProcessoPage() {
                         referencia,
                         roteiro,
                         processo: parseInt(processo, 10),
-                        operacao: 0 // Valor padrão para nova operação
-                    }}
-                    onSuccess={(message) => {
-                        setAlert({ message, type: 'success' });
-                        fetchProcessoData();
-                        setIsOperacaoModalOpen(false);
-                        setSelectedOperacao(null);
-                    }}
+                        operacao: 0
+                    }} onSuccess={handleOperacaoModalSuccess}
                     modo={selectedOperacao ? 'edicao' : 'cadastro'}
                 />
             )}

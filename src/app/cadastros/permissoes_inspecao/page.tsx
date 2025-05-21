@@ -8,7 +8,6 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
-import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal";
 import { PermissaoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/PermissaoInspecaoModal";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { getPermissoesInspecao } from "@/services/api/permissaoInspecaoService";
@@ -17,7 +16,7 @@ import { PermissaoInspecao as ApiPermissaoInspecao } from "@/types/cadastros/per
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { IterationCcw, Pencil, SlidersHorizontal } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 interface AlertState {
     message: string | null;
@@ -25,7 +24,7 @@ interface AlertState {
 }
 
 interface PermissaoInspecaoExtended extends ApiPermissaoInspecao {
-    id: string; 
+    id: string;
 }
 
 // Interface para filtro de permissão
@@ -55,12 +54,25 @@ const getInspecaoColor = (id: string): { bg: string, text: string } => {
     return colorOptions[index];
 };
 
-// Interface e criação do contexto
-interface PermissoesContextType {
-    parseInspecaoIds: (inspecoesStr: string) => Array<{ id: string, descricao: string, color: { bg: string, text: string } }>;
+// Interface de dados para inspeções formatadas
+interface InspecaoFormatada {
+    id: string;
+    descricao: string;
+    color: { bg: string, text: string };
 }
 
-const PermissoesContext = createContext<PermissoesContextType | undefined>(undefined);
+// Interface e criação do contexto
+interface PermissoesContextType {
+    parseInspecaoIds: (inspecoesStr: string) => InspecaoFormatada[];
+}
+
+// Valor padrão para evitar undefined checks
+const defaultContextValue: PermissoesContextType = {
+    parseInspecaoIds: () => [],
+};
+
+const PermissoesContext = createContext<PermissoesContextType>(defaultContextValue);
+PermissoesContext.displayName = 'PermissoesContext'; // Melhor debuggability
 
 // Hook para usar o contexto
 function usePermissoesContext() {
@@ -72,20 +84,17 @@ function usePermissoesContext() {
 }
 
 // Componente Card para exibição em modo de cartões
-const Card = ({ permissao, onEdit, onDelete }: {
+const Card = React.memo(({ permissao, onEdit }: {
     permissao: PermissaoInspecaoExtended;
     onEdit: (id: string) => void;
-    onDelete: (id: string) => void;
 }) => {
-    // Funções auxiliares para formatação
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('pt-BR').format(date);
-    };
-
     // Usar o hook useContext para acessar o parseInspecaoIds
     const { parseInspecaoIds } = usePermissoesContext();
     const inspecoesInfo = parseInspecaoIds(permissao.inspecoes);
+
+    const handleEdit = useCallback(() => {
+        onEdit(permissao.id);
+    }, [onEdit, permissao.id]);
 
     return (
         <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
@@ -125,7 +134,7 @@ const Card = ({ permissao, onEdit, onDelete }: {
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
                                 className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
-                                onClick={() => onEdit(permissao.id)}
+                                onClick={handleEdit}
                                 aria-label="Editar"
                             >
                                 <Pencil className="h-3.5 w-3.5" />
@@ -136,13 +145,14 @@ const Card = ({ permissao, onEdit, onDelete }: {
             </div>
         </div>
     );
-};
+});
+
+// Add display name for better debugging
+Card.displayName = 'PermissaoCard';
 
 // Página principal
-export default function PermissoesInspecaoPage() {
-    // Estados para gerenciamento de dados e UI
+export default function PermissoesInspecaoPage() {    // Estados para gerenciamento de dados e UI
     const [isLoading, setIsLoading] = useState(true);
-    const [isPending, startTransition] = useTransition();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -171,14 +181,9 @@ export default function PermissoesInspecaoPage() {
         if (field === "operador" || field === "nome_operador") {
             setSortField(field);
         }
-    }, []);
-
-    // Estados para modais
+    }, []);    // Estados para modais
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentPermissao, setCurrentPermissao] = useState<ApiPermissaoInspecao | null>(null);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // Estado para alertas e notificações
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
@@ -206,6 +211,42 @@ export default function PermissoesInspecaoPage() {
         }
     }, [getAuthHeaders]);
 
+    // Função para filtrar e ordenar os dados
+    const filterAndSortData = useCallback((data: PermissaoInspecaoExtended[], search: string, permissionFilter: string | null, sort: "operador" | "nome_operador") => {
+        // Filtrar por termo de busca
+        let filtered = data;
+
+        if (search) {
+            filtered = filtered.filter(item =>
+                String(item.operador).toLowerCase().includes(search.toLowerCase()) ||
+                String(item.nome_operador).toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
+        // Filtrar por permissão
+        if (permissionFilter) {
+            if (permissionFilter === "com_permissao") {
+                filtered = filtered.filter(item => item.inspecoes.length > 0);
+            } else if (permissionFilter === "sem_permissao") {
+                filtered = filtered.filter(item => item.inspecoes.length === 0);
+            } else {
+                filtered = filtered.filter(item =>
+                    item.inspecoes.includes(permissionFilter)
+                );
+            }
+        }
+
+        // Ordenar os dados
+        return [...filtered].sort((a, b) => {
+            const fieldA = a[sort];
+            const fieldB = b[sort];
+
+            if (fieldA < fieldB) return -1;
+            if (fieldA > fieldB) return 1;
+            return 0;
+        });
+    }, []);
+
     // Carrega dados - Removendo dependências de estado para evitar recriações constantes
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -213,21 +254,17 @@ export default function PermissoesInspecaoPage() {
 
         try {
             const headers = getAuthHeaders();
-            console.log('Iniciando busca de permissões de inspeção');
 
             // Carregar tipos de inspeção se ainda não foram carregados
-            let tiposAtivos = tiposInspecao;
             if (!tiposInspecaoFetchedRef.current || tiposInspecao.length === 0) {
-                tiposAtivos = await loadTiposInspecao();
+                await loadTiposInspecao();
                 tiposInspecaoFetchedRef.current = true;
             }
 
             // Carregar permissões
             const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
-            console.log('Dados recebidos da API:', apiData);
 
             if (!apiData || apiData.length === 0) {
-                console.log('API retornou array vazio ou nulo');
                 setPermissoes([]);
                 setAllData([]);
                 setIsLoading(false);
@@ -235,63 +272,56 @@ export default function PermissoesInspecaoPage() {
                 return;
             }
 
+            // Mapear dados adicionando ID
             const mappedData: PermissaoInspecaoExtended[] = apiData.map(item => ({
-                ...item, // Mantém todos os campos originais da API
-                id: item.operador, // Adiciona o id obrigatório para os componentes
+                ...item,
+                id: item.operador,
             }));
 
-            console.log('Dados mapeados:', mappedData);
             setAllData(mappedData);
 
-            // Aplicar filtros manualmente sem reconstruir a função filterData
-            let filtered = [...mappedData];
+            // Aplicar filtros e ordenação
+            const filteredData = filterAndSortData(
+                mappedData,
+                searchTerm,
+                selectedPermissionFilter,
+                sortField
+            );
 
-            if (searchTerm) {
-                filtered = filtered.filter(item =>
-                    String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            }
+            setPermissoes(filteredData);
 
-            if (selectedPermissionFilter) {
-                if (selectedPermissionFilter === "com_permissao") {
-                    filtered = filtered.filter(item => item.inspecoes.length > 0);
-                } else if (selectedPermissionFilter === "sem_permissao") {
-                    filtered = filtered.filter(item => item.inspecoes.length === 0);
-                } else {
-                    filtered = filtered.filter(item =>
-                        item.inspecoes.includes(selectedPermissionFilter)
-                    );
-                }
-            }
-
-            // Aplicar ordenação
-            filtered.sort((a, b) => {
-                const fieldA = a[sortField];
-                const fieldB = b[sortField];
-
-                if (fieldA < fieldB) return -1;
-                if (fieldA > fieldB) return 1;
-                return 0;
-            });
-
-            setPermissoes(filtered);
-
-            if (filtered.length === 0) {
+            // Atualizar notificação
+            if (filteredData.length === 0) {
                 setNotification('Nenhum resultado encontrado para os filtros atuais.');
             } else {
-                setNotification(`${filtered.length} permissões de inspeção encontradas.`);
+                setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
 
             setIsLoading(false);
             setIsRefreshing(false);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
-            setApiError(error instanceof Error ? error.message : "Erro desconhecido ao carregar dados");
+            const errorMessage = error instanceof Error
+                ? error.message
+                : "Erro desconhecido ao carregar dados";
+
+            setApiError(errorMessage);
+            setAlert({
+                message: `Falha ao carregar dados: ${errorMessage}`,
+                type: "error"
+            });
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders, searchTerm, sortField, tiposInspecao, loadTiposInspecao, selectedPermissionFilter]);
+    }, [
+        getAuthHeaders,
+        loadTiposInspecao,
+        searchTerm,
+        selectedPermissionFilter,
+        sortField,
+        filterAndSortData,
+        tiposInspecao.length
+    ]);
 
     useEffect(() => {
         // Evitar o loop infinito usando a referência
@@ -308,38 +338,14 @@ export default function PermissoesInspecaoPage() {
 
     // Atualizar o controle manual dos filtros quando eles mudarem
     useEffect(() => {
-        if (dataFetchedRef.current) {
+        if (dataFetchedRef.current && allData.length > 0) {
             // Somente aplica filtros se os dados já foram carregados
-            const filteredData = [...allData].filter(item => {
-                // Filtro por termo de busca
-                const matchesSearch = !searchTerm ||
-                    String(item.operador).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    String(item.nome_operador).toLowerCase().includes(searchTerm.toLowerCase());
-
-                // Filtro por permissão com novos casos especiais
-                let matchesPermission = true;
-                if (selectedPermissionFilter) {
-                    if (selectedPermissionFilter === "com_permissao") {
-                        matchesPermission = item.inspecoes.length > 0;
-                    } else if (selectedPermissionFilter === "sem_permissao") {
-                        matchesPermission = item.inspecoes.length === 0;
-                    } else {
-                        matchesPermission = item.inspecoes.includes(selectedPermissionFilter);
-                    }
-                }
-
-                return matchesSearch && matchesPermission;
-            });
-
-            // Aplicar ordenação
-            filteredData.sort((a, b) => {
-                const fieldA = a[sortField];
-                const fieldB = b[sortField];
-
-                if (fieldA < fieldB) return -1;
-                if (fieldA > fieldB) return 1;
-                return 0;
-            });
+            const filteredData = filterAndSortData(
+                allData,
+                searchTerm,
+                selectedPermissionFilter,
+                sortField
+            );
 
             setPermissoes(filteredData);
 
@@ -350,20 +356,30 @@ export default function PermissoesInspecaoPage() {
                 setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
         }
-    }, [searchTerm, sortField, allData, selectedPermissionFilter]);
-
-    // Manipulação de operações CRUD com feedback
+    }, [searchTerm, sortField, allData, selectedPermissionFilter, filterAndSortData]);    // Manipulação de operações CRUD com feedback aprimorada
     const handleEdit = useCallback((id: string) => {
-        const permissao = permissoes.find(p => p.operador === id);
-        if (permissao) {
+        try {
+            const permissao = permissoes.find(p => p.operador === id);
+            if (!permissao) {
+                throw new Error(`Permissão com ID ${id} não foi encontrada`);
+            }
+
+            // Criar um novo objeto para evitar referências mutáveis
             setCurrentPermissao({
                 operador: permissao.operador,
                 nome_operador: permissao.nome_operador,
                 situacao: permissao.situacao,
                 inspecoes: permissao.inspecoes
             });
+
             setIsEditModalOpen(true);
             setNotification(`Iniciando edição da permissão para ${permissao.nome_operador}.`);
+        } catch (error) {
+            console.error('Erro ao editar permissão:', error);
+            setAlert({
+                message: error instanceof Error ? error.message : 'Erro desconhecido ao editar permissão',
+                type: "error"
+            });
         }
     }, [permissoes]);
 
@@ -388,63 +404,7 @@ export default function PermissoesInspecaoPage() {
             type: "error"
         });
         setNotification(`Erro ao atualizar permissão: ${errorMessage}`);
-    }, []);
-
-    const handleDelete = useCallback((id: string) => {
-        console.log(`Excluindo permissão ${id}`);
-        // Abre o modal de confirmação
-        setDeletingId(id);
-        setIsDeleteModalOpen(true);
-        setNotification(`Confirme a exclusão da permissão ${id}.`);
-    }, []);
-
-    const confirmDelete = useCallback(async () => {
-        if (!deletingId) return;
-
-        setIsDeleting(true);
-
-        try {
-            // Simulação de uma operação de exclusão
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Remover item da lista
-            setPermissoes(prev => prev.filter(item => item.id !== deletingId));
-            setAllData(prev => prev.filter(item => item.id !== deletingId));
-
-            // Fechar modal de confirmação
-            setIsDeleteModalOpen(false);
-
-            // Mostrar mensagem de sucesso
-            setAlert({
-                message: `Permissão excluída com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Permissão excluída com sucesso.`);
-        } catch (error) {
-            console.error('Erro ao excluir permissão:', error);
-
-            // Sempre fechar o modal em caso de erro
-            setIsDeleteModalOpen(false);
-
-            // Mostrar mensagem de erro
-            setAlert({
-                message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
-                type: "error"
-            });
-
-            setNotification(`Erro ao excluir permissão: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
-        } finally {
-            setIsDeleting(false);
-            setDeletingId(null);
-        }
-    }, [deletingId]);
-
-    const handleCloseDeleteModal = useCallback(() => {
-        setIsDeleteModalOpen(false);
-        setDeletingId(null);
-        setNotification("Exclusão cancelada.");
-    }, []);
+    }, []);    // Reset filtros
 
     // Reset filtros
     const resetFilters = useCallback(() => {
@@ -485,7 +445,7 @@ export default function PermissoesInspecaoPage() {
         });
     }, [tiposInspecao]);
 
-    // Funções utilitárias para formatar os dados na tabela
+    // Funções utilitárias para formatar os dados na tabela com otimização
     const formatPermissoes = useCallback((permissoes: string) => {
         if (!permissoes) return null;
 
@@ -585,22 +545,51 @@ export default function PermissoesInspecaoPage() {
         }
 
         return filters;
-    }, [searchTerm, selectedPermissionFilter, tiposInspecao]);
+    }, [searchTerm, selectedPermissionFilter, tiposInspecao]);   
+    const IdCell = React.memo(({ operador }: { operador: string }) => (
+        <span className="text-sm font-medium text-gray-900">{operador}</span>
+    ));
+    IdCell.displayName = 'IdCell';
 
-    // Definição das colunas da tabela
+    const NameCell = React.memo(({ nome }: { nome: string }) => (
+        <div className="text-sm text-gray-900 max-w-md truncate">{nome}</div>
+    ));
+    NameCell.displayName = 'NameCell';
+
+    const ActionsCell = React.memo(({ operador }: { operador: string }) => {
+        const handleEditClick = useCallback(() => {
+            handleEdit(operador);
+        }, [operador]);
+
+        return (
+            <div className="flex items-center justify-end gap-2">
+                <Tooltip text="Editar">
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        className="text-yellow-500 hover:text-yellow-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500/30 focus:ring-offset-1 rounded p-1"
+                        onClick={handleEditClick}
+                        aria-label="Editar"
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </motion.button>
+                </Tooltip>
+            </div>
+        );
+    });
+    ActionsCell.displayName = 'ActionsCell';    
     const tableColumns = useMemo(() => [
         {
             key: "operador",
             title: "ID",
             render: (permissao: PermissaoInspecaoExtended) => (
-                <span className="text-sm font-medium text-gray-900">{permissao.operador}</span>
+                <IdCell operador={permissao.operador} />
             ),
         },
         {
             key: "nome_operador",
             title: "Nome",
             render: (permissao: PermissaoInspecaoExtended) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{permissao.nome_operador}</div>
+                <NameCell nome={permissao.nome_operador} />
             ),
         },
         {
@@ -612,21 +601,10 @@ export default function PermissoesInspecaoPage() {
             key: "acoes",
             title: "Ações",
             render: (permissao: PermissaoInspecaoExtended) => (
-                <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:text-yellow-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500/30 focus:ring-offset-1 rounded p-1"
-                            onClick={() => handleEdit(permissao.operador)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
+                <ActionsCell operador={permissao.operador} />
             ),
         },
-    ], [formatPermissoes, handleEdit]);
+    ], [formatPermissoes, IdCell, NameCell, ActionsCell]);
 
     return (
         <PermissoesContext.Provider value={{ parseInspecaoIds }}>
@@ -658,26 +636,7 @@ export default function PermissoesInspecaoPage() {
                         onSuccess={handleEditSuccess}
                         onError={handleEditError}
                     />
-                )}
-
-                {/* Modal de confirmação de exclusão */}
-                <ConfirmDeleteModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={handleCloseDeleteModal}
-                    onConfirm={confirmDelete}
-                    isDeleting={isDeleting}
-                    title="Confirmar Exclusão"
-                    message={
-                        deletingId !== null
-                            ? `Você está prestes a excluir permanentemente a permissão de inspeção:`
-                            : "Deseja realmente excluir este item?"
-                    }
-                    itemName={
-                        deletingId !== null
-                            ? permissoes.find(perm => perm.operador === deletingId)?.nome_operador
-                            : undefined
-                    }
-                />
+                )}                {/* No deletion functionality */}
 
                 {/* Page Header Component */}
                 <PageHeader
@@ -703,9 +662,8 @@ export default function PermissoesInspecaoPage() {
                     onSortFieldChange={handleSortFieldChange}
                 />
 
-                {/* Data Container with Dynamic View */}
-                <DataListContainer
-                    isLoading={isLoading || isPending}
+                {/* Data Container with Dynamic View */}                <DataListContainer
+                    isLoading={isLoading}
                     isEmpty={permissoes.length === 0}
                     emptyState={
                         apiError ? (
@@ -736,24 +694,23 @@ export default function PermissoesInspecaoPage() {
                     totalFilteredItems={permissoes.length}
                     activeFilters={activeFilters}
                     onResetFilters={resetFilters}
-                >
-                    {viewMode === "table" ? (
-                        // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
-                        <DataTable data={permissoes} columns={tableColumns} />
-                    ) : (
-                        // @ts-ignore - O tipo está correto mas o TypeScript não consegue inferir corretamente
-                        <DataCards
-                            data={permissoes}
-                            renderCard={(permissao: any) => (
-                                <Card
-                                    key={permissao.operador}
-                                    permissao={permissao as PermissaoInspecaoExtended}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            )}
-                        />
-                    )}
+                >                    {viewMode === "table" ? (
+                    <DataTable
+                        data={permissoes}
+                        columns={tableColumns}
+                    />
+                ) : (
+                    <DataCards
+                        data={permissoes}
+                        renderCard={(permissao: PermissaoInspecaoExtended) => (
+                            <Card
+                                key={permissao.operador}
+                                permissao={permissao}
+                                onEdit={handleEdit}
+                            />
+                        )}
+                    />
+                )}
                 </DataListContainer>
             </div>
         </PermissoesContext.Provider>

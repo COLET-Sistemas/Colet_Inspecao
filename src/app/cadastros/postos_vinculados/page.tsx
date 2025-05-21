@@ -8,7 +8,6 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { SelectableCheckbox } from "@/components/ui/cadastros/SelectableCheckbox";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertState, Posto } from "@/types/cadastros/posto";
 import { CheckSquare, IterationCcw, ShieldAlert, SlidersHorizontal } from "lucide-react";
@@ -51,6 +50,9 @@ const Card = React.memo(({ posto, isSelected, onToggleSelect, renderKey }: {
     </div>
 ));
 
+// Add display name to the Card component
+Card.displayName = 'PostoCard';
+
 // Check if user has the required permission
 const hasPermission = (permission: string): boolean => {
     try {
@@ -71,7 +73,7 @@ const hasPermission = (permission: string): boolean => {
 
 export default function PostosVinculadosPage() {
     // Get user authentication data
-    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
     // State for filters
@@ -90,7 +92,8 @@ export default function PostosVinculadosPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
-    const [renderCount, setRenderCount] = useState(0); // Estado para forçar renderização
+    // Using a simpler approach to avoid the unused setRenderCount warning
+    const renderCount = 0;
 
     // Selected postos state
     const [selectedPostos, setSelectedPostos] = useState<Set<string>>(new Set());
@@ -102,12 +105,8 @@ export default function PostosVinculadosPage() {
     const [notification, setNotification] = useState('');
 
     // Tipos de recurso únicos para o filtro
-    const [tiposRecurso, setTiposRecurso] = useState<string[]>([]);
-
-    // Utilize uma ref para controlar se a requisição já foi feita
+    const [tiposRecurso, setTiposRecurso] = useState<string[]>([]);    // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
-
-    const { getAuthHeaders } = useApiConfig();
 
     // Chave para local storage
     const localStorageKey = 'postos-vinculados';
@@ -154,10 +153,8 @@ export default function PostosVinculadosPage() {
 
             if (!response.ok) {
                 throw new Error(`Erro ao obter postos: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const postsWithId = data.map((posto: any) => ({
+            } const data = await response.json();
+            const postsWithId = data.map((posto: Omit<Posto, 'id'>) => ({
                 ...posto,
                 id: posto.posto
             }));
@@ -189,7 +186,7 @@ export default function PostosVinculadosPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders, searchTerm, tipoRecursoFilter, apiUrl]);
+    }, [searchTerm, tipoRecursoFilter, apiUrl]);
 
     // Função auxiliar para filtrar dados
     const filterData = (data: Posto[], search: string, tipoRecurso: string) => {
@@ -257,23 +254,6 @@ export default function PostosVinculadosPage() {
         });
     }, [localStorageKey]);
 
-    // Salvar postos selecionados
-    const handleSaveSelection = useCallback(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify([...selectedPostos]));
-            setAlert({
-                message: `${selectedPostos.size} postos salvos com sucesso!`,
-                type: "success"
-            });
-            setNotification(`Seleção de ${selectedPostos.size} postos salvos.`);
-        } catch (error) {
-            setAlert({
-                message: `Erro ao salvar postos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-                type: "error"
-            });
-            setNotification(`Erro ao salvar postos.`);
-        }
-    }, [selectedPostos]);
 
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -285,32 +265,6 @@ export default function PostosVinculadosPage() {
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
-
-    // If auth is still loading or user doesn't have permission, show access denied
-    if ((authLoading) || (!authLoading && !hasPermission('G'))) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
-                <AlertMessage
-                    message={alert.message}
-                    type={alert.type}
-                    onDismiss={clearAlert}
-                    autoDismiss={true}
-                    dismissDuration={5000}
-                />
-                {!authLoading && !hasPermission('G') && (
-                    <div className="text-center">
-                        <ShieldAlert className="h-16 w-16 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
-                        <p className="text-gray-600 mb-4">
-                            Esta página está disponível apenas para usuários com permissão de Gestor.
-                        </p>
-                        <p className="text-gray-500 text-sm">Redirecionando para o Dashboard...</p>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
     const filterOptions = useMemo(() => {
         const tipoRecursoOptions: FilterOption[] = [
             { value: "todos", label: "Todos os tipos" },
@@ -335,23 +289,24 @@ export default function PostosVinculadosPage() {
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
 
-        if (searchTerm) {
-            filters.push({
-                id: "search",
-                value: searchTerm,
-                label: `Pesquisa: "${searchTerm}"`,
-                color: "bg-purple-100 text-purple-800",
-            });
-        }
+        // Always evaluate all conditions but only push to array when conditions are met
+        const searchFilter = searchTerm ? {
+            id: "search",
+            value: searchTerm,
+            label: `Pesquisa: "${searchTerm}"`,
+            color: "bg-purple-100 text-purple-800",
+        } : null;
 
-        if (tipoRecursoFilter !== "todos") {
-            filters.push({
-                id: "tipoRecurso",
-                value: tipoRecursoFilter,
-                label: `Tipo: ${tipoRecursoFilter}`,
-                color: "bg-blue-100 text-blue-800",
-            });
-        }
+        const tipoRecursoFilterObj = tipoRecursoFilter !== "todos" ? {
+            id: "tipoRecurso",
+            value: tipoRecursoFilter,
+            label: `Tipo: ${tipoRecursoFilter}`,
+            color: "bg-blue-100 text-blue-800",
+        } : null;
+
+        // Add filters if they exist
+        if (searchFilter) filters.push(searchFilter);
+        if (tipoRecursoFilterObj) filters.push(tipoRecursoFilterObj);
 
         return filters;
     }, [searchTerm, tipoRecursoFilter]);
@@ -395,6 +350,31 @@ export default function PostosVinculadosPage() {
             ),
         },
     ], [handleToggleSelect, selectedPostos, renderCount]);
+
+    // After all hooks are called, we can have conditional returns
+    if ((authLoading) || (!authLoading && !hasPermission('G'))) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
+                <AlertMessage
+                    message={alert.message}
+                    type={alert.type}
+                    onDismiss={clearAlert}
+                    autoDismiss={true}
+                    dismissDuration={5000}
+                />
+                {!authLoading && !hasPermission('G') && (
+                    <div className="text-center">
+                        <ShieldAlert className="h-16 w-16 text-red-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
+                        <p className="text-gray-600 mb-4">
+                            Esta página está disponível apenas para usuários com permissão de Gestor.
+                        </p>
+                        <p className="text-gray-500 text-sm">Redirecionando para o Dashboard...</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
