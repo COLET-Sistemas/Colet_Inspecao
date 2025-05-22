@@ -33,7 +33,7 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
     // Criar um mapa para rápida consulta de tipos por ID
     const tiposMap = new Map();
     if (Array.isArray(tiposData)) {
-        tiposData.forEach((tipo: any) => {
+        tiposData.forEach((tipo: { id: number; nome_tipo_instrumento: string; observacao: string }) => {
             if (tipo.id !== undefined && tipo.id !== null) {
                 tiposMap.set(Number(tipo.id), {
                     id: Number(tipo.id),
@@ -93,8 +93,19 @@ export const createInstrumentoMedicao = async (
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro ao criar: ${response.status}`);
+        let errorMessage = `Erro ao criar: ${response.status}`;
+        let errorData: { message?: string } = {};
+        try {
+            errorData = await response.json();
+            if ((response.status === 409 || response.status === 499) && (errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            } else if ((errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            }
+        } catch {
+            // fallback para mensagem padrão
+        }
+        throw new Error(errorMessage);
     }
 
     const responseData = await response.json();
@@ -129,8 +140,21 @@ export const updateInstrumentoMedicao = async (
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro ao atualizar: ${response.status}`);
+        let errorMessage = `Erro ao atualizar: ${response.status}`;
+        let errorData: { message?: string } = {};
+        try {
+            errorData = await response.json();
+            if ((response.status === 409 || response.status === 499) && (errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            } else if ((errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            } else if ((errorData as { erro?: string }).erro) {
+                errorMessage = (errorData as { erro: string }).erro;
+            }
+        } catch {
+            // fallback para mensagem padrão
+        }
+        throw new Error(errorMessage);
     }
 
     const responseData = await response.json();
@@ -150,28 +174,29 @@ export const deleteInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+    // Enviar o id como query string, não no body
+    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao?id=${id}`, {
         method: 'DELETE',
         headers: {
             ...authHeaders,
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id })
+        }
     });
 
     if (!response.ok) {
         let errorMessage = 'Erro desconhecido ao excluir o registro';
         try {
             const errorData = await response.json();
-            if (errorData && errorData.message) {
-                errorMessage = errorData.message;
-            } else if (errorData && errorData.error) {
-                errorMessage = errorData.error;
+            if ((response.status === 409 || response.status === 499) && (errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            } else if ((errorData as { message?: string }).message) {
+                errorMessage = (errorData as { message: string }).message;
+            } else if ((errorData as { erro?: string }).erro) {
+                errorMessage = (errorData as { erro: string }).erro;
             }
-        } catch (e) {
+        } catch {
             // Erro silencioso - já temos uma mensagem padrão
         }
-
         throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);
     }
 };

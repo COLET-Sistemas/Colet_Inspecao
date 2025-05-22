@@ -2,6 +2,7 @@
 
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { createTipoInstrumentoMedicao, updateTipoInstrumentoMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
+import { TipoInstrumentoMedicao as TipoInstrumentoMedicaoType } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, MessageSquare } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -28,12 +29,12 @@ export function TipoInstrumentoMedicaoModal({
     onSuccess,
     onError,
 }: TipoInstrumentoMedicaoModalProps) {
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
 
     const handleSubmit = useCallback(
-        async (formData: any) => {
+        async (formData: { nome_tipo_instrumento?: string; observacao?: string }) => {
             try {
                 setError(null);
 
@@ -66,8 +67,13 @@ export function TipoInstrumentoMedicaoModal({
                             getAuthHeaders()
                         );
                         console.log("Resposta da API ao editar:", responseData);
-                    } catch (error: any) {
-                        throw new Error(error.message || error.erro || "Erro ao atualizar tipo de instrumento de medição");
+                    } catch (error: unknown) {
+                        const errMsg = error instanceof Error
+                            ? error.message
+                            : typeof error === "object" && error !== null && "erro" in error && typeof (error as { erro?: string }).erro === "string"
+                                ? (error as { erro?: string }).erro!
+                                : "Erro ao atualizar tipo de instrumento de medição";
+                        throw new Error(errMsg);
                     }
                 } else {
                     // Modo de criação - POST
@@ -81,8 +87,13 @@ export function TipoInstrumentoMedicaoModal({
                             getAuthHeaders()
                         );
                         console.log("Resposta da API ao criar:", responseData);
-                    } catch (error: any) {
-                        throw new Error(error.message || error.erro || "Erro ao criar tipo de instrumento de medição");
+                    } catch (error: unknown) {
+                        const errMsg = error instanceof Error
+                            ? error.message
+                            : typeof error === "object" && error !== null && "erro" in error && typeof (error as { erro?: string }).erro === "string"
+                                ? (error as { erro?: string }).erro!
+                                : "Erro ao criar tipo de instrumento de medição";
+                        throw new Error(errMsg);
                     }
                 }
 
@@ -97,10 +108,10 @@ export function TipoInstrumentoMedicaoModal({
 
                 if (onSuccess) {
                     // Garantir que todos os campos necessários estejam presentes
-                    const successData = {
+                    const successData: TipoInstrumentoMedicaoType = {
                         ...responseData,
                         id: responseData.id, // Usar o ID da resposta ou o ID temporário já definido
-                        nome_tipo_instrumento: responseData.nome_tipo_instrumento || formData.nome_tipo_instrumento.trim(),
+                        nome_tipo_instrumento: responseData.nome_tipo_instrumento || formData.nome_tipo_instrumento?.trim() || "",
                         observacao: responseData.observacao !== undefined ? responseData.observacao : formData.observacao?.trim() || "",
                     };
                     console.log("Dados enviados ao componente pai:", successData);
@@ -109,9 +120,9 @@ export function TipoInstrumentoMedicaoModal({
 
                 onClose();
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Erro ao processar formulário:", err);
-                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro inesperado";
                 // Fechar o modal em caso de erro
                 onClose();
                 // Propagar o erro para o componente pai
@@ -120,7 +131,7 @@ export function TipoInstrumentoMedicaoModal({
                 }
             }
         },
-        [apiUrl, onClose, onSuccess, onError, tipoInstrumentoMedicao, getAuthHeaders]
+        [onClose, onSuccess, onError, tipoInstrumentoMedicao, getAuthHeaders]
     );
 
     // Feedback visual para erros
@@ -195,12 +206,12 @@ export function TipoInstrumentoMedicaoModal({
                                 </label>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'observacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                        <div className={`relative transition-all duration-200`}>
                             <textarea
                                 id="observacao"
                                 name="observacao"
                                 rows={3}
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 resize-none"
+                                className={`w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 resize-none ${isFocused === 'observacao' ? 'ring-2 ring-[#09A08D]/30' : ''}`}
                                 placeholder="Informações adicionais sobre o tipo de instrumento (opcional)"
                                 defaultValue={tipoInstrumentoMedicao?.observacao || ""}
                                 onFocus={() => setIsFocused('observacao')}

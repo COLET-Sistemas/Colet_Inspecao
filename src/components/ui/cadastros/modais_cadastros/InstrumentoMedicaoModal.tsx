@@ -26,6 +26,20 @@ const formatDateForInput = (dateString: string | undefined): string => {
     return "";
 };
 
+// Define a type for the form data
+interface InstrumentoMedicaoFormData {
+    nome_instrumento: string;
+    tag: string;
+    codigo_artigo?: string;
+    numero_patrimonio?: string;
+    numero_serie?: string;
+    situacao?: "A" | "I";
+    data_validade?: string;
+    data_ultima_calibracao?: string;
+    frequencia_calibracao?: string;
+    id_tipo_instrumento?: number | string;
+}
+
 interface InstrumentoMedicaoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -81,28 +95,9 @@ export function InstrumentoMedicaoModal({
         }
     }, [isOpen, apiUrl, getAuthHeaders]);
 
-    // Função para validar o código do artigo
-    const validateArticleCode = async (codigoArtigo: string): Promise<boolean> => {
-        if (!codigoArtigo || codigoArtigo.trim() === "") {
-            return true;
-        }
-
-        try {
-            const response = await fetch(`${apiUrl}/produtos?referencia=${encodeURIComponent(codigoArtigo)}`, {
-                headers: getAuthHeaders(),
-                method: 'GET'
-            });
-
-            // Status 200 significa válido
-            return response.status === 200;
-        } catch (error) {
-            console.error("Erro ao validar código do artigo:", error);
-            return false;
-        }
-    };
-
     const handleSubmit = useCallback(
-        async (formData: any) => {
+        async (formData: InstrumentoMedicaoFormData) => {
+
             try {
                 setError(null);
                 setIsSubmitting(true);
@@ -122,13 +117,17 @@ export function InstrumentoMedicaoModal({
 
                 // Validar o código do artigo se estiver preenchido
                 const codigoArtigo = formData.codigo_artigo?.trim() || "";
-                const isArticleCodeValid = await validateArticleCode(codigoArtigo);
 
-                if (codigoArtigo && !isArticleCodeValid) {
-                    setError("Código do artigo inválido. Por favor, verifique o código informado.");
-                    setIsSubmitting(false);
-                    return;
-                }
+
+                // Função para converter data de YYYY-MM-DD para DD/MM/YYYY
+                const formatDateToBR = (dateString: string | null | undefined): string | null => {
+                    if (!dateString) return null;
+                    const parts = dateString.split('-');
+                    if (parts.length === 3) {
+                        return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+                    }
+                    return null;
+                };
 
                 const payload: {
                     tag: string;
@@ -149,8 +148,8 @@ export function InstrumentoMedicaoModal({
                     numero_patrimonio: formData.numero_patrimonio?.trim() || "",
                     numero_serie: formData.numero_serie?.trim() || "",
                     situacao: formData.situacao || "A",
-                    data_validade: formData.data_validade?.trim() ? formData.data_validade : null,
-                    data_ultima_calibracao: formData.data_ultima_calibracao?.trim() ? formData.data_ultima_calibracao : null,
+                    data_validade: formData.data_validade?.trim() ? formatDateToBR(formData.data_validade) : null,
+                    data_ultima_calibracao: formData.data_ultima_calibracao?.trim() ? formatDateToBR(formData.data_ultima_calibracao) : null,
                     frequencia_calibracao: formData.frequencia_calibracao ? formData.frequencia_calibracao : null
                 };
 
@@ -171,8 +170,9 @@ export function InstrumentoMedicaoModal({
                     return;
                 }
 
+                const url = `${apiUrl}/inspecao/instrumentos_medicao`;
+
                 let response;
-                let url = `${apiUrl}/inspecao/instrumentos_medicao`;
 
                 if (instrumentoMedicao?.id_instrumento) {
                     // Modo de edição - PUT
@@ -207,7 +207,7 @@ export function InstrumentoMedicaoModal({
                 let responseData;
                 try {
                     responseData = await response.json();
-                } catch (err) {
+                } catch {
                     // Se a API não retornou dados JSON válidos, construímos o objeto de resposta com os dados do formulário
                     responseData = {
                         id_instrumento: instrumentoMedicao?.id_instrumento || 0,
@@ -224,14 +224,14 @@ export function InstrumentoMedicaoModal({
                 }
                 onClose();
 
-            } catch (err: any) {
+            } catch (err) {
                 console.error("Erro ao processar formulário:", err);
-                setError(err.message || "Ocorreu um erro inesperado");
+                setError((err as Error).message || "Ocorreu um erro inesperado");
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, onClose, onSuccess, instrumentoMedicao, getAuthHeaders, validateArticleCode]
+        [apiUrl, onClose, onSuccess, instrumentoMedicao, getAuthHeaders]
     );
 
     // Feedback visual para erros
