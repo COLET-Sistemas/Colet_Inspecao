@@ -372,11 +372,17 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);
-
-    // Handler para editar especificação
+    }, [isReordering, especificacoes, onReorder, onAlert]);    // Handler para editar especificação    
     const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
-        setSelectedSpec(spec);
+        console.log('Enviando para edição - COMPLETO:', spec);
+
+        // Criar uma versão completa do objeto que inclui o campo caracteristica_especial
+        const completeSpec = {
+            ...spec,
+            caracteristica_especial: spec.especificacao_caracteristica // Mapeando para o campo correspondente
+        };
+
+        setSelectedSpec(completeSpec);
         setIsSpecModalOpen(true);
     }, []);
 
@@ -523,13 +529,21 @@ const OperacaoSection = ({
                         onClose={() => {
                             setIsSpecModalOpen(false);
                             setSelectedSpec(null);
-                        }}
-                        dados={{
+                        }} dados={selectedSpec ? {
+                            // Usar o spread primeiro para incluir todos os campos originais
+                            ...selectedSpec,
+                            // Garantir que caracteristica_especial está presente
+                            caracteristica_especial: selectedSpec.especificacao_caracteristica,
+                            // Sobrescrever com os campos específicos do contexto
                             referencia,
                             roteiro,
                             processo: parseInt(processo, 10),
-                            operacao: operacao.operacao,
-                            id: selectedSpec?.id
+                            operacao: operacao.operacao
+                        } : {
+                            referencia,
+                            roteiro,
+                            processo: parseInt(processo, 10),
+                            operacao: operacao.operacao
                         }}
                         onSuccess={(message: string) => {
                             onAlert(message, "success");

@@ -354,11 +354,38 @@ const OperacaoSection: React.FC<OperacaoSectionProps> = ({
             onAlert("Erro ao atualizar a ordem das especificações", "error");
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);
-
-    // Handler to edit specification
+    }, [isReordering, especificacoes, onReorder, onAlert]);    // Handler to edit specification
     const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
-        setSelectedSpec(spec);
+        // Log para depuração
+        console.log('OperacaoSection - handleEditSpec - objeto completo:', spec);
+
+        // Certifique-se de que todos os campos são preservados
+        // Criar um objeto que contenha todos os campos da especificação
+        const completeSpec = {
+            id: spec.id,
+            operacao: spec.operacao,
+            ordem: spec.ordem,
+            id_cota: spec.id_cota,
+            especificacao_cota: spec.especificacao_cota,
+            complemento_cota: spec.complemento_cota,
+            svg_cota: spec.svg_cota,
+            id_caracteristica_especial: spec.id_caracteristica_especial,
+            caracteristica_especial: spec.especificacao_caracteristica, // Mapeando para o campo correspondente
+            especificacao_caracteristica: spec.especificacao_caracteristica,
+            svg_caracteristica: spec.svg_caracteristica,
+            id_tipo_instrumento: spec.id_tipo_instrumento,
+            tipo_instrumento: spec.tipo_instrumento,
+            tipo_valor: spec.tipo_valor,
+            valor_minimo: spec.valor_minimo,
+            valor_maximo: spec.valor_maximo,
+            unidade_medida: spec.unidade_medida,
+            uso_inspecao_setup: spec.uso_inspecao_setup,
+            uso_inspecao_processo: spec.uso_inspecao_processo,
+            uso_inspecao_qualidade: spec.uso_inspecao_qualidade,
+            cota_seguranca: spec.cota_seguranca
+        };
+
+        setSelectedSpec(completeSpec);
         setIsSpecModalOpen(true);
     }, []);
 
@@ -505,6 +532,30 @@ const OperacaoSection: React.FC<OperacaoSectionProps> = ({
 
             {isExpanded && (
                 <>
+                    {/* Adicionado console.log para depuração */}
+                    {selectedSpec && console.log('OperacaoSection - selectedSpec completo:', selectedSpec)}
+                    {selectedSpec && console.log('OperacaoSection - dados enviados para o modal:', {
+                        id: selectedSpec.id,
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        operacao: operacao.operacao,
+                        especificacao_cota: selectedSpec.especificacao_cota,
+                        complemento_cota: selectedSpec.complemento_cota,
+                        tipo_valor: selectedSpec.tipo_valor,
+                        valor_minimo: selectedSpec.valor_minimo,
+                        valor_maximo: selectedSpec.valor_maximo,
+                        unidade_medida: selectedSpec.unidade_medida,
+                        id_cota: selectedSpec.id_cota,
+                        id_caracteristica_especial: selectedSpec.id_caracteristica_especial,
+                        id_tipo_instrumento: selectedSpec.id_tipo_instrumento,
+                        ordem: selectedSpec.ordem,
+                        uso_inspecao_setup: selectedSpec.uso_inspecao_setup,
+                        uso_inspecao_processo: selectedSpec.uso_inspecao_processo,
+                        uso_inspecao_qualidade: selectedSpec.uso_inspecao_qualidade
+                    })}                    {/* Debug logs para verificar o que está sendo enviado ao modal */}
+                    {selectedSpec && console.log('OperacaoSection - selectedSpec completo:', selectedSpec)}
+
                     {/* Specifications Modal */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
@@ -512,12 +563,34 @@ const OperacaoSection: React.FC<OperacaoSectionProps> = ({
                             setIsSpecModalOpen(false);
                             setSelectedSpec(null);
                         }}
-                        dados={{
+                        dados={selectedSpec ? {
+                            // Usar o spread primeiro para incluir todos os campos originais
+                            ...selectedSpec,
+                            // Propriedades que precisam ser explicitamente definidas
+                            especificacao_cota: selectedSpec.especificacao_cota,
+                            complemento_cota: selectedSpec.complemento_cota,
+                            tipo_valor: selectedSpec.tipo_valor,
+                            valor_minimo: selectedSpec.valor_minimo,
+                            valor_maximo: selectedSpec.valor_maximo,
+                            unidade_medida: selectedSpec.unidade_medida,
+                            id_cota: selectedSpec.id_cota,
+                            id_caracteristica_especial: selectedSpec.id_caracteristica_especial,
+                            caracteristica_especial: selectedSpec.caracteristica_especial,
+                            id_tipo_instrumento: selectedSpec.id_tipo_instrumento,
+                            ordem: selectedSpec.ordem,
+                            uso_inspecao_setup: selectedSpec.uso_inspecao_setup,
+                            uso_inspecao_processo: selectedSpec.uso_inspecao_processo,
+                            uso_inspecao_qualidade: selectedSpec.uso_inspecao_qualidade,
+                            // Sobreescrever ou adicionar os campos específicos do contexto
                             referencia,
                             roteiro,
                             processo: parseInt(processo, 10),
-                            operacao: operacao.operacao,
-                            id: selectedSpec?.id
+                            operacao: operacao.operacao
+                        } : {
+                            referencia,
+                            roteiro,
+                            processo: parseInt(processo, 10),
+                            operacao: operacao.operacao
                         }}
                         onSuccess={(message: string) => {
                             onAlert(message, "success");
@@ -634,7 +707,7 @@ const OperacaoSection: React.FC<OperacaoSectionProps> = ({
                             <div className="flex flex-col items-center justify-center">
                                 <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                                     <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 00-2 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9"></path>
                                     </svg>
                                 </div>

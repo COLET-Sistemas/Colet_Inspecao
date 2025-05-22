@@ -12,6 +12,7 @@ export interface EspecificacaoInspecao {
     svg_cota: string;
     id_caracteristica_especial: number;
     especificacao_caracteristica: string;
+    caracteristica_especial?: string; // Adicionado para compatibilidade com o modal
     svg_caracteristica: string;
     id_tipo_instrumento: number;
     tipo_instrumento: string;
