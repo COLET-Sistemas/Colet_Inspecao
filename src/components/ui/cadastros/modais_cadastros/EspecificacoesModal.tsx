@@ -241,6 +241,49 @@ export function EspecificacoesModal({
         }
     }, [nextOrder, isOpen, modo]);
 
+    // Resetar campos ao salvar nova especificação
+    // Adicionar efeito para resetar campos ao fechar ou ao cadastrar
+    useEffect(() => {
+        if (!isOpen && modo === 'cadastro') {
+            setFormState({
+                tipo_valor: '',
+                valor_minimo: '',
+                valor_maximo: '',
+                unidade_medida: '',
+                complemento_cota: '',
+                id_tipo_instrumento: '',
+                ordem: '',
+                uso_inspecao_setup: false,
+                uso_inspecao_processo: false,
+                uso_inspecao_qualidade: false,
+            });
+            setSelectedTipoValor('');
+            setSelectedCota(null);
+            setSelectedCaracteristica(null);
+        }
+    }, [isOpen, modo]);
+
+    // Resetar campos após salvar nova especificação
+    useEffect(() => {
+        if (!isSubmitting && !isOpen && modo === 'cadastro') {
+            setFormState({
+                tipo_valor: '',
+                valor_minimo: '',
+                valor_maximo: '',
+                unidade_medida: '',
+                complemento_cota: '',
+                id_tipo_instrumento: '',
+                ordem: '',
+                uso_inspecao_setup: false,
+                uso_inspecao_processo: false,
+                uso_inspecao_qualidade: false,
+            });
+            setSelectedTipoValor('');
+            setSelectedCota(null);
+            setSelectedCaracteristica(null);
+        }
+    }, [isSubmitting, isOpen, modo]);
+
     // Renderiza mensagens de erro
     const renderFeedback = () => {
         if (formError) {
@@ -349,10 +392,15 @@ export function EspecificacoesModal({
 
     if (!isOpen || !dados) return null;
 
+    // Ajustar título do modal conforme modo
+    const modalTitle = modo === 'edicao'
+        ? `Editar Especificação - Operação ${dados.ordem}`
+        : 'Nova Especificação';
+
     return (<FormModal
         isOpen={isOpen}
         onClose={onClose}
-        title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Especificação - Operação ${dados.ordem}`}
+        title={modalTitle}
         isEditing={modo === 'edicao'}
         onSubmit={handleSubmit}
         submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
