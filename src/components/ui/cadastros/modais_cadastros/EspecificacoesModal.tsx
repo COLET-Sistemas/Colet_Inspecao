@@ -164,7 +164,7 @@ export function EspecificacoesModal({
         if (isOpen) {
             fetchOptions();
         }
-    }, [isOpen, fetchOptions]);    // Efeito para inicializar as seleções quando os dados são carregados
+    }, [isOpen, fetchOptions, modo]);    // Efeito para inicializar as seleções quando os dados são carregados
     useEffect(() => {
         if (dados && cotasOptions.length > 0 && caracteristicasOptions.length > 0) {
             // Log completo dos dados recebidos no modo de edição

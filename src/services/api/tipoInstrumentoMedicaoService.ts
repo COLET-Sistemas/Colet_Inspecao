@@ -50,7 +50,10 @@ export const createTipoInstrumentoMedicao = async (
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro ao criar: ${response.status}`);
+        if (response.status === 409 && errorData.message) {
+            throw new Error(errorData.message);
+        }
+        throw new Error(errorData.erro || `Erro ao criar: ${response.status}`);
     }
 
     return await response.json();
@@ -80,6 +83,9 @@ export const updateTipoInstrumentoMedicao = async (
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 409 && errorData.message) {
+            throw new Error(errorData.message);
+        }
         throw new Error(errorData.message || `Erro ao atualizar: ${response.status}`);
     }
 
@@ -106,10 +112,10 @@ export const deleteTipoInstrumentoMedicao = async (
             const errorData = await response.json();
             if (errorData && errorData.message) {
                 errorMessage = errorData.message;
-            } else if (errorData && errorData.error) {
-                errorMessage = errorData.error;
+            } else if (errorData && errorData.erro) {
+                errorMessage = errorData.erro;
             }
-        } catch (e) {
+        } catch {
             // Erro silencioso - já temos uma mensagem padrão
         }
 
