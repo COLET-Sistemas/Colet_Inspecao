@@ -115,6 +115,9 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
     );
 });
 
+// Set display name for forwardRef component
+LoadingSpinner.displayName = 'LoadingSpinner';
+
 // Named export for backward compatibility
 export { LoadingSpinner as Loading };
 

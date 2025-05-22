@@ -81,21 +81,26 @@ export function useApiConfig() {
             }
 
             return isOk;
-        } catch (error: any) {
+        } catch (error: unknown) {
             setIsConnected(false);
 
-            if (error.name === 'AbortError') {
-                setErrorMessage('Connection timed out. The server may be down or too slow to respond.');
-                console.error("API connection timed out:", error);
-            } else if (error.message?.includes('NetworkError')) {
-                setErrorMessage('Network error. Check your internet connection and the API URL.');
-                console.error("Network error:", error);
-            } else if (error.message?.includes('CORS')) {
-                setErrorMessage('CORS error. The API server may not allow requests from this origin.');
-                console.error("CORS error:", error);
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    setErrorMessage('Connection timed out. The server may be down or too slow to respond.');
+                    console.error("API connection timed out:", error);
+                } else if (error.message.includes('NetworkError')) {
+                    setErrorMessage('Network error. Check your internet connection and the API URL.');
+                    console.error("Network error:", error);
+                } else if (error.message.includes('CORS')) {
+                    setErrorMessage('CORS error. The API server may not allow requests from this origin.');
+                    console.error("CORS error:", error);
+                } else {
+                    setErrorMessage(`Connection failed: ${error.message || 'Unknown error'}`);
+                    console.error("API connection test failed:", error);
+                }
             } else {
-                setErrorMessage(`Connection failed: ${error.message || 'Unknown error'}`);
-                console.error("API connection test failed:", error);
+                setErrorMessage('Connection failed: Unknown error');
+                console.error("API connection test failed with unknown error type:", error);
             }
 
             return false;

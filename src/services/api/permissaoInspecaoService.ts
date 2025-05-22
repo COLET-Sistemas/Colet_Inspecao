@@ -34,20 +34,19 @@ export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<P
             const errorText = await response.text().catch(() => "Erro desconhecido");
             console.error(`Erro na resposta da API: ${response.status} - ${errorText}`);
             throw new Error(`Erro ao buscar dados: ${response.status}`);
-        }
-
-        const data = await response.json();
+        } const data: unknown = await response.json();
         console.log("Dados recebidos da API:", data);
 
         // Verifica se a resposta é um array
         if (!Array.isArray(data)) {
             console.warn("A API não retornou um array:", data);
             // Se for um objeto, tenta verificar se há uma propriedade que contenha o array
-            if (data && typeof data === 'object') {
+            if (data && typeof data === 'object' && data !== null) {
                 // Procura por alguma propriedade que seja um array
-                const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+                const dataObject = data as Record<string, unknown>;
+                const arrayProps = Object.keys(dataObject).filter(key => Array.isArray(dataObject[key]));
                 if (arrayProps.length > 0) {
-                    const arrayData = data[arrayProps[0]];
+                    const arrayData = dataObject[arrayProps[0]] as ApiPermissaoInspecaoData[];
                     console.log("Usando dados da propriedade:", arrayProps[0], arrayData);
                     return mapPermissoesData(arrayData);
                 }
@@ -63,21 +62,28 @@ export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<P
     }
 };
 
-// Função auxiliar para mapear os dados da API para o formato esperado
-function mapPermissoesData(data: any[]): PermissaoInspecao[] {
-    if (!Array.isArray(data)) return [];
+// Interface para representar a estrutura da resposta da API
+interface ApiPermissaoInspecaoData {
+    operador?: string | number;
+    nome_operador?: string;
+    situacao?: string;
+    inspecoes?: string | number | null;
+    [key: string]: unknown; // Para outros campos que possam existir na resposta
+}
 
-    return data.map(item => {
+// Função auxiliar para mapear os dados da API para o formato esperado
+function mapPermissoesData(data: ApiPermissaoInspecaoData[]): PermissaoInspecao[] {
+    if (!Array.isArray(data)) return []; return data.map(item => {
         // Ensure inspecoes is always a string, never undefined or null
-        let inspecoes = '';
+        let inspecoes: string = '';
         if (item.inspecoes !== undefined && item.inspecoes !== null) {
             inspecoes = String(item.inspecoes);
         }
 
         return {
-            operador: item.operador || '',
+            operador: item.operador?.toString() || '',
             nome_operador: item.nome_operador || '',
-            situacao: item.situacao || 'A',
+            situacao: (item.situacao === 'I' ? 'I' : 'A') as 'A' | 'I',
             inspecoes: inspecoes,
         };
     });
@@ -107,12 +113,10 @@ export const updatePermissaoInspecao = async (
     if (!response.ok) {
         // First try to get error as text to avoid JSON parse errors
         const errorText = await response.text();
-        let errorMessage = `Erro ao atualizar: ${response.status}`;
-
-        // Only try to parse as JSON if it looks like JSON
+        let errorMessage = `Erro ao atualizar: ${response.status}`;        // Only try to parse as JSON if it looks like JSON
         if (errorText && (errorText.startsWith('{') || errorText.startsWith('['))) {
             try {
-                const errorData = JSON.parse(errorText);
+                const errorData: { message?: string } = JSON.parse(errorText);
                 if (errorData && errorData.message) {
                     errorMessage = errorData.message;
                 }
@@ -131,10 +135,8 @@ export const updatePermissaoInspecao = async (
         // If response is empty, return the original request data
         if (!text.trim()) {
             return permissao;
-        }
-
-        // Try to parse as JSON
-        return JSON.parse(text);
+        }        // Try to parse as JSON
+        return JSON.parse(text) as PermissaoInspecao;
     } catch (parseError) {
         console.error("Erro ao parsear resposta:", parseError);
         // Return the original request data if we can't parse the response

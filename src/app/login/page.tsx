@@ -4,7 +4,6 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle, Eye, EyeOff, Loader, Lock, Settings, User, X, XCircle } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 import packageInfo from '../../../package.json';
@@ -22,20 +21,18 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [formSubmitted, setFormSubmitted] = useState(false);
-
-    // API Configuration using the hook
     const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
 
     // Add a local state to track button loading only during submission
-    const [isSubmitting, setIsSubmitting] = useState(false);    // Auth hook
-    const { login, isLoading: loginIsLoading, error: authError } = useAuth();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Auth hook
+    const { login, error: authError } = useAuth();
 
     // Config modal state
     const [tempApiUrl, setTempApiUrl] = useState('');
     const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
     const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
-
-    const router = useRouter();
 
     // Add a state to detect orientation
     const [isLandscape, setIsLandscape] = useState(false);
@@ -94,20 +91,15 @@ export default function LoginPage() {
         if (!apiUrl) {
             setShowConfigModal(true);
             return;
-        }
-
-        // Set local submitting state to true
-        setIsSubmitting(true);
-
-        try {
-            const success = await login({
+        }        // Set local submitting state to true
+        setIsSubmitting(true); try {
+            await login({
                 username: operatorUsername,
                 password: operatorPassword,
                 remember: false
             });
-
-        } catch (err) {
-            console.error("Login como operador error:", err);
+        } catch {
+            console.error("Login como operador error");
         } finally {
             setIsSubmitting(false);
         }
@@ -129,21 +121,18 @@ export default function LoginPage() {
         }
 
         // Set local submitting state to true
-        setIsSubmitting(true);
-
-        try {
+        setIsSubmitting(true); try {
             // Use the login method from useAuth hook
-            const success = await login({ username, password, remember: rememberMe });
+            const loginSuccess = await login({ username, password, remember: rememberMe });
 
-            if (success) {
+            if (loginSuccess) {
                 if (rememberMe) {
                     localStorage.setItem('rememberedUsername', username);
                 }
-
             }
-        } catch (err) {
+        } catch {
             // Error handling is managed by the useAuth hook
-            console.error("Login error:", err);
+            console.error("Login error");
         } finally {
             // Always reset submitting state when done
             setIsSubmitting(false);
@@ -153,9 +142,7 @@ export default function LoginPage() {
     const handleTestApiConnection = async () => {
         if (!tempApiUrl) return;
 
-        setTestResult(null);
-
-        try {
+        setTestResult(null); try {
             const success = await testApiConnection(tempApiUrl);
 
             if (success) {
@@ -163,7 +150,7 @@ export default function LoginPage() {
             } else {
                 setTestResult({ success: false, message: 'Falha ao conectar com a API.' });
             }
-        } catch (error) {
+        } catch {
             setTestResult({
                 success: false,
                 message: 'Erro de conexão. Verifique a URL e tente novamente.'
