@@ -1,5 +1,6 @@
 "use client";
 
+
 import { QuickActionCard, StatCard } from '@/components/ui/dashboard';
 import {
     BarChart,
@@ -61,9 +62,10 @@ export default function DashboardPage() {
                             color={action.color}
                             onClick={action.onClick}
                         />
-                    ))}
-                </div>
+                    ))}                </div>
             </section>
+
+           
         </main>
     );
 }

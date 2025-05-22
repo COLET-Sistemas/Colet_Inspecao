@@ -1,4 +1,5 @@
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getTiposInspecao = async (authHeaders: HeadersInit): Promise<TipoInspecao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -6,7 +7,7 @@ export const getTiposInspecao = async (authHeaders: HeadersInit): Promise<TipoIn
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
         method: 'GET',
         headers: authHeaders,
     });
@@ -34,7 +35,7 @@ export const updateTipoInspecao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_inspecao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
         method: 'PUT',
         headers: {
             ...authHeaders,

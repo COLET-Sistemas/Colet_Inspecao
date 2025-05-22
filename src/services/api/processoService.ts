@@ -1,4 +1,5 @@
 import { ProcessoDetalhes, ProcessoListItem, ProcessoParams } from "@/types/cadastros/processo";
+import { fetchWithAuth } from "./authInterceptor";
 
 /**
  * Busca os detalhes completos de um processo específico incluindo suas operações e especificações
@@ -18,7 +19,7 @@ export const getProcessoDetalhes = async (
     const { referencia, roteiro, processo } = params;
     const url = `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
         method: 'GET',
         headers: authHeaders
     });
@@ -60,7 +61,7 @@ export const getProcessos = async (
         }
     }
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuth(url, {
         method: 'GET',
         headers: authHeaders
     });
@@ -85,7 +86,7 @@ export const getReferencias = async (authHeaders: HeadersInit): Promise<string[]
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/referencias`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/referencias`, {
         method: 'GET',
         headers: authHeaders
     });
@@ -113,7 +114,7 @@ export const getRoteirosByReferencia = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/roteiros?referencia=${encodeURIComponent(referencia)}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/roteiros?referencia=${encodeURIComponent(referencia)}`, {
         method: 'GET',
         headers: authHeaders
     });
@@ -141,7 +142,7 @@ export const deleteOperacaoProcesso = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/operacoes_processos?id=${id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/operacoes_processos?id=${id}`, {
         method: 'DELETE',
         headers: authHeaders
     });

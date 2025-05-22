@@ -1,4 +1,5 @@
 import { TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getTiposInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<TipoInstrumentoMedicao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -6,7 +7,7 @@ export const getTiposInstrumentosMedicao = async (authHeaders: HeadersInit): Pro
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
         method: 'GET',
         headers: authHeaders,
     });
@@ -36,7 +37,7 @@ export const createTipoInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
         method: 'POST',
         headers: {
             ...authHeaders,
@@ -68,7 +69,7 @@ export const updateTipoInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${tipoInstrumento.id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${tipoInstrumento.id}`, {
         method: 'PUT',
         headers: {
             ...authHeaders,
@@ -101,7 +102,7 @@ export const deleteTipoInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${id}`, {
         method: 'DELETE',
         headers: authHeaders
     });

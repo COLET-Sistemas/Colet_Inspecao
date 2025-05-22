@@ -27,14 +27,13 @@ export default function LoginPage() {
     const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
 
     // Add a local state to track button loading only during submission
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Auth hook
+    const [isSubmitting, setIsSubmitting] = useState(false);    // Auth hook
     const { login, isLoading: loginIsLoading, error: authError } = useAuth();
 
     // Config modal state
     const [tempApiUrl, setTempApiUrl] = useState('');
     const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
+    const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
 
     const router = useRouter();
 
@@ -55,15 +54,21 @@ export default function LoginPage() {
         return () => {
             mediaQuery.removeEventListener("change", checkOrientation);
         };
-    }, []);
-
-    useEffect(() => {
+    }, []); useEffect(() => {
         setTempApiUrl(apiUrl);
 
         const savedUsername = localStorage.getItem('rememberedUsername');
         if (savedUsername) {
             setUsername(savedUsername);
             setRememberMe(true);
+        }
+
+        // Check for session expiration message
+        const authError = sessionStorage.getItem('authError');
+        if (authError) {
+            setSessionExpiredMessage(authError);
+            // Remove the message after retrieving it
+            sessionStorage.removeItem('authError');
         }
     }, [apiUrl]);
 
@@ -315,12 +320,33 @@ export default function LoginPage() {
                                 <Settings size={20} className={`${isConnected ? 'text-[#09A08D]' : 'text-gray-600'}`} />
                                 <span className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                             </div>
-                        </button>
-
-                        <div className="mb-6 text-center">
+                        </button>                        <div className="mb-6 text-center">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Bem-vindo de volta</h2>
                             <p className="text-gray-500">Acesse sua conta para continuar</p>
                         </div>
+
+                        {/* Session Expired Message */}
+                        {sessionExpiredMessage && (
+                            <div className="mb-6 rounded-lg bg-red-50 p-4" role="alert">
+                                <div className="flex items-center">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="mr-3 h-5 w-5 text-red-500"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                    <div className="text-sm font-medium text-red-700">{sessionExpiredMessage}</div>
+                                </div>
+                            </div>
+                        )}
 
                         {authError && (
                             <div className="mb-6 rounded-lg bg-red-50 p-4" role="alert">

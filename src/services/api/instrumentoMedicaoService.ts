@@ -1,4 +1,5 @@
 import { InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<InstrumentoMedicao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -7,7 +8,7 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
     }
 
     // Buscar instrumentos de medição
-    const instrumentosResponse = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+    const instrumentosResponse = await fetchWithAuth(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'GET',
         headers: authHeaders,
     });
@@ -19,7 +20,7 @@ export const getInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<
     const instrumentosData = await instrumentosResponse.json();
 
     // Buscar tipos de instrumentos de medição
-    const tiposResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+    const tiposResponse = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
         method: 'GET',
         headers: authHeaders,
     });
@@ -79,7 +80,7 @@ export const createInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'POST',
         headers: {
             ...authHeaders,
@@ -125,7 +126,7 @@ export const updateInstrumentoMedicao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/instrumentos_medicao`, {
         method: 'PUT',
         headers: {
             ...authHeaders,
@@ -175,7 +176,7 @@ export const deleteInstrumentoMedicao = async (
     }
 
     // Enviar o id como query string, não no body
-    const response = await fetch(`${apiUrl}/inspecao/instrumentos_medicao?id=${id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/instrumentos_medicao?id=${id}`, {
         method: 'DELETE',
         headers: {
             ...authHeaders,

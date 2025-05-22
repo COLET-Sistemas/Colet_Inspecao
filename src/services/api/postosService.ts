@@ -1,4 +1,5 @@
 import { Posto } from "@/types/cadastros/posto";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -6,7 +7,7 @@ export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/postos`, {
+    const response = await fetchWithAuth(`${apiUrl}/postos`, {
         method: 'GET',
         headers: authHeaders,
     });

@@ -1,4 +1,5 @@
 import { CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise<CotaCaracteristica[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -6,7 +7,7 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas`, {
         method: 'GET',
         headers: authHeaders,
     });
@@ -38,7 +39,7 @@ export const createCotaCaracteristica = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas`, {
         method: 'POST',
         headers: {
             ...authHeaders,
@@ -70,7 +71,7 @@ export const updateCotaCaracteristica = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?id=${cotaCaracteristica.id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?id=${cotaCaracteristica.id}`, {
         method: 'PUT',
         headers: {
             ...authHeaders,
@@ -103,7 +104,7 @@ export const deleteCotaCaracteristica = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?id=${id}`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?id=${id}`, {
         method: 'DELETE',
         headers: authHeaders
     });
@@ -117,7 +118,7 @@ export const deleteCotaCaracteristica = async (
                 errorMessage = errorData.error;
             }
         } catch {
-        
+
         }
 
         throw new Error(errorMessage || `Erro ao excluir: ${response.status} ${response.statusText}`);

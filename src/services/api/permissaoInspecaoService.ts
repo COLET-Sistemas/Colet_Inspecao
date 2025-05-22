@@ -1,5 +1,6 @@
 // filepath: c:\ColetFrontend\colet_inspecao\src\services\api\permissaoInspecaoService.ts
 import { PermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
+import { fetchWithAuth } from "./authInterceptor";
 
 export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<PermissaoInspecao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -24,7 +25,7 @@ export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<P
     console.log("Headers:", headers);
 
     try {
-        const response = await fetch(`${apiUrl}/inspecao/operadores`, {
+        const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores`, {
             method: 'GET',
             headers: headers,
         });
@@ -91,7 +92,7 @@ export const updatePermissaoInspecao = async (
         throw new Error("URL da API não está configurada");
     }
 
-    const response = await fetch(`${apiUrl}/inspecao/operadores`, {
+    const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores`, {
         method: 'PUT',
         headers: {
             ...authHeaders,

@@ -1,4 +1,5 @@
 import { EspecificacaoInspecao } from "@/types/cadastros/processo";
+import { fetchWithAuth } from "./authInterceptor";
 
 /**
  * Atualiza a ordem das especificações
@@ -12,7 +13,7 @@ export const atualizarOrdemEspecificacoes = async (
 ): Promise<{ success: boolean; message: string }> => {
     const apiUrl = localStorage.getItem("apiUrl");
     try {
-        const response = await fetch(`${apiUrl}/inspecao/especificacoes_inspecao_ft_ordem`, {
+        const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao_ft_ordem`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -48,7 +49,7 @@ export const deleteEspecificacaoInspecao = async (
 ): Promise<{ success: boolean; message: string }> => {
     const apiUrl = localStorage.getItem("apiUrl");
     try {
-        const response = await fetch(`${apiUrl}/inspecao/especificacoes_inspecao_ft?id=${id}`, {
+        const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao_ft?id=${id}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
