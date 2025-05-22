@@ -101,10 +101,7 @@ const EspecificacaoCardBase = ({
         const isActive = value === 'S';
         return (
             <div className="flex flex-col items-center">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm
-                    ${isActive
-                        ? 'bg-[#1ABC9C] text-white'
-                        : 'bg-gray-100 text-gray-300'}`
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm                    ${isActive ? 'bg-[#1ABC9C] text-white' : 'bg-gray-100 text-gray-300'}`
                 }>
                     {isActive ? (
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,19 +118,14 @@ const EspecificacaoCardBase = ({
         );
     }, []);
 
-    return (<tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering
-        ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md'
-        : 'hover:bg-blue-50/30'
-        }`}><td className="py-4 text-center">
-            <div className="flex justify-center">
-                <span className={`w-7 h-7 rounded-full ${isReordering
-                    ? 'bg-blue-200 text-blue-800 border border-blue-400'
-                    : 'bg-blue-100 text-blue-800'
-                    } font-medium text-xs flex items-center justify-center transition-all`}>
-                    {especificacao.ordem}
-                </span>
+    return (<tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md' : 'hover:bg-blue-50/30'}`}>
+        <td className="py-4 text-center">
+            <div className="flex justify-center">                    <span className={`w-7 h-7 rounded-full ${isReordering ? 'bg-blue-200 text-blue-800 border border-blue-400' : 'bg-blue-100 text-blue-800'} font-medium text-xs flex items-center justify-center transition-all`}>
+                {especificacao.ordem}
+            </span>
             </div>
-        </td><td className="py-4">
+        </td>
+        <td className="py-4">
             <div className="flex justify-center">
                 <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
                     {renderSVG(especificacao.svg_cota)}
@@ -208,13 +200,13 @@ const EspecificacaoCardBase = ({
         <td className="py-4">
             <div className="flex justify-center">
                 {renderUsoIndicator(especificacao.uso_inspecao_qualidade, 'Qualidade')}
-            </div>
-        </td>
+            </div>        </td>
         <td className="py-4">
             <div className="flex justify-center">
                 {renderUsoIndicator(especificacao.uso_inspecao_processo, 'Processo')}
             </div>
-        </td>            <td className="py-4">
+        </td>
+        <td className="py-4">
             <div className="flex items-center justify-center gap-2">
                 {isReordering ? (
                     <div className="flex items-center gap-2">
@@ -261,8 +253,8 @@ const EspecificacaoCardBase = ({
                     </>
                 )}
             </div>
-        </td>    </tr>
-    );
+        </td>
+    </tr>);
 };
 
 // Custom equality function for EspecificacaoCard component
@@ -439,12 +431,7 @@ const OperacaoSection = ({
                                         e.preventDefault();
                                         e.stopPropagation();
                                         setIsReordering(!isReordering);
-                                    }}
-                                    className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering
-                                        ? 'bg-amber-500 hover:bg-amber-600'
-                                        : 'bg-blue-500 hover:bg-blue-600'
-                                        } ${especificacoesCountValue <= 1 ? 'opacity-50 cursor-not-allowed' : ''
-                                        }`}
+                                    }} className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-500 hover:bg-blue-600'} ${especificacoesCountValue <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="21" y1="10" x2="3" y2="10"></line>
@@ -465,11 +452,7 @@ const OperacaoSection = ({
                                             if (!isReordering) {
                                                 setIsSpecModalOpen(true);
                                             }
-                                        }}
-                                        className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-green-500 hover:bg-green-600'
-                                            }`}
+                                        }} className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -490,11 +473,7 @@ const OperacaoSection = ({
                                             e.preventDefault();
                                             e.stopPropagation();
                                             if (onEdit) onEdit(operacao);
-                                        }}
-                                        className={`p-1.5 rounded-md transition-colors ${!onEdit
-                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                            : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'
-                                            }`}
+                                        }} className={`p-1.5 rounded-md transition-colors ${!onEdit ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'}`}
                                     >
                                         <Pencil className="h-3.5 w-3.5" />
                                     </motion.button>
@@ -509,11 +488,7 @@ const OperacaoSection = ({
                                             e.preventDefault();
                                             e.stopPropagation();
                                             if (onDelete) onDelete(operacao);
-                                        }}
-                                        className={`p-1.5 rounded-md transition-colors ${!onDelete
-                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                                            : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
-                                            }`}
+                                        }} className={`p-1.5 rounded-md transition-colors ${!onDelete ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-red-500 hover:bg-red-50'}`}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </motion.button>
@@ -580,46 +555,40 @@ const OperacaoSection = ({
                     />                    {especificacoesCountValue > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead>
-                                    <tr className={`text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 ${isReordering
-                                        ? 'bg-blue-100/70'
-                                        : 'bg-gradient-to-r from-gray-50 to-gray-100'
-                                        }`}>
-                                        <th className="w-12 px-3 py-3.5 text-center">
-                                            {isReordering ? (
-                                                <div className="flex items-center justify-center">
-                                                    <span className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full animate-pulse">Reordenando</span>
-                                                </div>
-                                            ) : 'Ordem'}
-                                        </th>
-                                        <th className="w-14 px-3 py-3.5 text-center">Cota</th>
-                                        <th className="px-4 py-3.5 text-left">Especificação</th>
-                                        <th className="w-16 px-3 py-3.5 text-center">Caract.</th>
-                                        <th className="px-4 py-3.5 text-left">Instrumento</th>
-                                        <th className="px-4 py-3.5 text-left">Valores</th>
-                                        <th className="w-20 px-3 py-3.5 text-center">Setup</th>
-                                        <th className="w-20 px-3 py-3.5 text-center">Qualidade</th>
-                                        <th className="w-20 px-3 py-3.5 text-center">Processo</th>
-                                        <th className="w-24 px-3 py-3.5 text-center">
-                                            {isReordering ? "Mover" : "Ações"}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">                                        {especificacoes.map((esp, index) => (
-                                    <EspecificacaoCard
-                                        key={esp.id}
-                                        especificacao={esp}
-                                        onEdit={isReordering ? undefined : handleEditSpec}
-                                        onDelete={isReordering ? undefined : handleDeleteSpec}
-                                        isReordering={isReordering}
-                                        onMoveUp={moveSpecUp}
-                                        onMoveDown={moveSpecDown}
-                                        index={index}
-                                    />
-                                ))}
+                                <thead><tr className={`text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 ${isReordering ? 'bg-blue-100/70' : 'bg-gradient-to-r from-gray-50 to-gray-100'}`}>
+                                    <th className="w-12 px-3 py-3.5 text-center">
+                                        {isReordering ? (
+                                            <div className="flex items-center justify-center">
+                                                <span className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full animate-pulse">Reordenando</span>
+                                            </div>
+                                        ) : 'Ordem'}
+                                    </th>
+                                    <th className="w-14 px-3 py-3.5 text-center">Cota</th>                                        <th className="px-4 py-3.5 text-left">Especificação</th>
+                                    <th className="w-16 px-3 py-3.5 text-center">Caract.</th>
+                                    <th className="px-4 py-3.5 text-left">Instrumento</th>
+                                    <th className="px-4 py-3.5 text-left">Valores</th>
+                                    <th className="w-20 px-3 py-3.5 text-center">Setup</th>
+                                    <th className="w-20 px-3 py-3.5 text-center">Qualidade</th>
+                                    <th className="w-20 px-3 py-3.5 text-center">Processo</th>
+                                    <th className="w-24 px-3 py-3.5 text-center">
+                                        {isReordering ? "Mover" : "Ações"}                                    </th>
+                                </tr></thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                    {especificacoes.map((esp, index) => (
+                                        <EspecificacaoCard
+                                            key={esp.id}
+                                            especificacao={esp}
+                                            onEdit={isReordering ? undefined : handleEditSpec}
+                                            onDelete={isReordering ? undefined : handleDeleteSpec}
+                                            isReordering={isReordering} onMoveUp={moveSpecUp}
+                                            onMoveDown={moveSpecDown}
+                                            index={index}
+                                        />
+                                    ))}
                                 </tbody>
                             </table>
-                        </div>                            {isReordering && (
+                        </div>
+                        {isReordering && (
                             <div className="flex justify-between items-center p-3 border-t border-gray-100">
                                 <div className="text-sm text-gray-600">
                                     <span className="flex items-center">
@@ -659,11 +628,11 @@ const OperacaoSection = ({
                                 </div>
                             </div>
                         )}
-                    </div>
-                    ) : (
-                        <div className="bg-white p-2 text-center border-t border-gray-100  rounded-md">
-                            <div className="flex flex-col items-center justify-center ">
-                                <p className="text-xs text-gray-700 mb-2">Nenhuma especificação cadastrada para essa operação.</p>                        </div>
+                    </div>) : (
+                        <div className="bg-white p-2 text-center border-t border-gray-100 rounded-md">
+                            <div className="flex flex-col items-center justify-center">
+                                <p className="text-xs text-gray-700 mb-2">Nenhuma especificação cadastrada para essa operação.</p>
+                            </div>
                         </div>
                     )}
                 </>
