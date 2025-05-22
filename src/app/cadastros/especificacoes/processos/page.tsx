@@ -101,8 +101,8 @@ const EspecificacaoCardBase = ({
         const isActive = value === 'S';
         return (
             <div className="flex flex-col items-center">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm                    ${isActive ? 'bg-[#1ABC9C] text-white' : 'bg-gray-100 text-gray-300'}`
-                }>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-sm                    ${isActive ? 'bg-[#1ABC9C] text-white' : 'bg-gray-100 text-gray-300'}`}
+                >
                     {isActive ? (
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -118,143 +118,149 @@ const EspecificacaoCardBase = ({
         );
     }, []);
 
-    return (<tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md' : 'hover:bg-blue-50/30'}`}>
-        <td className="py-4 text-center">
-            <div className="flex justify-center">                    <span className={`w-7 h-7 rounded-full ${isReordering ? 'bg-blue-200 text-blue-800 border border-blue-400' : 'bg-blue-100 text-blue-800'} font-medium text-xs flex items-center justify-center transition-all`}>
-                {especificacao.ordem}
-            </span>
-            </div>
-        </td>
-        <td className="py-4">
-            <div className="flex justify-center">
-                <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
-                    {renderSVG(especificacao.svg_cota)}
-                </div>
-            </div>
-        </td>
-        <td className="px-4 py-4">
-            <div className="flex flex-col">
-                <div className="flex items-center">
-                    <span className="font-medium text-gray-800 text-sm">
-                        {especificacao.especificacao_cota}
+    return (
+        <tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md' : 'hover:bg-blue-50/30'}`}>
+            <td className="py-4 text-center">
+                <div className="flex justify-center">
+                    <span className={`w-7 h-7 rounded-full ${isReordering ? 'bg-blue-200 text-blue-800 border border-blue-400' : 'bg-blue-100 text-blue-800'} font-medium text-xs flex items-center justify-center transition-all`}>
+                        {especificacao.ordem}
                     </span>
-                </div>                    {especificacao.complemento_cota && (
-                    <div className="mt-1.5">
-                        <span className="text-xs text-gray-500">
-                            {especificacao.complemento_cota}
+                </div>
+            </td>
+            <td className="py-4">
+                <div className="flex justify-center">
+                    <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
+                        {renderSVG(especificacao.svg_cota)}
+                    </div>
+                </div>
+            </td>
+            <td className="px-4 py-4">
+                <div className="flex flex-col">
+                    <div className="flex items-center">
+                        <span className="font-medium text-gray-800 text-sm">
+                            {especificacao.especificacao_cota}
                         </span>
                     </div>
-                )}
-            </div>
-        </td>            <td className="py-4">
-            <div className="flex justify-center">
-                {especificacao.svg_caracteristica ? (
-                    <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
-                        <div
-                            dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
-                            className="w-full h-full"
-                            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }}
-                        />
-                    </div>
-                ) : (
-                    <div className="w-9 h-9 flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">N/A</span>
-                    </div>
-                )}
-            </div>
-        </td>
-        <td className="px-4 py-4">
-            <div className="flex flex-col gap-1.5">
-                <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs inline-flex items-center">
-                    <Ruler className="h-3 w-3 mr-1.5" />
-                    <span className="font-medium">{especificacao.tipo_instrumento}</span>
-                </span>
-                {especificacao.especificacao_caracteristica && (
-                    <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md flex items-center">
-                        <span className="w-1 h-1 bg-gray-400 rounded-full mr-1.5"></span>
-                        {especificacao.especificacao_caracteristica}
-                    </span>
-                )}
-            </div>
-        </td>
-        <td className="px-4 py-4">
-            <div className="flex flex-col gap-2">
-                <div className="text-xs bg-gray-50 rounded-md px-3 py-1.5 flex items-center">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
-                    <span className="text-gray-800 font-medium">{getTipoValorDescricao()}</span>
+                    {especificacao.complemento_cota && (
+                        <div className="mt-1.5">
+                            <span className="text-xs text-gray-500">
+                                {especificacao.complemento_cota}
+                            </span>
+                        </div>
+                    )}
                 </div>
-                {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
-                    <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-md flex items-center shadow-sm">
-                        <span className="w-2 h-2 bg-yellow-400 rounded-full mr-1.5"></span>
-                        {renderValor()}
+            </td>
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {especificacao.svg_caracteristica ? (
+                        <div className="w-11 h-11 flex items-center justify-center" style={{ margin: '-4px 0' }}>
+                            <div
+                                dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${especificacao.svg_caracteristica}</svg>` }}
+                                className="w-full h-full"
+                                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.12))' }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-9 h-9 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">N/A</span>
+                        </div>
+                    )}
+                </div>
+            </td>
+            <td className="px-4 py-4">
+                <div className="flex flex-col gap-1.5">
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs inline-flex items-center">
+                        <Ruler className="h-3 w-3 mr-1.5" />
+                        <span className="font-medium">{especificacao.tipo_instrumento}</span>
+                    </span>
+                    {especificacao.especificacao_caracteristica && (
+                        <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md flex items-center">
+                            <span className="w-1 h-1 bg-gray-400 rounded-full mr-1.5"></span>
+                            {especificacao.especificacao_caracteristica}
+                        </span>
+                    )}
+                </div>
+            </td>
+            <td className="px-4 py-4">
+                <div className="flex flex-col gap-2">
+                    <div className="text-xs bg-gray-50 rounded-md px-3 py-1.5 flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
+                        <span className="text-gray-800 font-medium">{getTipoValorDescricao()}</span>
                     </div>
-                )}
-                {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
-            </div>
-        </td>
-        <td className="py-4">
-            <div className="flex justify-center">
-                {renderUsoIndicator(especificacao.uso_inspecao_setup, 'Setup')}
-            </div>
-        </td>
-        <td className="py-4">
-            <div className="flex justify-center">
-                {renderUsoIndicator(especificacao.uso_inspecao_qualidade, 'Qualidade')}
-            </div>        </td>
-        <td className="py-4">
-            <div className="flex justify-center">
-                {renderUsoIndicator(especificacao.uso_inspecao_processo, 'Processo')}
-            </div>
-        </td>
-        <td className="py-4">
-            <div className="flex items-center justify-center gap-2">
-                {isReordering ? (
-                    <div className="flex items-center gap-2">
-                        <Tooltip text="Mover para cima">
-                            <motion.button
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => onMoveUp && onMoveUp(index)}
-                                className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-                                disabled={index === 0}
-                            >
-                                <ArrowUp className="h-4 w-4" />
-                            </motion.button>
-                        </Tooltip>
-                        <Tooltip text="Mover para baixo">
-                            <motion.button
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => onMoveDown && onMoveDown(index)}
-                                className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-                            >
-                                <ArrowDown className="h-4 w-4" />
-                            </motion.button>
-                        </Tooltip>
-                    </div>
-                ) : (
-                    <>
-                        <Tooltip text="Editar especificação">
-                            <motion.button
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => onEdit && onEdit(especificacao)}
-                                className="p-2 rounded-md text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 transition-colors"
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </motion.button>
-                        </Tooltip>
-                        <Tooltip text="Excluir especificação">
-                            <motion.button
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => onDelete && onDelete(especificacao)}
-                                className="p-2 rounded-md text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </motion.button>
-                        </Tooltip>
-                    </>
-                )}
-            </div>
-        </td>
-    </tr>);
+                    {!['A', 'C', 'S', 'L'].includes(especificacao.tipo_valor) && (
+                        <div className="text-xs text-gray-800 font-medium bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-md flex items-center shadow-sm">
+                            <span className="w-2 h-2 bg-yellow-400 rounded-full mr-1.5"></span>
+                            {renderValor()}
+                        </div>
+                    )}
+                    {especificacao.cota_seguranca === 'S' && renderCotaSeguranca()}
+                </div>
+            </td>
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_setup, 'Setup')}
+                </div>
+            </td>
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_qualidade, 'Qualidade')}
+                </div>
+            </td>
+            <td className="py-4">
+                <div className="flex justify-center">
+                    {renderUsoIndicator(especificacao.uso_inspecao_processo, 'Processo')}
+                </div>
+            </td>
+            <td className="py-4">
+                <div className="flex items-center justify-center gap-2">
+                    {isReordering ? (
+                        <div className="flex items-center gap-2">
+                            <Tooltip text="Mover para cima">
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => onMoveUp && onMoveUp(index)}
+                                    className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                                    disabled={index === 0}
+                                >
+                                    <ArrowUp className="h-4 w-4" />
+                                </motion.button>
+                            </Tooltip>
+                            <Tooltip text="Mover para baixo">
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => onMoveDown && onMoveDown(index)}
+                                    className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                    <ArrowDown className="h-4 w-4" />
+                                </motion.button>
+                            </Tooltip>
+                        </div>
+                    ) : (
+                        <>
+                            <Tooltip text="Editar especificação">
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => onEdit && onEdit(especificacao)}
+                                    className="p-2 rounded-md text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 transition-colors"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </motion.button>
+                            </Tooltip>
+                            <Tooltip text="Excluir especificação">
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => onDelete && onDelete(especificacao)}
+                                    className="p-2 rounded-md text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </motion.button>
+                            </Tooltip>
+                        </>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
 };
 
 // Custom equality function for EspecificacaoCard component

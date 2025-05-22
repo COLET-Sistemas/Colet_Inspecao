@@ -67,9 +67,11 @@ const ProcessoRow = ({
     const hasOperacoes = processo.operacoes && processo.operacoes.length > 0;
     const operacoesCount = processo.operacoes?.length || 0;
 
-    return (
-        <>
+    // Return an array of <tr> elements to avoid whitespace text nodes between <tr>
+    if (showOperacoes && hasOperacoes) {
+        return [
             <motion.tr
+                key="main"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
@@ -78,28 +80,20 @@ const ProcessoRow = ({
             >
                 <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">{/* Botão de operações */}
-                    {hasOperacoes ? (
-                        <button
-                            onClick={() => setShowOperacoes(!showOperacoes)}
-                            className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
-                        >
-                            <FileText className="w-3 h-3 mr-1" />
-                            <span>Operações ({operacoesCount})</span>
-                            <ChevronDown
-                                className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
-                            />
-                        </button>
-                    ) : (
-                        <button
-                            className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-400 cursor-default text-xs"
-                            disabled
-                        >
-                            <FileText className="w-3 h-3 mr-1" />
-                            <span>Sem Operações</span>
-                        </button>
-                    )}
-
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">
+                    {/* Botão de operações */}
+                    <button
+                        onClick={() => setShowOperacoes(!showOperacoes)}
+                        className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
+                    >
+                        <FileText className="w-3 h-3 mr-1" />
+                        <span>Operações ({operacoesCount})</span>
+                        <ChevronDown
+                            className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
+                        />
+                    </button>
                     {/* Botão de adicionar operações - sempre visível */}
                     <button
                         onClick={() =>
@@ -111,17 +105,17 @@ const ProcessoRow = ({
                         <span>Adicionar</span>
                     </button>
                 </td>
-            </motion.tr>
-
-            {/* Operações dropdown */}
-            {showOperacoes && hasOperacoes && (
-                <motion.tr
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                >                    <td colSpan={6} className="bg-gray-50 px-4 py-2">
-                        <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">                            <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+            </motion.tr>,
+            <motion.tr
+                key="dropdown"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+            >
+                <td colSpan={6} className="bg-gray-50 px-4 py-2">
+                    <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">
+                        <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
                             <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
                             <div className="flex gap-2">
                                 <button
@@ -135,15 +129,63 @@ const ProcessoRow = ({
                                 </button>
                             </div>
                         </div>
-                            {processo.operacoes?.map((op) => (
-                                <OperacaoItem key={op.id_operacao} operacao={op} />
-                            ))}
-                        </div>
-                    </td>
-                </motion.tr>
-            )}
-        </>
-    );
+                        {processo.operacoes?.map((op) => (
+                            <OperacaoItem key={op.id_operacao} operacao={op} />
+                        ))}
+                    </div>
+                </td>
+            </motion.tr>
+        ];
+    }
+    // Only main row
+    return [
+        <motion.tr
+            key="main"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="hover:bg-gray-50 transition-colors"
+        >
+            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
+            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">
+                {/* Botão de operações */}
+                {hasOperacoes ? (
+                    <button
+                        onClick={() => setShowOperacoes(!showOperacoes)}
+                        className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
+                    >
+                        <FileText className="w-3 h-3 mr-1" />
+                        <span>Operações ({operacoesCount})</span>
+                        <ChevronDown
+                            className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                ) : (
+                    <button
+                        className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-400 cursor-default text-xs"
+                        disabled
+                    >
+                        <FileText className="w-3 h-3 mr-1" />
+                        <span>Sem Operações</span>
+                    </button>
+                )}
+                {/* Botão de adicionar operações - sempre visível */}
+                <button
+                    onClick={() =>
+                        processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo)
+                    }
+                    className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
+                >
+                    <PlusCircle className="w-3 h-3 mr-1" />
+                    <span>Adicionar</span>
+                </button>
+            </td>
+        </motion.tr>
+    ];
 };
 
 // Componente memoizado para o roteiro
@@ -209,7 +251,8 @@ const RoteiroAccordion = ({
                                         <tr>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Processo</th>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo Ação</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>
+                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
                                             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
                                         </tr>
                                     </thead>

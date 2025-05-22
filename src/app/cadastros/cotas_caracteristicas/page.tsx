@@ -476,13 +476,6 @@ export default function CotasCaracteristicasPage() {
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "id",
-            title: "ID",
-            render: (cota: CotaCaracteristica) => (
-                <span className="text-sm font-medium text-gray-900">#{cota.id}</span>
-            ),
-        },
-        {
             key: "simbolo",
             title: "Símbolo",
             render: (cota: CotaCaracteristica) => (
