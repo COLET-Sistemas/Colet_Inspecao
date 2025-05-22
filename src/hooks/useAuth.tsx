@@ -9,8 +9,8 @@ interface User {
     name?: string;
     email?: string;
     roles?: string[];
-    permissao?: string; 
-    perfil_inspecao?: string; 
+    permissao?: string;
+    perfil_inspecao?: string;
 }
 
 
@@ -58,29 +58,74 @@ const encodePassword = (password: string) => {
     return result;
 };
 
-const AuthContext = createContext<any>(undefined);
+// Define the auth context type
+interface AuthContextType {
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    error: AuthError | null;
+    login: (credentials: LoginCredentials) => Promise<boolean>;
+    logout: () => Promise<void>;
+    checkAuth: () => boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Add this AuthProvider component to maintain compatibility with existing code
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const auth = useAuth();
+    const providedAuth = useProvideAuth();
 
     return (
-        <AuthContext.Provider value={auth}>
+        <AuthContext.Provider value={providedAuth}>
             {children}
         </AuthContext.Provider>
     );
 }
 
-export function useAuth() {
-    // Check if we're being used within context
+// Hook for consumers to use - this is the main hook that should be used by components
+export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
-    if (context) return context;
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
 
+// A separate hook for internal use within the provider
+function useProvideAuth(): AuthContextType {
     const [isLoading, setIsLoading] = useState<boolean>(true); // Start with true to check auth status
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [error, setError] = useState<AuthError | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
+
+    // Utility functions that don't depend on hooks
+    const checkAuth = useCallback((): boolean => {
+        return (
+            localStorage.getItem("isAuthenticated") === "true" ||
+            sessionStorage.getItem("isAuthenticated") === "true"
+        );
+    }, []);// For backward compatibility with any code that might be using the user object
+    const getUserData = useCallback((): User | null => {
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+
+        if (userDataStr) {
+            try {
+                return JSON.parse(userDataStr);
+            } catch {
+                return null;
+            }
+        } else if (userStr) {
+            try {
+                return JSON.parse(userStr);
+            } catch {
+                return null;
+            }
+        }
+
+        return null;
+    }, []);
 
     // Check authentication status on mount
     useEffect(() => {
@@ -90,7 +135,7 @@ export function useAuth() {
             setUser(getUserData());
         }
         setIsLoading(false);
-    }, []);
+    }, [checkAuth, getUserData]);
 
     const login = useCallback(async ({ username, password, remember }: LoginCredentials): Promise<boolean> => {
         if (isLoading) return false;
@@ -202,38 +247,7 @@ export function useAuth() {
 
         // Force immediate redirection to login page
         router.push("/login");
-    }, [router]);
-
-    const checkAuth = useCallback((): boolean => {
-        return (
-            localStorage.getItem("isAuthenticated") === "true" ||
-            sessionStorage.getItem("isAuthenticated") === "true"
-        );
-    }, []);
-
-    // For backward compatibility with any code that might be using the user object
-    const getUserData = (): User | null => {
-        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
-        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-
-        if (userDataStr) {
-            try {
-                return JSON.parse(userDataStr);
-            } catch (e) {
-                return null;
-            }
-        } else if (userStr) {
-            try {
-                return JSON.parse(userStr);
-            } catch (e) {
-                return null;
-            }
-        }
-
-        return null;
-    };
-
-    return {
+    }, [router]); return {
         user,
         isAuthenticated,
         isLoading,
