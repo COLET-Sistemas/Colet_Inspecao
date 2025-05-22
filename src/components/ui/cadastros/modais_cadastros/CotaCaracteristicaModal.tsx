@@ -8,6 +8,22 @@ import { AlertCircle, CircleCheck, Code, FileText, Info, Ruler } from "lucide-re
 import { useCallback, useEffect, useState } from "react";
 import { FormModal } from "../FormModal";
 
+// Interface para dados de formulário
+interface CotaCaracteristicaFormData {
+    descricao: string;
+    tipo: string;
+    unidade_medida: string;
+    simbolo_path_svg?: string;
+    rejeita_menor: string;
+    rejeita_maior: string;
+}
+
+// Interface para erros da API
+interface ApiError {
+    message?: string;
+    erro?: string;
+}
+
 interface CotaCaracteristicaModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -39,10 +55,8 @@ export function CotaCaracteristicaModal({
     const handleSvgChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const svgContent = e.target.value.trim();
         setSvgPreview(svgContent);
-    };
-
-    const handleSubmit = useCallback(
-        async (formData: any) => {
+    }; const handleSubmit = useCallback(
+        async (formData: CotaCaracteristicaFormData) => {
             try {
                 setError(null);
 
@@ -63,9 +77,10 @@ export function CotaCaracteristicaModal({
                 }
 
                 // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
-                let svgContent = formData.simbolo_path_svg?.trim() || "";
-                // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
-                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim(); const payload: {
+                let svgContent = formData.simbolo_path_svg?.trim() || "";                // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
+                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim();
+
+                const payload: {
                     descricao: string;
                     tipo: string;
                     simbolo_path_svg: string;
@@ -78,13 +93,10 @@ export function CotaCaracteristicaModal({
                     tipo: formData.tipo.trim(),
                     simbolo_path_svg: svgContent,
                     unidade_medida: formData.unidade_medida?.trim() || "",
-                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n",
-                    rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n"
+                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n", rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n"
                 };
 
-                let responseData;
-
-                if (cotaCaracteristica?.id) {
+                let responseData: CotaCaracteristica; if (cotaCaracteristica?.id) {
                     // Modo de edição - PUT
                     try {
                         responseData = await updateCotaCaracteristica(
@@ -99,8 +111,9 @@ export function CotaCaracteristicaModal({
                             },
                             getAuthHeaders()
                         );
-                    } catch (error: any) {
-                        throw new Error(error.message || error.erro || "Erro ao atualizar cota/característica");
+                    } catch (error: unknown) {
+                        const apiError = error as ApiError;
+                        throw new Error(apiError.message || apiError.erro || "Erro ao atualizar cota/característica");
                     }
                 } else {
                     // Modo de criação - POST
@@ -116,8 +129,9 @@ export function CotaCaracteristicaModal({
                             },
                             getAuthHeaders()
                         );
-                    } catch (error: any) {
-                        throw new Error(error.message || error.erro || "Erro ao criar cota/característica");
+                    } catch (error: unknown) {
+                        const apiError = error as ApiError;
+                        throw new Error(apiError.message || apiError.erro || "Erro ao criar cota/característica");
                     }
                 }
 
@@ -141,13 +155,12 @@ export function CotaCaracteristicaModal({
                         rejeita_maior: responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n")
                     };
                     onSuccess(successData);
-                }
+                } onClose();
 
-                onClose();
-
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Erro ao processar formulário:", err);
-                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                const apiError = err as ApiError;
+                const errorMessage = apiError.message || "Ocorreu um erro inesperado";
                 // Fechar o modal em caso de erro
                 onClose();
                 // Propagar o erro para o componente pai
@@ -175,14 +188,6 @@ export function CotaCaracteristicaModal({
         }
 
         return null;
-    };
-
-    const getTipoLabel = (tipo: string) => {
-        switch (tipo) {
-            case 'O': return 'Cota';
-            case 'A': return 'Característica';
-            default: return 'Outro';
-        }
     };
 
     return (

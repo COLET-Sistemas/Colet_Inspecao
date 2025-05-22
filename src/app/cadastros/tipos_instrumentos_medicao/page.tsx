@@ -70,9 +70,10 @@ const Card = React.memo(({ tipo, onEdit, onDelete }: {
                     </Tooltip>
                 </div>
             </div>
-        </div>
-    </div>
+        </div>    </div>
 ));
+
+Card.displayName = 'TipoInstrumentoMedicaoCard';
 
 export default function TiposInstrumentosMedicaoPage() {
     // State for filters
@@ -243,30 +244,24 @@ export default function TiposInstrumentosMedicaoPage() {
         setIsDeleteModalOpen(false);
         setDeletingId(null);
         setNotification("Exclusão cancelada.");
-    }, []);
-
-    const handleCreateNew = useCallback(() => {
+    }, []); const handleCreateNew = useCallback(() => {
         setSelectedTipoInstrumentoMedicao(undefined); // Limpa qualquer seleção anterior
         setIsModalOpen(true);
-    }, []);
-
-    // Callback quando o modal for bem-sucedido
-    const handleModalSuccess = useCallback(async (data: any) => {
+    }, []);    // Callback quando o modal for bem-sucedido
+    const handleModalSuccess = useCallback(async (data: TipoInstrumentoMedicao) => {
         console.log("Dados recebidos do modal:", data);
 
         // Atualizar o estado local com os dados recebidos do modal
         if (selectedTipoInstrumentoMedicao) {
             // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
 
-            // Atualiza o item em ambas as listas de forma consistente, usando os dados retornados pelo modal
+            // Atualiza o item em ambas as listas de forma consistente
             setTiposInstrumentosMedicao(prev => prev.map(item =>
                 item.id === data.id ? data : item
             ));
             setAllData(prev => prev.map(item =>
                 item.id === data.id ? data : item
-            ));
-
-            // Mostrar mensagem de sucesso na página
+            ));            // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`,
                 type: "success"
@@ -275,7 +270,7 @@ export default function TiposInstrumentosMedicaoPage() {
             // Para leitores de tela
             setNotification(`Tipo de instrumento de medição ${data.id} atualizado com sucesso.`);
 
-        } else if (data) {
+        } else {
             // Caso de criação - O modal já fez a chamada POST
             console.log("Item criado com sucesso:", data);
 
@@ -352,13 +347,6 @@ export default function TiposInstrumentosMedicaoPage() {
     // Table columns configuration
     const tableColumns = useMemo(() => [
         {
-            key: "id",
-            title: "ID",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <span className="text-sm font-medium text-gray-900">#{tipo.id}</span>
-            ),
-        },
-        {
             key: "nome_tipo_instrumento",
             title: "Nome do Tipo",
             render: (tipo: TipoInstrumentoMedicao) => (
@@ -420,12 +408,21 @@ export default function TiposInstrumentosMedicaoPage() {
                 dismissDuration={5000}
             />
 
-            {/* Modal de Tipo de Instrumento de Medição */}
-            <TipoInstrumentoMedicaoModal
+            {/* Modal de Tipo de Instrumento de Medição */}            <TipoInstrumentoMedicaoModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 tipoInstrumentoMedicao={selectedTipoInstrumentoMedicao}
-                onSuccess={handleModalSuccess}
+                onSuccess={(modalData) => {
+                    // Convert to ensure the type is compatible
+                    if (modalData.id) {
+                        const tipoCompleto: TipoInstrumentoMedicao = {
+                            id: modalData.id,
+                            nome_tipo_instrumento: modalData.nome_tipo_instrumento,
+                            observacao: modalData.observacao || ""
+                        };
+                        handleModalSuccess(tipoCompleto);
+                    }
+                }}
                 onError={(errorMessage) => {
                     setAlert({
                         message: errorMessage,

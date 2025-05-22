@@ -33,8 +33,8 @@ export function SelectWithSvg({
 }: SelectWithSvgProps) {
     return (
         <Listbox value={value} onChange={onChange}>
-            {({ open }) => (
-                <>
+            {({ open }: { open: boolean }) => (
+                <div className="contents">
                     {label && (
                         <Listbox.Label className="text-sm font-medium text-gray-700">
                             {label} {required && <span className="text-red-500">*</span>}
@@ -47,7 +47,7 @@ export function SelectWithSvg({
                         >
                             <span className="flex items-center gap-2">
                                 {value ? (
-                                    <>
+                                    <div className="contents">
                                         {value.simbolo_path_svg && (
                                             <svg
                                                 width="20"
@@ -58,17 +58,18 @@ export function SelectWithSvg({
                                             />
                                         )}
                                         <span className="block truncate">{value.descricao}</span>
-                                    </>
+                                    </div>
                                 ) : (
                                     <span className="block truncate text-gray-500">{placeholder}</span>
                                 )}
+                            </span>                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                <ChevronsUpDownIcon
+                                    className="h-5 w-5 text-gray-400"
+                                    aria-hidden="true"
+                                />
                             </span>
-                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">                                <ChevronsUpDownIcon
-                                className="h-5 w-5 text-gray-400"
-                                aria-hidden="true"
-                            />
-                            </span>
-                        </Listbox.Button>                        <Transition
+                        </Listbox.Button>
+                        <Transition
                             show={open}
                             as="div"
                             leave="transition ease-in duration-100"
@@ -83,15 +84,14 @@ export function SelectWithSvg({
                                 ) : (
                                     options.map((option) => (
                                         <Listbox.Option
-                                            key={option.id}
-                                            className={({ active }) =>
+                                            key={option.id} className={({ active }) =>
                                                 `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-[#09A08D] text-white' : 'text-gray-900'
                                                 }`
                                             }
                                             value={option}
                                         >
-                                            {({ active, selected }) => (
-                                                <>
+                                            {({ active, selected }: { active: boolean, selected: boolean }) => (
+                                                <div className="contents">
                                                     <div className="flex items-center gap-2">
                                                         {option.simbolo_path_svg && (
                                                             <svg
@@ -114,7 +114,7 @@ export function SelectWithSvg({
                                                             <CheckIcon className="h-5 w-5" aria-hidden="true" />
                                                         </span>
                                                     )}
-                                                </>
+                                                </div>
                                             )}
                                         </Listbox.Option>
                                     ))
@@ -122,7 +122,7 @@ export function SelectWithSvg({
                             </Listbox.Options>
                         </Transition>
                     </div>
-                </>
+                </div>
             )}
         </Listbox>
     )
