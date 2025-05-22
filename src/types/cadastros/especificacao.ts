@@ -49,11 +49,8 @@ export interface AlertState {
 }
 
 // Interface para o modal de operações
+import type { OperacaoDados } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
 export interface ModalOperacoesState {
     isOpen: boolean;
-    dados: {
-        referencia: string;
-        roteiro: string;
-        processo: number;
-    } | null;
+    dados: OperacaoDados | null;
 }

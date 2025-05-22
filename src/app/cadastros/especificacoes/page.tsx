@@ -15,14 +15,9 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-// Constantes de animação
-const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-};
-
+// Constante de animação
 const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -107,7 +102,9 @@ const ProcessoRow = ({
 
                     {/* Botão de adicionar operações - sempre visível */}
                     <button
-                        onClick={() => onCadastrarOperacoes(referencia, roteiro, processo.processo)}
+                        onClick={() =>
+                            processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo)
+                        }
                         className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
                     >
                         <PlusCircle className="w-3 h-3 mr-1" />
@@ -128,7 +125,9 @@ const ProcessoRow = ({
                             <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => onClickVerProcessos(referencia, roteiro, processo.processo)}
+                                    onClick={() =>
+                                        processo.processo != null && onClickVerProcessos(referencia, roteiro, processo.processo)
+                                    }
                                     className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs"
                                 >
                                     <Pencil className="w-3 h-3 mr-1" />
@@ -368,18 +367,7 @@ export default function Especificacoes() {
                 return () => clearTimeout(timer);
             }
         }
-    }, [urlReferencia, autoSearch, handleSearch]);
-
-    // Memoização para evitar re-renderizações desnecessárias
-    const totalEspecificacoes = useMemo(() => {
-        if (!dadosReferencia?.roteiros) return 0;
-
-        return dadosReferencia.roteiros.reduce((total, roteiro) => {
-            return total + roteiro.processos.reduce((processoTotal, processo) => {
-                return processoTotal + processo.especificacoes_inspecao;
-            }, 0);
-        }, 0);
-    }, [dadosReferencia]);
+    }, [urlReferencia, autoSearch, handleSearch, router]);
 
     // Funções para manipulação do modal de operações
     const handleCloseModalOperacoes = useCallback(() => {
@@ -390,7 +378,7 @@ export default function Especificacoes() {
     const handleOpenModalOperacoes = useCallback((referencia: string, roteiro: string, processo: number) => {
         setModalOperacoes({
             isOpen: true,
-            dados: { referencia, roteiro, processo }
+            dados: { referencia, roteiro, processo, operacao: 0 } // Usa 0 como valor padrão para satisfazer o tipo OperacaoDados
         });
     }, []);
 
@@ -442,6 +430,7 @@ export default function Especificacoes() {
                                 }}
                                 disabled={isLoading}
                                 aria-label="Referência"
+                                autoFocus
                             />
                             <motion.button
                                 whileHover={{ scale: 1.03 }}

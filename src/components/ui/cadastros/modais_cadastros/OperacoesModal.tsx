@@ -7,7 +7,7 @@ import { useCallback, useState } from 'react';
 import { FormModal } from '../FormModal';
 
 // Interface para os dados do modal
-interface OperacaoDados {
+export interface OperacaoDados {
     referencia: string;
     roteiro: string;
     processo: number;

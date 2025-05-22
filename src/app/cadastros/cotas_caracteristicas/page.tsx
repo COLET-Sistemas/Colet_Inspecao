@@ -37,14 +37,8 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
             default: return 'bg-gray-50 text-gray-700';
         }
     };    // Convert any value to string for comparison
-    const stringValue = (value: any): string => {
+    const stringValue = (value: string | boolean | null | undefined): string => {
         return value !== undefined && value !== null ? String(value).toLowerCase() : '';
-    };
-
-    // Check if the value is "Sim" (true)
-    const isRejeita = (value: any): boolean => {
-        const strVal = stringValue(value);
-        return strVal === 's' || strVal === 'S';
     };
 
     // Renderiza o SVG de maneira segura, dentro de um wrapper SVG
@@ -138,10 +132,12 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
                         </svg>
                     </button>
                 </div>
-            </div>
-        </div>
+            </div>        </div>
     );
 });
+
+// Add display name to the component
+Card.displayName = 'CotaCaracteristicaCard';
 
 export default function CotasCaracteristicasPage() {
     // State for filters
@@ -320,10 +316,8 @@ export default function CotasCaracteristicasPage() {
     const handleCreateNew = useCallback(() => {
         setSelectedCotaCaracteristica(undefined); // Limpa qualquer seleção anterior
         setIsModalOpen(true);
-    }, []);
-
-    // Callback quando o modal for bem-sucedido
-    const handleModalSuccess = useCallback(async (data: any) => {
+    }, []);    // Callback quando o modal for bem-sucedido
+    const handleModalSuccess = useCallback(async (data: CotaCaracteristica) => {
         console.log("Dados recebidos do modal:", data);
 
         // Atualizar o estado local com os dados recebidos do modal
@@ -474,10 +468,8 @@ export default function CotasCaracteristicasPage() {
             case 'A': return 'bg-green-100 text-green-800';
             default: return 'bg-gray-100 text-gray-800';
         }
-    }, []);
-
-    // Helper function for consistent string conversion
-    const stringValue = (value: any): string => {
+    }, []);    // Helper function for consistent string conversion
+    const stringValue = (value: string | boolean | null | undefined): string => {
         return value !== undefined && value !== null ? String(value).toLowerCase() : '';
     };
 
@@ -649,9 +641,7 @@ export default function CotasCaracteristicasPage() {
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
                 showButton={true}
-            />
-
-            {/* Filters Component */}
+            />            {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -684,26 +674,31 @@ export default function CotasCaracteristicasPage() {
                             label: "Tentar novamente",
                             onClick: handleRefresh
                         }}
-                    />
-                ) : cotasCaracteristicas.length === 0 ? (
-                    <EmptyState
-                        icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
-                        title="Nenhuma cota ou característica encontrada"
-                        description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
-                        primaryAction={{
-                            label: activeFilters > 0 ? "Limpar filtros" : "Criar primeira cota/característica",
-                            onClick: activeFilters > 0 ? resetFilters : handleCreateNew
-                        }}
-                    />
-                ) : viewMode === "table" ? (
-                    <DataTable
+                    />) : isPending ? (
+                        <div className="flex items-center justify-center py-6">
+                            <div className="text-center">
+                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-3 border-t-blue-400 border-r-blue-400 border-b-gray-200 border-l-gray-200 mb-2"></div>
+                                <p className="text-sm text-gray-500">Aplicando filtros...</p>
+                            </div>
+                        </div>
+                    ) : cotasCaracteristicas.length === 0 ? (
+                        <EmptyState
+                            icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
+                            title="Nenhuma cota ou característica encontrada"
+                            description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
+                            primaryAction={{
+                                label: activeFilters > 0 ? "Limpar filtros" : "Criar primeira cota/característica",
+                                onClick: activeFilters > 0 ? resetFilters : handleCreateNew
+                            }}
+                        />
+                    ) : viewMode === "table" ? (
+                        <DataTable
+                            data={cotasCaracteristicas}
+                            columns={tableColumns}
+                        />
+                    ) : (<DataCards
                         data={cotasCaracteristicas}
-                        columns={tableColumns}
-                    />
-                ) : (
-                    <DataCards
-                        data={cotasCaracteristicas}
-                        renderCard={(cota, index) => (
+                        renderCard={(cota) => (
                             <Card
                                 key={cota.id}
                                 cota={cota as CotaCaracteristica}
