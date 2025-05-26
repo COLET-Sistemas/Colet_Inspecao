@@ -361,9 +361,7 @@ export default function Especificacoes() {
         try {
             if (!apiUrl) {
                 throw new Error("URL da API não configurada");
-            }
-
-            const response = await fetch(
+            } const response = await fetch(
                 `${apiUrl}/inspecao/processos_ft?referencia=${encodeURIComponent(codigoReferencia.trim())}`,
                 {
                     method: 'GET',
@@ -372,6 +370,18 @@ export default function Especificacoes() {
             );
 
             if (!response.ok) {
+                if (response.status === 409) {
+                    // Tenta obter a mensagem de erro do corpo da resposta
+                    let errorMessage = 'Conflito na requisição';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorData.erro || errorMessage;
+                    } catch {
+                        // Se não conseguir parsear o JSON, usa a mensagem padrão
+                        errorMessage = 'Conflito na requisição - dados em conflito ou referência duplicada';
+                    }
+                    throw new Error(errorMessage);
+                }
                 throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
             }
 

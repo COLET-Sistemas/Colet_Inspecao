@@ -1,7 +1,6 @@
 import AppLayout from "@/components/layout/AppLayout";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import { AuthProvider } from "../hooks/useAuth";
 import "../styles/globals.css";
 
@@ -23,9 +22,6 @@ export default function RootLayout({
         <AuthProvider>
           <AppLayout>{children}</AppLayout>
         </AuthProvider>
-        {process.env.NODE_ENV === 'development' && (
-          <Script src="/test-session-expiration.js" />
-        )}
       </body>
     </html>
   );
