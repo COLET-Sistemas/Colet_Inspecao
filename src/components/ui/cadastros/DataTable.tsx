@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import React, { memo, ReactNode, useEffect, useMemo, useState } from "react";
+import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 
 interface DataTableProps<T> {
     data: T[];
@@ -40,28 +40,29 @@ const SelectableCell = memo(({
         </div>
     );
 });
+SelectableCell.displayName = "SelectableCell";
 
-// Componente de linha da tabela memoizado para evitar re-renderizações desnecessárias
-const TableRow = memo(({
+// TableRow: generic, but render uses base type
+function TableRow({
     item,
     columns,
     index,
-    renderKey, // Adicionando renderKey como prop
+    renderKey,
 }: {
-    item: any;
+    item: { id: string | number };
     columns: Array<{
         key: string;
         title: string;
-        render: (item: any, index: number) => ReactNode;
+        render: (item: { id: string | number }, index: number) => ReactNode;
         className?: string;
         isSelectable?: boolean;
     }>;
     index: number;
     renderKey?: number;
-}) => {
+}) {
     return (
         <motion.tr
-            key={`${item.id}-${renderKey || 0}`} // Usando renderKey na key para forçar re-renderização
+            key={`${item.id}-${renderKey || 0}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -70,7 +71,7 @@ const TableRow = memo(({
         >
             {columns.map((column) => (
                 <td
-                    key={`${item.id}-${column.key}-${renderKey || 0}`} // Usando renderKey na key para forçar re-renderização
+                    key={`${item.id}-${column.key}-${renderKey || 0}`}
                     className={`px-3 sm:px-4 md:px-6 py-2 sm:py-4 text-sm ${column.className || ""}`}
                 >
                     {column.isSelectable ? (
@@ -84,18 +85,19 @@ const TableRow = memo(({
             ))}
         </motion.tr>
     );
-});
+}
 
-// Componente do cabeçalho da tabela memoizado
+// TableHeader: match column type, remove duplicate className
 const TableHeader = memo(({
     columns,
 }: {
     columns: Array<{
         key: string;
         title: string;
-        render: (item: any, index: number) => ReactNode;
+        render: (item: { id: string | number }, index: number) => ReactNode;
         className?: string;
         headerClassName?: string;
+        isSelectable?: boolean;
     }>;
 }) => {
     return (
@@ -114,17 +116,16 @@ const TableHeader = memo(({
         </thead>
     );
 });
+TableHeader.displayName = "TableHeader";
 
-// Componente DataTable otimizado com memoização
-export const DataTable = memo(<T extends { id: string | number }>({
+// DataTable: use base type for columns
+export const DataTable = ({
     data,
     columns,
     renderKey = 0,
-}: DataTableProps<T>) => {
+}: DataTableProps<{ id: string | number }>) => {
     // Memoize columns para garantir estabilidade de referência
-    const memoizedColumns = useMemo(() => columns, [
-        columns.map(col => col.key).join(',')
-    ]);
+    const memoizedColumns = useMemo(() => columns, [columns]);
 
     return (
         <div className="overflow-x-auto w-full">
@@ -144,4 +145,4 @@ export const DataTable = memo(<T extends { id: string | number }>({
             </table>
         </div>
     );
-}) as <T extends { id: string | number }>(props: DataTableProps<T>) => React.ReactElement;
+};

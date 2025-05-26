@@ -32,10 +32,8 @@ export function AlertMessage({
         }
 
         setIsVisible(true);
-        setProgress(100);
-
-        if (autoDismiss) {
-            let startTime = Date.now();
+        setProgress(100); if (autoDismiss) {
+            const startTime = Date.now();
             const endTime = startTime + dismissDuration;
 
             const timer = setTimeout(() => {

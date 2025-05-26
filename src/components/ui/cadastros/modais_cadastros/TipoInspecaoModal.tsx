@@ -39,19 +39,21 @@ export function TipoInspecaoModal({
     }, [tipoInspecao]);
 
     const handleSubmit = useCallback(
-        async (formData: any) => {
+        async (formData: Record<string, FormDataEntryValue>) => {
             try {
                 setError(null);
 
                 // Validar campos obrigatórios
-                if (!formData.descricao_tipo_inspecao?.trim()) {
+                const descricao = String(formData.descricao_tipo_inspecao || '').trim();
+                const situacao = String(formData.situacao || '');
+                if (!descricao) {
                     setError("A descrição do tipo de inspeção é obrigatória");
                     return;
                 }
 
                 const payload = {
-                    descricao_tipo_inspecao: formData.descricao_tipo_inspecao.trim(),
-                    situacao: formData.situacao === "on" ? "A" : "I",
+                    descricao_tipo_inspecao: descricao,
+                    situacao: situacao === "on" ? "A" : "I",
                 };
 
                 // Modo de edição - PUT
@@ -77,15 +79,18 @@ export function TipoInspecaoModal({
                 if (onSuccess) {
                     onSuccess({
                         ...responseData,
-                        descricao_tipo_inspecao: responseData.descricao_tipo_inspecao || formData.descricao_tipo_inspecao,
+                        descricao_tipo_inspecao: responseData.descricao_tipo_inspecao || descricao,
                         situacao: responseData.situacao || payload.situacao
                     });
                 }
                 onClose();
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Erro ao processar formulário:", err);
-                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                let errorMessage = "Ocorreu um erro inesperado";
+                if (err && typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+                    errorMessage = (err as { message: string }).message;
+                }
                 // Fechar o modal em caso de erro
                 onClose();
                 // Propagar o erro para o componente pai

@@ -214,7 +214,7 @@ export function EspecificacoesModal({
             // Atualizar o selectedTipoValor
             setSelectedTipoValor(dados.tipo_valor || '');
         }
-    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions]);
+    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo]);
 
     // Handler para mudanças nos inputs do formulário
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

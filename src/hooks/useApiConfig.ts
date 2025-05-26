@@ -33,28 +33,6 @@ export function useApiConfig() {
         };
     }, []);
 
-    const saveApiUrl = useCallback(async (url: string): Promise<boolean> => {
-        setIsLoading(true);
-        setErrorMessage(null);
-        try {
-            const trimmedUrl = url.trim().replace(/\/+$/, "");
-            const isValid = await testApiConnection(trimmedUrl);
-
-            if (isValid) {
-                localStorage.setItem("apiUrl", trimmedUrl);
-                setApiUrl(trimmedUrl);
-                setIsConnected(true);
-            }
-
-            return isValid;
-        } catch (error) {
-            console.error("Failed to save API URL:", error);
-            return false;
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
     const testApiConnection = useCallback(async (url: string): Promise<boolean> => {
         if (!url) return false;
 
@@ -108,6 +86,28 @@ export function useApiConfig() {
             setIsLoading(false);
         }
     }, []);
+
+    const saveApiUrl = useCallback(async (url: string): Promise<boolean> => {
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+            const trimmedUrl = url.trim().replace(/\/+$/, "");
+            const isValid = await testApiConnection(trimmedUrl);
+
+            if (isValid) {
+                localStorage.setItem("apiUrl", trimmedUrl);
+                setApiUrl(trimmedUrl);
+                setIsConnected(true);
+            }
+
+            return isValid;
+        } catch (error) {
+            console.error("Failed to save API URL:", error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [testApiConnection]);
 
     const clearApiConfig = useCallback(() => {
         localStorage.removeItem("apiUrl");

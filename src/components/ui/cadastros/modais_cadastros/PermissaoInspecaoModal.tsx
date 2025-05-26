@@ -28,7 +28,6 @@ export function PermissaoInspecaoModal({
 }: PermissaoInspecaoModalProps) {
     const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
-    const [isFocused, setIsFocused] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedInspecoes, setSelectedInspecoes] = useState<string[]>([]);
 
@@ -53,7 +52,7 @@ export function PermissaoInspecaoModal({
     };
 
     const handleSubmit = useCallback(
-        async (formData: any) => {
+        async () => {
             try {
                 setError(null);
 
@@ -63,7 +62,7 @@ export function PermissaoInspecaoModal({
                 const payload: PermissaoInspecao = {
                     operador: permissaoInspecao.operador,
                     nome_operador: permissaoInspecao.nome_operador,
-                    situacao: permissaoInspecao.situacao, 
+                    situacao: permissaoInspecao.situacao,
                     inspecoes: sortedInspecoes,
                 };
 
@@ -81,13 +80,17 @@ export function PermissaoInspecaoModal({
                         });
                     }
                     onClose();
-                } catch (error: any) {
-                    throw new Error(error.message || "Erro ao atualizar permissão de inspeção");
+                } catch (error: unknown) {
+                    if (error instanceof Error) {
+                        throw new Error(error.message || "Erro ao atualizar permissão de inspeção");
+                    } else {
+                        throw new Error("Erro ao atualizar permissão de inspeção");
+                    }
                 }
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Erro ao processar formulário:", err);
-                const errorMessage = err.message || "Ocorreu um erro inesperado";
+                const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro inesperado";
                 onClose();
                 if (onError) {
                     onError(errorMessage);

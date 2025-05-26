@@ -3,18 +3,16 @@
 import { ClipboardList, LucideIcon } from 'lucide-react';
 
 interface ActivityCardProps {
-    id: number;
     title: string;
     time: string;
     icon?: LucideIcon;
 }
 
 export function ActivityCard({
-    id,
     title,
     time,
     icon: Icon = ClipboardList
-}: ActivityCardProps) {
+}: Omit<ActivityCardProps, 'id'>) {
     return (
         <div className="flex items-center p-3 bg-white border rounded-lg">
             <div className="p-2 rounded-full bg-blue-50 mr-3">

@@ -41,11 +41,11 @@ const MemoizedCardItem = memo(CardItem) as <T extends { id: string | number }>({
 }) => React.ReactElement;
 
 // Componente DataCards otimizado com memoização
-export const DataCards = memo(<T extends { id: string | number }>({
+function DataCardsComponent<T extends { id: string | number }>({
     data,
     renderCard,
     itemsPerRow = 3,
-}: DataCardsProps<T>) => {
+}: DataCardsProps<T>) {
     // Determine grid columns based on itemsPerRow
     const gridCols = {
         1: "grid-cols-1",
@@ -71,4 +71,8 @@ export const DataCards = memo(<T extends { id: string | number }>({
             </div>
         </div>
     );
-}) as <T extends { id: string | number }>(props: DataCardsProps<T>) => React.ReactElement;
+}
+
+DataCardsComponent.displayName = "DataCards";
+
+export const DataCards = memo(DataCardsComponent) as typeof DataCardsComponent;

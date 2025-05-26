@@ -131,7 +131,7 @@ export function ConfirmDeleteModal({
 
                             {itemName && (
                                 <p className="mt-2 font-medium text-gray-900 text-sm">
-                                    "{itemName}"
+                                    &quot;{itemName}&quot;
                                 </p>
                             )}
 

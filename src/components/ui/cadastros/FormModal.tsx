@@ -11,7 +11,7 @@ interface FormModalProps {
     title: string;
     isEditing?: boolean;
     children: React.ReactNode;
-    onSubmit?: (data: any) => Promise<void>;
+    onSubmit?: (data: Record<string, FormDataEntryValue>) => Promise<void>;
     submitLabel?: string;
     size?: "sm" | "md" | "lg" | "xl";
     isSubmitting?: boolean;
