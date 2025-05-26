@@ -1,8 +1,9 @@
 'use client';
 
 import { AlertMessage } from '@/components/ui/AlertMessage';
-import { PageHeader } from '@/components/ui/cadastros/PageHeader';
 import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
+import { PageHeader } from '@/components/ui/cadastros/PageHeader';
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from '@/hooks/useApiConfig';
 import {
     AlertState,
@@ -282,6 +283,20 @@ const RoteiroAccordion = ({
 // Modal de operações foi movido para '@/components/ui/cadastros/modais_cadastros/OperacoesModal'
 
 export default function Especificacoes() {
+    // Restrição de acesso para Gestor
+    const authLoading = false; // Ajuste se necessário para loading real
+    const hasPermission = (permission: string) => {
+        try {
+            const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+            if (!userDataStr) return false;
+            const userData = JSON.parse(userDataStr);
+            if (!userData || !userData.perfil_inspecao) return false;
+            return userData.perfil_inspecao.includes(permission);
+        } catch {
+            return false;
+        }
+    };
+
     const router = useRouter();
     const searchParams = useSearchParams();
     const urlReferencia = searchParams?.get('referencia') || '';
@@ -430,6 +445,18 @@ export default function Especificacoes() {
         // Navega para a página de processos com os parâmetros
         router.push(`/cadastros/especificacoes/processos?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`);
     }, [router]);
+
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">

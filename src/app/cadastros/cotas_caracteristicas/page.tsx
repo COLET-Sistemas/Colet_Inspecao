@@ -9,6 +9,7 @@ import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/C
 import { CotaCaracteristicaModal } from "@/components/ui/cadastros/modais_cadastros/CotaCaracteristicaModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
 import { AlertState, CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
@@ -150,6 +151,20 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
 Card.displayName = 'CotaCaracteristicaCard';
 
 export default function CotasCaracteristicasPage() {
+    // Restrição de acesso para Gestor
+    const authLoading = false; // Ajuste se necessário para loading real
+    const hasPermission = (permission: string) => {
+        try {
+            const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+            if (!userDataStr) return false;
+            const userData = JSON.parse(userDataStr);
+            if (!userData || !userData.perfil_inspecao) return false;
+            return userData.perfil_inspecao.includes(permission);
+        } catch {
+            return false;
+        }
+    };
+
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoFilter, setTipoFilter] = useState<string>("todos");
@@ -600,6 +615,18 @@ export default function CotasCaracteristicasPage() {
         },
     ], [handleEdit, handleDelete, getTipoClass, getTipoLabel]);
 
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
+
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* ARIA Live region for accessibility */}
@@ -700,7 +727,7 @@ export default function CotasCaracteristicasPage() {
                         </div>
                     ) : cotasCaracteristicas.length === 0 ? (
                         <EmptyState
-                            icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
+                            icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
                             title="Nenhuma cota ou característica encontrada"
                             description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
                             primaryAction={{

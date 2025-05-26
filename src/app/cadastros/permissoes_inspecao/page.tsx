@@ -6,9 +6,10 @@ import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { PermissaoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/PermissaoInspecaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
-import { PermissaoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/PermissaoInspecaoModal";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { getPermissoesInspecao } from "@/services/api/permissaoInspecaoService";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
@@ -151,7 +152,22 @@ const Card = React.memo(({ permissao, onEdit }: {
 Card.displayName = 'PermissaoCard';
 
 // Página principal
-export default function PermissoesInspecaoPage() {    // Estados para gerenciamento de dados e UI
+export default function PermissoesInspecaoPage() {
+    // Restrição de acesso para Gestor
+    const authLoading = false; // Ajuste se necessário para loading real
+    const hasPermission = (permission: string) => {
+        try {
+            const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+            if (!userDataStr) return false;
+            const userData = JSON.parse(userDataStr);
+            if (!userData || !userData.perfil_inspecao) return false;
+            return userData.perfil_inspecao.includes(permission);
+        } catch {
+            return false;
+        }
+    };
+
+    // Estados para gerenciamento de dados e UI
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
@@ -181,7 +197,9 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
         if (field === "operador" || field === "nome_operador") {
             setSortField(field);
         }
-    }, []);    // Estados para modais
+    }, []);
+
+    // Estados para modais
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentPermissao, setCurrentPermissao] = useState<ApiPermissaoInspecao | null>(null);
 
@@ -356,7 +374,9 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
                 setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
         }
-    }, [searchTerm, sortField, allData, selectedPermissionFilter, filterAndSortData]);    // Manipulação de operações CRUD com feedback aprimorada
+    }, [searchTerm, sortField, allData, selectedPermissionFilter, filterAndSortData]);
+
+    // Manipulação de operações CRUD com feedback aprimorada
     const handleEdit = useCallback((id: string) => {
         try {
             const permissao = permissoes.find(p => p.operador === id);
@@ -404,7 +424,7 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
             type: "error"
         });
         setNotification(`Erro ao atualizar permissão: ${errorMessage}`);
-    }, []);    // Reset filtros
+    }, []);
 
     // Reset filtros
     const resetFilters = useCallback(() => {
@@ -545,7 +565,8 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
         }
 
         return filters;
-    }, [searchTerm, selectedPermissionFilter, tiposInspecao]);   
+    }, [searchTerm, selectedPermissionFilter, tiposInspecao]);
+
     const IdCell = React.memo(({ operador }: { operador: string }) => (
         <span className="text-sm font-medium text-gray-900">{operador}</span>
     ));
@@ -576,7 +597,8 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
             </div>
         );
     });
-    ActionsCell.displayName = 'ActionsCell';    
+    ActionsCell.displayName = 'ActionsCell';
+
     const tableColumns = useMemo(() => [
         {
             key: "operador",
@@ -605,6 +627,18 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
             ),
         },
     ], [formatPermissoes, IdCell, NameCell, ActionsCell]);
+
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
 
     return (
         <PermissoesContext.Provider value={{ parseInspecaoIds }}>
@@ -636,7 +670,9 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
                         onSuccess={handleEditSuccess}
                         onError={handleEditError}
                     />
-                )}                {/* No deletion functionality */}
+                )}
+
+                {/* No deletion functionality */}
 
                 {/* Page Header Component */}
                 <PageHeader
@@ -662,7 +698,8 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
                     onSortFieldChange={handleSortFieldChange}
                 />
 
-                {/* Data Container with Dynamic View */}                <DataListContainer
+                {/* Data Container with Dynamic View */}
+                <DataListContainer
                     isLoading={isLoading}
                     isEmpty={permissoes.length === 0}
                     emptyState={
@@ -694,23 +731,24 @@ export default function PermissoesInspecaoPage() {    // Estados para gerenciame
                     totalFilteredItems={permissoes.length}
                     activeFilters={activeFilters}
                     onResetFilters={resetFilters}
-                >                    {viewMode === "table" ? (
-                    <DataTable
-                        data={permissoes}
-                        columns={tableColumns}
-                    />
-                ) : (
-                    <DataCards
-                        data={permissoes}
-                        renderCard={(permissao: PermissaoInspecaoExtended) => (
-                            <Card
-                                key={permissao.operador}
-                                permissao={permissao}
-                                onEdit={handleEdit}
-                            />
-                        )}
-                    />
-                )}
+                >
+                    {viewMode === "table" ? (
+                        <DataTable
+                            data={permissoes}
+                            columns={tableColumns}
+                        />
+                    ) : (
+                        <DataCards
+                            data={permissoes}
+                            renderCard={(permissao: PermissaoInspecaoExtended) => (
+                                <Card
+                                    key={permissao.operador}
+                                    permissao={permissao}
+                                    onEdit={handleEdit}
+                                />
+                            )}
+                        />
+                    )}
                 </DataListContainer>
             </div>
         </PermissoesContext.Provider>

@@ -6,6 +6,7 @@ import { EspecificacoesModal } from '@/components/ui/cadastros/modais_cadastros/
 import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
 import { PageHeader } from '@/components/ui/cadastros/PageHeader';
 import { Tooltip } from '@/components/ui/cadastros/Tooltip';
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { atualizarOrdemEspecificacoes, deleteEspecificacaoInspecao } from '@/services/api/especificacaoService';
 import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/processoService';
@@ -372,7 +373,7 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);   
+    }, [isReordering, especificacoes, onReorder, onAlert]);
     const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
         console.log('Enviando para edição - COMPLETO:', spec);
 
@@ -409,7 +410,7 @@ const OperacaoSection = ({
             setIsDeleteSpecModalOpen(false);
             setSelectedSpec(null);
         }
-    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);   
+    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);
     // The user will explicitly save the order with the "Salvar Ordem" button
     return (
         <div className={`mb-6 border ${isReordering ? 'border-blue-200' : 'border-gray-100'} rounded-xl overflow-hidden shadow-sm relative`}>
@@ -662,6 +663,20 @@ const OperacaoSection = ({
 };
 
 export default function ProcessoPage() {
+    // Restrição de acesso para Gestor
+    const authLoading = false; // Ajuste se necessário para loading real
+    const hasPermission = (permission: string) => {
+        try {
+            const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+            if (!userDataStr) return false;
+            const userData = JSON.parse(userDataStr);
+            if (!userData || !userData.perfil_inspecao) return false;
+            return userData.perfil_inspecao.includes(permission);
+        } catch {
+            return false;
+        }
+    };
+
     const router = useRouter();
     const searchParams = useSearchParams();
     const { getAuthHeaders } = useApiConfig();
@@ -788,6 +803,18 @@ export default function ProcessoPage() {
         // Reload data to reflect the changes
         return fetchProcessoData();
     }, [getAuthHeaders, fetchProcessoData]);
+
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">

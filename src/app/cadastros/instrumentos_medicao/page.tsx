@@ -10,6 +10,7 @@ import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/C
 import { InstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/InstrumentoMedicaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteInstrumentoMedicao, getInstrumentosMedicao } from "@/services/api/instrumentoMedicaoService";
 import { AlertState, InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
@@ -122,7 +123,24 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
     </div>
 ));
 
+// Set display name for Card component
+Card.displayName = 'InstrumentoCard';
+
 export default function InstrumentosMedicaoPage() {
+    // Restrição de acesso para Gestor
+    const authLoading = false; // Ajuste se necessário para loading real
+    const hasPermission = (permission: string) => {
+        try {
+            const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+            if (!userDataStr) return false;
+            const userData = JSON.parse(userDataStr);
+            if (!userData || !userData.perfil_inspecao) return false;
+            return userData.perfil_inspecao.includes(permission);
+        } catch {
+            return false;
+        }
+    };
+
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("todos");
@@ -305,7 +323,7 @@ export default function InstrumentosMedicaoPage() {
     }, []);
 
     // Callback quando o modal for bem-sucedido
-    const handleModalSuccess = useCallback(async (data: any) => {
+    const handleModalSuccess = useCallback(async (data: InstrumentoMedicao) => {
         console.log("Dados recebidos do modal:", data);
 
         if (selectedInstrumentoMedicao) {
@@ -573,6 +591,18 @@ export default function InstrumentosMedicaoPage() {
         },
     ], [handleEdit, handleDelete]);
 
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
+
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* ARIA Live region for accessibility */}
@@ -700,3 +730,6 @@ export default function InstrumentosMedicaoPage() {
         </div>
     );
 }
+
+// Set display name for the main page component
+InstrumentosMedicaoPage.displayName = 'InstrumentosMedicaoPage';

@@ -10,6 +10,7 @@ import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/C
 import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInstrumentoMedicaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteTipoInstrumentoMedicao, getTiposInstrumentosMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
 import { AlertState, TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
@@ -75,45 +76,64 @@ const Card = React.memo(({ tipo, onEdit, onDelete }: {
 
 Card.displayName = 'TipoInstrumentoMedicaoCard';
 
+// Check if user has the required permission
+const hasPermission = (permission: string) => {
+    try {
+        // Get userData from localStorage
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        if (!userDataStr) return false;
+        const userData = JSON.parse(userDataStr);
+        // Check if perfil_inspecao exists and contains the required permission
+        if (!userData || !userData.perfil_inspecao) return false;
+        return userData.perfil_inspecao.includes(permission);
+    } catch (error) {
+        console.error("Error checking permissions:", error);
+        return false;
+    }
+};
+
 export default function TiposInstrumentosMedicaoPage() {
+    // Estados relacionados a autenticação
+    const [authLoading, setAuthLoading] = useState(true);
+    const [hasManagerPermission, setHasManagerPermission] = useState(false);
+
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("todos");
-
     const [isPending, startTransition] = useTransition();
-
-    // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
-
-    // State for data and loading
     const [tiposInstrumentosMedicao, setTiposInstrumentosMedicao] = useState<TipoInstrumentoMedicao[]>([]);
     const [allData, setAllData] = useState<TipoInstrumentoMedicao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
-
-    // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTipoInstrumentoMedicao, setSelectedTipoInstrumentoMedicao] = useState<TipoInstrumentoMedicao | undefined>(undefined);
-
-    // Delete modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-
-    // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
-
-    // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
-
     const { getAuthHeaders } = useApiConfig();
 
-    // Calculate active filters
+    // Callbacks and effects (all hooks at top level)
+    useEffect(() => {
+        // Check authentication status when component mounts
+        const checkAuth = () => {
+            try {
+                const hasPermissionResult = hasPermission('G');
+                setHasManagerPermission(hasPermissionResult);
+                setAuthLoading(false);
+            } catch (error) {
+                console.error("Error checking authentication:", error);
+                setAuthLoading(false);
+            }
+        };
+        checkAuth();
+    }, []);
+
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
@@ -121,7 +141,6 @@ export default function TiposInstrumentosMedicaoPage() {
         setActiveFilters(count);
     }, [searchTerm, statusFilter]);
 
-    // Função para carregar dados memoizada para evitar recriação desnecessária
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
@@ -145,7 +164,6 @@ export default function TiposInstrumentosMedicaoPage() {
         setNotification("Atualizando dados...");
     }, [loadData]);
 
-    // Carrega os dados iniciais quando o componente é montado
     useEffect(() => {
         if (dataFetchedRef.current === false) {
             dataFetchedRef.current = true;
@@ -153,20 +171,15 @@ export default function TiposInstrumentosMedicaoPage() {
         }
     }, [loadData]);
 
-    // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
         if (allData.length > 0) {
-            // Usar startTransition para não bloquear a UI durante filtragens pesadas
             startTransition(() => {
-                // Filtrar usando função memoizada para melhor performance
                 const filterData = () => {
-                    // Só realizar filtragem se houver filtros ativos
                     if (!searchTerm && statusFilter === "todos") {
                         return allData;
                     }
 
                     return allData.filter(item => {
-                        // Verificar texto de busca
                         const matchesSearch = !searchTerm ||
                             item.nome_tipo_instrumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (item.observacao && item.observacao.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -175,7 +188,6 @@ export default function TiposInstrumentosMedicaoPage() {
                     });
                 };
 
-                // Atualizar o estado com os dados filtrados
                 setTiposInstrumentosMedicao(filterData());
             });
         }
@@ -208,13 +220,10 @@ export default function TiposInstrumentosMedicaoPage() {
         try {
             await deleteTipoInstrumentoMedicao(deletingId, getAuthHeaders());
 
-            // Recarregar dados
             loadData();
 
-            // Fechar modal de confirmação
             setIsDeleteModalOpen(false);
 
-            // Mostrar mensagem de sucesso
             setAlert({
                 message: `Tipo de instrumento de medição excluído com sucesso!`,
                 type: "success"
@@ -224,10 +233,8 @@ export default function TiposInstrumentosMedicaoPage() {
         } catch (error) {
             console.error('Erro ao excluir tipo de instrumento de medição:', error);
 
-            // Sempre fechar o modal em caso de erro
             setIsDeleteModalOpen(false);
 
-            // Mostrar mensagem de erro
             setAlert({
                 message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
                 type: "error"
@@ -244,55 +251,46 @@ export default function TiposInstrumentosMedicaoPage() {
         setIsDeleteModalOpen(false);
         setDeletingId(null);
         setNotification("Exclusão cancelada.");
-    }, []); const handleCreateNew = useCallback(() => {
-        setSelectedTipoInstrumentoMedicao(undefined); // Limpa qualquer seleção anterior
+    }, []);
+
+    const handleCreateNew = useCallback(() => {
+        setSelectedTipoInstrumentoMedicao(undefined);
         setIsModalOpen(true);
-    }, []);    // Callback quando o modal for bem-sucedido
+    }, []);
+
     const handleModalSuccess = useCallback(async (data: TipoInstrumentoMedicao) => {
         console.log("Dados recebidos do modal:", data);
 
-        // Atualizar o estado local com os dados recebidos do modal
         if (selectedTipoInstrumentoMedicao) {
-            // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
-
-            // Atualiza o item em ambas as listas de forma consistente
             setTiposInstrumentosMedicao(prev => prev.map(item =>
                 item.id === data.id ? data : item
             ));
             setAllData(prev => prev.map(item =>
                 item.id === data.id ? data : item
-            ));            // Mostrar mensagem de sucesso na página
+            ));
             setAlert({
                 message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`,
                 type: "success"
             });
 
-            // Para leitores de tela
             setNotification(`Tipo de instrumento de medição ${data.id} atualizado com sucesso.`);
-
         } else {
-            // Caso de criação - O modal já fez a chamada POST
             console.log("Item criado com sucesso:", data);
 
-            // Após criar o item, recarrega a lista completa com uma chamada GET
             try {
                 setNotification(`Atualizando lista de tipos de instrumentos de medição...`);
 
-                // Recarregar dados completos do servidor após criação
                 await loadData();
 
-                // Mostrar mensagem de sucesso na página
                 setAlert({
                     message: `Novo tipo de instrumento de medição criado com sucesso!`,
                     type: "success"
                 });
 
-                // Para leitores de tela
                 setNotification(`Novo tipo de instrumento de medição criado com sucesso.`);
             } catch (error) {
                 console.error("Erro ao atualizar lista após criar item:", error);
 
-                // Como fallback, adiciona o item retornado pelo modal às listas locais
                 setTiposInstrumentosMedicao(prev => [...prev, data]);
                 setAllData(prev => [...prev, data]);
 
@@ -304,31 +302,25 @@ export default function TiposInstrumentosMedicaoPage() {
         }
     }, [selectedTipoInstrumentoMedicao, loadData]);
 
-    // Reset filters function
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setStatusFilter("todos");
         setNotification("Filtros resetados.");
     }, []);
 
-    // Close modal function
     const handleCloseModal = useCallback(() => {
         setIsModalOpen(false);
-        // Damos um tempo para a animação de saída do modal antes de limpar a seleção
         setTimeout(() => {
             setSelectedTipoInstrumentoMedicao(undefined);
         }, 200);
     }, []);
 
-    // Limpar alerta
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
 
-    // Prepare filter options for the FilterPanel component
     const filterOptions = useMemo(() => [], []);
 
-    // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
 
@@ -344,7 +336,6 @@ export default function TiposInstrumentosMedicaoPage() {
         return filters;
     }, [searchTerm]);
 
-    // Table columns configuration
     const tableColumns = useMemo(() => [
         {
             key: "nome_tipo_instrumento",
@@ -392,6 +383,18 @@ export default function TiposInstrumentosMedicaoPage() {
         },
     ], [handleEdit, handleDelete]);
 
+    if (!hasManagerPermission && !authLoading) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasManagerPermission}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
+
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* ARIA Live region for accessibility */}
@@ -408,12 +411,12 @@ export default function TiposInstrumentosMedicaoPage() {
                 dismissDuration={5000}
             />
 
-            {/* Modal de Tipo de Instrumento de Medição */}            <TipoInstrumentoMedicaoModal
+            {/* Modal de Tipo de Instrumento de Medição */}
+            <TipoInstrumentoMedicaoModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 tipoInstrumentoMedicao={selectedTipoInstrumentoMedicao}
                 onSuccess={(modalData) => {
-                    // Convert to ensure the type is compatible
                     if (modalData.id) {
                         const tipoCompleto: TipoInstrumentoMedicao = {
                             id: modalData.id,

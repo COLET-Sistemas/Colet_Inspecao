@@ -6,9 +6,10 @@ import { DataListContainer } from "@/components/ui/cadastros/DataListContainer";
 import { DataTable } from "@/components/ui/cadastros/DataTable";
 import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
+import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
-import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/TipoInspecaoModal";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { AlertState, TipoInspecao } from "@/types/cadastros/tipoInspecao";
@@ -19,15 +20,7 @@ import {
     Plus,
     SlidersHorizontal
 } from "lucide-react";
-import {
-    memo,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useTransition
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Tipos para melhor tipagem
 interface CardProps {
@@ -89,8 +82,26 @@ const TipoInspecaoCard = memo<CardProps>(({ tipo, onEdit }) => (
 
 TipoInspecaoCard.displayName = 'TipoInspecaoCard';
 
+// Check if user has the required permission
+const hasPermission = (permission: string) => {
+    try {
+        // Get userData from localStorage
+        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
+        if (!userDataStr) return false;
+        const userData = JSON.parse(userDataStr);
+        // Check if perfil_inspecao exists and contains the required permission
+        if (!userData || !userData.perfil_inspecao) return false;
+        return userData.perfil_inspecao.includes(permission);
+    } catch (error) {
+        console.error("Error checking permissions:", error);
+        return false;
+    }
+};
+
 export default function TiposInspecoesPage() {
-    // Estados organizados em grupos para melhor legibilidade
+    // Estados de autenticação
+    const [authLoading, setAuthLoading] = useState(true);
+    const [hasAccess, setHasAccess] = useState(false);
 
     // Estados de filtros
     const [searchTerm, setSearchTerm] = useState("");
@@ -110,20 +121,11 @@ export default function TiposInspecoesPage() {
     const [selectedTipoInspecao, setSelectedTipoInspecao] = useState<TipoInspecao | undefined>(undefined);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     const [notification, setNotification] = useState('');
-
-    // Hooks de performance
     const [isPending, startTransition] = useTransition();
     const dataFetchedRef = useRef(false);
     const { getAuthHeaders } = useApiConfig();
 
-    // Calculate active filters
-    useEffect(() => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (statusFilter !== "todos") count++;
-        setActiveFilters(count);
-    }, [searchTerm, statusFilter]);
-
+    // Callbacks and effects (all hooks at top level)
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
@@ -154,25 +156,40 @@ export default function TiposInspecoesPage() {
         }
     }, [loadData]);
 
-    // Effect para filtrar dados quando os filtros mudam
+    useEffect(() => {
+        const checkAuth = () => {
+            try {
+                const hasManagerPermission = hasPermission('G');
+                setHasAccess(hasManagerPermission);
+                setAuthLoading(false);
+            } catch (error) {
+                console.error("Error checking authentication:", error);
+                setAuthLoading(false);
+            }
+        };
+        checkAuth();
+    }, []);
+
+    useEffect(() => {
+        let count = 0;
+        if (searchTerm) count++;
+        if (statusFilter !== "todos") count++;
+        setActiveFilters(count);
+    }, [searchTerm, statusFilter]);
+
     useEffect(() => {
         if (allData.length > 0) {
-            // Usar startTransition para não bloquear a UI durante filtragens pesadas
             startTransition(() => {
-                // Filtrar usando função memoizada para melhor performance
                 const filterData = () => {
-                    // Só realizar filtragem se houver filtros ativos
                     if (!searchTerm && statusFilter === "todos") {
                         return allData;
                     }
 
                     return allData.filter(item => {
-                        // Verificar texto de busca
                         const matchesSearch = !searchTerm ||
                             item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
 
-                        // Verificar filtro de status
                         const matchesStatus = statusFilter === "todos" || item.situacao === statusFilter;
 
                         return matchesSearch && matchesStatus;
@@ -182,7 +199,6 @@ export default function TiposInspecoesPage() {
                 const filtered = filterData();
                 setTiposInspecao(filtered);
 
-                // Notifications for screen readers
                 if (filtered.length === 0) {
                     setNotification('Nenhum resultado encontrado para os filtros atuais.');
                 } else {
@@ -204,7 +220,6 @@ export default function TiposInspecoesPage() {
     const handleModalSuccess = useCallback(async (data: Pick<TipoInspecao, 'descricao_tipo_inspecao' | 'situacao'> & { codigo?: string }) => {
         if (selectedTipoInspecao) {
             try {
-                // Criar objeto com dados atualizados
                 const updatedTipoInspecao: TipoInspecao = {
                     id: selectedTipoInspecao.id,
                     descricao_tipo_inspecao: data.descricao_tipo_inspecao,
@@ -212,23 +227,19 @@ export default function TiposInspecoesPage() {
                     codigo: data.codigo || selectedTipoInspecao.codigo
                 };
 
-                // Criando uma função de atualização para evitar inconsistências de estado
                 const updateItem = (item: TipoInspecao) =>
                     item.id === selectedTipoInspecao.id
                         ? updatedTipoInspecao
                         : item;
 
-                // Atualiza o item em ambas as listas de forma consistente
                 setTiposInspecao(prev => prev.map(updateItem));
                 setAllData(prev => prev.map(updateItem));
 
-                // Mostrar mensagem de sucesso na página
                 setAlert({
                     message: `Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso!`,
                     type: "success"
                 });
 
-                // Para leitores de tela
                 setNotification(`Tipo de inspeção ${data.codigo || selectedTipoInspecao.id} atualizado com sucesso.`);
             } catch (error) {
                 console.error("Erro ao atualizar tipo de inspeção:", error);
@@ -254,7 +265,6 @@ export default function TiposInspecoesPage() {
         }, 200);
     }, []);
 
-    // Limpar alerta
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
@@ -350,6 +360,19 @@ export default function TiposInspecoesPage() {
             ),
         },
     ], [handleEdit]);
+
+    // Se o usuário não tiver permissão, exibe a tela de acesso restrito
+    if (!hasAccess && !authLoading) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasAccess}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
+        );
+    }
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
