@@ -13,84 +13,107 @@ import { useApiConfig } from "@/hooks/useApiConfig";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { AlertState, TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
-import { IterationCcw, Pencil, Plus, SlidersHorizontal } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+    IterationCcw,
+    Pencil,
+    Plus,
+    SlidersHorizontal
+} from "lucide-react";
+import {
+    memo,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useTransition
+} from "react";
 
-// Card component for list item
-const Card = React.memo(({ tipo, onEdit }: {
+// Tipos para melhor tipagem
+interface CardProps {
     tipo: TipoInspecao;
     onEdit: (id: string) => void;
-}) => (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-        <div className="p-4">
-            <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                    <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
+}
+
+// Card component otimizado com melhor responsividade e animações
+const TipoInspecaoCard = memo<CardProps>(({ tipo, onEdit }) => (
+    <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        whileHover={{
+            y: -2,
+            boxShadow: "0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+        }}
+        className="group bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+    >
+        <div className="p-4 sm:p-5">
+            {/* Header com código e status */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200">
                         #{tipo.codigo}
                     </span>
-                </div>
-                <span className={`px-2 py-0.5 text-xs leading-5 font-medium rounded-full flex items-center gap-1.5 ${tipo.situacao === 'A'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
+                </div>                <div className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
                     }`}>
                     <span className={`inline-block w-2 h-2 rounded-full ${tipo.situacao === 'A' ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
-                </span>
+                </div>
             </div>
 
-            <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                {tipo.descricao_tipo_inspecao}
-            </h3>
-
-            <div className="flex justify-between items-end mt-3">
-                <div className="flex space-x-1">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50 cursor-pointer"
-                            onClick={() => onEdit(tipo.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
+            {/* Descrição */}
+            <div className="mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800 leading-tight line-clamp-2 group-hover:text-gray-900 transition-colors duration-200">
+                    {tipo.descricao_tipo_inspecao}
+                </h3>
+            </div>            {/* Footer com ações */}
+            <div className="flex items-center justify-end pt-3 border-t border-gray-50">
+                <div className="flex items-center gap-1">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-2.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                        onClick={() => onEdit(tipo.id)}
+                        aria-label={`Editar ${tipo.descricao_tipo_inspecao}`}
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </motion.button>
                 </div>
             </div>
         </div>
-    </div>
+    </motion.div>
 ));
 
+TipoInspecaoCard.displayName = 'TipoInspecaoCard';
+
 export default function TiposInspecoesPage() {
-    // State for filters
+    // Estados organizados em grupos para melhor legibilidade
+
+    // Estados de filtros
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("todos");
+    const [activeFilters, setActiveFilters] = useState(0);
 
-    const [isPending, startTransition] = useTransition();
-
-    // View toggle state
-    const [viewMode, setViewMode] = useState<ViewMode>("table");
-
-    // State for data and loading
+    // Estados de dados e carregamento
     const [tiposInspecao, setTiposInspecao] = useState<TipoInspecao[]>([]);
     const [allData, setAllData] = useState<TipoInspecao[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
 
-    // Modal states
+    // Estados de UI
+    const [viewMode, setViewMode] = useState<ViewMode>("table");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTipoInspecao, setSelectedTipoInspecao] = useState<TipoInspecao | undefined>(undefined);
-
-    // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-
-    // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
-    // Utilize uma ref para controlar se a requisição já foi feita
+    // Hooks de performance
+    const [isPending, startTransition] = useTransition();
     const dataFetchedRef = useRef(false);
-
     const { getAuthHeaders } = useApiConfig();
 
     // Calculate active filters
@@ -178,7 +201,7 @@ export default function TiposInspecoesPage() {
         }
     }, [allData]);
 
-    const handleModalSuccess = useCallback(async (data: any) => {
+    const handleModalSuccess = useCallback(async (data: Pick<TipoInspecao, 'descricao_tipo_inspecao' | 'situacao'> & { codigo?: string }) => {
         if (selectedTipoInspecao) {
             try {
                 // Criar objeto com dados atualizados
@@ -216,7 +239,7 @@ export default function TiposInspecoesPage() {
                 setNotification(`Erro ao atualizar tipo de inspeção: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
             }
         }
-    }, [selectedTipoInspecao, getAuthHeaders]);
+    }, [selectedTipoInspecao]);
 
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -427,17 +450,16 @@ export default function TiposInspecoesPage() {
             >
                 {viewMode === "table" ? (
                     <DataTable data={tiposInspecao} columns={tableColumns} />
-                ) : (
-                    <DataCards
-                        data={tiposInspecao}
-                        renderCard={(tipo) => (
-                            <Card
-                                key={tipo.id}
-                                tipo={tipo}
-                                onEdit={handleEdit}
-                            />
-                        )}
-                    />
+                ) : (<DataCards
+                    data={tiposInspecao}
+                    renderCard={(tipo) => (
+                        <TipoInspecaoCard
+                            key={tipo.id}
+                            tipo={tipo}
+                            onEdit={handleEdit}
+                        />
+                    )}
+                />
                 )}
             </DataListContainer>
         </div>
