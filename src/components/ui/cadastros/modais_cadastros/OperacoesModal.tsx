@@ -65,7 +65,13 @@ export function OperacoesModal({
 
     // Handler para submissão do formulário
     const handleSubmit = useCallback(
-        async (formData: FormData) => {
+        async (data: Record<string, FormDataEntryValue>) => {
+            // Extrai os campos do Record e converte para string
+            const formData: FormData = {
+                descricao: String(data.descricao || ''),
+                frequencia: String(data.frequencia || ''),
+                operacao: String(data.operacao || '')
+            };
             try {
                 setFormError(null);
                 setIsSubmitting(true);

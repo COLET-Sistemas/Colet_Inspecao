@@ -603,28 +603,34 @@ export default function PermissoesInspecaoPage() {
         {
             key: "operador",
             title: "ID",
-            render: (permissao: PermissaoInspecaoExtended) => (
-                <IdCell operador={permissao.operador} />
-            ),
+            render: (item: { id: string | number }) => {
+                const permissao = item as PermissaoInspecaoExtended;
+                return <IdCell operador={permissao.operador} />;
+            },
         },
         {
             key: "nome_operador",
             title: "Nome",
-            render: (permissao: PermissaoInspecaoExtended) => (
-                <NameCell nome={permissao.nome_operador} />
-            ),
+            render: (item: { id: string | number }) => {
+                const permissao = item as PermissaoInspecaoExtended;
+                return <NameCell nome={permissao.nome_operador} />;
+            },
         },
         {
             key: "inspecoes",
             title: "Permissões",
-            render: (permissao: PermissaoInspecaoExtended) => formatPermissoes(permissao.inspecoes),
+            render: (item: { id: string | number }) => {
+                const permissao = item as PermissaoInspecaoExtended;
+                return formatPermissoes(permissao.inspecoes);
+            },
         },
         {
             key: "acoes",
             title: "Ações",
-            render: (permissao: PermissaoInspecaoExtended) => (
-                <ActionsCell operador={permissao.operador} />
-            ),
+            render: (item: { id: string | number }) => {
+                const permissao = item as PermissaoInspecaoExtended;
+                return <ActionsCell operador={permissao.operador} />;
+            },
         },
     ], [formatPermissoes, IdCell, NameCell, ActionsCell]);
 

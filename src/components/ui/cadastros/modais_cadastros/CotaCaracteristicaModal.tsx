@@ -66,7 +66,17 @@ export function CotaCaracteristicaModal({
     };
 
     const handleSubmit = useCallback(
-        async (formData: CotaCaracteristicaFormData) => {
+        async (data: Record<string, FormDataEntryValue>) => {
+            // Map generic form data to CotaCaracteristicaFormData
+            const formData: CotaCaracteristicaFormData = {
+                descricao: String(data.descricao || ""),
+                tipo: String(data.tipo || ""),
+                unidade_medida: String(data.unidade_medida || ""),
+                simbolo_path_svg: data.simbolo_path_svg ? String(data.simbolo_path_svg) : undefined,
+                rejeita_menor: String(data.rejeita_menor || "false"),
+                rejeita_maior: String(data.rejeita_maior || "false"),
+                local_inspecao: data.local_inspecao ? String(data.local_inspecao) : undefined,
+            };
             try {
                 setError(null);
 

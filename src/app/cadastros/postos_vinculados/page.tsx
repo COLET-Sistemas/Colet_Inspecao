@@ -302,37 +302,43 @@ export default function PostosVinculadosPage() {
             title: "Seleção",
             headerClassName: "text-center",
             isSelectable: true,
-            render: (posto: Posto) => (
-                <div className="flex items-center justify-center">
-                    <SelectableCheckbox
-                        id={posto.posto}
-                        isSelected={selectedPostos.has(posto.posto)}
-                        onToggle={handleToggleSelect}
-                        renderKey={renderCount}
-                    />
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const posto = item as Posto;
+                return (
+                    <div className="flex items-center justify-center">
+                        <SelectableCheckbox
+                            id={posto.posto}
+                            isSelected={selectedPostos.has(posto.posto)}
+                            onToggle={handleToggleSelect}
+                            renderKey={renderCount}
+                        />
+                    </div>
+                );
+            },
         },
         {
             key: "posto",
             title: "Código",
-            render: (posto: Posto) => (
-                <span className="text-sm font-medium text-gray-900">{posto.posto}</span>
-            ),
+            render: (item: { id: string | number }) => {
+                const posto = item as Posto;
+                return <span className="text-sm font-medium text-gray-900">{posto.posto}</span>;
+            },
         },
         {
             key: "nome_posto",
             title: "Nome Posto",
-            render: (posto: Posto) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{posto.nome_posto}</div>
-            ),
+            render: (item: { id: string | number }) => {
+                const posto = item as Posto;
+                return <div className="text-sm text-gray-900 max-w-md truncate">{posto.nome_posto}</div>;
+            },
         },
         {
             key: "tipo_recurso",
             title: "Tipo de Recurso",
-            render: (posto: Posto) => (
-                <div className="text-sm text-gray-600">{posto.tipo_recurso}</div>
-            ),
+            render: (item: { id: string | number }) => {
+                const posto = item as Posto;
+                return <div className="text-sm text-gray-600">{posto.tipo_recurso}</div>;
+            },
         },
     ], [handleToggleSelect, selectedPostos, renderCount]);    // Check for permission using the RestrictedAccess component
     // If user doesn't have permission, the RestrictedAccess component will handle the display and redirect

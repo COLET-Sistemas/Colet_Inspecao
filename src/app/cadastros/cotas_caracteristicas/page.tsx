@@ -9,6 +9,7 @@ import { ConfirmDeleteModal } from "@/components/ui/cadastros/modais_cadastros/C
 import { CotaCaracteristicaModal } from "@/components/ui/cadastros/modais_cadastros/CotaCaracteristicaModal";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
+import { LoadingSpinner } from "@/components/ui/Loading";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
@@ -503,50 +504,63 @@ export default function CotasCaracteristicasPage() {
         {
             key: "simbolo",
             title: "Símbolo",
-            render: (cota: CotaCaracteristica) => (
-                <div className="flex items-center justify-center">
-                    {cota.simbolo_path_svg ? (
-                        <svg
-                            viewBox="0 0 100 100"
-                            width="40"
-                            height="40"
-                            className="overflow-visible"
-                            dangerouslySetInnerHTML={{ __html: cota.simbolo_path_svg }}
-                        />
-                    ) : (
-                        <span className="text-xs text-gray-400 italic">Sem símbolo</span>
-                    )}
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
+                return (
+                    <div className="flex items-center justify-center">
+                        {cota.simbolo_path_svg ? (
+                            <svg
+                                viewBox="0 0 100 100"
+                                width="40"
+                                height="40"
+                                className="overflow-visible"
+                                dangerouslySetInnerHTML={{ __html: cota.simbolo_path_svg }}
+                            />
+                        ) : (
+                            <span className="text-xs text-gray-400 italic">Sem símbolo</span>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             key: "descricao",
             title: "Descrição",
-            render: (cota: CotaCaracteristica) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{cota.descricao}</div>
-            ),
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
+                return (
+                    <div className="text-sm text-gray-900 max-w-md truncate">{cota.descricao}</div>
+                );
+            },
         },
         {
             key: "unidade_medida",
             title: "Unidade de Medida",
-            render: (cota: CotaCaracteristica) => (
-                <div className="text-sm text-gray-500 max-w-md truncate">
-                    {cota.unidade_medida || "-"}
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
+                return (
+                    <div className="text-sm text-gray-500 max-w-md truncate">
+                        {cota.unidade_medida || "-"}
+                    </div>
+                );
+            },
         },
         {
             key: "tipo",
             title: "Tipo",
-            render: (cota: CotaCaracteristica) => (
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
-                    {getTipoLabel(cota.tipo)}
-                </span>
-            ),
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
+                return (
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTipoClass(cota.tipo)}`}>
+                        {getTipoLabel(cota.tipo)}
+                    </span>
+                );
+            },
         }, {
             key: "rejeita_menor",
             title: "Rejeita Menor",
-            render: (cota: CotaCaracteristica) => {
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
                 const strValue = stringValue(cota.rejeita_menor);
                 const isRejeita = ['s', 'S'].includes(strValue);
 
@@ -559,7 +573,8 @@ export default function CotasCaracteristicasPage() {
         }, {
             key: "rejeita_maior",
             title: "Rejeita Maior",
-            render: (cota: CotaCaracteristica) => {
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
                 const strValue = stringValue(cota.rejeita_maior);
                 const isRejeita = ['s', 'S'].includes(strValue);
 
@@ -573,7 +588,8 @@ export default function CotasCaracteristicasPage() {
         {
             key: "local_inspecao",
             title: "Local de Inspeção",
-            render: (cota: CotaCaracteristica) => {
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
                 if (cota.tipo !== "O") return <span className="text-xs text-gray-400">-</span>;
 
                 return (
@@ -588,30 +604,33 @@ export default function CotasCaracteristicasPage() {
         {
             key: "acoes",
             title: "Ações",
-            render: (cota: CotaCaracteristica) => (
-                <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
-                            onClick={() => handleEdit(cota.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
-                            onClick={() => handleDelete(cota.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const cota = item as CotaCaracteristica;
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        <Tooltip text="Editar">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                onClick={() => handleEdit(cota.id)}
+                                aria-label="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                        <Tooltip text="Excluir">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                onClick={() => handleDelete(cota.id)}
+                                aria-label="Excluir"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                    </div>
+                );
+            },
         },
     ], [handleEdit, handleDelete, getTipoClass, getTipoLabel]);
 
@@ -703,12 +722,7 @@ export default function CotasCaracteristicasPage() {
             {/* Data Container with Dynamic View */}
             <div className="bg-white p-4 rounded-lg shadow-sm">
                 {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="text-center">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-t-blue-500 border-r-blue-500 border-b-gray-300 border-l-gray-300 mb-4"></div>
-                            <p className="text-gray-600">Carregando cotas e características...</p>
-                        </div>
-                    </div>
+                    <LoadingSpinner text="Carregando cotas e características..." color="primary" size="medium" />
                 ) : apiError ? (
                     <EmptyState
                         icon={<svg className="w-12 h-12 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
@@ -719,12 +733,7 @@ export default function CotasCaracteristicasPage() {
                             onClick: handleRefresh
                         }}
                     />) : isPending ? (
-                        <div className="flex items-center justify-center py-6">
-                            <div className="text-center">
-                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-3 border-t-blue-400 border-r-blue-400 border-b-gray-200 border-l-gray-200 mb-2"></div>
-                                <p className="text-sm text-gray-500">Aplicando filtros...</p>
-                            </div>
-                        </div>
+                        <LoadingSpinner text="Carregando cotas e características..." color="primary" size="medium" />
                     ) : cotasCaracteristicas.length === 0 ? (
                         <EmptyState
                             icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}

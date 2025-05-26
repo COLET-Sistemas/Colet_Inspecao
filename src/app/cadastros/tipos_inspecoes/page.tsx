@@ -317,47 +317,59 @@ export default function TiposInspecoesPage() {
         {
             key: "codigo",
             title: "ID",
-            render: (tipo: TipoInspecao) => (
-                <span className="text-sm font-medium text-gray-900">#{tipo.id}</span>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInspecao;
+                return (
+                    <span className="text-sm font-medium text-gray-900">#{tipo.id}</span>
+                );
+            },
         },
         {
             key: "descricao",
             title: "Descrição",
-            render: (tipo: TipoInspecao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao_tipo_inspecao}</div>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInspecao;
+                return (
+                    <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao_tipo_inspecao}</div>
+                );
+            },
         },
         {
             key: "status",
             title: "Status",
-            render: (tipo: TipoInspecao) => (
-                <span className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                    }`}>
-                    <span className={`inline-block w-2 h-2 rounded-full ${tipo.situacao === 'A' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
-                </span>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInspecao;
+                return (
+                    <span className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === 'A'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
+                        <span className={`inline-block w-2 h-2 rounded-full ${tipo.situacao === 'A' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        {tipo.situacao === 'A' ? 'Ativo' : 'Inativo'}
+                    </span>
+                );
+            },
         },
         {
             key: "acoes",
             title: "Ações",
-            render: (tipo: TipoInspecao) => (
-                <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
-                            onClick={() => handleEdit(tipo.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInspecao;
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        <Tooltip text="Editar">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                onClick={() => handleEdit(tipo.id)}
+                                aria-label="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                    </div>
+                );
+            },
         },
     ], [handleEdit]);
 

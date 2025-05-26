@@ -95,8 +95,22 @@ export function InstrumentoMedicaoModal({
         }
     }, [isOpen, apiUrl, getAuthHeaders]);
 
+    // Adapted handleSubmit to accept Record<string, FormDataEntryValue> and map to InstrumentoMedicaoFormData
     const handleSubmit = useCallback(
-        async (formData: InstrumentoMedicaoFormData) => {
+        async (data: Record<string, FormDataEntryValue>) => {
+            // Map generic form data to InstrumentoMedicaoFormData
+            const formData: InstrumentoMedicaoFormData = {
+                nome_instrumento: String(data.nome_instrumento || ""),
+                tag: String(data.tag || ""),
+                codigo_artigo: data.codigo_artigo ? String(data.codigo_artigo) : undefined,
+                numero_patrimonio: data.numero_patrimonio ? String(data.numero_patrimonio) : undefined,
+                numero_serie: data.numero_serie ? String(data.numero_serie) : undefined,
+                situacao: data.situacao ? (String(data.situacao) as "A" | "I") : undefined,
+                data_validade: data.data_validade ? String(data.data_validade) : undefined,
+                data_ultima_calibracao: data.data_ultima_calibracao ? String(data.data_ultima_calibracao) : undefined,
+                frequencia_calibracao: data.frequencia_calibracao ? String(data.frequencia_calibracao) : undefined,
+                id_tipo_instrumento: data.id_tipo_instrumento ? String(data.id_tipo_instrumento) : undefined,
+            };
 
             try {
                 setError(null);
@@ -117,7 +131,6 @@ export function InstrumentoMedicaoModal({
 
                 // Validar o código do artigo se estiver preenchido
                 const codigoArtigo = formData.codigo_artigo?.trim() || "";
-
 
                 // Função para converter data de YYYY-MM-DD para DD/MM/YYYY
                 const formatDateToBR = (dateString: string | null | undefined): string | null => {

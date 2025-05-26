@@ -340,46 +340,55 @@ export default function TiposInstrumentosMedicaoPage() {
         {
             key: "nome_tipo_instrumento",
             title: "Nome do Tipo",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <div className="text-sm text-gray-900 max-w-md truncate">{tipo.nome_tipo_instrumento}</div>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInstrumentoMedicao;
+                return (
+                    <div className="text-sm text-gray-900 max-w-md truncate">{tipo.nome_tipo_instrumento}</div>
+                );
+            },
         },
         {
             key: "observacao",
             title: "Observação",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <div className="text-sm text-gray-500 max-w-md truncate">
-                    {tipo.observacao || "-"}
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInstrumentoMedicao;
+                return (
+                    <div className="text-sm text-gray-500 max-w-md truncate">
+                        {tipo.observacao || "-"}
+                    </div>
+                );
+            },
         },
         {
             key: "acoes",
             title: "Ações",
-            render: (tipo: TipoInstrumentoMedicao) => (
-                <div className="flex items-center justify-end gap-2">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
-                            onClick={() => handleEdit(tipo.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
-                            onClick={() => handleDelete(tipo.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
-            ),
+            render: (item: { id: string | number }) => {
+                const tipo = item as TipoInstrumentoMedicao;
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        <Tooltip text="Editar">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                onClick={() => handleEdit(tipo.id)}
+                                aria-label="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                        <Tooltip text="Excluir">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                onClick={() => handleDelete(tipo.id)}
+                                aria-label="Excluir"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                    </div>
+                );
+            },
         },
     ], [handleEdit, handleDelete]);
 
