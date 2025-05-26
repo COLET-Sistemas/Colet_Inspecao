@@ -1,6 +1,15 @@
 import { ProcessoDetalhes, ProcessoListItem, ProcessoParams } from "@/types/cadastros/processo";
 import { fetchWithAuth } from "./authInterceptor";
 
+// Cache para evitar chamadas duplicadas em sequência rápida
+const requestCache = new Map<string, {
+    promise: Promise<ProcessoDetalhes>;
+    timestamp: number;
+}>();
+
+// Tempo de validade do cache em ms (500ms)
+const CACHE_TTL = 500;
+
 /**
  * Busca os detalhes completos de um processo específico incluindo suas operações e especificações
  * @param params Parâmetros de busca do processo (referencia, roteiro e processo)
@@ -17,18 +26,50 @@ export const getProcessoDetalhes = async (
     }
 
     const { referencia, roteiro, processo } = params;
-    const url = `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`;
 
-    const response = await fetchWithAuth(url, {
-        method: 'GET',
-        headers: authHeaders
-    });
+    // Criar uma chave única para o cache baseada nos parâmetros
+    const cacheKey = `${referencia}-${roteiro}-${processo}`;
 
-    if (!response.ok) {
-        throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+    // Verificar se existe uma requisição em andamento ou recentemente completada
+    const cachedRequest = requestCache.get(cacheKey);
+    if (cachedRequest && Date.now() - cachedRequest.timestamp < CACHE_TTL) {
+        console.log('Usando dados em cache para:', cacheKey);
+        return cachedRequest.promise;
     }
 
-    return await response.json();
+    const url = `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`;
+
+    // Criar a promessa da requisição
+    const requestPromise = (async () => {
+        const response = await fetchWithAuth(url, {
+            method: 'GET',
+            headers: authHeaders
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+        }
+
+        return await response.json();
+    })();
+
+    // Armazenar a promessa no cache
+    requestCache.set(cacheKey, {
+        promise: requestPromise,
+        timestamp: Date.now()
+    });
+
+    // Após a conclusão (sucesso ou erro), limpar o cache após o TTL
+    requestPromise.finally(() => {
+        setTimeout(() => {
+            const currentCache = requestCache.get(cacheKey);
+            if (currentCache && currentCache.promise === requestPromise) {
+                requestCache.delete(cacheKey);
+            }
+        }, CACHE_TTL);
+    });
+
+    return requestPromise;
 };
 
 /**

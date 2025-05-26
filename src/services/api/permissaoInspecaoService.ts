@@ -25,7 +25,7 @@ export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<P
     console.log("Headers:", headers);
 
     try {
-        const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores`, {
+        const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores?situacao=A`, {
             method: 'GET',
             headers: headers,
         });

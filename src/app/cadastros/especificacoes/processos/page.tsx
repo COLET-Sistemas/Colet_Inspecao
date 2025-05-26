@@ -372,14 +372,14 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);    // Handler para editar especificação    
+    }, [isReordering, especificacoes, onReorder, onAlert]);   
     const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
         console.log('Enviando para edição - COMPLETO:', spec);
 
         // Criar uma versão completa do objeto que inclui o campo caracteristica_especial
         const completeSpec = {
             ...spec,
-            caracteristica_especial: spec.especificacao_caracteristica // Mapeando para o campo correspondente
+            caracteristica_especial: spec.especificacao_caracteristica
         };
 
         setSelectedSpec(completeSpec);
@@ -409,7 +409,7 @@ const OperacaoSection = ({
             setIsDeleteSpecModalOpen(false);
             setSelectedSpec(null);
         }
-    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);    // We don't need an effect to auto-handle reordering
+    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);   
     // The user will explicitly save the order with the "Salvar Ordem" button
     return (
         <div className={`mb-6 border ${isReordering ? 'border-blue-200' : 'border-gray-100'} rounded-xl overflow-hidden shadow-sm relative`}>
