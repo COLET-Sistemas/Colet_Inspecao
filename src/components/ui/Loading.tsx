@@ -17,7 +17,7 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
     size = "medium",
-    text = "Loading...",
+    text = "Carregando...",
     color = "primary",
     fullScreen = false,
     showText = true,

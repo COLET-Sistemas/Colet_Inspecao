@@ -8,9 +8,10 @@ import { EmptyState } from "@/components/ui/cadastros/EmptyState";
 import { FilterOption, FilterPanel, ViewMode } from "@/components/ui/cadastros/FilterPanel";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { SelectableCheckbox } from "@/components/ui/cadastros/SelectableCheckbox";
+import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertState, Posto } from "@/types/cadastros/posto";
-import { CheckSquare, IterationCcw, ShieldAlert, SlidersHorizontal } from "lucide-react";
+import { CheckSquare, IterationCcw, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -111,25 +112,9 @@ export default function PostosVinculadosPage() {
     // Chave para local storage
     const localStorageKey = 'postos-vinculados';
 
-    const apiUrl = localStorage.getItem("apiUrl");
-
-    // Permission check - redirect if not a manager
+    const apiUrl = localStorage.getItem("apiUrl");    // Only redirect to login if not authenticated - permission checks are handled by RestrictedAccess component
     useEffect(() => {
-        if (!authLoading && isAuthenticated) {
-            if (!hasPermission('G')) {
-                setAlert({
-                    message: "Você não tem permissão para acessar esta página. Redirecionando...",
-                    type: "error"
-                });
-
-                // Redirect after showing the message for a moment
-                const timer = setTimeout(() => {
-                    router.push('/dashboard');
-                }, 2000);
-
-                return () => clearTimeout(timer);
-            }
-        } else if (!authLoading && !isAuthenticated) {
+        if (!authLoading && !isAuthenticated) {
             // Not authenticated, redirect to login
             router.push('/login');
         }
@@ -349,30 +334,26 @@ export default function PostosVinculadosPage() {
                 <div className="text-sm text-gray-600">{posto.tipo_recurso}</div>
             ),
         },
-    ], [handleToggleSelect, selectedPostos, renderCount]);
-
-    // After all hooks are called, we can have conditional returns
-    if ((authLoading) || (!authLoading && !hasPermission('G'))) {
+    ], [handleToggleSelect, selectedPostos, renderCount]);    // Check for permission using the RestrictedAccess component
+    // If user doesn't have permission, the RestrictedAccess component will handle the display and redirect
+    if (authLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
-                <AlertMessage
-                    message={alert.message}
-                    type={alert.type}
-                    onDismiss={clearAlert}
-                    autoDismiss={true}
-                    dismissDuration={5000}
-                />
-                {!authLoading && !hasPermission('G') && (
-                    <div className="text-center">
-                        <ShieldAlert className="h-16 w-16 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
-                        <p className="text-gray-600 mb-4">
-                            Esta página está disponível apenas para usuários com permissão de Gestor.
-                        </p>
-                        <p className="text-gray-500 text-sm">Redirecionando para o Dashboard...</p>
-                    </div>
-                )}
+                <p className="text-gray-500">Carregando...</p>
             </div>
+        );
+    }
+
+    // If the user doesn't have permission, show the restricted access screen
+    if (!hasPermission('G')) {
+        return (
+            <RestrictedAccess
+                hasPermission={hasPermission('G')}
+                isLoading={authLoading}
+                customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
+                redirectTo="/dashboard"
+                redirectDelay={2000}
+            />
         );
     }
 

@@ -63,9 +63,7 @@ export default function Navbar() {
 
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const navItems: NavItem[] = useMemo(() => [
+    }, []); const navItems: NavItem[] = useMemo(() => [
         { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
         { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4" /> },
         { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4" /> },
@@ -74,12 +72,13 @@ export default function Navbar() {
             label: "Cadastros",
             href: "#",
             icon: <Settings className="w-4 h-4" />,
+            requiredPermission: "G",
             submenu: [
-                { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" /> },
-                { label: "Tipos Inst. de Medição", href: "/cadastros/tipos_instrumentos_medicao", icon: <Archive className="w-4 h-4" /> },
-                { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" /> },
-                { label: "Cotas e Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" /> },
-                { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" /> },
+                { label: "Tipo de Inspeção", href: "/cadastros/tipos_inspecoes", icon: <ClipboardList className="w-4 h-4" />, requiredPermission: "G" },
+                { label: "Tipos Inst. de Medição", href: "/cadastros/tipos_instrumentos_medicao", icon: <Archive className="w-4 h-4" />, requiredPermission: "G" },
+                { label: "Instumento Medição", href: "/cadastros/instrumentos_medicao", icon: <Gauge className="w-4 h-4" />, requiredPermission: "G" },
+                { label: "Cotas e Caracteristicas", href: "/cadastros/cotas_caracteristicas", icon: <Ruler className="w-4 h-4" />, requiredPermission: "G" },
+                { label: "Especif. Inspeção", href: "/cadastros/especificacoes", icon: <FileText className="w-4 h-4" />, requiredPermission: "G" },
                 { label: "Postos Vinculados", href: "/cadastros/postos_vinculados", icon: <Drill className="w-4 h-4" />, requiredPermission: "G" },
                 { label: "Permissões Inspeção", href: "/cadastros/permissoes_inspecao", icon: <Contact className="w-4 h-4" />, requiredPermission: "G" }
             ]
@@ -116,11 +115,12 @@ export default function Navbar() {
     const isActive = useCallback((href: string) => {
         if (href === '#') return false;
         return pathname === href || pathname?.startsWith(href + '/');
-    }, [pathname]);
-
-    const hasActiveSubmenu = (item: NavItem) => {
+    }, [pathname]); const hasActiveSubmenu = (item: NavItem) => {
         if (!item.submenu) return false;
-        return item.submenu.some(subItem => isActive(subItem.href));
+        // Check if any accessible submenu item is active
+        return item.submenu.some(subItem =>
+            (!subItem.requiredPermission || hasPermission(subItem.requiredPermission)) && isActive(subItem.href)
+        );
     };
 
     const handleSubItemClick = () => {
@@ -166,75 +166,74 @@ export default function Navbar() {
                         </Link>
                     </div>
 
-                    <div className="hidden md:flex md:items-center md:justify-center flex-1">
-                        <div className="flex items-center justify-center space-x-1">
-                            {navItems.map((item) => (
-                                <div key={item.label} className="relative group">
-                                    {item.submenu ? (
-                                        <button
-                                            onClick={() => toggleSubmenu(item.label)}
-                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative
+                    <div className="hidden md:flex md:items-center md:justify-center flex-1">                        <div className="flex items-center justify-center space-x-1">
+                        {navItems.filter(item => !item.requiredPermission || hasPermission(item.requiredPermission)).map((item) => (
+                            <div key={item.label} className="relative group">
+                                {item.submenu ? (
+                                    <button
+                                        onClick={() => toggleSubmenu(item.label)}
+                                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative
                                                 ${openSubmenu === item.label || hasActiveSubmenu(item)
-                                                    ? 'text-[#1ABC9C] bg-[#2c2c2c]/40'
-                                                    : 'text-gray-300 hover:text-white hover:bg-[#2c2c2c]/60'
-                                                }`}
-                                            aria-expanded={openSubmenu === item.label}
-                                        >
-                                            <span className="flex items-center">
-                                                <span className="mr-2 transition-transform duration-300 group-hover:scale-110">
-                                                    {item.icon}
-                                                </span>
-                                                {item.label}
-                                            </span>
-                                            <ChevronDown className={`ml-1 h-3 w-3 transition-transform duration-300 ${openSubmenu === item.label ? 'transform rotate-180' : ''}`} />
-                                            {(openSubmenu === item.label || hasActiveSubmenu(item)) && (
-                                                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-[#1ABC9C] rounded-t-full"></span>
-                                            )}
-                                        </button>
-                                    ) : (
-                                        <Link
-                                            href={item.href}
-                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative
-                                                hover:bg-[#2c2c2c]/60 ${isActive(item.href) ? 'text-[#1ABC9C] bg-[#2c2c2c]/40' : 'text-gray-300 hover:text-white'}`}
-                                            onClick={handleLinkClick}
-                                        >
+                                                ? 'text-[#1ABC9C] bg-[#2c2c2c]/40'
+                                                : 'text-gray-300 hover:text-white hover:bg-[#2c2c2c]/60'
+                                            }`}
+                                        aria-expanded={openSubmenu === item.label}
+                                    >
+                                        <span className="flex items-center">
                                             <span className="mr-2 transition-transform duration-300 group-hover:scale-110">
                                                 {item.icon}
                                             </span>
                                             {item.label}
-                                            {isActive(item.href) && (
-                                                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-[#1ABC9C] rounded-t-full"></span>
-                                            )}
-                                        </Link>
-                                    )}
+                                        </span>
+                                        <ChevronDown className={`ml-1 h-3 w-3 transition-transform duration-300 ${openSubmenu === item.label ? 'transform rotate-180' : ''}`} />
+                                        {(openSubmenu === item.label || hasActiveSubmenu(item)) && (
+                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-[#1ABC9C] rounded-t-full"></span>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href={item.href}
+                                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out relative
+                                                hover:bg-[#2c2c2c]/60 ${isActive(item.href) ? 'text-[#1ABC9C] bg-[#2c2c2c]/40' : 'text-gray-300 hover:text-white'}`}
+                                        onClick={handleLinkClick}
+                                    >
+                                        <span className="mr-2 transition-transform duration-300 group-hover:scale-110">
+                                            {item.icon}
+                                        </span>
+                                        {item.label}
+                                        {isActive(item.href) && (
+                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-[#1ABC9C] rounded-t-full"></span>
+                                        )}
+                                    </Link>
+                                )}
 
-                                    {item.submenu && openSubmenu === item.label && (
-                                        <div className="absolute z-30 left-0 mt-1 w-56 rounded-md shadow-xl bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] border border-gray-700/30 py-1.5 animate-fadeIn overflow-hidden">
-                                            {getFilteredSubmenu(item).map((subItem) => (
-                                                <Link
-                                                    key={subItem.label}
-                                                    href={subItem.href}
-                                                    className={`flex items-center px-4 py-2.5 text-sm hover:bg-[#1ABC9C]/10 transition-colors duration-200 relative ${isActive(subItem.href)
-                                                        ? 'text-[#1ABC9C] bg-[#1ABC9C]/5'
-                                                        : 'text-gray-300 hover:text-white'
-                                                        }`}
-                                                    onClick={() => setOpenSubmenu(null)}
-                                                >
-                                                    <span className="mr-2.5 opacity-80">
-                                                        {subItem.icon}
-                                                    </span>
-                                                    {subItem.label}
-                                                    {/* Left border indicator for active submenu item */}
-                                                    {isActive(subItem.href) && (
-                                                        <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
-                                                    )}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                {item.submenu && openSubmenu === item.label && (
+                                    <div className="absolute z-30 left-0 mt-1 w-56 rounded-md shadow-xl bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] border border-gray-700/30 py-1.5 animate-fadeIn overflow-hidden">
+                                        {getFilteredSubmenu(item).map((subItem) => (
+                                            <Link
+                                                key={subItem.label}
+                                                href={subItem.href}
+                                                className={`flex items-center px-4 py-2.5 text-sm hover:bg-[#1ABC9C]/10 transition-colors duration-200 relative ${isActive(subItem.href)
+                                                    ? 'text-[#1ABC9C] bg-[#1ABC9C]/5'
+                                                    : 'text-gray-300 hover:text-white'
+                                                    }`}
+                                                onClick={() => setOpenSubmenu(null)}
+                                            >
+                                                <span className="mr-2.5 opacity-80">
+                                                    {subItem.icon}
+                                                </span>
+                                                {subItem.label}
+                                                {/* Left border indicator for active submenu item */}
+                                                {isActive(subItem.href) && (
+                                                    <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#1ABC9C]"></span>
+                                                )}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                     </div>
 
                     <div className="hidden md:flex md:items-center md:justify-end">
@@ -315,9 +314,8 @@ export default function Navbar() {
 
             {mobileMenuOpen && (
                 <div className="md:hidden absolute w-full bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] shadow-xl z-20 animate-slideDown 
-                               border-t border-gray-700/30 max-h-[80vh] overflow-y-auto overscroll-contain">
-                    <div className="px-2 pt-2 pb-3 space-y-1">
-                        {navItems.map((item) => (
+                               border-t border-gray-700/30 max-h-[80vh] overflow-y-auto overscroll-contain">                    <div className="px-2 pt-2 pb-3 space-y-1">
+                        {navItems.filter(item => !item.requiredPermission || hasPermission(item.requiredPermission)).map((item) => (
                             <div key={item.label} className="relative">
                                 {item.submenu ? (
                                     <>
