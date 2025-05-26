@@ -6,6 +6,7 @@ export interface CotaCaracteristica {
     unidade_medida: string;
     rejeita_menor: boolean | 's' | 'n' | string | null;
     rejeita_maior: boolean | 's' | 'n' | string | null;
+    local_inspecao: 'P' | 'Q' | '*' | null;
 }
 
 export interface CotaCaracteristicaFilter {

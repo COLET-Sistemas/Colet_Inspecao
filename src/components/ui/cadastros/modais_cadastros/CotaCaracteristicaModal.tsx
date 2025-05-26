@@ -16,6 +16,7 @@ interface CotaCaracteristicaFormData {
     simbolo_path_svg?: string;
     rejeita_menor: string;
     rejeita_maior: string;
+    local_inspecao?: string;
 }
 
 // Interface para erros da API
@@ -43,11 +44,13 @@ export function CotaCaracteristicaModal({
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [svgPreview, setSvgPreview] = useState<string>(cotaCaracteristica?.simbolo_path_svg || '');
+    const [selectedTipo, setSelectedTipo] = useState<string>(cotaCaracteristica?.tipo || '');
 
     // Atualizar a prévia quando o modal é aberto com um item existente
     useEffect(() => {
         if (isOpen) {
             setSvgPreview(cotaCaracteristica?.simbolo_path_svg || '');
+            setSelectedTipo(cotaCaracteristica?.tipo || '');
         }
     }, [isOpen, cotaCaracteristica]);
 
@@ -55,7 +58,14 @@ export function CotaCaracteristicaModal({
     const handleSvgChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const svgContent = e.target.value.trim();
         setSvgPreview(svgContent);
-    }; const handleSubmit = useCallback(
+    };
+
+    // Função para atualizar o tipo selecionado
+    const handleTipoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedTipo(e.target.value);
+    };
+
+    const handleSubmit = useCallback(
         async (formData: CotaCaracteristicaFormData) => {
             try {
                 setError(null);
@@ -77,7 +87,9 @@ export function CotaCaracteristicaModal({
                 }
 
                 // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
-                let svgContent = formData.simbolo_path_svg?.trim() || "";                // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
+                let svgContent = formData.simbolo_path_svg?.trim() || "";
+
+                // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
                 svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim();
 
                 const payload: {
@@ -87,16 +99,21 @@ export function CotaCaracteristicaModal({
                     unidade_medida: string;
                     rejeita_menor: string;
                     rejeita_maior: string;
+                    local_inspecao: 'P' | 'Q' | '*' | null;
                     id?: number;
                 } = {
                     descricao: formData.descricao.trim(),
                     tipo: formData.tipo.trim(),
                     simbolo_path_svg: svgContent,
                     unidade_medida: formData.unidade_medida?.trim() || "",
-                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n", rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n"
+                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n",
+                    rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n",
+                    local_inspecao: formData.tipo.trim() === "O" ? (formData.local_inspecao as 'P' | 'Q' | '*') || null : null
                 };
 
-                let responseData: CotaCaracteristica; if (cotaCaracteristica?.id) {
+                let responseData: CotaCaracteristica;
+
+                if (cotaCaracteristica?.id) {
                     // Modo de edição - PUT
                     try {
                         responseData = await updateCotaCaracteristica(
@@ -107,7 +124,8 @@ export function CotaCaracteristicaModal({
                                 simbolo_path_svg: payload.simbolo_path_svg,
                                 unidade_medida: payload.unidade_medida,
                                 rejeita_menor: payload.rejeita_menor,
-                                rejeita_maior: payload.rejeita_maior
+                                rejeita_maior: payload.rejeita_maior,
+                                local_inspecao: payload.local_inspecao
                             },
                             getAuthHeaders()
                         );
@@ -125,7 +143,8 @@ export function CotaCaracteristicaModal({
                                 simbolo_path_svg: payload.simbolo_path_svg,
                                 unidade_medida: payload.unidade_medida,
                                 rejeita_menor: payload.rejeita_menor,
-                                rejeita_maior: payload.rejeita_maior
+                                rejeita_maior: payload.rejeita_maior,
+                                local_inspecao: payload.local_inspecao
                             },
                             getAuthHeaders()
                         );
@@ -142,7 +161,9 @@ export function CotaCaracteristicaModal({
                         ...payload,
                         id: cotaCaracteristica?.id || Math.floor(Math.random() * 10000) + 1 // Usa o ID existente ou cria um temporário
                     };
-                } if (onSuccess) {
+                }
+
+                if (onSuccess) {
                     // Garantir que todos os campos necessários estejam presentes
                     const successData = {
                         ...responseData,
@@ -152,10 +173,13 @@ export function CotaCaracteristicaModal({
                         simbolo_path_svg: responseData.simbolo_path_svg || formData.simbolo_path_svg?.trim() || "",
                         unidade_medida: responseData.unidade_medida || formData.unidade_medida?.trim() || "",
                         rejeita_menor: responseData.rejeita_menor || (formData.rejeita_menor === "true" ? "s" : "n"),
-                        rejeita_maior: responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n")
+                        rejeita_maior: responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n"),
+                        local_inspecao: responseData.local_inspecao || (formData.tipo === "O" ? (formData.local_inspecao as 'P' | 'Q' | '*') || null : null)
                     };
                     onSuccess(successData);
-                } onClose();
+                }
+
+                onClose();
 
             } catch (err: unknown) {
                 console.error("Erro ao processar formulário:", err);
@@ -252,6 +276,7 @@ export function CotaCaracteristicaModal({
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                     required
                                     defaultValue={cotaCaracteristica?.tipo || ""}
+                                    onChange={handleTipoChange}
                                     onFocus={() => setIsFocused('tipo')}
                                     onBlur={() => setIsFocused(null)}
                                 >
@@ -300,23 +325,24 @@ export function CotaCaracteristicaModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
-                                id="rejeita_menor"
-                                name="rejeita_menor"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                defaultValue={
-                                    cotaCaracteristica?.rejeita_menor === true ||
-                                        cotaCaracteristica?.rejeita_menor === "s" ||
-                                        cotaCaracteristica?.rejeita_menor === "S"
-                                        ? "true"
-                                        : "false"
-                                }
-                                onFocus={() => setIsFocused('rejeita_menor')}
-                                onBlur={() => setIsFocused(null)}
-                            >
-                                <option value="true">Sim</option>
-                                <option value="false">Não</option>
-                            </select>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="rejeita_menor"
+                                    name="rejeita_menor"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    defaultValue={
+                                        cotaCaracteristica?.rejeita_menor === true ||
+                                            cotaCaracteristica?.rejeita_menor === "s" ||
+                                            cotaCaracteristica?.rejeita_menor === "S"
+                                            ? "true"
+                                            : "false"
+                                    }
+                                    onFocus={() => setIsFocused('rejeita_menor')}
+                                    onBlur={() => setIsFocused(null)}
+                                >
+                                    <option value="true">Sim</option>
+                                    <option value="false">Não</option>
+                                </select>
                             </div>
                         </div>
 
@@ -330,26 +356,55 @@ export function CotaCaracteristicaModal({
                                     </label>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
-                                id="rejeita_maior"
-                                name="rejeita_maior"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                defaultValue={
-                                    cotaCaracteristica?.rejeita_maior === true ||
-                                        cotaCaracteristica?.rejeita_maior === "s" ||
-                                        cotaCaracteristica?.rejeita_maior === "S"
-                                        ? "true"
-                                        : "false"
-                                }
-                                onFocus={() => setIsFocused('rejeita_maior')}
-                                onBlur={() => setIsFocused(null)}
-                            >
-                                <option value="true">Sim</option>
-                                <option value="false">Não</option>
-                            </select>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="rejeita_maior"
+                                    name="rejeita_maior"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    defaultValue={
+                                        cotaCaracteristica?.rejeita_maior === true ||
+                                            cotaCaracteristica?.rejeita_maior === "s" ||
+                                            cotaCaracteristica?.rejeita_maior === "S"
+                                            ? "true"
+                                            : "false"
+                                    }
+                                    onFocus={() => setIsFocused('rejeita_maior')}
+                                    onBlur={() => setIsFocused(null)}
+                                >
+                                    <option value="true">Sim</option>
+                                    <option value="false">Não</option>
+                                </select>
                             </div>
                         </div>
                     </div>
+
+                    {/* Campo local_inspecao que aparece apenas quando o tipo é "O" (Cota) */}
+                    {selectedTipo === "O" && (
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <CircleCheck className="h-4 w-4 text-gray-500" />
+                                    <label htmlFor="local_inspecao" className="text-sm font-medium text-gray-700">
+                                        Local de Inspeção
+                                    </label>
+                                </div>
+                            </div>
+                            <div className={`relative transition-all duration-200 ${isFocused === 'local_inspecao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                <select
+                                    id="local_inspecao"
+                                    name="local_inspecao"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                    defaultValue={cotaCaracteristica?.local_inspecao || "*"}
+                                    onFocus={() => setIsFocused('local_inspecao')}
+                                    onBlur={() => setIsFocused(null)}
+                                >
+                                    <option value="P">Produção</option>
+                                    <option value="Q">Qualidade</option>
+                                    <option value="*">Ambos</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Campo para símbolo SVG com prévia */}
                     <div className="mb-4">

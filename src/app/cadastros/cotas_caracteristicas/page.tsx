@@ -94,8 +94,7 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
                                         ? "Não"
                                         : "-"}
                             </span>
-                        </div>
-                        <div className="text-sm">
+                        </div>                        <div className="text-sm">
                             <span className="font-medium text-gray-700">Rejeita maior: </span>
                             <span className={`px-2 py-0.5 text-xs rounded-full 
                                 ${['s', 'S'].includes(stringValue(cota.rejeita_maior))
@@ -108,6 +107,17 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
                                         : "-"}
                             </span>
                         </div>
+
+                        {cota.tipo === "O" && (
+                            <div className="text-sm mt-1">
+                                <span className="font-medium text-gray-700">Local de Inspeção: </span>
+                                <span className={`px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700`}>
+                                    {cota.local_inspecao === "P" ? "Produção" :
+                                        cota.local_inspecao === "Q" ? "Qualidade" :
+                                            cota.local_inspecao === "*" ? "Ambos" : "-"}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -531,8 +541,7 @@ export default function CotasCaracteristicasPage() {
                     </span>
                 );
             },
-        },
-        {
+        }, {
             key: "rejeita_maior",
             title: "Rejeita Maior",
             render: (cota: CotaCaracteristica) => {
@@ -542,6 +551,21 @@ export default function CotasCaracteristicasPage() {
                 return (
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isRejeita ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
                         {['s', 'S'].includes(strValue) ? "Sim" : ['n', 'N'].includes(strValue) ? "Não" : "-"}
+                    </span>
+                );
+            },
+        },
+        {
+            key: "local_inspecao",
+            title: "Local de Inspeção",
+            render: (cota: CotaCaracteristica) => {
+                if (cota.tipo !== "O") return <span className="text-xs text-gray-400">-</span>;
+
+                return (
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-700`}>
+                        {cota.local_inspecao === "P" ? "Produção" :
+                            cota.local_inspecao === "Q" ? "Qualidade" :
+                                cota.local_inspecao === "*" ? "Ambos" : "-"}
                     </span>
                 );
             },
