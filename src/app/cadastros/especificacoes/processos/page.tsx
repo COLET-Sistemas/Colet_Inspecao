@@ -72,7 +72,7 @@ const EspecificacaoCardBase = ({
             case 'F':
                 return `${especificacao.valor_minimo} a ${especificacao.valor_maximo} ${especificacao.unidade_medida}`;
             case 'U':
-                return `${especificacao.valor_minimo} ${especificacao.unidade_medida}`;
+                return `${especificacao.valor_maximo} ${especificacao.unidade_medida}`;
             case 'A': return 'Aprovado/Reprovado';
             case 'C': return 'Conforme/Não Conforme';
             case 'S': return 'Sim/Não';
@@ -509,9 +509,6 @@ const OperacaoSection = ({
                             </div>
                         )}
                     </div>
-
-
-
 
                     {/* Chevron indicator */}
                     <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
@@ -1023,32 +1020,31 @@ export default function ProcessoPage() {
                             Tentar novamente
                         </button>
                     </motion.div>
+                )}            </AnimatePresence>            {dadosProcesso && (
+                    <OperacoesModal
+                        isOpen={isOperacaoModalOpen}
+                        onClose={() => {
+                            setIsOperacaoModalOpen(false);
+                            setSelectedOperacao(null);
+                        }} dados={selectedOperacao ? {
+                            referencia,
+                            roteiro,
+                            processo: parseInt(processo, 10),
+                            tipo_acao: dadosProcesso?.tipo_acao || '',
+                            operacao: selectedOperacao.operacao,
+                            id: selectedOperacao.id_operacao,
+                            descricao: selectedOperacao.descricao_operacao,
+                            frequencia_minutos: selectedOperacao.frequencia_minutos
+                        } : {
+                            referencia,
+                            roteiro,
+                            processo: parseInt(processo, 10),
+                            tipo_acao: dadosProcesso?.tipo_acao || '',
+                            operacao: 0
+                        }} onSuccess={handleOperacaoModalSuccess}
+                        modo={selectedOperacao ? 'edicao' : 'cadastro'}
+                    />
                 )}
-            </AnimatePresence>
-            {dadosProcesso && (
-                <OperacoesModal
-                    isOpen={isOperacaoModalOpen}
-                    onClose={() => {
-                        setIsOperacaoModalOpen(false);
-                        setSelectedOperacao(null);
-                    }}
-                    dados={selectedOperacao ? {
-                        referencia,
-                        roteiro,
-                        processo: parseInt(processo, 10),
-                        operacao: selectedOperacao.operacao,
-                        id: selectedOperacao.id_operacao,
-                        descricao: selectedOperacao.descricao_operacao,
-                        frequencia_minutos: selectedOperacao.frequencia_minutos
-                    } : {
-                        referencia,
-                        roteiro,
-                        processo: parseInt(processo, 10),
-                        operacao: 0
-                    }} onSuccess={handleOperacaoModalSuccess}
-                    modo={selectedOperacao ? 'edicao' : 'cadastro'}
-                />
-            )}
 
             {/* Modal de confirmação de exclusão */}
             {isDeleteModalOpen && (

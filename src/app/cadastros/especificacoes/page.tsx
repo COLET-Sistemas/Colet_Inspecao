@@ -38,7 +38,7 @@ const OperacaoItem = ({ operacao }: { operacao: Operacao }) => {
                         {operacao.operacao}
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-gray-700">{operacao.descricao} - ({operacao.id_operacao})</p>
+                        <p className="text-xs font-medium text-gray-700">{operacao.descricao}</p>
                     </div>
                 </div>
                 <div className="flex items-center text-xs text-gray-600">

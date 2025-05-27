@@ -273,14 +273,13 @@ export default function TiposInstrumentosMedicaoPage() {
                     <div className="text-sm text-gray-900 max-w-md truncate">{tipo.nome_tipo_instrumento}</div>
                 );
             },
-        },
-        {
+        }, {
             key: "observacao",
             title: "Observação",
             render: (item: { id: string | number }) => {
                 const tipo = item as TipoInstrumentoMedicao;
                 return (
-                    <div className="text-sm text-gray-500 max-w-md truncate">
+                    <div className="text-sm text-gray-500 whitespace-normal break-words">
                         {tipo.observacao || "-"}
                     </div>
                 );

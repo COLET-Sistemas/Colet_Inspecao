@@ -25,7 +25,7 @@ export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
             codigo_parada: item.codigo_parada || '',
             descricao_parada: item.descricao_parada || '',
             tipo_recurso: item.tipo_recurso || '',
-            id: item.posto || '', // Usando posto como ID para compatibilidade com os componentes
+            id: item.posto || '', 
         };
     }) : [];
 };

@@ -11,6 +11,7 @@ export interface OperacaoDados {
     referencia: string;
     roteiro: string;
     processo: number;
+    tipo_acao?: string;
     operacao: number;
     id?: number;
     descricao?: string;
@@ -42,9 +43,7 @@ export function OperacoesModal({
 }: OperacoesModalProps) {
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const [isSubmitting, setIsSubmitting] = useState(false); const { apiUrl, getAuthHeaders } = useApiConfig();
 
     // Renderiza mensagens de erro
     const renderFeedback = () => {
@@ -165,125 +164,124 @@ export function OperacoesModal({
 
     if (!isOpen || !dados) return null;
 
-    return (
-        <FormModal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Operação - Processo ${dados.processo}`}
-            isEditing={modo === 'edicao'}
-            onSubmit={handleSubmit}
-            submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
-            isSubmitting={isSubmitting}
-            size="sm"
-        >
-            {/* Informações do contexto */}
-            <div className="mb-5 bg-gray-50 p-3 rounded-md border border-gray-100">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                        <span className="text-gray-500 block">Referência</span>
-                        <span className="font-medium">{dados.referencia}</span>
-                    </div>
-                    <div>
-                        <span className="text-gray-500 block">Roteiro</span>
-                        <span className="font-medium">{dados.roteiro}</span>
-                    </div>
-                    <div>
-                        <span className="text-gray-500 block">Processo</span>
-                        <span className="font-medium">{dados.processo}</span>
-                    </div>
+    return (<FormModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Operação - ${dados.processo}${dados.tipo_acao ? ` (${dados.tipo_acao})` : ''}`}
+        isEditing={modo === 'edicao'}
+        onSubmit={handleSubmit}
+        submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
+        isSubmitting={isSubmitting}
+        size="sm"
+    >
+        {/* Informações do contexto */}
+        <div className="mb-5 bg-gray-50 p-3 rounded-md border border-gray-100">
+            <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                    <span className="text-gray-500 block">Referência</span>
+                    <span className="font-medium">{dados.referencia}</span>
+                </div>
+                <div>
+                    <span className="text-gray-500 block">Roteiro</span>
+                    <span className="font-medium">{dados.roteiro}</span>
+                </div>
+                <div>
+                    <span className="text-gray-500 block">Processo</span>
+                    <span className="font-medium">{dados.processo}</span>
                 </div>
             </div>
+        </div>
 
-            {/* Feedback de erro */}
-            {renderFeedback()}            <div className="space-y-4">
-                <div className="bg-white rounded-md">
-                    {/* Campo de descrição */}
+        {/* Feedback de erro */}
+        {renderFeedback()}            <div className="space-y-4">
+            <div className="bg-white rounded-md">
+                {/* Campo de operação - mostrado apenas em modo cadastro */}
+                {modo === 'cadastro' && (
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="descricao" className="text-sm font-medium text-gray-700">
-                                    Descrição <span className="text-red-500">*</span>
+                                <IdCard className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
+                                    Operação <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                            <input
-                                type="text"
-                                id="descricao"
-                                name="descricao"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Descreva a operação"
-                                defaultValue={dados.descricao || ''}
-                                onFocus={() => setIsFocused('descricao')}
-                                onBlur={() => setIsFocused(null)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* Campo de operação - mostrado apenas em modo cadastro */}
-                    {modo === 'cadastro' && (
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <IdCard className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="operacao" className="text-sm font-medium text-gray-700">
-                                        Operação <span className="text-red-500">*</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <input
-                                    type="number"
-                                    id="operacao"
-                                    name="operacao"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Número da operação"
-                                    defaultValue={dados.operacao || ''}
-                                    onFocus={() => setIsFocused('operacao')}
-                                    onBlur={() => setIsFocused(null)}
-                                    required={modo === 'cadastro'}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Campo de frequência */}
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Timer className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="frequencia" className="text-sm font-medium text-gray-700">
-                                    Frequência <span className="text-xs text-gray-500">(em minutos)</span> <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className={`relative transition-all duration-200 ${isFocused === 'frequencia' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'operacao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
                             <input
                                 type="number"
-                                id="frequencia"
-                                name="frequencia"
+                                id="operacao"
+                                name="operacao"
                                 className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder="Ex: 100"
-                                min="1"
-                                defaultValue={dados.frequencia_minutos}
-                                required
-                                onFocus={() => setIsFocused('frequencia')}
+                                placeholder="Número da operação"
+                                defaultValue={dados.operacao || ''}
+                                onFocus={() => setIsFocused('operacao')}
                                 onBlur={() => setIsFocused(null)}
+                                required={modo === 'cadastro'}
                             />
                         </div>
                     </div>
+                )}
 
-                    {/* Mensagem sobre campos obrigatórios */}
-                    <div className="text-xs text-gray-500 mt-4">
-                        <span className="text-red-500">*</span> Campos obrigatórios
+                {/* Campo de descrição */}
+                <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                            <FileText className="h-4 w-4 text-gray-500" />
+                            <label htmlFor="descricao" className="text-sm font-medium text-gray-700">
+                                Descrição <span className="text-red-500">*</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className={`relative transition-all duration-200 ${isFocused === 'descricao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                        <input
+                            type="text"
+                            id="descricao"
+                            name="descricao"
+                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                            placeholder="Descreva a operação"
+                            defaultValue={dados.descricao || ''}
+                            onFocus={() => setIsFocused('descricao')}
+                            onBlur={() => setIsFocused(null)}
+                            required
+                        />
                     </div>
                 </div>
+
+                {/* Campo de frequência */}
+                <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                            <Timer className="h-4 w-4 text-gray-500" />
+                            <label htmlFor="frequencia" className="text-sm font-medium text-gray-700">
+                                Frequência <span className="text-xs text-gray-500">(em minutos)</span> <span className="text-red-500">*</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className={`relative transition-all duration-200 ${isFocused === 'frequencia' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                        <input
+                            type="number"
+                            id="frequencia"
+                            name="frequencia"
+                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                            placeholder="Ex: 100"
+                            min="1"
+                            defaultValue={dados.frequencia_minutos}
+                            required
+                            onFocus={() => setIsFocused('frequencia')}
+                            onBlur={() => setIsFocused(null)}
+                        />
+                    </div>
+                </div>
+
+                {/* Mensagem sobre campos obrigatórios */}
+                <div className="text-xs text-gray-500 mt-4">
+                    <span className="text-red-500">*</span> Campos obrigatórios
+                </div>
             </div>
-        </FormModal>
+        </div>
+    </FormModal>
     );
 }
