@@ -151,11 +151,10 @@ export default function CotasCaracteristicasPage() {
         } catch {
             return false;
         }
-    };
-
-    // State for filters
+    };    // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoFilter, setTipoFilter] = useState<string>("todos");
+    const [localInspecaoFilter, setLocalInspecaoFilter] = useState<string>("todos");
 
     const [isPending, startTransition] = useTransition();
 
@@ -188,15 +187,14 @@ export default function CotasCaracteristicasPage() {
     // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
 
-    const { getAuthHeaders } = useApiConfig();
-
-    // Calculate active filters
+    const { getAuthHeaders } = useApiConfig();    // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
         if (tipoFilter !== "todos") count++;
+        if (localInspecaoFilter !== "todos") count++;
         setActiveFilters(count);
-    }, [searchTerm, tipoFilter]);
+    }, [searchTerm, tipoFilter, localInspecaoFilter]);
 
     // Função para carregar dados memoizada para evitar recriação desnecessária
     const loadData = useCallback(async () => {
@@ -207,7 +205,7 @@ export default function CotasCaracteristicasPage() {
             const data = await getCotasCaracteristicas(getAuthHeaders());
             setAllData(data);
         } catch (error) {
-            console.error("Erro ao buscar cotas e características:", error);
+
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             setIsLoading(false);
@@ -238,7 +236,7 @@ export default function CotasCaracteristicasPage() {
                 // Filtrar usando função memoizada para melhor performance
                 const filterData = () => {
                     // Só realizar filtragem se houver filtros ativos
-                    if (!searchTerm && tipoFilter === "todos") {
+                    if (!searchTerm && tipoFilter === "todos" && localInspecaoFilter === "todos") {
                         return allData;
                     }
 
@@ -251,7 +249,10 @@ export default function CotasCaracteristicasPage() {
                         // Verificar filtro de tipo
                         const matchesTipo = tipoFilter === "todos" || item.tipo === tipoFilter;
 
-                        return matchesSearch && matchesTipo;
+                        // Verificar filtro de local de inspeção
+                        const matchesLocalInspecao = localInspecaoFilter === "todos" || item.local_inspecao === localInspecaoFilter;
+
+                        return matchesSearch && matchesTipo && matchesLocalInspecao;
                     });
                 };
 
@@ -259,7 +260,7 @@ export default function CotasCaracteristicasPage() {
                 setCotasCaracteristicas(filterData());
             });
         }
-    }, [searchTerm, tipoFilter, allData]);
+    }, [searchTerm, tipoFilter, localInspecaoFilter, allData]);
 
     const handleEdit = useCallback((id: number) => {
         const cotaToEdit = cotasCaracteristicas.find(cota => cota.id === id);
@@ -302,7 +303,7 @@ export default function CotasCaracteristicasPage() {
 
             setNotification(`Cota/característica excluída com sucesso.`);
         } catch (error) {
-            console.error('Erro ao excluir cota/característica:', error);
+
 
             // Sempre fechar o modal em caso de erro
             setIsDeleteModalOpen(false);
@@ -327,11 +328,10 @@ export default function CotasCaracteristicasPage() {
     }, []);
 
     const handleCreateNew = useCallback(() => {
-        setSelectedCotaCaracteristica(undefined); // Limpa qualquer seleção anterior
+        setSelectedCotaCaracteristica(undefined);
         setIsModalOpen(true);
-    }, []);    // Callback quando o modal for bem-sucedido
+    }, []);
     const handleModalSuccess = useCallback(async (data: CotaCaracteristica) => {
-        console.log("Dados recebidos do modal:", data);
 
         // Atualizar o estado local com os dados recebidos do modal
         if (selectedCotaCaracteristica) {
@@ -355,8 +355,6 @@ export default function CotasCaracteristicasPage() {
             setNotification(`Cota/característica ${data.id} atualizada com sucesso.`);
 
         } else if (data) {
-            // Caso de criação - O modal já fez a chamada POST
-            console.log("Item criado com sucesso:", data);
 
             // Após criar o item, recarrega a lista completa com uma chamada GET
             try {
@@ -392,6 +390,7 @@ export default function CotasCaracteristicasPage() {
     const resetFilters = useCallback(() => {
         setSearchTerm("");
         setTipoFilter("todos");
+        setLocalInspecaoFilter("todos");
         setNotification("Filtros resetados.");
     }, []);
 
@@ -423,8 +422,20 @@ export default function CotasCaracteristicasPage() {
                 ],
                 onChange: setTipoFilter,
             },
+            {
+                id: "localInspecao",
+                label: "Local de Inspeção",
+                value: localInspecaoFilter,
+                options: [
+                    { value: "todos", label: "Todos" },
+                    { value: "P", label: "Produção", color: "bg-blue-100 text-blue-800" },
+                    { value: "Q", label: "Qualidade", color: "bg-green-100 text-green-800" },
+                    { value: "*", label: "Ambos", color: "bg-purple-100 text-purple-800" },
+                ],
+                onChange: setLocalInspecaoFilter,
+            },
         ];
-    }, [tipoFilter]);
+    }, [tipoFilter, localInspecaoFilter]);
 
     // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
@@ -464,8 +475,35 @@ export default function CotasCaracteristicasPage() {
             });
         }
 
+        if (localInspecaoFilter !== "todos") {
+            let label, color;
+            switch (localInspecaoFilter) {
+                case "P":
+                    label = "Produção";
+                    color = "bg-blue-100 text-blue-800";
+                    break;
+                case "Q":
+                    label = "Qualidade";
+                    color = "bg-green-100 text-green-800";
+                    break;
+                case "*":
+                    label = "Ambos";
+                    color = "bg-purple-100 text-purple-800";
+                    break;
+                default:
+                    label = localInspecaoFilter;
+                    color = "bg-gray-100 text-gray-800";
+            }
+            filters.push({
+                id: "localInspecao",
+                value: localInspecaoFilter,
+                label,
+                color,
+            });
+        }
+
         return filters;
-    }, [searchTerm, tipoFilter]);
+    }, [searchTerm, tipoFilter, localInspecaoFilter]);
 
     const getTipoLabel = useCallback((tipo: string) => {
         switch (tipo) {
