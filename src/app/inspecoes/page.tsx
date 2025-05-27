@@ -8,7 +8,6 @@ import {
     Cog,
     FileText,
     Plus,
-    Search,
     Users
 } from "lucide-react";
 import { useState } from "react";
@@ -70,16 +69,6 @@ const mockInspections = {
 
 export default function InspecoesPage() {
     const [activeTab, setActiveTab] = useState("processo");
-    const [searchTerm, setSearchTerm] = useState("");    // Função para obter o placeholder da busca conforme a aba ativa
-    const getSearchPlaceholder = () => {
-        const placeholders = {
-            processo: "Buscar inspeções de processo...",
-            qualidade: "Buscar inspeções de qualidade...",
-            outras: "Buscar outras inspeções...",
-            naoConformidade: "Buscar não conformidades..."
-        };
-        return placeholders[activeTab as keyof typeof placeholders] || "Buscar inspeções...";
-    };
 
     // Configuração das abas
     const tabs: TabData[] = [
@@ -110,26 +99,13 @@ export default function InspecoesPage() {
             icon: <AlertTriangle className="w-4 h-4" />,
             count: mockInspections.naoConformidade.length,
             description: "Registros de não conformidades identificadas"
-        },
-    ];    // Função para filtrar dados conforme busca
-    const getFilteredData = () => {
-        const currentData = mockInspections[activeTab as keyof typeof mockInspections];
-
-        if (!searchTerm) return currentData;
-
-        return currentData.filter((item: InspectionItem) =>
-            item.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.posto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.responsavel.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    };
+        },];
 
     // Função para renderizar o conteúdo de cada aba
     const renderTabContent = () => {
-        const filteredData = getFilteredData();
+        const currentData = mockInspections[activeTab as keyof typeof mockInspections];
 
-        if (!filteredData || filteredData.length === 0) {
+        if (!currentData || currentData.length === 0) {
             return (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -138,13 +114,10 @@ export default function InspecoesPage() {
                 >
                     <FileText className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-3 sm:mb-4" />
                     <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-2">
-                        {searchTerm ? "Nenhum resultado encontrado" : "Nenhuma inspeção encontrada"}
+                        Nenhuma inspeção encontrada
                     </h3>
                     <p className="text-sm sm:text-base text-gray-500 px-4">
-                        {searchTerm
-                            ? `Não foram encontradas inspeções que correspondam à busca "${searchTerm}".`
-                            : `Não há inspeções ${tabs.find(t => t.id === activeTab)?.label.toLowerCase()} no momento.`
-                        }
+                        Não há inspeções {tabs.find(t => t.id === activeTab)?.label.toLowerCase()} no momento.
                     </p>
                 </motion.div>
             );
@@ -155,7 +128,7 @@ export default function InspecoesPage() {
             transition={{ duration: 0.3 }}
             className="space-y-2"
         >
-            {filteredData.map((item: InspectionItem, index: number) => (
+            {currentData.map((item: InspectionItem, index: number) => (
                 <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -189,7 +162,7 @@ export default function InspecoesPage() {
                                     <div className="w-16 bg-gray-200 rounded-full h-1.5">
                                         <div
                                             className={`h-1.5 rounded-full ${item.progresso! >= 80 ? 'bg-green-500' :
-                                                    item.progresso! >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                                item.progresso! >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                                                 }`}
                                             style={{ width: `${item.progresso}%` }}
                                         ></div>
@@ -199,16 +172,16 @@ export default function InspecoesPage() {
                             )}
                             {activeTab === "outras" && (
                                 <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Aprovada"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-yellow-100 text-yellow-700"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-yellow-100 text-yellow-700"
                                     }`}>
                                     {item.status}
                                 </span>
                             )}
                             {activeTab === "naoConformidade" && (
                                 <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Crítica"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-yellow-100 text-yellow-700"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700"
                                     }`}>
                                     {item.status}
                                 </span>
@@ -272,20 +245,7 @@ export default function InspecoesPage() {
                     animate={{ opacity: 1 }}
                     className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 px-1"
                 >
-                    {tabs.find(tab => tab.id === activeTab)?.description}
-                </motion.p>
-            </div>            {/* Barra de Busca */}
-            <div className="mb-6">
-                <div className="relative w-full sm:max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder={getSearchPlaceholder()}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1ABC9C] focus:border-transparent outline-none transition-all duration-200 text-sm"
-                    />
-                </div>
+                    {tabs.find(tab => tab.id === activeTab)?.description}                </motion.p>
             </div>
 
             {/* Conteúdo da Aba */}

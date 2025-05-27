@@ -571,24 +571,26 @@ const OperacaoSection = ({
                         itemName={selectedSpec?.especificacao_cota}
                     />                    {especificacoesCountValue > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
                         <div className="overflow-x-auto">
-                            <table className="w-full">
+                            <table className="w-full min-w-[1200px]">
                                 <thead><tr className={`text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 ${isReordering ? 'bg-blue-100/70' : 'bg-gradient-to-r from-gray-50 to-gray-100'}`}>
-                                    <th className="w-12 px-3 py-3.5 text-center">
+                                    <th className="w-12 lg:w-16 px-3 py-3.5 text-center">
                                         {isReordering ? (
                                             <div className="flex items-center justify-center">
                                                 <span className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full animate-pulse">Reordenando</span>
                                             </div>
                                         ) : 'Ordem'}
                                     </th>
-                                    <th className="w-14 px-3 py-3.5 text-center">Cota</th>                                        <th className="px-4 py-3.5 text-left">Especificação</th>
-                                    <th className="w-16 px-3 py-3.5 text-center">Caract.</th>
-                                    <th className="px-4 py-3.5 text-left">Instrumento</th>
-                                    <th className="px-4 py-3.5 text-left">Valores</th>
-                                    <th className="w-20 px-3 py-3.5 text-center">Setup</th>
-                                    <th className="w-20 px-3 py-3.5 text-center">Qualidade</th>
-                                    <th className="w-20 px-3 py-3.5 text-center">Processo</th>
-                                    <th className="w-24 px-3 py-3.5 text-center">
-                                        {isReordering ? "Mover" : "Ações"}                                    </th>
+                                    <th className="w-14 lg:w-20 px-3 py-3.5 text-center">Cota</th>
+                                    <th className="min-w-[200px] lg:min-w-[250px] px-4 py-3.5 text-left">Especificação</th>
+                                    <th className="w-16 lg:w-20 px-3 py-3.5 text-center">Caract.</th>
+                                    <th className="min-w-[180px] lg:min-w-[220px] px-4 py-3.5 text-left">Instrumento</th>
+                                    <th className="min-w-[160px] lg:min-w-[200px] px-4 py-3.5 text-left">Valores</th>
+                                    <th className="w-20 lg:w-24 px-3 py-3.5 text-center">Setup</th>
+                                    <th className="w-20 lg:w-24 px-3 py-3.5 text-center">Qualidade</th>
+                                    <th className="w-20 lg:w-24 px-3 py-3.5 text-center">Processo</th>
+                                    <th className="w-24 lg:w-28 px-3 py-3.5 text-center">
+                                        {isReordering ? "Mover" : "Ações"}
+                                    </th>
                                 </tr></thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                     {especificacoes.map((esp, index) => (
@@ -810,10 +812,8 @@ export default function ProcessoPage() {
                 redirectDelay={2000}
             />
         );
-    }
-
-    return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">
+    } return (
+        <div className="space-y-5 p-2 sm:p-4 md:p-5 lg:p-6 xl:p-8 mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px] text-sm">
             {/* Alerta para mensagens */}
             <AlertMessage
                 message={alert.message}
@@ -874,88 +874,83 @@ export default function ProcessoPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="space-y-6"
-                    >
-                        {/* Informações do processo */}
+                    >                        {/* Informações do processo */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="p-4">
-                                <div className="grid grid-cols-1 gap-5">
-                                    {/* Linha 1: Referência e Roteiro */}
-                                    <div className="grid md:grid-cols-2 gap-5">
-                                        {/* Referência */}
-                                        <div className="flex items-start">
-                                            <div className="mr-3 pt-1.5">
-                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm">
-                                                    <span className="font-medium text-slate-600">Referência: </span>
-                                                    <span className="font-medium text-slate-800">{dadosProcesso.referencia}</span>
-                                                </p>
-                                                <p className="text-sm text-slate-700">{dadosProcesso.descricao}</p>
-                                            </div>
+                            <div className="p-4 lg:p-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                                    {/* Referência */}
+                                    <div className="flex items-start col-span-1 xl:col-span-2">
+                                        <div className="mr-3 pt-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                         </div>
-
-                                        {/* Roteiro */}
-                                        <div className="flex items-start">
-                                            <div className="mr-3 pt-1.5">
-                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm">
-                                                    <span className="font-medium text-slate-600">Roteiro: </span>
-                                                    <span className="font-medium text-slate-800">{dadosProcesso.roteiro}</span>
-                                                </p>
-                                                <p className="text-sm text-slate-700">{dadosProcesso.nome_roteiro}</p>
-                                            </div>
+                                        <div>
+                                            <p className="text-sm">
+                                                <span className="font-medium text-slate-600">Referência: </span>
+                                                <span className="font-medium text-slate-800">{dadosProcesso.referencia}</span>
+                                            </p>
+                                            <p className="text-sm text-slate-700">{dadosProcesso.descricao}</p>
                                         </div>
                                     </div>
 
-                                    {/* Linha 2: Processo e Detalhes */}
-                                    <div className="grid md:grid-cols-2 gap-5">
-                                        {/* Processo */}
-                                        <div className="flex items-start space-x-3">
-                                            <div className="pt-1.5">
-                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm">
-                                                    <span className="font-medium text-slate-600">Processo: </span>
-                                                    <span className="font-medium text-slate-800">{dadosProcesso.processo}</span>
-                                                    <span className="text-slate-600"> ({dadosProcesso.tipo_acao})</span>
-                                                </p>
-                                            </div>
+                                    {/* Roteiro */}
+                                    <div className="flex items-start col-span-1 xl:col-span-2">
+                                        <div className="mr-3 pt-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                                         </div>
+                                        <div>
+                                            <p className="text-sm">
+                                                <span className="font-medium text-slate-600">Roteiro: </span>
+                                                <span className="font-medium text-slate-800">{dadosProcesso.roteiro}</span>
+                                            </p>
+                                            <p className="text-sm text-slate-700">{dadosProcesso.nome_roteiro}</p>
+                                        </div>
+                                    </div>
 
-                                        {/* Detalhes */}
-                                        <div className="flex items-start space-x-3">
-                                            <div className="pt-1.5">
-                                                <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                                    <div>
-                                                        <p className="text-sm">
-                                                            <span className="font-medium text-slate-600">Recurso: </span>
-                                                            <span className="font-medium text-slate-800">{dadosProcesso.recurso}</span>
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm">
-                                                            <span className="font-medium text-slate-600">Setor: </span>
-                                                            <span className="font-medium text-slate-800">{dadosProcesso.setor}</span>
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    {/* Processo */}
+                                    <div className="flex items-start">
+                                        <div className="mr-3 pt-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm">
+                                                <span className="font-medium text-slate-600">Processo: </span>
+                                                <span className="font-medium text-slate-800">{dadosProcesso.processo}</span>
+                                            </p>
+                                            <p className="text-sm text-slate-600">({dadosProcesso.tipo_acao})</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Recurso */}
+                                    <div className="flex items-start">
+                                        <div className="mr-3 pt-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm">
+                                                <span className="font-medium text-slate-600">Recurso: </span>
+                                                <span className="font-medium text-slate-800">{dadosProcesso.recurso}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Setor */}
+                                    <div className="flex items-start">
+                                        <div className="mr-3 pt-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm">
+                                                <span className="font-medium text-slate-600">Setor: </span>
+                                                <span className="font-medium text-slate-800">{dadosProcesso.setor}</span>
+                                            </p>
                                         </div>
                                     </div>
 
                                 </div>
                             </div>
-                        </div>
-                        {/* Operações e especificações */}
+                        </div>                        {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 px-4 lg:px-6 py-3 gap-3">
                                 <div className="flex items-center">
                                     <div className="h-4 w-1 bg-green-800 rounded-full mr-2"></div>
                                     <h2 className="text-sm font-medium text-gray-800">Operações e Especificações</h2>
@@ -963,15 +958,15 @@ export default function ProcessoPage() {
 
                                 <button
                                     onClick={() => setIsOperacaoModalOpen(true)}
-                                    className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors"
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-[#1ABC9C] hover:bg-[#16A085] rounded-md transition-colors whitespace-nowrap"
                                 >
                                     Adicionar Operação
                                 </button>
                             </div>
 
-                            <div className="p-3">
+                            <div className="p-3 lg:p-4">
                                 {dadosProcesso.operacoes.length > 0 ? (
-                                    <div className="space-y-6">
+                                    <div className="space-y-4 lg:space-y-6">
                                         {dadosProcesso.operacoes.map(operacao => (
                                             <OperacaoSection
                                                 key={operacao.id_operacao}

@@ -77,62 +77,79 @@ const ProcessoRow = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.2 }}
-                className="hover:bg-gray-50 transition-colors"
-            >
-                <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">
-                    {/* Botão de operações */}
-                    <button
-                        onClick={() => setShowOperacoes(!showOperacoes)}
-                        className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
-                    >
-                        <FileText className="w-3 h-3 mr-1" />
-                        <span>Operações ({operacoesCount})</span>
-                        <ChevronDown
-                            className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
-                        />
-                    </button>
-                    {/* Botão de adicionar operações - sempre visível */}
-                    <button
-                        onClick={() =>
-                            processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
-                        }
-                        className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
-                    >
-                        <PlusCircle className="w-3 h-3 mr-1" />
-                        <span>Adicionar</span>
-                    </button>
+                className="hover:bg-gray-50 transition-colors"            >
+                <td className="px-3 sm:px-4 lg:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                    {processo.processo}
                 </td>
-            </motion.tr>,
-            <motion.tr
+                <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">
+                        {processo.tipo_acao}
+                    </span>
+                </td>
+                <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700 max-w-xs truncate" title={processo.recurso}>
+                    {processo.recurso}
+                </td>
+                <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-50 text-gray-700 font-medium">
+                        {processo.setor}
+                    </span>
+                </td>                <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                    <div className="flex gap-2">
+                        {/* Botão de operações */}
+                        <button
+                            onClick={() => setShowOperacoes(!showOperacoes)}
+                            className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs font-medium"
+                        >
+                            <FileText className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Operações</span>
+                            <span className="sm:hidden">Op.</span>
+                            <span className="ml-1">({operacoesCount})</span>
+                            <ChevronDown
+                                className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                        {/* Botão de adicionar operações - sempre visível */}
+                        <button
+                            onClick={() =>
+                                processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
+                            }
+                            className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs font-medium"
+                        >
+                            <PlusCircle className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Adicionar</span>
+                            <span className="sm:hidden">Add</span>
+                        </button>                    </div>
+                </td>
+            </motion.tr>, <motion.tr
                 key="dropdown"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-            >
-                <td colSpan={6} className="bg-gray-50 px-4 py-2">
+                transition={{ duration: 0.2 }}            >
+                <td colSpan={5} className="bg-gray-50 px-3 sm:px-4 lg:px-6 py-3">
                     <div className="border border-gray-200 rounded-md bg-white overflow-hidden shadow-sm">
-                        <div className="py-1.5 px-3 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
-                            <div className="text-xs font-medium text-indigo-700">Operações do processo {processo.processo}</div>
-                            <div className="flex gap-2">
+                        <div className="py-2 px-3 sm:px-4 bg-indigo-50 border-b border-indigo-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <div className="text-xs sm:text-sm font-medium text-indigo-700">
+                                Operações do processo {processo.processo}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
                                 <button
                                     onClick={() =>
                                         processo.processo != null && onClickVerProcessos(referencia, roteiro, processo.processo)
                                     }
-                                    className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs"
+                                    className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs font-medium"
                                 >
                                     <Logs className="w-3 h-3 mr-1" />
-                                    <span>Ver detalhes dos Processos</span>
+                                    <span className="hidden sm:inline">Ver detalhes dos Processos</span>
+                                    <span className="sm:hidden">Detalhes</span>
                                 </button>
                             </div>
                         </div>
-                        {processo.operacoes?.map((op) => (
-                            <OperacaoItem key={op.id_operacao} operacao={op} />
-                        ))}
+                        <div className="max-h-64 overflow-y-auto">
+                            {processo.operacoes?.map((op) => (
+                                <OperacaoItem key={op.id_operacao} operacao={op} />
+                            ))}
+                        </div>
                     </div>
                 </td>
             </motion.tr>
@@ -146,43 +163,60 @@ const ProcessoRow = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            className="hover:bg-gray-50 transition-colors"
-        >
-            <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{processo.processo}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.tipo_acao}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.recurso}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">{processo.setor}</td>
-            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700 flex gap-2">
-                {/* Botão de operações */}
-                {hasOperacoes ? (
+            className="hover:bg-gray-50 transition-colors"        >
+            <td className="px-3 sm:px-4 lg:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                {processo.processo}
+            </td>
+            <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">
+                    {processo.tipo_acao}
+                </span>
+            </td>
+            <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700 max-w-xs truncate" title={processo.recurso}>
+                {processo.recurso}
+            </td>
+            <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-50 text-gray-700 font-medium">
+                    {processo.setor}
+                </span>
+            </td>            <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm text-gray-700">
+                <div className="flex gap-2">
+                    {/* Botão de operações */}
+                    {hasOperacoes ? (
+                        <button
+                            onClick={() => setShowOperacoes(!showOperacoes)}
+                            className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs font-medium"
+                        >
+                            <FileText className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Operações</span>
+                            <span className="sm:hidden">Op.</span>
+                            <span className="ml-1">({operacoesCount})</span>
+                            <ChevronDown
+                                className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                    ) : (
+                        <button
+                            className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-400 cursor-default text-xs font-medium"
+                            disabled
+                        >
+                            <FileText className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Sem Operações</span>
+                            <span className="sm:hidden">Vazio</span>
+                        </button>
+                    )}
+                    {/* Botão de adicionar operações - sempre visível */}
                     <button
-                        onClick={() => setShowOperacoes(!showOperacoes)}
-                        className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors text-xs"
+                        onClick={() =>
+                            processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
+                        }
+                        className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs font-medium"
                     >
-                        <FileText className="w-3 h-3 mr-1" />
-                        <span>Operações ({operacoesCount})</span>
-                        <ChevronDown
-                            className={`w-3 h-3 ml-1 transition-transform ${showOperacoes ? 'rotate-180' : ''}`}
-                        />
+                        <PlusCircle className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">Adicionar</span>
+                        <span className="sm:hidden">Add</span>
                     </button>
-                ) : (
-                    <button
-                        className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-400 cursor-default text-xs"
-                        disabled
-                    >
-                        <FileText className="w-3 h-3 mr-1" />
-                        <span>Sem Operações</span>
-                    </button>
-                )}
-                {/* Botão de adicionar operações - sempre visível */}                <button
-                    onClick={() =>
-                        processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
-                    }
-                    className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
-                >
-                    <PlusCircle className="w-3 h-3 mr-1" />
-                    <span>Adicionar</span>
-                </button>
+                </div>
             </td>
         </motion.tr>
     ];
@@ -242,20 +276,28 @@ const RoteiroAccordion = ({
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                        <div className="p-3 border-t border-gray-200">
+                    >                        <div className="p-3 sm:p-4 lg:p-5 border-t border-gray-200">
                             <div className="overflow-x-auto rounded-lg border border-gray-100">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Processo</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo Ação</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recurso</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Setor</th>
-                                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                                            <th scope="col" className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Processo
+                                            </th>
+                                            <th scope="col" className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Tipo Ação
+                                            </th>
+                                            <th scope="col" className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Recurso
+                                            </th>
+                                            <th scope="col" className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Setor
+                                            </th>
+                                            <th scope="col" className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48 lg:w-56 xl:w-64">
+                                                Ações
+                                            </th>
                                         </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-100">
+                                    </thead>                                    <tbody className="bg-white divide-y divide-gray-100">
                                         <AnimatePresence>
                                             {roteiro.processos.map((processo) => (<ProcessoRow
                                                 key={processo.processo}
@@ -264,8 +306,7 @@ const RoteiroAccordion = ({
                                                 roteiro={roteiro.roteiro}
                                                 onClickVerProcessos={onClickVerProcessos}
                                                 onCadastrarOperacoes={onCadastrarOperacoes}
-                                            />
-                                            ))}
+                                            />)).flat()}
                                         </AnimatePresence>
                                     </tbody>
                                 </table>
@@ -461,10 +502,8 @@ export default function Especificacoes() {
                 redirectDelay={2000}
             />
         );
-    }
-
-    return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-5 mx-auto max-w-7xl text-sm">
+    } return (
+        <div className="space-y-5 p-2 sm:p-4 md:p-5 lg:p-6 xl:p-8 mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px] text-sm">
             {/* Alerta para mensagens */}
             <AlertMessage
                 message={alert.message}
@@ -475,20 +514,22 @@ export default function Especificacoes() {
             />
 
             {/* Cabeçalho da página com campo de pesquisa */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <PageHeader
-                    title="Especificações"
-                    subtitle="Pesquise pela referência"
-                    showButton={false}
-                />
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                <div className="flex-shrink-0">
+                    <PageHeader
+                        title="Especificações"
+                        subtitle="Pesquise pela referência"
+                        showButton={false}
+                    />
+                </div>
 
                 {/* Campo de pesquisa */}
                 <motion.div
-                    className="flex flex-col sm:flex-row items-center gap-2 md:w-1/2 lg:w-2/5"
+                    className="flex flex-col sm:flex-row items-center gap-2 lg:w-1/2 xl:w-2/5 2xl:w-1/3"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                >                    <div className="relative flex-grow w-full">
+                ><div className="relative flex-grow w-full">
                         <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-100 flex items-center focus-within:border-[#1ABC9C] transition-colors duration-300">
                             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-gray-400" />
@@ -550,25 +591,24 @@ export default function Especificacoes() {
                     <motion.div
                         key="dados-referencia"
                         initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4 }}
-                        className="bg-white rounded-xl shadow-lg p-3 sm:p-5 border border-gray-100"
+                        className="bg-white rounded-xl shadow-lg p-4 sm:p-5 lg:p-6 xl:p-8 border border-gray-100"
                     >
-                        <div className="mb-3 sm:mb-3">
-                            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 flex items-center">
+                        <div className="mb-4 sm:mb-5 lg:mb-6">
+                            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-3 flex items-center">
                                 <span className="h-5 w-1.5 bg-[#1ABC9C] rounded-full mr-2 inline-block"></span>
                                 Informações da Referência
                             </h2>
-                            <div className="bg-gray-50 p-2.5 sm:p-3 rounded-lg">
-                                <div className="flex flex-col md:flex-row">
-                                    <div className="md:w-1/4 mb-3 md:mb-0">
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Referência</p>
-                                        <p className="font-medium text-xs sm:text-sm">{dadosReferencia.referencia}</p>
+                            <div className="bg-gray-50 p-3 sm:p-4 lg:p-5 rounded-lg">
+                                <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    <div className="lg:col-span-1">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Referência</p>
+                                        <p className="font-medium text-sm lg:text-base">{dadosReferencia.referencia}</p>
                                     </div>
-                                    <div className="md:w-3/4">
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Descrição</p>
-                                        <p className="font-medium text-xs sm:text-sm" title={dadosReferencia.descricao}>{dadosReferencia.descricao}</p>
+                                    <div className="lg:col-span-3 xl:col-span-4">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Descrição</p>
+                                        <p className="font-medium text-sm lg:text-base" title={dadosReferencia.descricao}>{dadosReferencia.descricao}</p>
                                     </div>
                                 </div>
                             </div>
@@ -580,23 +620,22 @@ export default function Especificacoes() {
                                 variants={staggerContainer}
                                 initial="hidden"
                                 animate="visible"
-                            >
-                                <div className="flex justify-between items-center mb-3">
-                                    <h3 className="text-base sm:text-lg font-bold text-gray-800 flex items-center">
+                            >                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                                    <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 flex items-center">
                                         <span className="h-5 w-1.5 bg-[#1ABC9C] rounded-full mr-2 inline-block"></span>
                                         Roteiros
                                     </h3>
 
-                                    <div className="flex space-x-2">
+                                    <div className="flex flex-wrap space-x-2">
                                         <button
                                             onClick={() => toggleAllRoteiros(true)}
-                                            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                            className="text-xs px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors whitespace-nowrap"
                                         >
                                             Expandir todos
                                         </button>
                                         <button
                                             onClick={() => toggleAllRoteiros(false)}
-                                            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                            className="text-xs px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors whitespace-nowrap"
                                         >
                                             Recolher todos
                                         </button>

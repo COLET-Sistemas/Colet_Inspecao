@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-    const { user } = useAuth(); 
+    const { user } = useAuth();
     const stats = [
         {
             title: 'Inspeções Realizadas',
@@ -170,7 +170,7 @@ export default function DashboardPage() {
 
     const userName = user?.name || user?.username || "Usuário"; return (
         <main className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto p-6 space-y-8">{/* Header Section */}
+            <div className="max-w-[1600px] mx-auto p-8 space-y-8">{/* Header Section */}
                 <header className="mb-8">
                     <div className="flex items-center justify-between">                        <div>
                         <h1 className="text-4xl font-bold text-gray-900">
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 </header>                {/* Statistics Cards */}
                 <section>
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Visão Geral</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4 gap-6">
                         {stats.map((stat, index) => (
                             <div key={index} className="bg-white rounded-lg shadow border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                                 <div className="flex items-start justify-between mb-4">
@@ -227,10 +227,8 @@ export default function DashboardPage() {
                             </div>
                         ))}
                     </div>
-                </section>
-
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">                    {/* Quick Actions */}
-                    <section className="xl:col-span-2 space-y-6">
+                </section>                <div className="grid grid-cols-1 2xl:grid-cols-4 gap-8">                    {/* Quick Actions */}
+                    <section className="2xl:col-span-3 space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                                 <Zap className="h-6 w-6 mr-3 text-gray-700" />
@@ -240,7 +238,7 @@ export default function DashboardPage() {
                                 Ver todas <ChevronRight className="h-4 w-4 ml-1" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 gap-4">
                             {quickActions.map((action, index) => (
                                 <div
                                     key={index}
@@ -289,10 +287,8 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     </section>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">                    {/* Recent Activities */}
-                    <section>
+                </div>                <div className="grid grid-cols-1 xl:grid-cols-3 2xl:grid-cols-3 gap-8">                    {/* Recent Activities */}
+                    <section className="xl:col-span-2 2xl:col-span-2">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                             <Activity className="h-6 w-6 mr-3 text-gray-700" />
                             Atividades Recentes
