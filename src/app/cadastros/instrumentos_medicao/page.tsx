@@ -535,10 +535,10 @@ export default function InstrumentosMedicaoPage() {
                 return (
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center text-xs">
-                            <span className="font-medium text-gray-600 mr-1">Data Validade:</span>
+                            <span className=" text-gray-600 mr-1">Dt.Validade:</span>
                             <span className={`text-sm ${instrumento.data_validade ?
                                 new Date(instrumento.data_validade) < new Date() ?
-                                    'text-red-600 font-medium' : 'text-gray-900'
+                                    'text-red-600 ' : 'text-gray-900'
                                 : 'text-gray-400'
                                 }`}>
                                 {instrumento.data_validade || '-'}
