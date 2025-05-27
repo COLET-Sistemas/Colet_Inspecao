@@ -61,7 +61,7 @@ const ProcessoRow = ({
     referencia: string;
     roteiro: string;
     onClickVerProcessos: (referencia: string, roteiro: string, processo: number) => void;
-    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number) => void;
+    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number, tipo_acao?: string) => void;
 }) => {
     const [showOperacoes, setShowOperacoes] = useState(false);
 
@@ -98,7 +98,7 @@ const ProcessoRow = ({
                     {/* Botão de adicionar operações - sempre visível */}
                     <button
                         onClick={() =>
-                            processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo)
+                            processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
                         }
                         className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
                     >
@@ -174,10 +174,9 @@ const ProcessoRow = ({
                         <span>Sem Operações</span>
                     </button>
                 )}
-                {/* Botão de adicionar operações - sempre visível */}
-                <button
+                {/* Botão de adicionar operações - sempre visível */}                <button
                     onClick={() =>
-                        processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo)
+                        processo.processo != null && onCadastrarOperacoes(referencia, roteiro, processo.processo, processo.tipo_acao)
                     }
                     className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors text-xs"
                 >
@@ -201,9 +200,8 @@ const RoteiroAccordion = ({
     roteiro: Roteiro;
     isExpanded: boolean;
     onToggle: (roteiroId: string) => void;
-    referencia: string;
-    onClickVerProcessos: (referencia: string, roteiro: string, processo: number) => void;
-    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number) => void;
+    referencia: string; onClickVerProcessos: (referencia: string, roteiro: string, processo: number) => void;
+    onCadastrarOperacoes: (referencia: string, roteiro: string, processo: number, tipo_acao?: string) => void;
 }) => {
     return (
         <motion.div
@@ -439,13 +437,11 @@ export default function Especificacoes() {
     // Funções para manipulação do modal de operações
     const handleCloseModalOperacoes = useCallback(() => {
         setModalOperacoes({ isOpen: false, dados: null });
-    }, []);
-
-    // Função para abrir o modal de operações
-    const handleOpenModalOperacoes = useCallback((referencia: string, roteiro: string, processo: number) => {
+    }, []);    // Função para abrir o modal de operações
+    const handleOpenModalOperacoes = useCallback((referencia: string, roteiro: string, processo: number, tipo_acao?: string) => {
         setModalOperacoes({
             isOpen: true,
-            dados: { referencia, roteiro, processo, operacao: 0 } // Usa 0 como valor padrão para satisfazer o tipo OperacaoDados
+            dados: { referencia, roteiro, processo, tipo_acao, operacao: 0 } // Usa 0 como valor padrão para satisfazer o tipo OperacaoDados
         });
     }, []);
 

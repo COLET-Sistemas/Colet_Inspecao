@@ -162,9 +162,7 @@ export function OperacoesModal({
         [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess]
     );
 
-    if (!isOpen || !dados) return null;
-
-    return (<FormModal
+    if (!isOpen || !dados) return null; return (<FormModal
         isOpen={isOpen}
         onClose={onClose}
         title={`${modo === 'edicao' ? 'Editar' : 'Nova'} Operação - ${dados.processo}${dados.tipo_acao ? ` (${dados.tipo_acao})` : ''}`}
