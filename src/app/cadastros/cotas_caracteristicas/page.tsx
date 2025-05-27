@@ -18,30 +18,31 @@ import { motion } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+// Helpers para tipo e stringValue
+const getTipoLabel = (tipo: string) => {
+    switch (tipo) {
+        case 'O': return 'Cota';
+        case 'A': return 'Característica';
+        default: return 'Outro';
+    }
+};
+const getTipoClass = (tipo: string) => {
+    switch (tipo) {
+        case 'O': return 'bg-blue-100 text-blue-800';
+        case 'A': return 'bg-green-100 text-green-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+};
+const stringValue = (value: string | boolean | null | undefined): string => {
+    return value !== undefined && value !== null ? String(value).toLowerCase() : '';
+};
+
 // Card component for list item
 const Card = React.memo(({ cota, onEdit, onDelete }: {
     cota: CotaCaracteristica;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => {
-    // Modern label/class helpers (reuse from table)
-    const getTipoLabel = (tipo: string) => {
-        switch (tipo) {
-            case 'O': return 'Cota';
-            case 'A': return 'Característica';
-            default: return 'Outro';
-        }
-    };
-    const getTipoClass = (tipo: string) => {
-        switch (tipo) {
-            case 'O': return 'bg-blue-100 text-blue-800';
-            case 'A': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-    const stringValue = (value: string | boolean | null | undefined): string => {
-        return value !== undefined && value !== null ? String(value).toLowerCase() : '';
-    };
     const renderSvg = () => {
         if (!cota.simbolo_path_svg) return (
             <div className="flex items-center justify-center p-2 mb-3 rounded-lg bg-gray-50 border border-gray-100 shadow-sm min-h-[56px]">
@@ -68,7 +69,6 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ml-3 ${getTipoClass(cota.tipo)}`}>{getTipoLabel(cota.tipo)}</span>
                 </div>
                 {renderSvg()}
-
                 <div className="flex flex-wrap gap-4 mt-1.5 mb-1 items-center justify-between">
                     {/* Unidade de medida */}
                     <div className="flex flex-col items-center min-w-[80px]">
@@ -96,7 +96,6 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
                         </span>
                     </div>
                 </div>
-
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                     {cota.tipo === "O" ? (
                         <div className="flex flex-col items-start">
@@ -135,12 +134,11 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
     );
 });
 
-// Add display name to the component
 Card.displayName = 'CotaCaracteristicaCard';
 
 export default function CotasCaracteristicasPage() {
     // Restrição de acesso para Gestor
-    const authLoading = false; // Ajuste se necessário para loading real
+    const authLoading = false;
     const hasPermission = (permission: string) => {
         try {
             const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
@@ -151,16 +149,14 @@ export default function CotasCaracteristicasPage() {
         } catch {
             return false;
         }
-    };    // State for filters
+    };
+    // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoFilter, setTipoFilter] = useState<string>("todos");
     const [localInspecaoFilter, setLocalInspecaoFilter] = useState<string>("todos");
-
     const [isPending, startTransition] = useTransition();
-
     // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
-
     // State for data and loading
     const [cotasCaracteristicas, setCotasCaracteristicas] = useState<CotaCaracteristica[]>([]);
     const [allData, setAllData] = useState<CotaCaracteristica[]>([]);
@@ -168,26 +164,27 @@ export default function CotasCaracteristicasPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
-
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCotaCaracteristica, setSelectedCotaCaracteristica] = useState<CotaCaracteristica | undefined>(undefined);
-
     // Delete modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
     // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-
     // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
-
     // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
+    const { getAuthHeaders } = useApiConfig();
 
-    const { getAuthHeaders } = useApiConfig();    // Calculate active filters
+    // Limpar alerta
+    const clearAlert = useCallback(() => {
+        setAlert({ message: null, type: "success" });
+    }, []);
+
+    // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
@@ -200,12 +197,10 @@ export default function CotasCaracteristicasPage() {
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
-
         try {
             const data = await getCotasCaracteristicas(getAuthHeaders());
             setAllData(data);
         } catch (error) {
-
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             setIsLoading(false);
@@ -231,32 +226,20 @@ export default function CotasCaracteristicasPage() {
     // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
         if (allData.length > 0) {
-            // Usar startTransition para não bloquear a UI durante filtragens pesadas
             startTransition(() => {
-                // Filtrar usando função memoizada para melhor performance
                 const filterData = () => {
-                    // Só realizar filtragem se houver filtros ativos
                     if (!searchTerm && tipoFilter === "todos" && localInspecaoFilter === "todos") {
                         return allData;
                     }
-
                     return allData.filter(item => {
-                        // Verificar texto de busca
                         const matchesSearch = !searchTerm ||
                             item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (item.unidade_medida && item.unidade_medida.toLowerCase().includes(searchTerm.toLowerCase()));
-
-                        // Verificar filtro de tipo
                         const matchesTipo = tipoFilter === "todos" || item.tipo === tipoFilter;
-
-                        // Verificar filtro de local de inspeção
                         const matchesLocalInspecao = localInspecaoFilter === "todos" || item.local_inspecao === localInspecaoFilter;
-
                         return matchesSearch && matchesTipo && matchesLocalInspecao;
                     });
                 };
-
-                // Atualizar o estado com os dados filtrados
                 setCotasCaracteristicas(filterData());
             });
         }
@@ -282,38 +265,23 @@ export default function CotasCaracteristicasPage() {
 
     const confirmDelete = useCallback(async () => {
         if (deletingId === null) return;
-
         setIsDeleting(true);
         setNotification(`Excluindo cota/característica...`);
-
         try {
             await deleteCotaCaracteristica(deletingId, getAuthHeaders());
-
-            // Recarregar dados
             loadData();
-
-            // Fechar modal de confirmação
             setIsDeleteModalOpen(false);
-
-            // Mostrar mensagem de sucesso
             setAlert({
                 message: `Cota/característica excluída com sucesso!`,
                 type: "success"
             });
-
             setNotification(`Cota/característica excluída com sucesso.`);
         } catch (error) {
-
-
-            // Sempre fechar o modal em caso de erro
             setIsDeleteModalOpen(false);
-
-            // Mostrar mensagem de erro
             setAlert({
                 message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
                 type: "error"
             });
-
             setNotification(`Erro ao excluir cota/característica: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
         } finally {
             setIsDeleting(false);
@@ -331,58 +299,28 @@ export default function CotasCaracteristicasPage() {
         setSelectedCotaCaracteristica(undefined);
         setIsModalOpen(true);
     }, []);
+
     const handleModalSuccess = useCallback(async (data: CotaCaracteristica) => {
-
-        // Atualizar o estado local com os dados recebidos do modal
         if (selectedCotaCaracteristica) {
-            // Caso de edição - O modal já fez a chamada PUT, não precisamos repetir
-
-            // Atualiza o item em ambas as listas de forma consistente, usando os dados retornados pelo modal
             setCotasCaracteristicas(prev => prev.map(item =>
                 item.id === data.id ? data : item
             ));
             setAllData(prev => prev.map(item =>
                 item.id === data.id ? data : item
             ));
-
-            // Mostrar mensagem de sucesso na página
             setAlert({
                 message: `Cota/característica ${data.id} atualizada com sucesso!`,
                 type: "success"
             });
-
-            // Para leitores de tela
             setNotification(`Cota/característica ${data.id} atualizada com sucesso.`);
-
         } else if (data) {
-
-            // Após criar o item, recarrega a lista completa com uma chamada GET
-            try {
-                setNotification(`Atualizando lista de cotas/características...`);
-
-                // Recarregar dados completos do servidor após criação
-                await loadData();
-
-                // Mostrar mensagem de sucesso na página
-                setAlert({
-                    message: `Nova cota/característica criada com sucesso!`,
-                    type: "success"
-                });
-
-                // Para leitores de tela
-                setNotification(`Nova cota/característica criada com sucesso.`);
-            } catch (error) {
-                console.error("Erro ao atualizar lista após criar item:", error);
-
-                // Como fallback, adiciona o item retornado pelo modal às listas locais
-                setCotasCaracteristicas(prev => [...prev, data]);
-                setAllData(prev => [...prev, data]);
-
-                setAlert({
-                    message: `Item criado com sucesso, mas houve um erro ao atualizar a lista.`,
-                    type: "warning"
-                });
-            }
+            setNotification(`Atualizando lista de cotas/características...`);
+            await loadData();
+            setAlert({
+                message: `Nova cota/característica criada com sucesso!`,
+                type: "success"
+            });
+            setNotification(`Nova cota/característica criada com sucesso.`);
         }
     }, [selectedCotaCaracteristica, loadData]);
 
@@ -397,50 +335,41 @@ export default function CotasCaracteristicasPage() {
     // Close modal function
     const handleCloseModal = useCallback(() => {
         setIsModalOpen(false);
-        // Damos um tempo para a animação de saída do modal antes de limpar a seleção
         setTimeout(() => {
             setSelectedCotaCaracteristica(undefined);
         }, 200);
     }, []);
 
-    // Limpar alerta
-    const clearAlert = useCallback(() => {
-        setAlert({ message: null, type: "success" });
-    }, []);
-
     // Prepare filter options for the FilterPanel component
-    const filterOptions = useMemo(() => {
-        return [
-            {
-                id: "tipo",
-                label: "Tipo",
-                value: tipoFilter,
-                options: [
-                    { value: "todos", label: "Todos os tipos" },
-                    { value: "O", label: "Cota", color: "bg-blue-100 text-blue-800" },
-                    { value: "A", label: "Característica", color: "bg-green-100 text-green-800" },
-                ],
-                onChange: setTipoFilter,
-            },
-            {
-                id: "localInspecao",
-                label: "Local de Inspeção",
-                value: localInspecaoFilter,
-                options: [
-                    { value: "todos", label: "Todos" },
-                    { value: "P", label: "Produção", color: "bg-blue-100 text-blue-800" },
-                    { value: "Q", label: "Qualidade", color: "bg-green-100 text-green-800" },
-                    { value: "*", label: "Ambos", color: "bg-purple-100 text-purple-800" },
-                ],
-                onChange: setLocalInspecaoFilter,
-            },
-        ];
-    }, [tipoFilter, localInspecaoFilter]);
+    const filterOptions = useMemo(() => [
+        {
+            id: "tipo",
+            label: "Tipo",
+            value: tipoFilter,
+            options: [
+                { value: "todos", label: "Todos os tipos" },
+                { value: "O", label: "Cota", color: "bg-blue-100 text-blue-800" },
+                { value: "A", label: "Característica", color: "bg-green-100 text-green-800" },
+            ],
+            onChange: setTipoFilter,
+        },
+        {
+            id: "localInspecao",
+            label: "Local de Inspeção",
+            value: localInspecaoFilter,
+            options: [
+                { value: "todos", label: "Todos" },
+                { value: "P", label: "Produção", color: "bg-blue-100 text-blue-800" },
+                { value: "Q", label: "Qualidade", color: "bg-green-100 text-green-800" },
+                { value: "*", label: "Ambos", color: "bg-purple-100 text-purple-800" },
+            ],
+            onChange: setLocalInspecaoFilter,
+        },
+    ], [tipoFilter, localInspecaoFilter]);
 
     // Prepare selected filters for display in the filter panel
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
-
         if (searchTerm) {
             filters.push({
                 id: "search",
@@ -449,10 +378,8 @@ export default function CotasCaracteristicasPage() {
                 color: "bg-purple-100 text-purple-800",
             });
         }
-
         if (tipoFilter !== "todos") {
             let label, color;
-
             switch (tipoFilter) {
                 case "O":
                     label = "Cota";
@@ -466,7 +393,6 @@ export default function CotasCaracteristicasPage() {
                     label = tipoFilter;
                     color = "bg-gray-100 text-gray-800";
             }
-
             filters.push({
                 id: "tipo",
                 value: tipoFilter,
@@ -474,7 +400,6 @@ export default function CotasCaracteristicasPage() {
                 color,
             });
         }
-
         if (localInspecaoFilter !== "todos") {
             let label, color;
             switch (localInspecaoFilter) {
@@ -501,28 +426,8 @@ export default function CotasCaracteristicasPage() {
                 color,
             });
         }
-
         return filters;
     }, [searchTerm, tipoFilter, localInspecaoFilter]);
-
-    const getTipoLabel = useCallback((tipo: string) => {
-        switch (tipo) {
-            case 'O': return 'Cota';
-            case 'A': return 'Característica';
-            default: return 'Outro';
-        }
-    }, []);
-
-    const getTipoClass = useCallback((tipo: string) => {
-        switch (tipo) {
-            case 'O': return 'bg-blue-100 text-blue-800';
-            case 'A': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    }, []);    // Helper function for consistent string conversion
-    const stringValue = (value: string | boolean | null | undefined): string => {
-        return value !== undefined && value !== null ? String(value).toLowerCase() : '';
-    };
 
     // Table columns configuration
     const tableColumns = useMemo(() => [
@@ -581,28 +486,28 @@ export default function CotasCaracteristicasPage() {
                     </span>
                 );
             },
-        }, {
+        },
+        {
             key: "rejeita_menor",
             title: "Rejeita Menor",
             render: (item: { id: string | number }) => {
                 const cota = item as CotaCaracteristica;
                 const strValue = stringValue(cota.rejeita_menor);
                 const isRejeita = ['s', 'S'].includes(strValue);
-
                 return (
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isRejeita ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
                         {['s', 'S'].includes(strValue) ? "Sim" : ['n', 'N'].includes(strValue) ? "Não" : "-"}
                     </span>
                 );
             },
-        }, {
+        },
+        {
             key: "rejeita_maior",
             title: "Rejeita Maior",
             render: (item: { id: string | number }) => {
                 const cota = item as CotaCaracteristica;
                 const strValue = stringValue(cota.rejeita_maior);
                 const isRejeita = ['s', 'S'].includes(strValue);
-
                 return (
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isRejeita ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
                         {['s', 'S'].includes(strValue) ? "Sim" : ['n', 'N'].includes(strValue) ? "Não" : "-"}
@@ -616,7 +521,6 @@ export default function CotasCaracteristicasPage() {
             render: (item: { id: string | number }) => {
                 const cota = item as CotaCaracteristica;
                 if (cota.tipo !== "O") return <span className="text-xs text-gray-400">-</span>;
-
                 return (
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-700`}>
                         {cota.local_inspecao === "P" ? "Produção" :
@@ -657,7 +561,7 @@ export default function CotasCaracteristicasPage() {
                 );
             },
         },
-    ], [handleEdit, handleDelete, getTipoClass, getTipoLabel]);
+    ], [handleEdit, handleDelete]);
 
     if (!hasPermission('G')) {
         return (
@@ -677,8 +581,6 @@ export default function CotasCaracteristicasPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
-
-            {/* Alerta para mensagens de sucesso */}
             <AlertMessage
                 message={alert.message}
                 type={alert.type}
@@ -686,8 +588,6 @@ export default function CotasCaracteristicasPage() {
                 autoDismiss={true}
                 dismissDuration={5000}
             />
-
-            {/* Modal de Cota/Característica */}
             <CotaCaracteristicaModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
@@ -701,8 +601,6 @@ export default function CotasCaracteristicasPage() {
                     setNotification(`Erro: ${errorMessage}`);
                 }}
             />
-
-            {/* Modal de confirmação de exclusão */}
             <ConfirmDeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={handleCloseDeleteModal}
@@ -720,8 +618,6 @@ export default function CotasCaracteristicasPage() {
                         : undefined
                 }
             />
-
-            {/* Page Header Component */}
             <PageHeader
                 title="Cotas e Características Especiais"
                 subtitle="Cadastro e edição de cotas e características especiais"
@@ -729,7 +625,7 @@ export default function CotasCaracteristicasPage() {
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
                 showButton={true}
-            />            {/* Filters Component */}
+            />
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -743,8 +639,6 @@ export default function CotasCaracteristicasPage() {
                 onRefresh={handleRefresh}
                 isRefreshing={isRefreshing}
             />
-
-            {/* Data Container with Dynamic View */}
             <div className="bg-white p-4 rounded-lg shadow-sm">
                 {isLoading ? (
                     <LoadingSpinner text="Carregando cotas e características..." color="primary" size="medium" />
@@ -757,24 +651,26 @@ export default function CotasCaracteristicasPage() {
                             label: "Tentar novamente",
                             onClick: handleRefresh
                         }}
-                    />) : isPending ? (
-                        <LoadingSpinner text="Carregando cotas e características..." color="primary" size="medium" />
-                    ) : cotasCaracteristicas.length === 0 ? (
-                        <EmptyState
-                            icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
-                            title="Nenhuma cota ou característica encontrada"
-                            description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
-                            primaryAction={{
-                                label: activeFilters > 0 ? "Limpar filtros" : "Criar primeira cota/característica",
-                                onClick: activeFilters > 0 ? resetFilters : handleCreateNew
-                            }}
-                        />
-                    ) : viewMode === "table" ? (
-                        <DataTable
-                            data={cotasCaracteristicas}
-                            columns={tableColumns}
-                        />
-                    ) : (<DataCards
+                    />
+                ) : isPending ? (
+                    <LoadingSpinner text="Carregando cotas e características..." color="primary" size="medium" />
+                ) : cotasCaracteristicas.length === 0 ? (
+                    <EmptyState
+                        icon={<svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
+                        title="Nenhuma cota ou característica encontrada"
+                        description="Não existem cotas ou características cadastradas que atendam aos critérios de filtro."
+                        primaryAction={{
+                            label: activeFilters > 0 ? "Limpar filtros" : "Criar primeira cota/característica",
+                            onClick: activeFilters > 0 ? resetFilters : handleCreateNew
+                        }}
+                    />
+                ) : viewMode === "table" ? (
+                    <DataTable
+                        data={cotasCaracteristicas}
+                        columns={tableColumns}
+                    />
+                ) : (
+                    <DataCards
                         data={cotasCaracteristicas}
                         renderCard={(cota) => (
                             <Card

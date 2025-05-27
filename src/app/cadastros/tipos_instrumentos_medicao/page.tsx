@@ -23,46 +23,44 @@ const Card = React.memo(({ tipo, onEdit, onDelete }: {
     tipo: TipoInstrumentoMedicao;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
-}) => (<div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-    <div className="p-4">
-        <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-            {tipo.nome_tipo_instrumento}
-        </h3>
-
-        {tipo.observacao && (
-            <p className="text-sm text-gray-500 mb-2 line-clamp-2">
-                {tipo.observacao}
-            </p>
-        )}
-
-        <div className="flex justify-between items-end mt-3">
-            <div className="flex flex-col space-y-1">
-            </div>
-
-            <div className="flex space-x-1">
-                <Tooltip text="Editar">
-                    <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
-                        onClick={() => onEdit(tipo.id)}
-                        aria-label="Editar"
-                    >
-                        <Pencil className="h-3.5 w-3.5" />
-                    </motion.button>
-                </Tooltip>
-                <Tooltip text="Excluir">
-                    <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1"
-                        onClick={() => onDelete(tipo.id)}
-                        aria-label="Excluir"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" />
-                    </motion.button>
-                </Tooltip>
+}) => (
+    <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
+        <div className="p-4">
+            <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
+                {tipo.nome_tipo_instrumento}
+            </h3>
+            {tipo.observacao && (
+                <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                    {tipo.observacao}
+                </p>
+            )}
+            <div className="flex justify-between items-end mt-3">
+                <div className="flex flex-col space-y-1" />
+                <div className="flex space-x-1">
+                    <Tooltip text="Editar">
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                            onClick={() => onEdit(tipo.id)}
+                            aria-label="Editar"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </motion.button>
+                    </Tooltip>
+                    <Tooltip text="Excluir">
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1"
+                            onClick={() => onDelete(tipo.id)}
+                            aria-label="Excluir"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </motion.button>
+                    </Tooltip>
+                </div>
             </div>
         </div>
-    </div>    </div>
+    </div>
 ));
 
 Card.displayName = 'TipoInstrumentoMedicaoCard';
@@ -70,15 +68,12 @@ Card.displayName = 'TipoInstrumentoMedicaoCard';
 // Check if user has the required permission
 const hasPermission = (permission: string) => {
     try {
-        // Get userData from localStorage
         const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
         if (!userDataStr) return false;
         const userData = JSON.parse(userDataStr);
-        // Check if perfil_inspecao exists and contains the required permission
         if (!userData || !userData.perfil_inspecao) return false;
         return userData.perfil_inspecao.includes(permission);
-    } catch (error) {
-        console.error("Error checking permissions:", error);
+    } catch {
         return false;
     }
 };
@@ -87,10 +82,8 @@ export default function TiposInstrumentosMedicaoPage() {
     // Estados relacionados a autenticação
     const [authLoading, setAuthLoading] = useState(true);
     const [hasManagerPermission, setHasManagerPermission] = useState(false);
-
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("todos");
     const [isPending, startTransition] = useTransition();
     const [viewMode, setViewMode] = useState<ViewMode>("table");
     const [tiposInstrumentosMedicao, setTiposInstrumentosMedicao] = useState<TipoInstrumentoMedicao[]>([]);
@@ -105,49 +98,38 @@ export default function TiposInstrumentosMedicaoPage() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-    const [notification, setNotification] = useState('');
+    const [notification, setNotification] = useState("");
     const dataFetchedRef = useRef(false);
     const { getAuthHeaders } = useApiConfig();
 
-    // Callbacks and effects (all hooks at top level)
+    // Check authentication status when component mounts
     useEffect(() => {
-        // Check authentication status when component mounts
-        const checkAuth = () => {
-            try {
-                const hasPermissionResult = hasPermission('G');
-                setHasManagerPermission(hasPermissionResult);
-                setAuthLoading(false);
-            } catch (error) {
-                console.error("Error checking authentication:", error);
-                setAuthLoading(false);
-            }
-        };
-        checkAuth();
+        const hasPermissionResult = hasPermission("G");
+        setHasManagerPermission(hasPermissionResult);
+        setAuthLoading(false);
     }, []);
 
+    // Count active filters
     useEffect(() => {
-        let count = 0;
-        if (searchTerm) count++;
-        if (statusFilter !== "todos") count++;
-        setActiveFilters(count);
-    }, [searchTerm, statusFilter]);
+        setActiveFilters(searchTerm ? 1 : 0);
+    }, [searchTerm]);
 
+    // Load data
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
-
         try {
             const data = await getTiposInstrumentosMedicao(getAuthHeaders());
             setAllData(data);
         } catch (error) {
-            console.error("Erro ao buscar tipos de instrumentos de medição:", error);
-            setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+            setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
     }, [getAuthHeaders]);
 
+    // Refresh handler
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
         dataFetchedRef.current = false;
@@ -155,166 +137,120 @@ export default function TiposInstrumentosMedicaoPage() {
         setNotification("Atualizando dados...");
     }, [loadData]);
 
+    // Initial data load
     useEffect(() => {
-        if (dataFetchedRef.current === false) {
+        if (!dataFetchedRef.current) {
             dataFetchedRef.current = true;
             loadData();
         }
     }, [loadData]);
 
+    // Filter data
     useEffect(() => {
-        if (allData.length > 0) {
-            startTransition(() => {
-                const filterData = () => {
-                    if (!searchTerm && statusFilter === "todos") {
-                        return allData;
-                    }
+        startTransition(() => {
+            if (!searchTerm) {
+                setTiposInstrumentosMedicao(allData);
+            } else {
+                setTiposInstrumentosMedicao(
+                    allData.filter(item =>
+                        item.nome_tipo_instrumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (item.observacao && item.observacao.toLowerCase().includes(searchTerm.toLowerCase()))
+                    )
+                );
+            }
+        });
+    }, [searchTerm, allData]);
 
-                    return allData.filter(item => {
-                        const matchesSearch = !searchTerm ||
-                            item.nome_tipo_instrumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (item.observacao && item.observacao.toLowerCase().includes(searchTerm.toLowerCase()))
-
-                        return matchesSearch;
-                    });
-                };
-
-                setTiposInstrumentosMedicao(filterData());
-            });
-        }
-    }, [searchTerm, statusFilter, allData]);
-
+    // Edit handler
     const handleEdit = useCallback((id: number) => {
         const tipoToEdit = tiposInstrumentosMedicao.find(tipo => tipo.id === id);
         if (tipoToEdit) {
             setSelectedTipoInstrumentoMedicao(tipoToEdit);
             setIsModalOpen(true);
-            setNotification(`Iniciando edição do tipo de instrumento de medição ${id}.`);
+            setNotification("");
         }
     }, [tiposInstrumentosMedicao]);
 
+    // Delete handler
     const handleDelete = useCallback((id: number) => {
         setDeletingId(id);
         setIsDeleteModalOpen(true);
-        const tipoToDelete = tiposInstrumentosMedicao.find(tipo => tipo.id === id);
-        if (tipoToDelete) {
-            setNotification(`Preparando para excluir o tipo de instrumento de medição: ${tipoToDelete.nome_tipo_instrumento}`);
-        }
-    }, [tiposInstrumentosMedicao]);
+        setNotification("");
+    }, []);
 
+    // Confirm delete
     const confirmDelete = useCallback(async () => {
         if (deletingId === null) return;
-
         setIsDeleting(true);
-        setNotification(`Excluindo tipo de instrumento de medição...`);
-
+        setNotification("");
         try {
             await deleteTipoInstrumentoMedicao(deletingId, getAuthHeaders());
-
-            loadData();
-
+            await loadData();
             setIsDeleteModalOpen(false);
-
-            setAlert({
-                message: `Tipo de instrumento de medição excluído com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Tipo de instrumento de medição excluído com sucesso.`);
+            setAlert({ message: `Tipo de instrumento de medição excluído com sucesso!`, type: "success" });
         } catch (error) {
-            console.error('Erro ao excluir tipo de instrumento de medição:', error);
-
             setIsDeleteModalOpen(false);
-
-            setAlert({
-                message: error instanceof Error ? error.message : 'Erro desconhecido ao excluir o registro',
-                type: "error"
-            });
-
-            setNotification(`Erro ao excluir tipo de instrumento de medição: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+            setAlert({ message: error instanceof Error ? error.message : "Erro desconhecido ao excluir o registro", type: "error" });
         } finally {
             setIsDeleting(false);
             setDeletingId(null);
         }
     }, [deletingId, getAuthHeaders, loadData]);
 
+    // Close delete modal
     const handleCloseDeleteModal = useCallback(() => {
         setIsDeleteModalOpen(false);
         setDeletingId(null);
-        setNotification("Exclusão cancelada.");
+        setNotification("");
     }, []);
 
+    // Create new handler
     const handleCreateNew = useCallback(() => {
         setSelectedTipoInstrumentoMedicao(undefined);
         setIsModalOpen(true);
     }, []);
 
+    // Modal success handler
     const handleModalSuccess = useCallback(async (data: TipoInstrumentoMedicao) => {
-        console.log("Dados recebidos do modal:", data);
-
         if (selectedTipoInstrumentoMedicao) {
-            setTiposInstrumentosMedicao(prev => prev.map(item =>
-                item.id === data.id ? data : item
-            ));
-            setAllData(prev => prev.map(item =>
-                item.id === data.id ? data : item
-            ));
-            setAlert({
-                message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`,
-                type: "success"
-            });
-
-            setNotification(`Tipo de instrumento de medição ${data.id} atualizado com sucesso.`);
+            setTiposInstrumentosMedicao(prev => prev.map(item => item.id === data.id ? data : item));
+            setAllData(prev => prev.map(item => item.id === data.id ? data : item));
+            setAlert({ message: `Tipo de instrumento de medição ${data.id} atualizado com sucesso!`, type: "success" });
         } else {
-            console.log("Item criado com sucesso:", data);
-
             try {
-                setNotification(`Atualizando lista de tipos de instrumentos de medição...`);
-
                 await loadData();
-
-                setAlert({
-                    message: `Novo tipo de instrumento de medição criado com sucesso!`,
-                    type: "success"
-                });
-
-                setNotification(`Novo tipo de instrumento de medição criado com sucesso.`);
-            } catch (error) {
-                console.error("Erro ao atualizar lista após criar item:", error);
-
+                setAlert({ message: `Novo tipo de instrumento de medição criado com sucesso!`, type: "success" });
+            } catch {
                 setTiposInstrumentosMedicao(prev => [...prev, data]);
                 setAllData(prev => [...prev, data]);
-
-                setAlert({
-                    message: `Item criado com sucesso, mas houve um erro ao atualizar a lista.`,
-                    type: "warning"
-                });
+                setAlert({ message: `Item criado com sucesso, mas houve um erro ao atualizar a lista.`, type: "warning" });
             }
         }
     }, [selectedTipoInstrumentoMedicao, loadData]);
 
+    // Reset filters
     const resetFilters = useCallback(() => {
         setSearchTerm("");
-        setStatusFilter("todos");
-        setNotification("Filtros resetados.");
+        setNotification("");
     }, []);
 
+    // Close modal
     const handleCloseModal = useCallback(() => {
         setIsModalOpen(false);
-        setTimeout(() => {
-            setSelectedTipoInstrumentoMedicao(undefined);
-        }, 200);
+        setTimeout(() => setSelectedTipoInstrumentoMedicao(undefined), 200);
     }, []);
 
+    // Clear alert
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
 
+    // Memoized filter options (empty)
     const filterOptions = useMemo(() => [], []);
 
+    // Memoized selected filters for display
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
-
         if (searchTerm) {
             filters.push({
                 id: "search",
@@ -323,10 +259,10 @@ export default function TiposInstrumentosMedicaoPage() {
                 color: "bg-purple-100 text-purple-800",
             });
         }
-
         return filters;
     }, [searchTerm]);
 
+    // Memoized table columns
     const tableColumns = useMemo(() => [
         {
             key: "nome_tipo_instrumento",
@@ -401,7 +337,6 @@ export default function TiposInstrumentosMedicaoPage() {
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
-
             {/* Alerta para mensagens de sucesso */}
             <AlertMessage
                 message={alert.message}
@@ -410,7 +345,6 @@ export default function TiposInstrumentosMedicaoPage() {
                 autoDismiss={true}
                 dismissDuration={5000}
             />
-
             {/* Modal de Tipo de Instrumento de Medição */}
             <TipoInstrumentoMedicaoModal
                 isOpen={isModalOpen}
@@ -431,10 +365,8 @@ export default function TiposInstrumentosMedicaoPage() {
                         message: errorMessage,
                         type: "error"
                     });
-                    setNotification(`Erro: ${errorMessage}`);
                 }}
             />
-
             {/* Modal de confirmação de exclusão */}
             <ConfirmDeleteModal
                 isOpen={isDeleteModalOpen}
@@ -453,7 +385,6 @@ export default function TiposInstrumentosMedicaoPage() {
                         : undefined
                 }
             />
-
             {/* Page Header Component */}
             <PageHeader
                 title="Tipos de Instrumentos de Medição"
@@ -462,7 +393,8 @@ export default function TiposInstrumentosMedicaoPage() {
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
                 showButton={true}
-            />            {/* Filters Component */}
+            />
+            {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -477,7 +409,6 @@ export default function TiposInstrumentosMedicaoPage() {
                 isRefreshing={isRefreshing}
                 disableFilters={true}
             />
-
             {/* Data Container with Dynamic View */}
             <DataListContainer
                 isLoading={isLoading || isPending}
