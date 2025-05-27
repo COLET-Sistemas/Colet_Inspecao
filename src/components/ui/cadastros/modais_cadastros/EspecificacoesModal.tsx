@@ -3,7 +3,7 @@
 import { useApiConfig } from '@/hooks/useApiConfig';
 import { motion } from 'framer-motion';
 import { AlertCircle, FileText, Ruler } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormModal } from '../FormModal';
 import { Option, SelectWithSvg } from '../SelectWithSvg';
 
@@ -37,6 +37,7 @@ interface EspecificacoesModalProps {
     onSuccess: (message: string) => void;
     dados: EspecificacaoDados | null;
     modo?: 'cadastro' | 'edicao';
+    especificacoesList?: Array<{ ordem: number }>; // Add this prop
 }
 
 export function EspecificacoesModal({
@@ -44,7 +45,8 @@ export function EspecificacoesModal({
     onClose,
     dados,
     onSuccess,
-    modo = 'cadastro'
+    modo = 'cadastro',
+    especificacoesList = []
 }: EspecificacoesModalProps) {
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
@@ -56,7 +58,6 @@ export function EspecificacoesModal({
     const [caracteristicasOptions, setCaracteristicasOptions] = useState<Option[]>([]);
     const [instrumentOptions, setInstrumentOptions] = useState<{ id: number, label: string }[]>([]);
     const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-    const [nextOrder, setNextOrder] = useState<number | null>(null);
     const [formState, setFormState] = useState<{
         especificacao?: string,
         tipo_valor: string,
@@ -80,91 +81,104 @@ export function EspecificacoesModal({
         uso_inspecao_setup: dados?.uso_inspecao_setup === 'S',
         uso_inspecao_processo: dados?.uso_inspecao_processo === 'S',
         uso_inspecao_qualidade: dados?.uso_inspecao_qualidade === 'S',
-    });
+    }); const { apiUrl, getAuthHeaders } = useApiConfig();
 
-    const { apiUrl, getAuthHeaders } = useApiConfig();    // Função para buscar o próximo valor de ordem
-    const fetchNextOrder = useCallback(async () => {
-        if (!isOpen || !dados || modo !== 'cadastro') return;
-
-        try {
-            // Buscar especificações existentes para determinar o próximo valor de ordem
-            const response = await fetch(
-                `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(dados.referencia)}&roteiro=${encodeURIComponent(dados.roteiro)}&processo=${dados.processo}`,
-                { headers: getAuthHeaders() }
-            );
-            if (response.ok) {
-                const processoData = await response.json();
-
-                // Verificar se o processo tem operações
-                if (processoData && Array.isArray(processoData.operacoes)) {
-                    // Encontrar a operação correta pelo número da operação
-                    const operacao = processoData.operacoes.find((op: { operacao: number }) => op.operacao === dados.operacao);
-
-                    if (operacao && Array.isArray(operacao.especificacoes_inspecao) && operacao.especificacoes_inspecao.length > 0) {
-                        // Encontra a maior ordem nas especificações dessa operação e adiciona 1
-                        const maxOrder = Math.max(...operacao.especificacoes_inspecao.map((esp: { ordem?: number }) => esp.ordem || 0));
-                        setNextOrder(maxOrder + 1);
-                    } else {
-                        // Se não houver especificações para essa operação, começa com ordem 1
-                        setNextOrder(1);
-                    }
-                } else {
-                    // Se não houver operações, começa com ordem 1
-                    setNextOrder(1);
-                }
+    // Consolidated effect for initializing form state in cadastro mode
+    useEffect(() => {
+        if (isOpen && modo === 'cadastro') {
+            // Compute next ordem from especificacoesList
+            let nextOrdem = 1;
+            if (especificacoesList && especificacoesList.length > 0) {
+                nextOrdem = Math.max(...especificacoesList.map(e => Number(e.ordem) || 0)) + 1;
             }
-        } catch (error) {
-            console.error("Erro ao buscar próxima ordem:", error);
-            // Em caso de erro, definimos ordem 1 como padrão
-            setNextOrder(1);
+
+            setFormState({
+                tipo_valor: '',
+                valor_minimo: '',
+                valor_maximo: '',
+                unidade_medida: '',
+                complemento_cota: '',
+                id_tipo_instrumento: '',
+                ordem: String(nextOrdem),
+                uso_inspecao_setup: false,
+                uso_inspecao_processo: false,
+                uso_inspecao_qualidade: false,
+            });
+            setSelectedTipoValor('');
+            setSelectedCota(null);
+
+            // Set característica especial id 0 se disponível
+            if (caracteristicasOptions.length > 0) {
+                const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+                if (caracteristicaPadrao) {
+                    setSelectedCaracteristica(caracteristicaPadrao);
+                } else {
+                    setSelectedCaracteristica(null);
+                }
+            } else {
+                setSelectedCaracteristica(null);
+            }
         }
-    }, [apiUrl, getAuthHeaders, isOpen, dados, modo]);
+    }, [isOpen, modo, especificacoesList, caracteristicasOptions]);
+
+    // Simple in-memory cache for options using useRef
+    const cotasCache = useRef<Option[] | null>(null);
+    const caracteristicasCache = useRef<Option[] | null>(null);
+    const instrumentosCache = useRef<{ id: number, label: string }[] | null>(null);
 
     // Função para buscar as opções de cotas, características e instrumentos
     const fetchOptions = useCallback(async () => {
         if (!isOpen) return;
-
         setIsLoadingOptions(true);
         try {
-            // Buscar cotas
-            const cotasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`, {
-                headers: getAuthHeaders()
-            });
-            const cotasData = await cotasResponse.json();
-            setCotasOptions(cotasData);
-
-            // Buscar características especiais
-            const caracteristicasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=caracteristicas`, {
-                headers: getAuthHeaders()
-            });
-            const caracteristicasData = await caracteristicasResponse.json();
-            setCaracteristicasOptions(caracteristicasData);
-            // Buscar tipos de instrumentos de medição
-            const instrumentsResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
-                headers: getAuthHeaders()
-            });
-            const instrumentsData = await instrumentsResponse.json();
-            setInstrumentOptions(Array.isArray(instrumentsData) ? instrumentsData.map(item => ({
-                id: item.id,
-                label: item.nome_tipo_instrumento
-            })) : []);
-
-            // Buscar próximo valor de ordem
-            await fetchNextOrder();
+            // Use cache if available
+            let cotasData = cotasCache.current;
+            let caracteristicasData = caracteristicasCache.current;
+            let instrumentsData = instrumentosCache.current;
+            if (!cotasData) {
+                const cotasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`, {
+                    headers: getAuthHeaders()
+                });
+                cotasData = await cotasResponse.json();
+                cotasCache.current = cotasData;
+            }
+            setCotasOptions(cotasData || []);
+            if (!caracteristicasData) {
+                const caracteristicasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=caracteristicas`, {
+                    headers: getAuthHeaders()
+                });
+                caracteristicasData = await caracteristicasResponse.json();
+                caracteristicasCache.current = caracteristicasData;
+            }
+            setCaracteristicasOptions(caracteristicasData || []);
+            if (!instrumentsData) {
+                const instrumentsResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
+                    headers: getAuthHeaders()
+                });
+                const instrumentsRaw = await instrumentsResponse.json();
+                instrumentsData = Array.isArray(instrumentsRaw) ? instrumentsRaw.map(item => ({
+                    id: item.id,
+                    label: item.nome_tipo_instrumento
+                })) : [];
+                instrumentosCache.current = instrumentsData;
+            }
+            setInstrumentOptions(instrumentsData || []);
         } catch (error) {
             console.error("Erro ao carregar opções:", error);
             setFormError("Erro ao carregar as opções de cotas e instrumentos.");
         } finally {
             setIsLoadingOptions(false);
         }
-    }, [apiUrl, getAuthHeaders, isOpen, fetchNextOrder]);
+    }, [apiUrl, getAuthHeaders, isOpen]);
 
     // Carregar opções quando o modal abrir
     useEffect(() => {
         if (isOpen) {
             fetchOptions();
         }
-    }, [isOpen, fetchOptions, modo]);    // Efeito para inicializar as seleções quando os dados são carregados
+    }, [isOpen, fetchOptions, modo]);
+
+    // Efeito para inicializar as seleções quando os dados são carregados
     useEffect(() => {
         if (dados && cotasOptions.length > 0 && caracteristicasOptions.length > 0) {
             // Log completo dos dados recebidos no modo de edição
@@ -203,10 +217,8 @@ export function EspecificacoesModal({
                     const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
                     if (caracteristicaPadrao) setSelectedCaracteristica(caracteristicaPadrao);
                 }
-            }
-
-            // Atualizar o formState com os dados atuais
-            setFormState({
+            }            // Atualizar o formState com os dados atuais
+            setFormState(prev => ({
                 especificacao: dados.especificacao_cota || '',
                 tipo_valor: dados.tipo_valor || '',
                 valor_minimo: dados.valor_minimo?.toString() || '',
@@ -214,11 +226,12 @@ export function EspecificacoesModal({
                 unidade_medida: dados.unidade_medida || '',
                 complemento_cota: dados.complemento_cota || '',
                 id_tipo_instrumento: dados.id_tipo_instrumento?.toString() || '',
-                ordem: dados.ordem?.toString() || '',
+                // No modo cadastro, preservar a ordem já calculada
+                ordem: modo === 'cadastro' ? prev.ordem : (dados.ordem?.toString() || ''),
                 uso_inspecao_setup: dados.uso_inspecao_setup === 'S',
                 uso_inspecao_processo: dados.uso_inspecao_processo === 'S',
                 uso_inspecao_qualidade: dados.uso_inspecao_qualidade === 'S',
-            });
+            }));
 
             // Atualizar o selectedTipoValor
             setSelectedTipoValor(dados.tipo_valor || '');
@@ -262,58 +275,7 @@ export function EspecificacoesModal({
                 [name]: isCheckbox ? checked : value
             }));
         }
-    };// Efeito para atualizar o valor do campo de ordem quando nextOrder for definido
-    useEffect(() => {
-        if (isOpen && modo === 'cadastro' && nextOrder !== null) {
-            setFormState(prev => ({
-                ...prev,
-                ordem: nextOrder.toString()
-            }));
-        }
-    }, [nextOrder, isOpen, modo]);
-
-    // Resetar campos ao salvar nova especificação
-    // Adicionar efeito para resetar campos ao fechar ou ao cadastrar
-    useEffect(() => {
-        if (!isOpen && modo === 'cadastro') {
-            setFormState({
-                tipo_valor: '',
-                valor_minimo: '',
-                valor_maximo: '',
-                unidade_medida: '',
-                complemento_cota: '',
-                id_tipo_instrumento: '',
-                ordem: '',
-                uso_inspecao_setup: false,
-                uso_inspecao_processo: false,
-                uso_inspecao_qualidade: false,
-            });
-            setSelectedTipoValor('');
-            setSelectedCota(null);
-            setSelectedCaracteristica(null);
-        }
-    }, [isOpen, modo]);
-
-    // Resetar campos após salvar nova especificação
-    useEffect(() => {
-        if (!isSubmitting && !isOpen && modo === 'cadastro') {
-            setFormState({
-                tipo_valor: '',
-                valor_minimo: '',
-                valor_maximo: '',
-                unidade_medida: '',
-                complemento_cota: '',
-                id_tipo_instrumento: '',
-                ordem: '',
-                uso_inspecao_setup: false,
-                uso_inspecao_processo: false,
-                uso_inspecao_qualidade: false,
-            });
-            setSelectedTipoValor('');
-            setSelectedCota(null);
-            setSelectedCaracteristica(null);
-        }
-    }, [isSubmitting, isOpen, modo]);
+    };
 
     // Renderiza mensagens de erro
     const renderFeedback = () => {
@@ -330,7 +292,9 @@ export function EspecificacoesModal({
             );
         }
         return null;
-    };    // Handler para submissão do formulário
+    };
+
+    // Handler para mudanças nos inputs do formulário
     const handleSubmit = useCallback(
         async () => {
             try {

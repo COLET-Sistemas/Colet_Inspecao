@@ -527,12 +527,10 @@ const OperacaoSection = ({
                         onClose={() => {
                             setIsSpecModalOpen(false);
                             setSelectedSpec(null);
-                        }} dados={selectedSpec ? {
-                            // Usar o spread primeiro para incluir todos os campos originais
+                        }}
+                        dados={selectedSpec ? {
                             ...selectedSpec,
-                            // Garantir que caracteristica_especial está presente
                             caracteristica_especial: selectedSpec.especificacao_caracteristica,
-                            // Sobrescrever com os campos específicos do contexto
                             referencia,
                             roteiro,
                             processo: parseInt(processo, 10),
@@ -550,6 +548,7 @@ const OperacaoSection = ({
                             setSelectedSpec(null);
                         }}
                         modo={selectedSpec ? "edicao" : "cadastro"}
+                        especificacoesList={selectedSpec ? undefined : especificacoes}
                     />
 
                     {/* Modal de confirmação de exclusão de especificação */}
