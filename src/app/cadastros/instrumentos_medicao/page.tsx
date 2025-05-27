@@ -24,78 +24,74 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
+    <div className="group bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300 overflow-hidden">
         <div className="p-4">
-            {/* Nome do instrumento */}
-            <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                {instrumento.nome_instrumento}
-            </h3>
-
-            {/* Tag como badge */}
-            <div className="mb-3">
-                <div className="inline-block bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md text-xs font-medium">
-                    {instrumento.tag}
+            {/* Header: Nome + Status */}
+            <div className="flex items-start justify-between mb-0.5">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-gray-800 mb-1 line-clamp-2 leading-tight">
+                        {instrumento.nome_instrumento}
+                    </h3>
+                </div>
+                <div className={`flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ml-2 ${instrumento.situacao === "A"
+                    ? "bg-green-100 text-green-700 border-green-200"
+                    : "bg-red-100 text-red-800 border-red-200"
+                    }`}>
+                    <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-red-500"
+                        }`}></div>
+                    {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
                 </div>
             </div>
 
             {/* Tipo de instrumento */}
-            <div className="bg-gray-50 rounded-md px-3 py-2 mb-3">
-                <div className="text-sm text-gray-800 font-medium">
+            <div className="mb-1.5">
+                <span className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">
                     {instrumento.nome_tipo_instrumento || 'Tipo não especificado'}
-                </div>
+                </span>
             </div>
 
-            {/* Dados patrimoniais */}
-            <div className="mb-3 space-y-1">
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Nº Patrimônio:</span>
-                    <span className="text-gray-900">{instrumento.numero_patrimonio || '-'}</span>
+            {/* Grid de informações principais */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
+                {/* Patrimônio */}
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Nº Patrimônio</span>
+                    <span className="block text-xs text-gray-700">{instrumento.numero_patrimonio || '-'}</span>
                 </div>
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Cód. Artigo:</span>
-                    <span className="text-gray-900">{instrumento.codigo_artigo || '-'}</span>
-                </div>
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Série:</span>
-                    <span className="text-gray-900">{instrumento.numero_serie || '-'}</span>
-                </div>
-            </div>
-
-            {/* Informações de calibração */}
-            <div className="mb-3 space-y-1">
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Validade:</span>
-                    <span className={`${instrumento.data_validade ?
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Validade</span>
+                    <span className={`block text-xs font-medium ${instrumento.data_validade ?
                         new Date(instrumento.data_validade) < new Date() ?
-                            'text-red-600 font-medium' : 'text-gray-900'
+                            'text-red-600' : 'text-gray-700'
                         : 'text-gray-400'
                         }`}>
-                        {instrumento.data_validade || '-'}
+                        {instrumento.data_validade ?
+                            new Date(instrumento.data_validade).toLocaleDateString('pt-BR') :
+                            '-'}
                     </span>
                 </div>
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Calibração:</span>
-                    <span className="text-gray-900">{instrumento.data_ultima_calibracao || '-'}</span>
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Cód. Artigo</span>
+                    <span className="block text-xs text-gray-700">{instrumento.codigo_artigo || '-'}</span>
                 </div>
-                <div className="flex items-center text-xs">
-                    <span className="w-24 font-medium text-gray-600">Frequência dia:</span>
-                    <span className="text-gray-900">{instrumento.frequencia_calibracao || '-'}</span>
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Última Calibração</span>
+                    <span className="block text-xs text-gray-700">{instrumento.data_ultima_calibracao || '-'}</span>
+                </div>
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Série</span>
+                    <span className="block text-xs text-gray-700">{instrumento.numero_serie || '-'}</span>
+                </div>
+                <div className="space-y-0.5">
+                    <span className="block text-[10px] text-gray-400 font-semibold uppercase">Frequência (dias)</span>
+                    <span className="block text-xs text-gray-700">{instrumento.frequencia_calibracao || '-'}</span>
                 </div>
             </div>
 
-            {/* Rodapé: Status + Ações */}
-            <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                <div className={`flex items-center px-2.5 py-1 rounded-full ${instrumento.situacao === "A"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-800"
-                    }`}>
-                    <div className={`w-2 h-2 rounded-full mr-1.5 ${instrumento.situacao === "A" ? "bg-green-500" : "bg-red-500"
-                        }`}></div>
-                    <span className="text-xs font-medium">
-                        {instrumento.situacao === "A" ? "Ativo" : "Inativo"}
-                    </span>
-                </div>
-
+            {/* Linha de ações e tag */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[11px] font-medium">
+                    {instrumento.tag}
+                </span>
                 <div className="flex space-x-1">
                     <Tooltip text="Editar">
                         <motion.button
