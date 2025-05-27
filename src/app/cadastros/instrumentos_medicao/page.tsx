@@ -100,7 +100,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                     <Tooltip text="Editar">
                         <motion.button
                             whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
+                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
                             onClick={() => onEdit(instrumento.id_instrumento)}
                             aria-label="Editar"
                         >
@@ -110,7 +110,7 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                     <Tooltip text="Excluir">
                         <motion.button
                             whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1"
                             onClick={() => onDelete(instrumento.id_instrumento)}
                             aria-label="Excluir"
                         >
@@ -589,7 +589,7 @@ export default function InstrumentosMedicaoPage() {
                         <Tooltip text="Editar">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleEdit(instrumento.id_instrumento)}
                                 aria-label="Editar"
                             >
@@ -599,7 +599,7 @@ export default function InstrumentosMedicaoPage() {
                         <Tooltip text="Excluir">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleDelete(instrumento.id_instrumento)}
                                 aria-label="Excluir"
                             >

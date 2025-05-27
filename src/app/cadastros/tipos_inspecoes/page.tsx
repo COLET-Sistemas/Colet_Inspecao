@@ -62,13 +62,13 @@ const TipoInspecaoCard = memo<CardProps>(({ tipo, onEdit }) => (
                 <h3 className="text-base sm:text-lg font-semibold text-gray-800 leading-tight line-clamp-2 group-hover:text-gray-900 transition-colors duration-200">
                     {tipo.descricao_tipo_inspecao}
                 </h3>
-            </div>            {/* Footer com ações */}
+            </div>
             <div className="flex items-center justify-end pt-3 border-t border-gray-50">
                 <div className="flex items-center gap-1">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="p-2.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
                         onClick={() => onEdit(tipo.id)}
                         aria-label={`Editar ${tipo.descricao_tipo_inspecao}`}
                     >
@@ -360,7 +360,7 @@ export default function TiposInspecoesPage() {
                         <Tooltip text="Editar">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleEdit(tipo.id)}
                                 aria-label="Editar"
                             >

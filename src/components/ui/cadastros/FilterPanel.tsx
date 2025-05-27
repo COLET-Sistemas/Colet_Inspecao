@@ -77,6 +77,7 @@ interface FilterPanelProps {
     }[];
     sortField?: string;
     onSortFieldChange?: (field: string) => void;
+    disableFilters?: boolean;
 }
 
 export function FilterPanel({
@@ -93,6 +94,7 @@ export function FilterPanel({
     selectedFilters = [],
     sortField,
     onSortFieldChange,
+    disableFilters = false,
 }: FilterPanelProps) {
     const [showFilters, setShowFilters] = useState(false);
     // Detecta se o dispositivo é móvel ou tablet (width < 768px)
@@ -155,16 +157,15 @@ export function FilterPanel({
                                     <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''}`} />
                                 </motion.button>
                             </ConditionalTooltip>
-                        )}
-
-                        {/* Advanced filters toggle button */}
+                        )}                        {/* Advanced filters toggle button */}
                         <ConditionalTooltip text="Filtros avançados">
                             <motion.button
                                 whileTap={{ scale: 0.97 }}
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={isMobileOrTablet ?
+                                onClick={() => !disableFilters && setShowFilters(!showFilters)}
+                                disabled={disableFilters}
+                                className={`${isMobileOrTablet ?
                                     `${buttonBaseClass} justify-center w-10` :
-                                    buttonBaseClass}
+                                    buttonBaseClass} ${disableFilters ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 aria-label="Mostrar filtros avançados"
                             >
                                 <SlidersHorizontal size={16} className={isMobileOrTablet ? "" : "mr-2"} />

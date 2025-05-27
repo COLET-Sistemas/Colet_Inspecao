@@ -23,55 +23,46 @@ const Card = React.memo(({ tipo, onEdit, onDelete }: {
     tipo: TipoInstrumentoMedicao;
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
-}) => (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-        <div className="p-4">
-            <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                    <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                        #{tipo.id}
-                    </span>
-                </div>
+}) => (<div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
+    <div className="p-4">
+        <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
+            {tipo.nome_tipo_instrumento}
+        </h3>
+
+        {tipo.observacao && (
+            <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                {tipo.observacao}
+            </p>
+        )}
+
+        <div className="flex justify-between items-end mt-3">
+            <div className="flex flex-col space-y-1">
             </div>
 
-            <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                {tipo.nome_tipo_instrumento}
-            </h3>
-
-            {tipo.observacao && (
-                <p className="text-sm text-gray-500 mb-2 line-clamp-2">
-                    {tipo.observacao}
-                </p>
-            )}
-
-            <div className="flex justify-between items-end mt-3">
-                <div className="flex flex-col space-y-1">
-                </div>
-
-                <div className="flex space-x-1">
-                    <Tooltip text="Editar">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
-                            onClick={() => onEdit(tipo.id)}
-                            aria-label="Editar"
-                        >
-                            <Pencil className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
-                    <Tooltip text="Excluir">
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            className="p-1.5 rounded-md text-red-500 hover:bg-red-50"
-                            onClick={() => onDelete(tipo.id)}
-                            aria-label="Excluir"
-                        >
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </motion.button>
-                    </Tooltip>
-                </div>
+            <div className="flex space-x-1">
+                <Tooltip text="Editar">
+                    <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                        onClick={() => onEdit(tipo.id)}
+                        aria-label="Editar"
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                    </motion.button>
+                </Tooltip>
+                <Tooltip text="Excluir">
+                    <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1"
+                        onClick={() => onDelete(tipo.id)}
+                        aria-label="Excluir"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </motion.button>
+                </Tooltip>
             </div>
-        </div>    </div>
+        </div>
+    </div>    </div>
 ));
 
 Card.displayName = 'TipoInstrumentoMedicaoCard';
@@ -369,7 +360,7 @@ export default function TiposInstrumentosMedicaoPage() {
                         <Tooltip text="Editar">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleEdit(tipo.id)}
                                 aria-label="Editar"
                             >
@@ -379,7 +370,7 @@ export default function TiposInstrumentosMedicaoPage() {
                         <Tooltip text="Excluir">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1 cursor-pointer"
+                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleDelete(tipo.id)}
                                 aria-label="Excluir"
                             >
@@ -471,9 +462,7 @@ export default function TiposInstrumentosMedicaoPage() {
                 onButtonClick={handleCreateNew}
                 buttonDisabled={false}
                 showButton={true}
-            />
-
-            {/* Filters Component */}
+            />            {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -486,6 +475,7 @@ export default function TiposInstrumentosMedicaoPage() {
                 selectedFilters={selectedFiltersForDisplay}
                 onRefresh={handleRefresh}
                 isRefreshing={isRefreshing}
+                disableFilters={true}
             />
 
             {/* Data Container with Dynamic View */}
