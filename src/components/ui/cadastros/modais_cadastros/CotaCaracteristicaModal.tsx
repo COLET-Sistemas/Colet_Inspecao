@@ -46,11 +46,20 @@ export function CotaCaracteristicaModal({
     const [svgPreview, setSvgPreview] = useState<string>(cotaCaracteristica?.simbolo_path_svg || '');
     const [selectedTipo, setSelectedTipo] = useState<string>(cotaCaracteristica?.tipo || '');
 
-    // Atualizar a prévia quando o modal é aberto com um item existente
+    // Atualizar a prévia e valores quando o modal é aberto com um item existente
     useEffect(() => {
         if (isOpen) {
             setSvgPreview(cotaCaracteristica?.simbolo_path_svg || '');
-            setSelectedTipo(cotaCaracteristica?.tipo || '');
+
+            // Definir o tipo apenas se tiver um item existente para edição
+            if (cotaCaracteristica?.tipo) {
+                setSelectedTipo(cotaCaracteristica.tipo);
+            } else {
+                // Limpar o tipo para novo cadastro
+                setSelectedTipo('');
+            }
+
+            setError(null); // Limpar erros ao abrir o modal
         }
     }, [isOpen, cotaCaracteristica]);
 
@@ -58,11 +67,30 @@ export function CotaCaracteristicaModal({
     const handleSvgChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const svgContent = e.target.value.trim();
         setSvgPreview(svgContent);
-    };
-
-    // Função para atualizar o tipo selecionado
+    };    // Função para atualizar o tipo selecionado
     const handleTipoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedTipo(e.target.value);
+        const newTipo = e.target.value;
+        console.log("Tipo selecionado:", newTipo); // Debug
+
+        // Atualizar o estado para garantir que o React saiba da mudança
+        setSelectedTipo(newTipo);
+
+        // Apenas limpar campos quando mudou de Cota para Característica
+        if (newTipo === "A") {
+            // Reset dos campos que não são aplicáveis para Característica
+            setTimeout(() => {
+                const unidadeMedidaField = document.getElementById('unidade_medida') as HTMLInputElement;
+                const rejeitaMenorField = document.getElementById('rejeita_menor') as HTMLSelectElement;
+                const rejeitaMaiorField = document.getElementById('rejeita_maior') as HTMLSelectElement;
+                const localInspecaoField = document.getElementById('local_inspecao') as HTMLSelectElement;
+
+                if (unidadeMedidaField) unidadeMedidaField.value = '';
+                if (rejeitaMenorField) rejeitaMenorField.value = 'false';
+                if (rejeitaMaiorField) rejeitaMaiorField.value = 'false';
+                if (localInspecaoField) localInspecaoField.value = '*';
+            }, 0);
+        }
+        // Quando selecionar Cota (O), manter os valores existentes sem reset
     };
 
     const handleSubmit = useCallback(
@@ -78,9 +106,7 @@ export function CotaCaracteristicaModal({
                 local_inspecao: data.local_inspecao ? String(data.local_inspecao) : undefined,
             };
             try {
-                setError(null);
-
-                // Validar campos obrigatórios
+                setError(null);                // Validar campos obrigatórios
                 if (!formData.descricao?.trim()) {
                     setError("A descrição é obrigatória");
                     return;
@@ -91,33 +117,27 @@ export function CotaCaracteristicaModal({
                     return;
                 }
 
-                if (!formData.unidade_medida?.trim()) {
-                    setError("A unidade de medida é obrigatória");
-                    return;
-                }
-
                 // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
                 let svgContent = formData.simbolo_path_svg?.trim() || "";
 
                 // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
-                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim();
-
-                const payload: {
+                svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim(); const payload: {
                     descricao: string;
                     tipo: string;
                     simbolo_path_svg: string;
-                    unidade_medida: string;
-                    rejeita_menor: string;
-                    rejeita_maior: string;
+                    unidade_medida: string | null;
+                    rejeita_menor: string | null;
+                    rejeita_maior: string | null;
                     local_inspecao: 'P' | 'Q' | '*' | null;
                     id?: number;
                 } = {
                     descricao: formData.descricao.trim(),
                     tipo: formData.tipo.trim(),
                     simbolo_path_svg: svgContent,
-                    unidade_medida: formData.unidade_medida?.trim() || "",
-                    rejeita_menor: formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n",
-                    rejeita_maior: formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n",
+                    // Para Característica (tipo "A"), estes campos são null
+                    unidade_medida: formData.tipo.trim() === "O" ? (formData.unidade_medida?.trim() || "") : null,
+                    rejeita_menor: formData.tipo.trim() === "O" ? (formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n") : null,
+                    rejeita_maior: formData.tipo.trim() === "O" ? (formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n") : null,
                     local_inspecao: formData.tipo.trim() === "O" ? (formData.local_inspecao as 'P' | 'Q' | '*') || null : null
                 };
 
@@ -173,18 +193,18 @@ export function CotaCaracteristicaModal({
                     };
                 }
 
-                if (onSuccess) {
-                    // Garantir que todos os campos necessários estejam presentes
+                if (onSuccess) {                    // Garantir que todos os campos necessários estejam presentes
                     const successData = {
                         ...responseData,
                         id: responseData.id,
                         descricao: responseData.descricao || formData.descricao.trim(),
                         tipo: responseData.tipo || formData.tipo.trim(),
                         simbolo_path_svg: responseData.simbolo_path_svg || formData.simbolo_path_svg?.trim() || "",
-                        unidade_medida: responseData.unidade_medida || formData.unidade_medida?.trim() || "",
-                        rejeita_menor: responseData.rejeita_menor || (formData.rejeita_menor === "true" ? "s" : "n"),
-                        rejeita_maior: responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n"),
-                        local_inspecao: responseData.local_inspecao || (formData.tipo === "O" ? (formData.local_inspecao as 'P' | 'Q' | '*') || null : null)
+                        // Para Característica (tipo "A"), estes campos são null
+                        unidade_medida: formData.tipo === "O" ? (responseData.unidade_medida || formData.unidade_medida?.trim() || "") : null,
+                        rejeita_menor: formData.tipo === "O" ? (responseData.rejeita_menor || (formData.rejeita_menor === "true" ? "s" : "n")) : null,
+                        rejeita_maior: formData.tipo === "O" ? (responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n")) : null,
+                        local_inspecao: formData.tipo === "O" ? (responseData.local_inspecao || (formData.local_inspecao as 'P' | 'Q' | '*') || null) : null
                     };
                     onSuccess(successData);
                 }
@@ -265,155 +285,167 @@ export function CotaCaracteristicaModal({
                                 onBlur={() => setIsFocused(null)}
                             />
                         </div>
-                    </div>
-
-                    {/* Campos de tipo e unidade de medida na mesma linha */}
-                    <div className="mb-4 grid grid-cols-2 gap-4">
-                        {/* Campo de tipo (select) */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <CircleCheck className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="tipo" className="text-sm font-medium text-gray-700">
-                                        Tipo <span className="text-red-500">*</span>
-                                    </label>
+                    </div>                    {/* Layout unificado - sempre renderizado para evitar remontagem */}
+                    <div className="mb-4">                        {/* Primeira linha - Layout dinâmico baseado no tipo */}
+                        <div className={`grid gap-4 ${selectedTipo === "O" ? "grid-cols-10" : "grid-cols-1"}`} key="tipo-layout">
+                            {/* Campo de tipo */}
+                            <div className={selectedTipo === "O" ? "col-span-4" : "col-span-1"}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <CircleCheck className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="tipo" className="text-sm font-medium text-gray-700">
+                                            Tipo <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
+                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                    <select
                                     id="tipo"
                                     name="tipo"
                                     className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
                                     required
-                                    defaultValue={cotaCaracteristica?.tipo || ""}
+                                    value={selectedTipo}
                                     onChange={handleTipoChange}
                                     onFocus={() => setIsFocused('tipo')}
                                     onBlur={() => setIsFocused(null)}
                                 >
-                                    <option value="" disabled>Selecione o tipo</option>
+                                    <option value="">Selecione o tipo</option>
                                     <option value="O">Cota</option>
                                     <option value="A">Característica Especial</option>
                                 </select>
+                                </div>
+                            </div>                            {/* Campos de rejeição - com visibilidade condicional mas sempre renderizados */}
+                            {/* Campo rejeita_menor - 30% da linha */}
+                            <div className={`col-span-3 ${selectedTipo !== "O" ? "hidden" : ""}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <CircleCheck className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="rejeita_menor" className="text-sm font-medium text-gray-700">
+                                            Rejeita Menor
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="rejeita_menor"
+                                        name="rejeita_menor"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        defaultValue={
+                                            cotaCaracteristica?.rejeita_menor === true ||
+                                                cotaCaracteristica?.rejeita_menor === "s" ||
+                                                cotaCaracteristica?.rejeita_menor === "S"
+                                                ? "true"
+                                                : "false"
+                                        }
+                                        onFocus={() => setIsFocused('rejeita_menor')}
+                                        onBlur={() => setIsFocused(null)}
+                                        disabled={selectedTipo !== "O"}
+                                    >
+                                        <option value="true">Sim</option>
+                                        <option value="false">Não</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Campo rejeita_maior - 30% da linha */}
+                            <div className={`col-span-3 ${selectedTipo !== "O" ? "hidden" : ""}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <CircleCheck className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="rejeita_maior" className="text-sm font-medium text-gray-700">
+                                            Rejeita Maior
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="rejeita_maior"
+                                        name="rejeita_maior"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        defaultValue={
+                                            cotaCaracteristica?.rejeita_maior === true ||
+                                                cotaCaracteristica?.rejeita_maior === "s" ||
+                                                cotaCaracteristica?.rejeita_maior === "S"
+                                                ? "true"
+                                                : "false"
+                                        }
+                                        onFocus={() => setIsFocused('rejeita_maior')}
+                                        onBlur={() => setIsFocused(null)}
+                                        disabled={selectedTipo !== "O"}
+                                    >
+                                        <option value="true">Sim</option>
+                                        <option value="false">Não</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Campo de unidade de medida */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <Ruler className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
-                                        Unidade de Medida <span className="text-red-500">*</span>
-                                    </label>
-                                </div>
+                        {/* Feedback informativo */}
+                        {selectedTipo && (
+                            <div className="mt-1 text-xs text-gray-500">
+                                {selectedTipo === "O"
+                                    ? "Campos de unidade de medida e local de inspeção na linha abaixo"
+                                    : "Apenas descrição e símbolo são necessários"
+                                }
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <input
-                                    type="text"
-                                    id="unidade_medida"
-                                    name="unidade_medida"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Ex: mm, kg, cm"
-                                    defaultValue={cotaCaracteristica?.unidade_medida || ""}
-                                    required
-                                    onFocus={() => setIsFocused('unidade_medida')}
-                                    onBlur={() => setIsFocused(null)}
-                                />
-                            </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Campos rejeita_menor e rejeita_maior */}
-                    <div className="mb-4 grid grid-cols-2 gap-4">
-                        {/* Campo rejeita_menor */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <CircleCheck className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="rejeita_menor" className="text-sm font-medium text-gray-700">
-                                        Rejeita Menor
-                                    </label>
-                                </div>
-                            </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_menor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="rejeita_menor"
-                                    name="rejeita_menor"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={
-                                        cotaCaracteristica?.rejeita_menor === true ||
-                                            cotaCaracteristica?.rejeita_menor === "s" ||
-                                            cotaCaracteristica?.rejeita_menor === "S"
-                                            ? "true"
-                                            : "false"
-                                    }
-                                    onFocus={() => setIsFocused('rejeita_menor')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="true">Sim</option>
-                                    <option value="false">Não</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Campo rejeita_maior */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <CircleCheck className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="rejeita_maior" className="text-sm font-medium text-gray-700">
-                                        Rejeita Maior
-                                    </label>
-                                </div>
-                            </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'rejeita_maior' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="rejeita_maior"
-                                    name="rejeita_maior"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={
-                                        cotaCaracteristica?.rejeita_maior === true ||
-                                            cotaCaracteristica?.rejeita_maior === "s" ||
-                                            cotaCaracteristica?.rejeita_maior === "S"
-                                            ? "true"
-                                            : "false"
-                                    }
-                                    onFocus={() => setIsFocused('rejeita_maior')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="true">Sim</option>
-                                    <option value="false">Não</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Campo local_inspecao que aparece apenas quando o tipo é "O" (Cota) */}
+                    {/* Campos específicos para Cota - Segunda linha */}
                     {selectedTipo === "O" && (
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <CircleCheck className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="local_inspecao" className="text-sm font-medium text-gray-700">
-                                        Local de Inspeção
-                                    </label>
+                        <>
+                            {/* Segunda linha: Unidade de Medida e Local de Inspeção */}
+                            <div className="mb-4 grid grid-cols-2 gap-4">
+                                {/* Campo de unidade de medida */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Ruler className="h-4 w-4 text-gray-500" />
+                                            <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                                Unidade de Medida
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                        <input
+                                            type="text"
+                                            id="unidade_medida"
+                                            name="unidade_medida"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                            placeholder="Ex: mm, kg, cm"
+                                            defaultValue={cotaCaracteristica?.unidade_medida || ""}
+                                            onFocus={() => setIsFocused('unidade_medida')}
+                                            onBlur={() => setIsFocused(null)}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Campo local de inspeção */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <CircleCheck className="h-4 w-4 text-gray-500" />
+                                            <label htmlFor="local_inspecao" className="text-sm font-medium text-gray-700">
+                                                Local de Inspeção
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className={`relative transition-all duration-200 ${isFocused === 'local_inspecao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                        <select
+                                            id="local_inspecao"
+                                            name="local_inspecao"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                            defaultValue={cotaCaracteristica?.local_inspecao || "*"}
+                                            onFocus={() => setIsFocused('local_inspecao')}
+                                            onBlur={() => setIsFocused(null)}
+                                        >
+                                            <option value="P">Produção</option>
+                                            <option value="Q">Qualidade</option>
+                                            <option value="*">Ambos</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'local_inspecao' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
-                                <select
-                                    id="local_inspecao"
-                                    name="local_inspecao"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    defaultValue={cotaCaracteristica?.local_inspecao || "*"}
-                                    onFocus={() => setIsFocused('local_inspecao')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="P">Produção</option>
-                                    <option value="Q">Qualidade</option>
-                                    <option value="*">Ambos</option>
-                                </select>
-                            </div>
-                        </div>
+                        </>
                     )}
 
                     {/* Campo para símbolo SVG com prévia */}

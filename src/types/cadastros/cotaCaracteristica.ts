@@ -3,7 +3,7 @@ export interface CotaCaracteristica {
     descricao: string;
     tipo: string;
     simbolo_path_svg: string;
-    unidade_medida: string;
+    unidade_medida: string | null;
     rejeita_menor: boolean | 's' | 'n' | string | null;
     rejeita_maior: boolean | 's' | 'n' | string | null;
     local_inspecao: 'P' | 'Q' | '*' | null;

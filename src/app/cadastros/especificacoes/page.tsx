@@ -14,7 +14,7 @@ import {
     Roteiro
 } from '@/types/cadastros/especificacao';
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ChevronDown, ChevronRight, Clock, FileText, Pencil, PlusCircle, Search } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Clock, FileText, Logs, PlusCircle, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from 'react';
 
@@ -125,8 +125,8 @@ const ProcessoRow = ({
                                     }
                                     className="inline-flex items-center px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors text-xs"
                                 >
-                                    <Pencil className="w-3 h-3 mr-1" />
-                                    <span>Editar Processos</span>
+                                    <Logs className="w-3 h-3 mr-1" />
+                                    <span>Ver detalhes dos Processos</span>
                                 </button>
                             </div>
                         </div>

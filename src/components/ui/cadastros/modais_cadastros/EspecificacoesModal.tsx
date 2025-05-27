@@ -193,8 +193,17 @@ export function EspecificacoesModal({
             const cota = cotasOptions.find(c => c.id === dados.id_cota);
             if (cota) setSelectedCota(cota);
 
-            const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
-            if (caracteristica) setSelectedCaracteristica(caracteristica);
+            if (modo === 'edicao') {
+                // No modo de edição, usar a característica dos dados
+                const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
+                if (caracteristica) setSelectedCaracteristica(caracteristica);
+            } else {
+                // No modo de cadastro, definir ID 0 como padrão se não há seleção
+                if (!selectedCaracteristica) {
+                    const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+                    if (caracteristicaPadrao) setSelectedCaracteristica(caracteristicaPadrao);
+                }
+            }
 
             // Atualizar o formState com os dados atuais
             setFormState({
@@ -214,24 +223,46 @@ export function EspecificacoesModal({
             // Atualizar o selectedTipoValor
             setSelectedTipoValor(dados.tipo_valor || '');
         }
-    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo]);
+    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo, selectedCaracteristica]);
 
-    // Handler para mudanças nos inputs do formulário
+    // Efeito para definir característica padrão (ID 0) quando não há dados (modo cadastro)
+    useEffect(() => {
+        if (modo === 'cadastro' && caracteristicasOptions.length > 0 && !selectedCaracteristica && !dados?.id_caracteristica_especial) {
+            const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+            if (caracteristicaPadrao) {
+                setSelectedCaracteristica(caracteristicaPadrao);
+            }
+        }
+    }, [caracteristicasOptions, selectedCaracteristica, modo, dados?.id_caracteristica_especial]);// Handler para mudanças nos inputs do formulário
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const isCheckbox = type === 'checkbox';
         const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
-        setFormState(prev => ({
-            ...prev,
-            [name]: isCheckbox ? checked : value
-        }));
-
         // Atualizar também o selectedTipoValor se for o campo tipo_valor
         if (name === 'tipo_valor') {
             setSelectedTipoValor(value);
+
+            // Limpar unidade de medida se o tipo não for 'F' ou 'U'
+            if (value !== 'F' && value !== 'U') {
+                setFormState(prev => ({
+                    ...prev,
+                    [name]: value,
+                    unidade_medida: ''
+                }));
+            } else {
+                setFormState(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            }
+        } else {
+            setFormState(prev => ({
+                ...prev,
+                [name]: isCheckbox ? checked : value
+            }));
         }
-    };    // Efeito para atualizar o valor do campo de ordem quando nextOrder for definido
+    };// Efeito para atualizar o valor do campo de ordem quando nextOrder for definido
     useEffect(() => {
         if (isOpen && modo === 'cadastro' && nextOrder !== null) {
             setFormState(prev => ({
@@ -338,9 +369,7 @@ export function EspecificacoesModal({
                 }
 
                 const endpoint = `${apiUrl}/inspecao/especificacoes_inspecao_ft`;
-                const method = modo === 'edicao' ? 'PUT' : 'POST';
-
-                const payload = {
+                const method = modo === 'edicao' ? 'PUT' : 'POST'; const payload = {
                     id: dados.id,
                     referencia: dados.referencia,
                     roteiro: roteiroNum,
@@ -349,7 +378,7 @@ export function EspecificacoesModal({
                     tipo_valor: formState.tipo_valor,
                     valor_minimo: valorMinimo,
                     valor_maximo: valorMaximo,
-                    unidade_medida: formState.unidade_medida,
+                    unidade_medida: (formState.tipo_valor === 'F' || formState.tipo_valor === 'U') ? formState.unidade_medida : null,
                     id_cota: selectedCota?.id,
                     complemento_cota: formState.complemento_cota,
                     id_caracteristica_especial: selectedCaracteristica?.id || null,
@@ -430,41 +459,64 @@ export function EspecificacoesModal({
         </div>
 
         {/* Feedback de erro */}
-        {renderFeedback()}
-
-        <div className="space-y-4">
+        {renderFeedback()}        <div className="space-y-4">
             <div className="bg-white rounded-md">
-                {/* Primeira linha: Cota e Complemento da Cota */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Primeira linha: Ordem (20%), Tipo Cota (40%), Complemento da Cota (40%) */}
+                <div className="grid grid-cols-5 gap-4 mb-4">
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="id_cota" className="text-sm font-medium text-gray-700">
-                                    Cota <span className="text-red-500">*</span>
+                                <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
+                                    Ordem <span className="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <SelectWithSvg
-                            id="id_cota"
-                            options={cotasOptions}
-                            value={selectedCota}
-                            onChange={(option) => {
-                                setSelectedCota(option);
-
-                                // Atualizar formState quando a cota é selecionada
-                                setFormState(prev => ({
-                                    ...prev,
-                                    unidade_medida: option.unidade_medida || prev.unidade_medida
-                                }));
-                            }}
-                            placeholder="Selecione uma cota"
-                            isLoading={isLoadingOptions}
-                            required={true}
-                        />
+                        <div className={`relative transition-all duration-200 ${isFocused === 'ordem' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="number"
+                                id="ordem"
+                                name="ordem"
+                                required
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Digite a ordem"
+                                value={formState.ordem || ''}
+                                onChange={handleInputChange}
+                                onFocus={() => setIsFocused('ordem')}
+                                onBlur={() => setIsFocused(null)}
+                            />
                         </div>
                     </div>
-                    <div>
+                    <div className="col-span-2">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="id_cota" className="text-sm font-medium text-gray-700">
+                                    Tipo Cota <span className="text-red-500">*</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'id_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <SelectWithSvg
+                                id="id_cota"
+                                options={cotasOptions}
+                                value={selectedCota}
+                                onChange={(option) => {
+                                    setSelectedCota(option);
+
+                                    // Atualizar formState quando a cota é selecionada
+                                    setFormState(prev => ({
+                                        ...prev,
+                                        unidade_medida: option.unidade_medida || prev.unidade_medida
+                                    }));
+                                }}
+                                placeholder="Selecione uma cota"
+                                isLoading={isLoadingOptions}
+                                required={true}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-span-2">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
@@ -473,23 +525,275 @@ export function EspecificacoesModal({
                                 </label>
                             </div>
                         </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'complemento_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <input
-                            type="text"
-                            id="complemento_cota"
-                            name="complemento_cota"
-                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                            placeholder="Digite o complemento da cota"
-                            value={formState.complemento_cota || ''}
-                            onChange={handleInputChange}
-                            onFocus={() => setIsFocused('complemento_cota')}
-                            onBlur={() => setIsFocused(null)}
-                        />
+                        <div className={`relative transition-all duration-200 ${isFocused === 'complemento_cota' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <input
+                                type="text"
+                                id="complemento_cota"
+                                name="complemento_cota"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                placeholder="Digite o complemento da cota"
+                                value={formState.complemento_cota || ''}
+                                onChange={handleInputChange}
+                                onFocus={() => setIsFocused('complemento_cota')}
+                                onBlur={() => setIsFocused(null)}
+                            />
                         </div>
                     </div>
                 </div>
+                <div className="mb-4">
+                    {selectedTipoValor === 'F' ? (
+                        <div className="grid grid-cols-4 gap-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <FileText className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
+                                            Tipo de Valor <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="tipo_valor"
+                                        name="tipo_valor"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        value={formState.tipo_valor || ''}
+                                        required
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('tipo_valor')}
+                                        onBlur={() => setIsFocused(null)}
+                                    >
+                                        <option value="">Selecione o tipo de valor</option>
+                                        <option value="F">Faixa</option>
+                                        <option value="U">Único</option>
+                                        <option value="A">Aprovado/Reprovado</option>
+                                        <option value="C">Conforme/Não Conforme</option>
+                                        <option value="S">Sim/Não</option>
+                                        <option value="L">Liberado/Retido</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="valor_minimo" className="text-sm font-medium text-gray-700">
+                                            Valor Mínimo
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'valor_minimo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="valor_minimo"
+                                        name="valor_minimo"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Digite o valor mínimo"
+                                        value={formState.valor_minimo || ''}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('valor_minimo')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="valor_maximo" className="text-sm font-medium text-gray-700">
+                                            Valor Máximo
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'valor_maximo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="valor_maximo"
+                                        name="valor_maximo"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Digite o valor máximo"
+                                        value={formState.valor_maximo || ''}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('valor_maximo')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                            Unidade de Medida
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="text"
+                                        id="unidade_medida"
+                                        name="unidade_medida"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Ex: mm, cm, etc"
+                                        value={formState.unidade_medida || ''}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('unidade_medida')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : selectedTipoValor === 'U' ? (
+                        // Layout para Único: Tipo de Valor (33%), Valor (33%), Unidade de Medida (33%)
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <FileText className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
+                                            Tipo de Valor <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="tipo_valor"
+                                        name="tipo_valor"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        value={formState.tipo_valor || ''}
+                                        required
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('tipo_valor')}
+                                        onBlur={() => setIsFocused(null)}
+                                    >
+                                        <option value="">Selecione o tipo de valor</option>
+                                        <option value="F">Faixa</option>
+                                        <option value="U">Único</option>
+                                        <option value="A">Aprovado/Reprovado</option>
+                                        <option value="C">Conforme/Não Conforme</option>
+                                        <option value="S">Sim/Não</option>
+                                        <option value="L">Liberado/Retido</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="valor_maximo" className="text-sm font-medium text-gray-700">
+                                            Valor
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'valor_maximo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="valor_maximo"
+                                        name="valor_maximo"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Digite o valor"
+                                        value={formState.valor_maximo || ''}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('valor_maximo')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Ruler className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
+                                            Unidade de Medida
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <input
+                                        type="text"
+                                        id="unidade_medida"
+                                        name="unidade_medida"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        placeholder="Ex: mm, cm, etc"
+                                        value={formState.unidade_medida || ''}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('unidade_medida')}
+                                        onBlur={() => setIsFocused(null)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // Layout para outros tipos: Apenas Tipo de Valor (100%)
+                        <div className="grid grid-cols-1 gap-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <FileText className="h-4 w-4 text-gray-500" />
+                                        <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
+                                            Tipo de Valor <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="tipo_valor"
+                                        name="tipo_valor"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        value={formState.tipo_valor || ''}
+                                        required
+                                        onChange={handleInputChange}
+                                        onFocus={() => setIsFocused('tipo_valor')}
+                                        onBlur={() => setIsFocused(null)}
+                                    >
+                                        <option value="">Selecione o tipo de valor</option>
+                                        <option value="F">Faixa</option>
+                                        <option value="U">Único</option>
+                                        <option value="A">Aprovado/Reprovado</option>
+                                        <option value="C">Conforme/Não Conforme</option>
+                                        <option value="S">Sim/Não</option>
+                                        <option value="L">Liberado/Retido</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-                {/* Segunda linha: Característica Especial e Instrumento de Medição */}
+                {/* Terceira linha: Instrumento de Medição e Característica Especial */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
+                                    Instrumento de Medição <span className="text-red-500">*</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className={`relative transition-all duration-200 ${isFocused === 'id_tipo_instrumento' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                            <select
+                                id="id_tipo_instrumento"
+                                name="id_tipo_instrumento"
+                                required
+                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
+                                value={formState.id_tipo_instrumento || ''}
+                                onChange={handleInputChange}
+                                onFocus={() => setIsFocused('id_tipo_instrumento')}
+                                onBlur={() => setIsFocused(null)}
+                            >
+                                <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
+                                {!isLoadingOptions && instrumentOptions.map(option => (
+                                    <option key={option.id} value={option.id} className="text-gray-900">
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
@@ -498,7 +802,8 @@ export function EspecificacoesModal({
                                     Característica Especial <span className="text-red-500">*</span>
                                 </label>
                             </div>
-                        </div>                            <SelectWithSvg
+                        </div>
+                        <SelectWithSvg
                             options={caracteristicasOptions}
                             value={selectedCaracteristica}
                             onChange={(option) => {
@@ -509,166 +814,7 @@ export function EspecificacoesModal({
                             required
                         />
                     </div>
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="id_tipo_instrumento" className="text-sm font-medium text-gray-700">
-                                    Instrumento de Medição <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'id_tipo_instrumento' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
-                            id="id_tipo_instrumento"
-                            name="id_tipo_instrumento"
-                            required className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300 text-gray-900"
-                            value={formState.id_tipo_instrumento || ''}
-                            onChange={handleInputChange}
-                            onFocus={() => setIsFocused('id_tipo_instrumento')}
-                            onBlur={() => setIsFocused(null)}
-                        >
-                            <option value="" className="text-gray-500">Selecione um instrumento de medição</option>
-                            {!isLoadingOptions && instrumentOptions.map(option => (
-                                <option key={option.id} value={option.id} className="text-gray-900">
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Linha: Tipo de Valor, Unidade de Medida e Ordem */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="tipo_valor" className="text-sm font-medium text-gray-700">
-                                    Tipo de Valor <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'tipo_valor' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <select
-                            id="tipo_valor"
-                            name="tipo_valor"
-                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                            value={formState.tipo_valor || ''}
-                            required
-                            onChange={handleInputChange}
-                            onFocus={() => setIsFocused('tipo_valor')}
-                            onBlur={() => setIsFocused(null)}
-                        >
-                            <option value="">Selecione o tipo de valor</option>
-                            <option value="F">Faixa</option>
-                            <option value="U">Único</option>
-                            <option value="A">Aprovado/Reprovado</option>
-                            <option value="C">Conforme/Não Conforme</option>
-                            <option value="S">Sim/Não</option>
-                            <option value="L">Liberado/Retido</option>
-                        </select>
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <Ruler className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="unidade_medida" className="text-sm font-medium text-gray-700">
-                                    Unidade de Medida <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'unidade_medida' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <input
-                            type="text"
-                            id="unidade_medida"
-                            name="unidade_medida"
-                            required
-                            className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                            placeholder="Ex: mm, cm, etc"
-                            value={formState.unidade_medida || ''}
-                            onChange={handleInputChange}
-                            onFocus={() => setIsFocused('unidade_medida')}
-                            onBlur={() => setIsFocused(null)}
-                        />
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <label htmlFor="ordem" className="text-sm font-medium text-gray-700">
-                                    Ordem <span className="text-red-500">*</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className={`relative transition-all duration-200 ${isFocused === 'ordem' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                <input
-                            type="number"
-                            id="ordem"
-                            name="ordem"
-                            required className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                            placeholder="Digite a ordem"
-                            value={formState.ordem || ''}
-                            onChange={handleInputChange}
-                            onFocus={() => setIsFocused('ordem')}
-                            onBlur={() => setIsFocused(null)}
-                        />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Campo de Valores Mínimo e Máximo */}
-                {(selectedTipoValor === 'F' || selectedTipoValor === 'U') && (
-                    <div className="mb-4 grid grid-cols-2 gap-4">
-                        {selectedTipoValor === 'F' && (
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Ruler className="h-4 w-4 text-gray-500" />
-                                        <label htmlFor="valor_minimo" className="text-sm font-medium text-gray-700">
-                                            Valor Mínimo
-                                        </label>
-                                    </div>
-                                </div>
-                                <div className={`relative transition-all duration-200 ${isFocused === 'valor_minimo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                        <input
-                                    type="number"
-                                    step="0.01"
-                                    id="valor_minimo"
-                                    name="valor_minimo"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    placeholder="Digite o valor mínimo"
-                                    value={formState.valor_minimo || ''}
-                                    onChange={handleInputChange}
-                                    onFocus={() => setIsFocused('valor_minimo')}
-                                    onBlur={() => setIsFocused(null)}
-                                />
-                                </div>
-                            </div>
-                        )}
-                        <div className={selectedTipoValor === 'U' ? 'col-span-2' : ''}>
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <Ruler className="h-4 w-4 text-gray-500" />
-                                    <label htmlFor="valor_maximo" className="text-sm font-medium text-gray-700">
-                                        {selectedTipoValor === 'U' ? 'Valor' : 'Valor Máximo'}
-                                    </label>
-                                </div>
-                            </div>
-                            <div className={`relative transition-all duration-200 ${isFocused === 'valor_maximo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                    <input
-                                type="number"
-                                step="0.01"
-                                id="valor_maximo"
-                                name="valor_maximo"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                placeholder={selectedTipoValor === 'U' ? 'Digite o valor' : 'Digite o valor máximo'}
-                                value={formState.valor_maximo || ''}
-                                onChange={handleInputChange}
-                                onFocus={() => setIsFocused('valor_maximo')}
-                                onBlur={() => setIsFocused(null)}
-                            />
-                            </div>
-                        </div>
-                    </div>
-                )}                    {/* Campos de Uso de Inspeção */}
+                </div>{/* Campos de Uso de Inspeção */}
                 <div className="mb-4 space-y-3">
                     <div className="flex items-center space-x-4">                            <label className="flex items-center space-x-2">
                         <input
