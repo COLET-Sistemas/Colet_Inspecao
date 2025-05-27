@@ -16,11 +16,10 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 // Card component for list item
-const Card = React.memo(({ posto, isSelected, onToggleSelect, renderKey }: {
+const Card = React.memo(({ posto, isSelected, onToggleSelect }: {
     posto: Posto;
     isSelected: boolean;
     onToggleSelect: (posto: string) => void;
-    renderKey?: number;
 }) => (
     <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
         <div className="p-4">
@@ -34,93 +33,58 @@ const Card = React.memo(({ posto, isSelected, onToggleSelect, renderKey }: {
                     id={posto.posto}
                     isSelected={isSelected}
                     onToggle={onToggleSelect}
-                    renderKey={renderKey}
                 />
             </div>
-
             <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
                 {posto.nome_posto}
             </h3>
-
             <div className="mt-3">
-                <span className="text-sm text-gray-600">
-                    {posto.tipo_recurso}
-                </span>
+                <span className="text-sm text-gray-600">{posto.tipo_recurso}</span>
             </div>
         </div>
     </div>
 ));
-
-// Add display name to the Card component
 Card.displayName = 'PostoCard';
 
-// Check if user has the required permission
 const hasPermission = (permission: string): boolean => {
     try {
-        // Get userData from localStorage
         const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
         if (!userDataStr) return false;
-
         const userData = JSON.parse(userDataStr);
-        // Check if perfil_inspecao exists and contains the required permission
         if (!userData || !userData.perfil_inspecao) return false;
-
         return userData.perfil_inspecao.includes(permission);
-    } catch (error) {
-        console.error("Error checking permissions:", error);
+    } catch {
         return false;
     }
 };
 
 export default function PostosVinculadosPage() {
-    // Get user authentication data
     const { isAuthenticated, isLoading: authLoading } = useAuth();
     const router = useRouter();
-
-    // State for filters
     const [searchTerm, setSearchTerm] = useState("");
     const [tipoRecursoFilter, setTipoRecursoFilter] = useState<string>("todos");
-
     const [isPending, startTransition] = useTransition();
-
-    // View toggle state
     const [viewMode, setViewMode] = useState<ViewMode>("table");
-
-    // State for data and loading
     const [postos, setPostos] = useState<Posto[]>([]);
     const [allData, setAllData] = useState<Posto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
     const [apiError, setApiError] = useState<string | null>(null);
-    // Using a simpler approach to avoid the unused setRenderCount warning
-    const renderCount = 0;
-
-    // Selected postos state
     const [selectedPostos, setSelectedPostos] = useState<Set<string>>(new Set());
-
-    // Alert state para mensagens de sucesso
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-
-    // ARIA Live region for screen readers
-    const [notification, setNotification] = useState('');
-
-    // Tipos de recurso únicos para o filtro
-    const [tiposRecurso, setTiposRecurso] = useState<string[]>([]);    // Utilize uma ref para controlar se a requisição já foi feita
+    const [notification, setNotification] = useState("");
+    const [tiposRecurso, setTiposRecurso] = useState<string[]>([]);
     const dataFetchedRef = useRef(false);
-
-    // Chave para local storage
     const localStorageKey = 'postos-vinculados';
+    const apiUrl = localStorage.getItem("apiUrl");
 
-    const apiUrl = localStorage.getItem("apiUrl");    // Only redirect to login if not authenticated - permission checks are handled by RestrictedAccess component
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
-            // Not authenticated, redirect to login
             router.push('/login');
         }
     }, [isAuthenticated, authLoading, router]);
 
-    // Calculate active filters
     useEffect(() => {
         let count = 0;
         if (searchTerm) count++;
@@ -128,30 +92,28 @@ export default function PostosVinculadosPage() {
         setActiveFilters(count);
     }, [searchTerm, tipoRecursoFilter]);
 
-    // Carregar dados iniciais
+    const filterData = useCallback((data: Posto[], search: string, tipoRecurso: string) => {
+        return data.filter(item => {
+            const matchesSearch = !search ||
+                item.posto.toLowerCase().includes(search.toLowerCase()) ||
+                item.nome_posto.toLowerCase().includes(search.toLowerCase()) ||
+                item.tipo_recurso.toLowerCase().includes(search.toLowerCase());
+            const matchesTipoRecurso = tipoRecurso === "todos" || item.tipo_recurso === tipoRecurso;
+            return matchesSearch && matchesTipoRecurso;
+        });
+    }, []);
+
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
-
         try {
             const response = await fetch(`${apiUrl}/postos`);
-
-            if (!response.ok) {
-                throw new Error(`Erro ao obter postos: ${response.status}`);
-            } const data = await response.json();
-            const postsWithId = data.map((posto: Omit<Posto, 'id'>) => ({
-                ...posto,
-                id: posto.posto
-            }));
-
+            if (!response.ok) throw new Error(`Erro ao obter postos: ${response.status}`);
+            const data = await response.json();
+            const postsWithId = data.map((posto: Omit<Posto, 'id'>) => ({ ...posto, id: posto.posto }));
             setAllData(postsWithId);
-            const filtered = filterData(postsWithId, searchTerm, tipoRecursoFilter);
-            setPostos(filtered);
-
-            // Extrair e ordenar os tipos de recurso em ordem alfabética
-            const uniqueTiposRecurso = [...new Set(postsWithId.map((posto: Posto) => posto.tipo_recurso))].sort() as string[];
-            setTiposRecurso(uniqueTiposRecurso);
-
+            setPostos(filterData(postsWithId, searchTerm, tipoRecursoFilter));
+            setTiposRecurso([...new Set(postsWithId.map((posto: Posto) => posto.tipo_recurso))].sort() as string[]);
             const savedSelected = localStorage.getItem(localStorageKey);
             if (savedSelected) {
                 try {
@@ -159,34 +121,15 @@ export default function PostosVinculadosPage() {
                     const parsedSelected = new Set<string>(parsedData.map((item: unknown) => String(item)));
                     setSelectedPostos(parsedSelected);
                     setNotification(`${parsedSelected.size} postos carregados de configurações anteriores.`);
-                } catch (e) {
-                    console.error("Erro ao carregar postos do local storage:", e);
-                }
+                } catch { }
             }
-
         } catch (error) {
-            console.error("Erro ao buscar postos:", error);
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [searchTerm, tipoRecursoFilter, apiUrl]);
-
-    // Função auxiliar para filtrar dados
-    const filterData = (data: Posto[], search: string, tipoRecurso: string) => {
-        return data.filter(item => {
-            const matchesSearch = !search ||
-                item.posto.toLowerCase().includes(search.toLowerCase()) ||
-                item.nome_posto.toLowerCase().includes(search.toLowerCase()) ||
-                item.tipo_recurso.toLowerCase().includes(search.toLowerCase());
-
-            const matchesTipoRecurso = tipoRecurso === "todos" ||
-                item.tipo_recurso === tipoRecurso;
-
-            return matchesSearch && matchesTipoRecurso;
-        });
-    };
+    }, [searchTerm, tipoRecursoFilter, apiUrl, filterData]);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
@@ -196,35 +139,26 @@ export default function PostosVinculadosPage() {
     }, [loadData]);
 
     useEffect(() => {
-        // Only load data if user has proper permission
         if (dataFetchedRef.current === false && hasPermission('G')) {
             dataFetchedRef.current = true;
             loadData();
         }
     }, [loadData]);
 
-    // Effect para filtrar dados quando os filtros mudam
     useEffect(() => {
         if (allData.length > 0) {
             startTransition(() => {
                 const filtered = filterData(allData, searchTerm, tipoRecursoFilter);
                 setPostos(filtered);
-
-                if (filtered.length === 0) {
-                    setNotification('Nenhum resultado encontrado para os filtros atuais.');
-                } else {
-                    setNotification(`${filtered.length} postos encontrados.`);
-                }
+                setNotification(filtered.length === 0 ? 'Nenhum resultado encontrado para os filtros atuais.' : `${filtered.length} postos encontrados.`);
             });
         }
-    }, [searchTerm, tipoRecursoFilter, allData]);
+    }, [searchTerm, tipoRecursoFilter, allData, filterData]);
 
-    // Gerenciar a seleção de postos - com melhorias para evitar re-renders
     const handleToggleSelect = useCallback((postoId: string) => {
         setSelectedPostos(prevSelected => {
             const isCurrentlySelected = prevSelected.has(postoId);
             const newSelected = new Set(prevSelected);
-
             if (isCurrentlySelected) {
                 newSelected.delete(postoId);
                 setNotification(`Posto ${postoId} desmarcado.`);
@@ -232,13 +166,10 @@ export default function PostosVinculadosPage() {
                 newSelected.add(postoId);
                 setNotification(`Posto ${postoId} marcado.`);
             }
-
             localStorage.setItem(localStorageKey, JSON.stringify([...newSelected]));
-
             return newSelected;
         });
     }, [localStorageKey]);
-
 
     const resetFilters = useCallback(() => {
         setSearchTerm("");
@@ -246,10 +177,10 @@ export default function PostosVinculadosPage() {
         setNotification("Filtros resetados.");
     }, []);
 
-    // Limpar alerta
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
+
     const filterOptions = useMemo(() => {
         const tipoRecursoOptions: FilterOption[] = [
             { value: "todos", label: "Todos os tipos" },
@@ -259,7 +190,6 @@ export default function PostosVinculadosPage() {
                 color: "bg-blue-100 text-blue-800"
             }))
         ];
-
         return [
             {
                 id: "tipoRecurso",
@@ -273,26 +203,18 @@ export default function PostosVinculadosPage() {
 
     const selectedFiltersForDisplay = useMemo(() => {
         const filters = [];
-
-        // Always evaluate all conditions but only push to array when conditions are met
-        const searchFilter = searchTerm ? {
+        if (searchTerm) filters.push({
             id: "search",
             value: searchTerm,
             label: `Pesquisa: "${searchTerm}"`,
             color: "bg-purple-100 text-purple-800",
-        } : null;
-
-        const tipoRecursoFilterObj = tipoRecursoFilter !== "todos" ? {
+        });
+        if (tipoRecursoFilter !== "todos") filters.push({
             id: "tipoRecurso",
             value: tipoRecursoFilter,
             label: `Tipo: ${tipoRecursoFilter}`,
             color: "bg-blue-100 text-blue-800",
-        } : null;
-
-        // Add filters if they exist
-        if (searchFilter) filters.push(searchFilter);
-        if (tipoRecursoFilterObj) filters.push(tipoRecursoFilterObj);
-
+        });
         return filters;
     }, [searchTerm, tipoRecursoFilter]);
 
@@ -310,7 +232,6 @@ export default function PostosVinculadosPage() {
                             id={posto.posto}
                             isSelected={selectedPostos.has(posto.posto)}
                             onToggle={handleToggleSelect}
-                            renderKey={renderCount}
                         />
                     </div>
                 );
@@ -340,8 +261,8 @@ export default function PostosVinculadosPage() {
                 return <div className="text-sm text-gray-600">{posto.tipo_recurso}</div>;
             },
         },
-    ], [handleToggleSelect, selectedPostos, renderCount]);    // Check for permission using the RestrictedAccess component
-    // If user doesn't have permission, the RestrictedAccess component will handle the display and redirect
+    ], [handleToggleSelect, selectedPostos]);
+
     if (authLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
@@ -350,7 +271,6 @@ export default function PostosVinculadosPage() {
         );
     }
 
-    // If the user doesn't have permission, show the restricted access screen
     if (!hasPermission('G')) {
         return (
             <RestrictedAccess
@@ -365,28 +285,21 @@ export default function PostosVinculadosPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* ARIA Live region for accessibility */}
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
-
-            {/* Alerta para mensagens de sucesso */}
             <AlertMessage
                 message={alert.message}
                 type={alert.type}
                 onDismiss={clearAlert}
-                autoDismiss={true}
+                autoDismiss
                 dismissDuration={5000}
             />
-
-            {/* Page Header Component */}
             <PageHeader
                 title="Postos Vinculados"
                 subtitle="Seleção de postos disponíveis desse dispositivo para inspeção"
                 showButton={false}
             />
-
-            {/* Exibir contagem de postos selecionados */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm">
                 <div className="flex justify-between items-center">
                     <div className="flex">
@@ -402,8 +315,6 @@ export default function PostosVinculadosPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Filters Component */}
             <FilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -417,8 +328,6 @@ export default function PostosVinculadosPage() {
                 onRefresh={handleRefresh}
                 isRefreshing={isRefreshing}
             />
-
-            {/* Data Container with Dynamic View */}
             <DataListContainer
                 isLoading={isLoading || isPending}
                 isEmpty={postos.length === 0}
@@ -458,7 +367,6 @@ export default function PostosVinculadosPage() {
                     <DataTable
                         data={postos}
                         columns={tableColumns}
-                        renderKey={renderCount}
                     />
                 ) : (
                     <DataCards
@@ -469,7 +377,6 @@ export default function PostosVinculadosPage() {
                                 posto={posto}
                                 isSelected={selectedPostos.has(posto.posto)}
                                 onToggleSelect={handleToggleSelect}
-                                renderKey={renderCount}
                             />
                         )}
                     />

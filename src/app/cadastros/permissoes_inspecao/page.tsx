@@ -35,7 +35,7 @@ interface PermissaoFilterOption {
 }
 
 // Função para gerar cores consistentes baseadas no ID
-const getInspecaoColor = (id: string): { bg: string, text: string } => {
+const getInspecaoColor = (id: string): { bg: string; text: string } => {
     const colorOptions = [
         { bg: "bg-blue-50", text: "text-blue-700" },
         { bg: "bg-green-50", text: "text-green-700" },
@@ -48,10 +48,8 @@ const getInspecaoColor = (id: string): { bg: string, text: string } => {
         { bg: "bg-orange-50", text: "text-orange-700" },
         { bg: "bg-lime-100", text: "text-lime-700" },
     ];
-
     const charCode = id.charCodeAt(0);
     const index = charCode % colorOptions.length;
-
     return colorOptions[index];
 };
 
@@ -59,7 +57,7 @@ const getInspecaoColor = (id: string): { bg: string, text: string } => {
 interface InspecaoFormatada {
     id: string;
     descricao: string;
-    color: { bg: string, text: string };
+    color: { bg: string; text: string };
 }
 
 // Interface e criação do contexto
@@ -73,70 +71,61 @@ const defaultContextValue: PermissoesContextType = {
 };
 
 const PermissoesContext = createContext<PermissoesContextType>(defaultContextValue);
-PermissoesContext.displayName = 'PermissoesContext'; // Melhor debuggability
+PermissoesContext.displayName = "PermissoesContext"; // Melhor debuggability
 
 // Hook para usar o contexto
 function usePermissoesContext() {
     const context = useContext(PermissoesContext);
     if (!context) {
-        throw new Error('usePermissoesContext must be used within a PermissoesProvider');
+        throw new Error("usePermissoesContext must be used within a PermissoesProvider");
     }
     return context;
 }
 
 // Componente Card para exibição em modo de cartões
-const Card = React.memo(({ permissao, onEdit }: {
-    permissao: PermissaoInspecaoExtended;
-    onEdit: (id: string) => void;
-}) => {
-    // Usar o hook useContext para acessar o parseInspecaoIds
-    const { parseInspecaoIds } = usePermissoesContext();
-    const inspecoesInfo = parseInspecaoIds(permissao.inspecoes);
+const Card = React.memo(
+    ({ permissao, onEdit }: { permissao: PermissaoInspecaoExtended; onEdit: (id: string) => void }) => {
+        const { parseInspecaoIds } = usePermissoesContext();
+        const inspecoesInfo = useMemo(() => parseInspecaoIds(permissao.inspecoes), [parseInspecaoIds, permissao.inspecoes]);
 
-    const handleEdit = useCallback(() => {
-        onEdit(permissao.id);
-    }, [onEdit, permissao.id]);
+        const handleEdit = useCallback(() => onEdit(permissao.id), [onEdit, permissao.id]);
 
-    return (
-        <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">            <div className="p-4">                <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-semibold text-gray-900">
-                {permissao.operador}
-            </span>
-            <span className="text-xs text-gray-600 font-medium text-right truncate max-w-[60%]">
-                {permissao.nome_operador}
-            </span>
-        </div>                {/* Permissões como badges (responsivos) */}
-            <div className="flex flex-wrap gap-1 mb-3 min-h-[32px]">
-                {inspecoesInfo.map((inspecao, index) => (
-                    <span
-                        key={`${inspecao.id}-${index}`}
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
-                        title={inspecao.descricao}
-                    >
-                        {inspecao.descricao}
-                    </span>
-                ))}
-
+        return (
+            <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
+                <div className="p-4">
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-semibold text-gray-900">{permissao.operador}</span>
+                        <span className="text-xs text-gray-600 font-medium text-right truncate max-w-[60%]">{permissao.nome_operador}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3 min-h-[32px]">
+                        {inspecoesInfo.map((inspecao, index) => (
+                            <span
+                                key={`${inspecao.id}-${index}`}
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
+                                title={inspecao.descricao}
+                            >
+                                {inspecao.descricao}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="flex justify-end items-end mt-3">
+                        <Tooltip text="Editar">
+                            <motion.button
+                                whileTap={{ scale: 0.97 }}
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                                onClick={handleEdit}
+                                aria-label="Editar"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </motion.button>
+                        </Tooltip>
+                    </div>
+                </div>
             </div>
-            <div className="flex justify-end items-end mt-3">
-                <Tooltip text="Editar">
-                    <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
-                        onClick={handleEdit}
-                        aria-label="Editar"
-                    >
-                        <Pencil className="h-3.5 w-3.5" />
-                    </motion.button>
-                </Tooltip>
-            </div>
-        </div>
-        </div>
-    );
-});
-
-// Add display name for better debugging
-Card.displayName = 'PermissaoCard';
+        );
+    }
+);
+Card.displayName = "PermissaoCard";
 
 // Página principal
 export default function PermissoesInspecaoPage() {
@@ -192,7 +181,7 @@ export default function PermissoesInspecaoPage() {
 
     // Estado para alertas e notificações
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-    const [notification, setNotification] = useState('');
+    const [notification, setNotification] = useState("");
 
     // Referência para controlar requisições
     const dataFetchedRef = useRef(false);
@@ -203,130 +192,116 @@ export default function PermissoesInspecaoPage() {
     // Carrega tipos de inspeção
     const loadTiposInspecao = useCallback(async () => {
         try {
-            console.log('Iniciando busca dos tipos de inspeção');
             const headers = getAuthHeaders();
             const data = await getTiposInspecao(headers);
-            console.log('Tipos de inspeção recebidos:', data);
-            // Não filtrar mais, mostrar todos os tipos de inspeção
             setTiposInspecao(data);
             return data;
-        } catch (error) {
-            console.error('Erro ao carregar tipos de inspeção:', error);
+        } catch {
             return [];
         }
     }, [getAuthHeaders]);
 
     // Função para filtrar e ordenar os dados
-    const filterAndSortData = useCallback((data: PermissaoInspecaoExtended[], search: string, permissionFilter: string | null, sort: "operador" | "nome_operador") => {
-        // Filtrar por termo de busca
-        let filtered = data;
+    const filterAndSortData = useCallback(
+        (data: PermissaoInspecaoExtended[], search: string, permissionFilter: string | null, sort: "operador" | "nome_operador") => {
+            // Filtrar por termo de busca
+            let filtered = data;
 
-        if (search) {
-            filtered = filtered.filter(item =>
-                String(item.operador).toLowerCase().includes(search.toLowerCase()) ||
-                String(item.nome_operador).toLowerCase().includes(search.toLowerCase())
-            );
-        }
-
-        // Filtrar por permissão
-        if (permissionFilter) {
-            if (permissionFilter === "com_permissao") {
-                filtered = filtered.filter(item => item.inspecoes.length > 0);
-            } else if (permissionFilter === "sem_permissao") {
-                filtered = filtered.filter(item => item.inspecoes.length === 0);
-            } else {
-                filtered = filtered.filter(item =>
-                    item.inspecoes.includes(permissionFilter)
+            if (search) {
+                filtered = filtered.filter(
+                    (item) =>
+                        String(item.operador).toLowerCase().includes(search.toLowerCase()) ||
+                        String(item.nome_operador).toLowerCase().includes(search.toLowerCase())
                 );
             }
-        }
 
-        // Ordenar os dados
-        return [...filtered].sort((a, b) => {
-            const fieldA = a[sort];
-            const fieldB = b[sort];
+            // Filtrar por permissão
+            if (permissionFilter) {
+                if (permissionFilter === "com_permissao") {
+                    filtered = filtered.filter((item) => item.inspecoes.length > 0);
+                } else if (permissionFilter === "sem_permissao") {
+                    filtered = filtered.filter((item) => item.inspecoes.length === 0);
+                } else {
+                    filtered = filtered.filter((item) => item.inspecoes.includes(permissionFilter));
+                }
+            }
 
-            if (fieldA < fieldB) return -1;
-            if (fieldA > fieldB) return 1;
-            return 0;
-        });
-    }, []);
+            // Ordenar os dados
+            return [...filtered].sort((a, b) => {
+                const fieldA = a[sort];
+                const fieldB = b[sort];
+
+                if (fieldA < fieldB) return -1;
+                if (fieldA > fieldB) return 1;
+                return 0;
+            });
+        },
+        []
+    );
 
     // Carrega dados - Removendo dependências de estado para evitar recriações constantes
-    const loadData = useCallback(async () => {
-        setIsLoading(true);
-        setApiError(null);
+    const loadData = useCallback(
+        async () => {
+            setIsLoading(true);
+            setApiError(null);
 
-        try {
-            const headers = getAuthHeaders();
+            try {
+                const headers = getAuthHeaders();
 
-            // Carregar tipos de inspeção se ainda não foram carregados
-            if (!tiposInspecaoFetchedRef.current || tiposInspecao.length === 0) {
-                await loadTiposInspecao();
-                tiposInspecaoFetchedRef.current = true;
-            }
+                // Carregar tipos de inspeção se ainda não foram carregados
+                if (!tiposInspecaoFetchedRef.current || tiposInspecao.length === 0) {
+                    await loadTiposInspecao();
+                    tiposInspecaoFetchedRef.current = true;
+                }
 
-            // Carregar permissões
-            const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
+                // Carregar permissões
+                const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
 
-            if (!apiData || apiData.length === 0) {
-                setPermissoes([]);
-                setAllData([]);
+                if (!apiData || apiData.length === 0) {
+                    setPermissoes([]);
+                    setAllData([]);
+                    setIsLoading(false);
+                    setIsRefreshing(false);
+                    return;
+                }
+
+                // Mapear dados adicionando ID
+                const mappedData: PermissaoInspecaoExtended[] = apiData.map((item) => ({
+                    ...item,
+                    id: item.operador,
+                }));
+
+                setAllData(mappedData);
+
+                // Aplicar filtros e ordenação
+                const filteredData = filterAndSortData(mappedData, searchTerm, selectedPermissionFilter, sortField);
+
+                setPermissoes(filteredData);
+
+                // Atualizar notificação
+                if (filteredData.length === 0) {
+                    setNotification("Nenhum resultado encontrado para os filtros atuais.");
+                } else {
+                    setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
+                }
+
                 setIsLoading(false);
                 setIsRefreshing(false);
-                return;
+            } catch (error) {
+                console.error("Erro ao carregar dados:", error);
+                const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao carregar dados";
+
+                setApiError(errorMessage);
+                setAlert({
+                    message: `Falha ao carregar dados: ${errorMessage}`,
+                    type: "error",
+                });
+                setIsLoading(false);
+                setIsRefreshing(false);
             }
-
-            // Mapear dados adicionando ID
-            const mappedData: PermissaoInspecaoExtended[] = apiData.map(item => ({
-                ...item,
-                id: item.operador,
-            }));
-
-            setAllData(mappedData);
-
-            // Aplicar filtros e ordenação
-            const filteredData = filterAndSortData(
-                mappedData,
-                searchTerm,
-                selectedPermissionFilter,
-                sortField
-            );
-
-            setPermissoes(filteredData);
-
-            // Atualizar notificação
-            if (filteredData.length === 0) {
-                setNotification('Nenhum resultado encontrado para os filtros atuais.');
-            } else {
-                setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
-            }
-
-            setIsLoading(false);
-            setIsRefreshing(false);
-        } catch (error) {
-            console.error('Erro ao carregar dados:', error);
-            const errorMessage = error instanceof Error
-                ? error.message
-                : "Erro desconhecido ao carregar dados";
-
-            setApiError(errorMessage);
-            setAlert({
-                message: `Falha ao carregar dados: ${errorMessage}`,
-                type: "error"
-            });
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    }, [
-        getAuthHeaders,
-        loadTiposInspecao,
-        searchTerm,
-        selectedPermissionFilter,
-        sortField,
-        filterAndSortData,
-        tiposInspecao.length
-    ]);
+        },
+        [getAuthHeaders, loadTiposInspecao, searchTerm, selectedPermissionFilter, sortField, filterAndSortData, tiposInspecao.length]
+    );
 
     useEffect(() => {
         // Evitar o loop infinito usando a referência
@@ -345,18 +320,13 @@ export default function PermissoesInspecaoPage() {
     useEffect(() => {
         if (dataFetchedRef.current && allData.length > 0) {
             // Somente aplica filtros se os dados já foram carregados
-            const filteredData = filterAndSortData(
-                allData,
-                searchTerm,
-                selectedPermissionFilter,
-                sortField
-            );
+            const filteredData = filterAndSortData(allData, searchTerm, selectedPermissionFilter, sortField);
 
             setPermissoes(filteredData);
 
             // Atualiza notificação
             if (filteredData.length === 0) {
-                setNotification('Nenhum resultado encontrado para os filtros atuais.');
+                setNotification("Nenhum resultado encontrado para os filtros atuais.");
             } else {
                 setNotification(`${filteredData.length} permissões de inspeção encontradas.`);
             }
@@ -364,51 +334,57 @@ export default function PermissoesInspecaoPage() {
     }, [searchTerm, sortField, allData, selectedPermissionFilter, filterAndSortData]);
 
     // Manipulação de operações CRUD com feedback aprimorada
-    const handleEdit = useCallback((id: string) => {
-        try {
-            const permissao = permissoes.find(p => p.operador === id);
-            if (!permissao) {
-                throw new Error(`Permissão com ID ${id} não foi encontrada`);
+    const handleEdit = useCallback(
+        (id: string) => {
+            try {
+                const permissao = permissoes.find((p) => p.operador === id);
+                if (!permissao) {
+                    throw new Error(`Permissão com ID ${id} não foi encontrada`);
+                }
+
+                // Criar um novo objeto para evitar referências mutáveis
+                setCurrentPermissao({
+                    operador: permissao.operador,
+                    nome_operador: permissao.nome_operador,
+                    situacao: permissao.situacao,
+                    inspecoes: permissao.inspecoes,
+                });
+
+                setIsEditModalOpen(true);
+                setNotification(`Iniciando edição da permissão para ${permissao.nome_operador}.`);
+            } catch (error) {
+                console.error("Erro ao editar permissão:", error);
+                setAlert({
+                    message: error instanceof Error ? error.message : "Erro desconhecido ao editar permissão",
+                    type: "error",
+                });
             }
+        },
+        [permissoes]
+    );
 
-            // Criar um novo objeto para evitar referências mutáveis
-            setCurrentPermissao({
-                operador: permissao.operador,
-                nome_operador: permissao.nome_operador,
-                situacao: permissao.situacao,
-                inspecoes: permissao.inspecoes
-            });
-
-            setIsEditModalOpen(true);
-            setNotification(`Iniciando edição da permissão para ${permissao.nome_operador}.`);
-        } catch (error) {
-            console.error('Erro ao editar permissão:', error);
+    const handleEditSuccess = useCallback(
+        (updatedPermissao: ApiPermissaoInspecao) => {
+            // Fechar modal e mostrar mensagem de sucesso
+            setIsEditModalOpen(false);
+            setCurrentPermissao(null);
             setAlert({
-                message: error instanceof Error ? error.message : 'Erro desconhecido ao editar permissão',
-                type: "error"
+                message: `Permissões de inspeção para ${updatedPermissao.nome_operador} atualizadas com sucesso!`,
+                type: "success",
             });
-        }
-    }, [permissoes]);
+            setNotification(`Permissões de inspeção para ${updatedPermissao.nome_operador} atualizadas com sucesso.`);
 
-    const handleEditSuccess = useCallback((updatedPermissao: ApiPermissaoInspecao) => {
-        // Fechar modal e mostrar mensagem de sucesso
-        setIsEditModalOpen(false);
-        setCurrentPermissao(null);
-        setAlert({
-            message: `Permissões de inspeção para ${updatedPermissao.nome_operador} atualizadas com sucesso!`,
-            type: "success"
-        });
-        setNotification(`Permissões de inspeção para ${updatedPermissao.nome_operador} atualizadas com sucesso.`);
-
-        // Recarregar os dados da API após edição bem-sucedida
-        dataFetchedRef.current = false;
-        loadData();
-    }, [loadData]);
+            // Recarregar os dados da API após edição bem-sucedida
+            dataFetchedRef.current = false;
+            loadData();
+        },
+        [loadData]
+    );
 
     const handleEditError = useCallback((errorMessage: string) => {
         setAlert({
             message: `Erro ao atualizar permissão: ${errorMessage}`,
-            type: "error"
+            type: "error",
         });
         setNotification(`Erro ao atualizar permissão: ${errorMessage}`);
     }, []);
@@ -435,46 +411,44 @@ export default function PermissoesInspecaoPage() {
     }, [loadData]);
 
     // Função para encontrar os nomes dos tipos de inspeção a partir dos IDs
-    const parseInspecaoIds = useCallback((inspecoesStr: string) => {
-        if (!inspecoesStr || !tiposInspecao.length) return [];
-
-        // Separa cada caractere como um ID separado
-        const idsArray = Array.from(inspecoesStr);
-
-        return idsArray.map(id => {
-            // Encontra o tipo de inspeção correspondente pelo id
-            const tipoInspecao = tiposInspecao.find(tipo => tipo.id === id);
-            return {
-                id,
-                descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`,
-                color: getInspecaoColor(id),
-            };
-        });
-    }, [tiposInspecao]);
+    const parseInspecaoIds = useCallback(
+        (inspecoesStr: string) => {
+            if (!inspecoesStr || !tiposInspecao.length) return [];
+            const idsArray = Array.from(inspecoesStr);
+            return idsArray.map((id) => {
+                const tipoInspecao = tiposInspecao.find((tipo) => tipo.id === id);
+                return {
+                    id,
+                    descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`,
+                    color: getInspecaoColor(id),
+                };
+            });
+        },
+        [tiposInspecao]
+    );
 
     // Funções utilitárias para formatar os dados na tabela com otimização
-    const formatPermissoes = useCallback((permissoes: string) => {
-        if (!permissoes) return null;
-
-        const inspecoesInfo = parseInspecaoIds(permissoes);
-
-        return (
-            <div className="flex flex-wrap gap-1 max-w-sm">
-                {inspecoesInfo.map((inspecao, index) => (
-                    <span
-                        key={`${inspecao.id}-${index}`}
-                        className={`inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
-                        title={inspecao.descricao}
-                    >
-                        {inspecao.descricao}
-                    </span>
-                ))}
-                {inspecoesInfo.length === 0 && (
-                    <span className="text-xs text-gray-500">Sem permissões</span>
-                )}
-            </div>
-        );
-    }, [parseInspecaoIds]);
+    const formatPermissoes = useCallback(
+        (permissoes: string) => {
+            if (!permissoes) return null;
+            const inspecoesInfo = parseInspecaoIds(permissoes);
+            return (
+                <div className="flex flex-wrap gap-1 max-w-sm">
+                    {inspecoesInfo.map((inspecao, index) => (
+                        <span
+                            key={`${inspecao.id}-${index}`}
+                            className={`inline-flex items-center mx-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
+                            title={inspecao.descricao}
+                        >
+                            {inspecao.descricao}
+                        </span>
+                    ))}
+                    {inspecoesInfo.length === 0 && <span className="text-xs text-gray-500">Sem permissões</span>}
+                </div>
+            );
+        },
+        [parseInspecaoIds]
+    );
 
     // Preparar opções de filtro para o componente FilterPanel
     const filterOptions = useMemo(() => {
@@ -488,16 +462,16 @@ export default function PermissoesInspecaoPage() {
         const specialOptions: PermissaoFilterOption[] = [
             {
                 value: "com_permissao",
-                label: "Usuários com permissões"
+                label: "Usuários com permissões",
             },
             {
                 value: "sem_permissao",
-                label: "Usuários sem permissões"
-            }
+                label: "Usuários sem permissões",
+            },
         ];
 
         // Mapear os tipos de inspeção para opções de filtro
-        const permissionOptions: PermissaoFilterOption[] = tiposInspecao.map(tipo => ({
+        const permissionOptions: PermissaoFilterOption[] = tiposInspecao.map((tipo) => ({
             value: tipo.id,
             label: tipo.descricao_tipo_inspecao,
         }));
@@ -540,7 +514,7 @@ export default function PermissoesInspecaoPage() {
                 permissionLabel = "Usuários sem permissões";
                 color = "bg-orange-100 text-orange-800";
             } else {
-                permissionLabel = tiposInspecao.find(tipo => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
+                permissionLabel = tiposInspecao.find((tipo) => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
             }
 
             filters.push({
@@ -554,21 +528,21 @@ export default function PermissoesInspecaoPage() {
         return filters;
     }, [searchTerm, selectedPermissionFilter, tiposInspecao]);
 
+    // Otimização dos componentes de célula
     const IdCell = React.memo(({ operador }: { operador: string }) => (
         <span className="text-sm font-medium text-gray-900">{operador}</span>
     ));
-    IdCell.displayName = 'IdCell';
+    IdCell.displayName = "IdCell";
 
     const NameCell = React.memo(({ nome }: { nome: string }) => (
         <div className="text-sm text-gray-900 max-w-md truncate">{nome}</div>
     ));
-    NameCell.displayName = 'NameCell';
+    NameCell.displayName = "NameCell";
 
     const ActionsCell = React.memo(({ operador }: { operador: string }) => {
         const handleEditClick = useCallback(() => {
             handleEdit(operador);
         }, [operador]);
-
         return (
             <div className="flex items-center justify-end gap-2">
                 <Tooltip text="Editar">
@@ -584,47 +558,50 @@ export default function PermissoesInspecaoPage() {
             </div>
         );
     });
-    ActionsCell.displayName = 'ActionsCell';
+    ActionsCell.displayName = "ActionsCell";
 
-    const tableColumns = useMemo(() => [
-        {
-            key: "operador",
-            title: "ID",
-            render: (item: { id: string | number }) => {
-                const permissao = item as PermissaoInspecaoExtended;
-                return <IdCell operador={permissao.operador} />;
+    const tableColumns = useMemo(
+        () => [
+            {
+                key: "operador",
+                title: "ID",
+                render: (item: { id: string | number }) => {
+                    const permissao = item as PermissaoInspecaoExtended;
+                    return <IdCell operador={permissao.operador} />;
+                },
             },
-        },
-        {
-            key: "nome_operador",
-            title: "Nome",
-            render: (item: { id: string | number }) => {
-                const permissao = item as PermissaoInspecaoExtended;
-                return <NameCell nome={permissao.nome_operador} />;
+            {
+                key: "nome_operador",
+                title: "Nome",
+                render: (item: { id: string | number }) => {
+                    const permissao = item as PermissaoInspecaoExtended;
+                    return <NameCell nome={permissao.nome_operador} />;
+                },
             },
-        },
-        {
-            key: "inspecoes",
-            title: "Permissões",
-            render: (item: { id: string | number }) => {
-                const permissao = item as PermissaoInspecaoExtended;
-                return formatPermissoes(permissao.inspecoes);
+            {
+                key: "inspecoes",
+                title: "Permissões",
+                render: (item: { id: string | number }) => {
+                    const permissao = item as PermissaoInspecaoExtended;
+                    return formatPermissoes(permissao.inspecoes);
+                },
             },
-        },
-        {
-            key: "acoes",
-            title: "Ações",
-            render: (item: { id: string | number }) => {
-                const permissao = item as PermissaoInspecaoExtended;
-                return <ActionsCell operador={permissao.operador} />;
+            {
+                key: "acoes",
+                title: "Ações",
+                render: (item: { id: string | number }) => {
+                    const permissao = item as PermissaoInspecaoExtended;
+                    return <ActionsCell operador={permissao.operador} />;
+                },
             },
-        },
-    ], [formatPermissoes, IdCell, NameCell, ActionsCell]);
+        ],
+        [formatPermissoes, IdCell, NameCell, ActionsCell]
+    );
 
-    if (!hasPermission('G')) {
+    if (!hasPermission("G")) {
         return (
             <RestrictedAccess
-                hasPermission={hasPermission('G')}
+                hasPermission={hasPermission("G")}
                 isLoading={authLoading}
                 customMessage="Esta página está disponível apenas para usuários com permissão de Gestor."
                 redirectTo="/dashboard"
@@ -726,19 +703,12 @@ export default function PermissoesInspecaoPage() {
                     onResetFilters={resetFilters}
                 >
                     {viewMode === "table" ? (
-                        <DataTable
-                            data={permissoes}
-                            columns={tableColumns}
-                        />
+                        <DataTable data={permissoes} columns={tableColumns} />
                     ) : (
                         <DataCards
                             data={permissoes}
                             renderCard={(permissao: PermissaoInspecaoExtended) => (
-                                <Card
-                                    key={permissao.operador}
-                                    permissao={permissao}
-                                    onEdit={handleEdit}
-                                />
+                                <Card key={permissao.operador} permissao={permissao} onEdit={handleEdit} />
                             )}
                         />
                     )}
