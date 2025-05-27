@@ -98,52 +98,39 @@ const Card = React.memo(({ permissao, onEdit }: {
     }, [onEdit, permissao.id]);
 
     return (
-        <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-            <div className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                            {permissao.operador}
-                        </span>
-                    </div>
-                </div>
+        <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">            <div className="p-4">                <div className="flex justify-between items-center mb-3">
+            <span className="text-xs font-semibold text-gray-900">
+                {permissao.operador}
+            </span>
+            <span className="text-xs text-gray-600 font-medium text-right truncate max-w-[60%]">
+                {permissao.nome_operador}
+            </span>
+        </div>                {/* Permissões como badges (responsivos) */}
+            <div className="flex flex-wrap gap-1 mb-3 min-h-[32px]">
+                {inspecoesInfo.map((inspecao, index) => (
+                    <span
+                        key={`${inspecao.id}-${index}`}
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
+                        title={inspecao.descricao}
+                    >
+                        {inspecao.descricao}
+                    </span>
+                ))}
 
-                <h3 className="text-base font-medium text-gray-800 mb-2 line-clamp-2">
-                    {permissao.nome_operador}
-                </h3>
-
-                {/* Permissões como badges (responsivos) */}
-                <div className="flex flex-wrap gap-1 mb-3 min-h-[40px]">
-                    {inspecoesInfo.map((inspecao, index) => (
-                        <span
-                            key={`${inspecao.id}-${index}`}
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${inspecao.color.bg} ${inspecao.color.text}`}
-                            title={inspecao.descricao}
-                        >
-                            {inspecao.descricao}
-                        </span>
-                    ))}
-
-                    {inspecoesInfo.length === 0 && (
-                        <span className="text-xs text-gray-500">Sem permissões atribuídas</span>
-                    )}
-                </div>
-
-                <div className="flex justify-between items-end mt-3">
-                    <div className="flex space-x-1">
-                        <Tooltip text="Editar">
-                            <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                className="p-1.5 rounded-md text-yellow-500 hover:bg-yellow-50"
-                                onClick={handleEdit}
-                                aria-label="Editar"
-                            >
-                                <Pencil className="h-3.5 w-3.5" />
-                            </motion.button>
-                        </Tooltip>
-                    </div>
-                </div>
             </div>
+            <div className="flex justify-end items-end mt-3">
+                <Tooltip text="Editar">
+                    <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1"
+                        onClick={handleEdit}
+                        aria-label="Editar"
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                    </motion.button>
+                </Tooltip>
+            </div>
+        </div>
         </div>
     );
 });
@@ -587,7 +574,7 @@ export default function PermissoesInspecaoPage() {
                 <Tooltip text="Editar">
                     <motion.button
                         whileTap={{ scale: 0.95 }}
-                        className="text-yellow-500 hover:text-yellow-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500/30 focus:ring-offset-1 rounded p-1"
+                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
                         onClick={handleEditClick}
                         aria-label="Editar"
                     >

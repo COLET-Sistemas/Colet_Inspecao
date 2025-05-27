@@ -406,7 +406,6 @@ export default function Especificacoes() {
                 });
             }
         } catch (error) {
-            console.error('Erro ao buscar dados:', error);
             setLoadingState('error');
             setAlert({
                 message: error instanceof Error ? error.message : 'Erro desconhecido ao buscar dados',
@@ -493,18 +492,16 @@ export default function Especificacoes() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                >
-                    <div className="relative flex-grow w-full">
-                        <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-100 flex items-center">
+                >                    <div className="relative flex-grow w-full">
+                        <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-100 flex items-center focus-within:border-[#1ABC9C] transition-colors duration-300">
                             <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-gray-400" />
-                            </div>
-                            <input
+                            </div>                            <input
                                 type="text"
                                 placeholder="DIGITE A REFERÊNCIA DESEJADA"
                                 value={codigoReferencia}
                                 onChange={handleInputChange}
-                                className="block w-full rounded-md bg-gray-50 border-0 pl-8 py-3 text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#1ABC9C]/50 transition-all duration-300"
+                                className="block w-full rounded-md bg-gray-50 pl-8 py-3 text-xs text-gray-800 placeholder-gray-400 focus:outline-none transition-all duration-300 border-0"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') handleSearch();
                                 }}
