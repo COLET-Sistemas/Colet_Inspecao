@@ -24,127 +24,114 @@ const Card = React.memo(({ cota, onEdit, onDelete }: {
     onEdit: (id: number) => void;
     onDelete: (id: number) => void;
 }) => {
+    // Modern label/class helpers (reuse from table)
     const getTipoLabel = (tipo: string) => {
         switch (tipo) {
-            case 'O':
-            case 'A':
+            case 'O': return 'Cota';
+            case 'A': return 'Característica';
             default: return 'Outro';
         }
     };
-
     const getTipoClass = (tipo: string) => {
         switch (tipo) {
-            case 'O':
-            case 'A':
-            default: return 'bg-gray-50 text-gray-700';
+            case 'O': return 'bg-blue-100 text-blue-800';
+            case 'A': return 'bg-green-100 text-green-800';
+            default: return 'bg-gray-100 text-gray-800';
         }
-    };    // Convert any value to string for comparison
+    };
     const stringValue = (value: string | boolean | null | undefined): string => {
         return value !== undefined && value !== null ? String(value).toLowerCase() : '';
     };
-
-    // Renderiza o SVG de maneira segura, dentro de um wrapper SVG
     const renderSvg = () => {
-        if (!cota.simbolo_path_svg) return null;
-
+        if (!cota.simbolo_path_svg) return (
+            <div className="flex items-center justify-center p-2 mb-3 rounded-lg bg-gray-50 border border-gray-100 shadow-sm min-h-[56px]">
+                <span className="text-xs text-gray-400 italic">Sem símbolo</span>
+            </div>
+        );
         return (
-            <div className="flex items-center justify-center p-2 mb-2 border border-gray-100 rounded bg-gray-50">
+            <div className="flex items-center justify-center p-2 mb-3 rounded-lg bg-gray-50 border border-gray-100 shadow-sm">
                 <svg
                     viewBox="0 0 100 100"
-                    width="60"
-                    height="60"
+                    width="56"
+                    height="56"
                     className="overflow-visible"
                     dangerouslySetInnerHTML={{ __html: cota.simbolo_path_svg }}
                 />
             </div>
         );
     };
-
     return (
-        <div className="bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow transition-all duration-300">
-            <div className="p-4">
-                <header className="mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500">#{cota.id}</span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getTipoClass(cota.tipo)}`}>
-                            {getTipoLabel(cota.tipo)}
-                        </span>
-                    </div>
-                    <h3 className="font-semibold text-gray-900">{cota.descricao}</h3>
-                </header>
-
+        <div className="group bg-white border border-gray-100 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+            <div className="flex-1 flex flex-col p-5">
+                <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-gray-900 text-lg truncate" title={cota.descricao}>{cota.descricao}</h3>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ml-3 ${getTipoClass(cota.tipo)}`}>{getTipoLabel(cota.tipo)}</span>
+                </div>
                 {renderSvg()}
 
-                <div className="space-y-2 mt-3">
-                    {cota.unidade_medida && (
-                        <div className="text-sm">
-                            <span className="font-medium text-gray-700">Unidade: </span>
-                            <span className="text-gray-600">{cota.unidade_medida}</span>
-                        </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        <div className="text-sm">
-                            <span className="font-medium text-gray-700">Rejeita menor: </span>
-                            <span className={`px-2 py-0.5 text-xs rounded-full 
-                                ${['s', 'S'].includes(stringValue(cota.rejeita_menor))
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-gray-100 text-gray-700'}`}>
-                                {['s', 'S'].includes(stringValue(cota.rejeita_menor))
-                                    ? "Sim"
-                                    : ['n', 'N'].includes(stringValue(cota.rejeita_menor))
-                                        ? "Não"
-                                        : "-"}
-                            </span>
-                        </div>                        <div className="text-sm">
-                            <span className="font-medium text-gray-700">Rejeita maior: </span>
-                            <span className={`px-2 py-0.5 text-xs rounded-full 
-                                ${['s', 'S'].includes(stringValue(cota.rejeita_maior))
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-gray-100 text-gray-700'}`}>
-                                {['s', 'S'].includes(stringValue(cota.rejeita_maior))
-                                    ? "Sim"
-                                    : ['n', 'N'].includes(stringValue(cota.rejeita_maior))
-                                        ? "Não"
-                                        : "-"}
-                            </span>
-                        </div>
-
-                        {cota.tipo === "O" && (
-                            <div className="text-sm mt-1">
-                                <span className="font-medium text-gray-700">Local de Inspeção: </span>
-                                <span className={`px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700`}>
-                                    {cota.local_inspecao === "P" ? "Produção" :
-                                        cota.local_inspecao === "Q" ? "Qualidade" :
-                                            cota.local_inspecao === "*" ? "Ambos" : "-"}
-                                </span>
-                            </div>
-                        )}
+                <div className="flex flex-wrap gap-4 mt-1.5 mb-1 items-center justify-between">
+                    {/* Unidade de medida */}
+                    <div className="flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                            Unidade
+                        </span>
+                        <span className="text-sm text-gray-700 font-semibold mt-0.5">{cota.unidade_medida || '-'}</span>
+                    </div>
+                    {/* Rejeita menor */}
+                    <div className="flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                            Rejeita menor
+                        </span>
+                        <span className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full ${['s', 'S'].includes(stringValue(cota.rejeita_menor)) ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {['s', 'S'].includes(stringValue(cota.rejeita_menor)) ? "Sim" : ['n', 'N'].includes(stringValue(cota.rejeita_menor)) ? "Não" : "-"}
+                        </span>
+                    </div>
+                    {/* Rejeita maior */}
+                    <div className="flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                            Rejeita maior
+                        </span>
+                        <span className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full ${['s', 'S'].includes(stringValue(cota.rejeita_maior)) ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {['s', 'S'].includes(stringValue(cota.rejeita_maior)) ? "Sim" : ['n', 'N'].includes(stringValue(cota.rejeita_maior)) ? "Não" : "-"}
+                        </span>
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-2 mt-4">
-                    <button
-                        onClick={() => onEdit(cota.id)}
-                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
-                        aria-label="Editar"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => onDelete(cota.id)}
-                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
-                        aria-label="Excluir"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
-                        </svg>
-                    </button>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                    {cota.tipo === "O" ? (
+                        <div className="flex flex-col items-start">
+                            <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                                Local inspeção:   {cota.local_inspecao === "P" ? "Produção" :
+                                    cota.local_inspecao === "Q" ? "Qualidade" :
+                                        cota.local_inspecao === "*" ? "Ambos" : "-"}
+                            </span>
+                        </div>
+                    ) : <div />}
+                    <div className="flex gap-1.5 ml-auto">
+                        <Tooltip text="Editar">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
+                                onClick={() => onEdit(cota.id)}
+                                aria-label="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                        <Tooltip text="Excluir">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 cursor-pointer"
+                                onClick={() => onDelete(cota.id)}
+                                aria-label="Excluir"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
+                    </div>
                 </div>
-            </div>        </div>
+            </div>
+        </div>
     );
 });
 
@@ -611,7 +598,7 @@ export default function CotasCaracteristicasPage() {
                         <Tooltip text="Editar">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-yellow-500 hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleEdit(cota.id)}
                                 aria-label="Editar"
                             >
@@ -621,7 +608,7 @@ export default function CotasCaracteristicasPage() {
                         <Tooltip text="Excluir">
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
-                                className="text-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 rounded p-1.5 cursor-pointer"
+                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-1 cursor-pointer"
                                 onClick={() => handleDelete(cota.id)}
                                 aria-label="Excluir"
                             >
