@@ -18,6 +18,16 @@ import { motion } from "framer-motion";
 import { IterationCcw, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
+// Função utilitária para verificar se a data dd/mm/yyyy está expirada
+function isDateExpired(dateStr: string): boolean {
+    if (!dateStr) return false;
+    const [day, month, year] = dateStr.split("/").map(Number);
+    if (!day || !month || !year) return false;
+    const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+    const now = new Date();
+    return date < now;
+}
+
 // Card component for list item
 const Card = React.memo(({ instrumento, onEdit, onDelete }: {
     instrumento: InstrumentoMedicao;
@@ -60,13 +70,11 @@ const Card = React.memo(({ instrumento, onEdit, onDelete }: {
                 <div className="space-y-0.5">
                     <span className="block text-[10px] text-gray-400 font-semibold uppercase">Validade</span>
                     <span className={`block text-xs font-medium ${instrumento.data_validade ?
-                        new Date(instrumento.data_validade) < new Date() ?
+                        isDateExpired(instrumento.data_validade) ?
                             'text-red-600' : 'text-gray-700'
                         : 'text-gray-400'
                         }`}>
-                        {instrumento.data_validade ?
-                            new Date(instrumento.data_validade).toLocaleDateString('pt-BR') :
-                            '-'}
+                        {instrumento.data_validade || '-'}
                     </span>
                 </div>
                 <div className="space-y-0.5">
