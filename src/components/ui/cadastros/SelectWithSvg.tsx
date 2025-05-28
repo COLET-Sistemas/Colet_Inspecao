@@ -44,25 +44,29 @@ export function SelectWithSvg({
                         <Listbox.Button
                             id={id}
                             className={`relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2.5 pl-3 pr-10 text-left focus:border-[#09A08D] focus:outline-none focus:ring-2 focus:ring-[#09A08D]/30 sm:text-sm ${open ? 'rounded-b-none border-b-0' : ''}`}
-                        >
-                            <span className="flex items-center gap-2">
+                        >                            <span className="flex items-center gap-2">
                                 {value ? (
                                     <div className="contents">
-                                        {value.simbolo_path_svg && (
-                                            <svg
-                                                width="20"
-                                                height="20"
-                                                viewBox="0 0 100 100"
-                                                className="inline-block"
-                                                dangerouslySetInnerHTML={{ __html: value.simbolo_path_svg }}
-                                            />
-                                        )}
+                                        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                                            {value.simbolo_path_svg && (
+                                                <svg
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 100 100"
+                                                    className="inline-block"
+                                                    dangerouslySetInnerHTML={{ __html: value.simbolo_path_svg }}
+                                                />
+                                            )}
+                                        </div>
                                         <span className="block truncate">{value.descricao}</span>
                                     </div>
                                 ) : (
-                                    <span className="block truncate text-gray-500">{placeholder}</span>
+                                    <>
+                                        <div className="flex-shrink-0 w-5 h-5"></div>
+                                        <span className="block truncate text-gray-500">{placeholder}</span>
+                                    </>
                                 )}
-                            </span>                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                            </span><span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                                 <ChevronsUpDownIcon
                                     className="h-5 w-5 text-gray-400"
                                     aria-hidden="true"
@@ -91,8 +95,8 @@ export function SelectWithSvg({
                                             value={option}
                                         >
                                             {({ active, selected }: { active: boolean, selected: boolean }) => (
-                                                <div className="contents">
-                                                    <div className="flex items-center gap-2">
+                                                <div className="contents">                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
                                                         {option.simbolo_path_svg && (
                                                             <svg
                                                                 width="20"
@@ -102,10 +106,11 @@ export function SelectWithSvg({
                                                                 dangerouslySetInnerHTML={{ __html: option.simbolo_path_svg }}
                                                             />
                                                         )}
-                                                        <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                                            {option.descricao}
-                                                        </span>
                                                     </div>
+                                                    <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                        {option.descricao}
+                                                    </span>
+                                                </div>
 
                                                     {selected && (
                                                         <span

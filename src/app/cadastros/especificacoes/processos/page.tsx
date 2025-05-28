@@ -42,7 +42,7 @@ const EspecificacaoCardBase = ({
     const renderSVG = useCallback((svgString: string | undefined) => {
         if (!svgString) return (
             <div className="w-9 h-9 flex items-center justify-center mx-auto">
-                <span className="text-gray-400 text-xs font-medium">N/A</span>
+                <span className="text-gray-400 text-xs font-medium"> </span>
             </div>
         );
         return (
@@ -163,7 +163,7 @@ const EspecificacaoCardBase = ({
                         </div>
                     ) : (
                         <div className="w-9 h-9 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">N/A</span>
+                            <span className="text-gray-600 text-md">----</span>
                         </div>
                     )}
                 </div>
@@ -436,44 +436,42 @@ const OperacaoSection = ({
                     <div className="flex items-center gap-2 relative z-10 transition-opacity group-hover:opacity-100">
                         {isExpanded ? (
                             // Botões quando expandido (Reordenar e Cadastrar)
-                            <div className="flex items-center gap-2">
-                                {/* Reordenar */}
-                                <Tooltip text={isReordering ? "Modo de reordenação ativo" : "Reordenar Especificações"}>                                    <motion.button
+                            <div className="flex items-center gap-2">                                {/* Reordenar */}
+                                <motion.button
                                     whileTap={{ scale: 0.97 }}
                                     disabled={especificacoesCountValue <= 1}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         setIsReordering(!isReordering);
-                                    }} className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-500 hover:bg-blue-600'} ${especificacoesCountValue <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    }} className={`p-1.5 px-3 rounded-md text-white transition-colors shadow-sm flex items-center gap-2 ${isReordering ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-500 hover:bg-blue-600'} ${especificacoesCountValue <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="21" y1="10" x2="3" y2="10"></line>
                                         <line x1="21" y1="6" x2="3" y2="6"></line>
                                         <line x1="21" y1="14" x2="3" y2="14"></line>
-                                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                                        <line x1="21" y1="18" x2="3" y2="18"></line>                                    </svg>
+                                    <span className="text-xs font-medium hidden md:inline">
+                                        {isReordering ? "Reordenando" : "Reordenar"}
+                                    </span>
+                                </motion.button>                                {/* Cadastrar */}
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={isReordering}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (!isReordering) {
+                                            setIsSpecModalOpen(true);
+                                        }
+                                    }} className={`p-1.5 md:px-3 rounded-md text-white transition-colors shadow-sm flex items-center gap-2 ${isReordering ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                     </svg>
+                                    <span className="text-xs font-medium hidden md:inline">Cadastrar Espec.</span>
                                 </motion.button>
-                                </Tooltip>
-
-                                {/* Cadastrar */}                                <Tooltip text="Cadastrar Especificações">
-                                    <motion.button
-                                        whileTap={{ scale: 0.97 }}
-                                        disabled={isReordering}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (!isReordering) {
-                                                setIsSpecModalOpen(true);
-                                            }
-                                        }} className={`p-1.5 rounded-md text-white transition-colors shadow-sm ${isReordering ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </svg>
-                                    </motion.button>
-                                </Tooltip>
                             </div>
                         ) : (
                             // Botões quando fechado (Editar e Excluir)
@@ -622,31 +620,33 @@ const OperacaoSection = ({
                                         </svg>
                                         Mova as especificações para reordenar
                                     </span>
-                                </div>
-                                <div className="flex items-center gap-2">
+                                </div>                                <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setIsReordering(false)}
-                                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                                        className="px-2 md:px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-1.5"
                                     >
-                                        Cancelar
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                        <span className="hidden md:inline">Cancelar</span>
                                     </button>
                                     <button
                                         onClick={handleReorder}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-1.5"
+                                        className="px-2 md:px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-1.5"
                                         disabled={isSaving}
                                     >
-                                        {isSaving ? (
-                                            <>
-                                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                <span>Salvando...</span>
-                                            </>
+                                        {isSaving ? (<>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span className="hidden md:inline">Salvando...</span>
+                                        </>
                                         ) : (
                                             <>
                                                 <Check className="h-4 w-4" />
-                                                <span>Salvar Ordem</span>
+                                                <span className="hidden md:inline">Salvar Ordem</span>
                                             </>
                                         )}
                                     </button>
