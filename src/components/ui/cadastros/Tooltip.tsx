@@ -35,11 +35,11 @@ export function Tooltip({ children, text }: TooltipProps) {
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded shadow-lg -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap hidden md:block"
+                        className="absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded shadow-md left-1/2 bottom-full mb-2 transform -translate-x-1/2 whitespace-nowrap"
                         style={{ pointerEvents: "none" }}
                     >
                         {text}
-                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45" />
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45" />
                     </motion.div>
                 )}
             </AnimatePresence>

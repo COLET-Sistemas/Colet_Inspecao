@@ -70,6 +70,7 @@ export function EspecificacoesModal({
         uso_inspecao_setup: boolean,
         uso_inspecao_processo: boolean,
         uso_inspecao_qualidade: boolean,
+        id_caracteristica_especial?: number, // agora number
     }>({
         tipo_valor: dados?.tipo_valor || '',
         valor_minimo: dados?.valor_minimo?.toString() || '',
@@ -81,6 +82,7 @@ export function EspecificacoesModal({
         uso_inspecao_setup: dados?.uso_inspecao_setup === 'S',
         uso_inspecao_processo: dados?.uso_inspecao_processo === 'S',
         uso_inspecao_qualidade: dados?.uso_inspecao_qualidade === 'S',
+        id_caracteristica_especial: dados?.id_caracteristica_especial ?? undefined,
     }); const { apiUrl, getAuthHeaders } = useApiConfig();
 
     // Consolidated effect for initializing form state in cadastro mode
@@ -179,6 +181,7 @@ export function EspecificacoesModal({
     }, [isOpen, fetchOptions, modo]);
 
     // Efeito para inicializar as seleções quando os dados são carregados
+
     useEffect(() => {
         if (dados && cotasOptions.length > 0 && caracteristicasOptions.length > 0) {
             // Log completo dos dados recebidos no modo de edição
@@ -207,17 +210,8 @@ export function EspecificacoesModal({
             const cota = cotasOptions.find(c => c.id === dados.id_cota);
             if (cota) setSelectedCota(cota);
 
-            if (modo === 'edicao') {
-                // No modo de edição, usar a característica dos dados
-                const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
-                if (caracteristica) setSelectedCaracteristica(caracteristica);
-            } else {
-                // No modo de cadastro, definir ID 0 como padrão se não há seleção
-                if (!selectedCaracteristica) {
-                    const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
-                    if (caracteristicaPadrao) setSelectedCaracteristica(caracteristicaPadrao);
-                }
-            }            // Atualizar o formState com os dados atuais
+            // Não alterar selectedCaracteristica aqui!
+            // Atualizar o formState com os dados atuais
             setFormState(prev => ({
                 especificacao: dados.especificacao_cota || '',
                 tipo_valor: dados.tipo_valor || '',
@@ -226,17 +220,30 @@ export function EspecificacoesModal({
                 unidade_medida: dados.unidade_medida || '',
                 complemento_cota: dados.complemento_cota || '',
                 id_tipo_instrumento: dados.id_tipo_instrumento?.toString() || '',
-                // No modo cadastro, preservar a ordem já calculada
                 ordem: modo === 'cadastro' ? prev.ordem : (dados.ordem?.toString() || ''),
                 uso_inspecao_setup: dados.uso_inspecao_setup === 'S',
                 uso_inspecao_processo: dados.uso_inspecao_processo === 'S',
                 uso_inspecao_qualidade: dados.uso_inspecao_qualidade === 'S',
             }));
 
-            // Atualizar o selectedTipoValor
             setSelectedTipoValor(dados.tipo_valor || '');
         }
-    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo, selectedCaracteristica]);
+    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo]);
+
+    // Efeito separado para atualizar selectedCaracteristica apenas ao abrir o modal ou mudar dados
+    useEffect(() => {
+        if (dados && caracteristicasOptions.length > 0) {
+            if (modo === 'edicao') {
+                const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
+                if (caracteristica) setSelectedCaracteristica(caracteristica);
+            } else {
+                if (!selectedCaracteristica) {
+                    const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+                    if (caracteristicaPadrao) setSelectedCaracteristica(caracteristicaPadrao);
+                }
+            }
+        }
+    }, [dados, caracteristicasOptions, modo, selectedCaracteristica]);
 
     // Efeito para definir característica padrão (ID 0) quando não há dados (modo cadastro)
     useEffect(() => {
@@ -345,7 +352,7 @@ export function EspecificacoesModal({
                     unidade_medida: (formState.tipo_valor === 'F' || formState.tipo_valor === 'U') ? formState.unidade_medida : null,
                     id_cota: selectedCota?.id,
                     complemento_cota: formState.complemento_cota,
-                    id_caracteristica_especial: selectedCaracteristica?.id || null,
+                    id_caracteristica_especial: selectedCaracteristica?.id ?? formState.id_caracteristica_especial ?? null,
                     caracteristica_especial: selectedCaracteristica?.descricao || null,
                     id_tipo_instrumento: formState.id_tipo_instrumento ? parseInt(formState.id_tipo_instrumento) : null,
                     ordem: formState.ordem ? parseInt(formState.ordem) : null,
@@ -364,7 +371,15 @@ export function EspecificacoesModal({
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
+                    let errorData = null;
+                    try {
+                        errorData = await response.json();
+                    } catch { }
+                    if (response.status === 499 && errorData?.erro) {
+                        setFormError(errorData.erro);
+                        setIsSubmitting(false);
+                        return;
+                    }
                     throw new Error(errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
                 }
 
@@ -390,9 +405,15 @@ export function EspecificacoesModal({
         ? `Editar Especificação - Operação ${dados.ordem}`
         : 'Nova Especificação';
 
+    // Função para fechar o modal e resetar o erro
+    const handleClose = () => {
+        setFormError(null);
+        onClose();
+    };
+
     return (<FormModal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         title={modalTitle}
         isEditing={modo === 'edicao'}
         onSubmit={handleSubmit}
@@ -772,6 +793,10 @@ export function EspecificacoesModal({
                             value={selectedCaracteristica}
                             onChange={(option) => {
                                 setSelectedCaracteristica(option);
+                                setFormState(prev => ({
+                                    ...prev,
+                                    id_caracteristica_especial: option?.id !== undefined ? Number(option.id) : undefined
+                                }));
                             }}
                             placeholder="Selecione uma característica especial"
                             isLoading={isLoadingOptions}

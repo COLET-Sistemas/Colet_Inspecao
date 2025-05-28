@@ -238,7 +238,7 @@ const EspecificacaoCardBase = ({
                         </div>
                     ) : (
                         <>
-                            <Tooltip text="Editar especificação">
+                            <Tooltip text="Editar">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => onEdit && onEdit(especificacao)}
@@ -247,7 +247,7 @@ const EspecificacaoCardBase = ({
                                     <Pencil className="h-4 w-4" />
                                 </motion.button>
                             </Tooltip>
-                            <Tooltip text="Excluir especificação">
+                            <Tooltip text="Excluir">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => onDelete && onDelete(especificacao)}
@@ -437,7 +437,8 @@ const OperacaoSection = ({
                         {isExpanded ? (
                             // Botões quando expandido (Reordenar e Cadastrar)
                             <div className="flex items-center gap-2">
-                                {/* Reordenar */}                                <Tooltip text={isReordering ? "Modo de reordenação ativo" : "Reordenar Especificações"}>                                    <motion.button
+                                {/* Reordenar */}
+                                <Tooltip text={isReordering ? "Modo de reordenação ativo" : "Reordenar Especificações"}>                                    <motion.button
                                     whileTap={{ scale: 0.97 }}
                                     disabled={especificacoesCountValue <= 1}
                                     onClick={(e) => {
