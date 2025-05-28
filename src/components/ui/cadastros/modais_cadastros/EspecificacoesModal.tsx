@@ -235,32 +235,33 @@ export function EspecificacoesModal({
 
             setSelectedTipoValor(dados.tipo_valor || '');
         }
-    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo]);
-
-    // Efeito separado para atualizar selectedCaracteristica apenas ao abrir o modal ou mudar dados
+    }, [dados, cotasOptions, caracteristicasOptions, instrumentOptions, modo]);    // Efeito unificado para gerenciar a característica especial tanto para modo de edição quanto cadastro
     useEffect(() => {
-        if (dados && caracteristicasOptions.length > 0) {
-            if (modo === 'edicao') {
+        if (caracteristicasOptions.length > 0) {
+            // Para modo edição, sempre use a característica do registro
+            if (modo === 'edicao' && dados?.id_caracteristica_especial !== undefined) {
                 const caracteristica = caracteristicasOptions.find(c => c.id === dados.id_caracteristica_especial);
-                if (caracteristica) setSelectedCaracteristica(caracteristica);
-            } else {
-                if (!selectedCaracteristica) {
-                    const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
-                    if (caracteristicaPadrao) setSelectedCaracteristica(caracteristicaPadrao);
+                if (caracteristica) {
+                    setSelectedCaracteristica(caracteristica);
+                    setFormState(prev => ({
+                        ...prev,
+                        id_caracteristica_especial: caracteristica.id !== undefined ? Number(caracteristica.id) : undefined
+                    }));
+                }
+            }
+            // Para modo cadastro, use a característica padrão (ID 0) se não houver seleção
+            else if (modo === 'cadastro' && !dados?.id_caracteristica_especial) {
+                const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+                if (caracteristicaPadrao) {
+                    setSelectedCaracteristica(caracteristicaPadrao);
+                    setFormState(prev => ({
+                        ...prev,
+                        id_caracteristica_especial: caracteristicaPadrao.id !== undefined ? Number(caracteristicaPadrao.id) : undefined
+                    }));
                 }
             }
         }
-    }, [dados, caracteristicasOptions, modo, selectedCaracteristica]);
-
-    // Efeito para definir característica padrão (ID 0) quando não há dados (modo cadastro)
-    useEffect(() => {
-        if (modo === 'cadastro' && caracteristicasOptions.length > 0 && !selectedCaracteristica && !dados?.id_caracteristica_especial) {
-            const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
-            if (caracteristicaPadrao) {
-                setSelectedCaracteristica(caracteristicaPadrao);
-            }
-        }
-    }, [caracteristicasOptions, selectedCaracteristica, modo, dados?.id_caracteristica_especial]);// Handler para mudanças nos inputs do formulário
+    }, [dados?.id_caracteristica_especial, caracteristicasOptions, modo]);// Handler para mudanças nos inputs do formulário
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const isCheckbox = type === 'checkbox';
