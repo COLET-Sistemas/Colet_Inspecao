@@ -476,35 +476,30 @@ const OperacaoSection = ({
                         ) : (
                             // Botões quando fechado (Editar e Excluir)
                             <div className="flex items-center gap-2">
-                                {/* Editar */}
-                                <Tooltip text="Editar operação">
-                                    <motion.button
-                                        whileTap={{ scale: 0.97 }}
-                                        disabled={!onEdit}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (onEdit) onEdit(operacao);
-                                        }} className={`p-1.5 rounded-md transition-colors ${!onEdit ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'}`}
-                                    >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </motion.button>
-                                </Tooltip>
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={!onEdit}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (onEdit) onEdit(operacao);
+                                    }} className={`p-1.5 rounded-md transition-colors ${!onEdit ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-yellow-500 hover:bg-yellow-50'}`}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                </motion.button>
 
-                                {/* Excluir */}
-                                <Tooltip text="Excluir operação">
-                                    <motion.button
-                                        whileTap={{ scale: 0.97 }}
-                                        disabled={!onDelete}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (onDelete) onDelete(operacao);
-                                        }} className={`p-1.5 rounded-md transition-colors ${!onDelete ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-red-500 hover:bg-red-50'}`}
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </motion.button>
-                                </Tooltip>
+                                <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={!onDelete}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (onDelete) onDelete(operacao);
+                                    }} className={`p-1.5 rounded-md transition-colors ${!onDelete ? 'text-gray-400 bg-gray-100 cursor-not-allowed opacity-50' : 'text-gray-700 hover:text-red-500 hover:bg-red-50'}`}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </motion.button>
+
                             </div>
                         )}
                     </div>
