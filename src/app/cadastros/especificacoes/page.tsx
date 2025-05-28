@@ -503,7 +503,7 @@ export default function Especificacoes() {
             />
         );
     } return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-5 lg:p-6 xl:p-8 mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px] text-sm">
+        <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* Alerta para mensagens */}
             <AlertMessage
                 message={alert.message}
@@ -518,7 +518,7 @@ export default function Especificacoes() {
                 <div className="flex-shrink-0">
                     <PageHeader
                         title="Especificações"
-                        subtitle="Pesquise pela referência"
+                        subtitle="Pesquise pelo código da referência"
                         showButton={false}
                     />
                 </div>

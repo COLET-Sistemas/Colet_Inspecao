@@ -371,6 +371,7 @@ export default function PostosVinculadosPage() {
                 ) : (
                     <DataCards
                         data={postos}
+                        itemsPerRow={4}
                         renderCard={(posto) => (
                             <Card
                                 key={posto.posto}

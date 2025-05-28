@@ -193,7 +193,7 @@ export default function InspecoesPage() {
         </motion.div>
         );
     }; return (
-        <div className="p-3 sm:p-4 md:p-6 max-w-full mx-auto">{/* Aumentada largura máxima */}
+        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
             <PageHeader
                 title="Inspeções"
                 subtitle="Gerencie todas as inspeções do sistema"

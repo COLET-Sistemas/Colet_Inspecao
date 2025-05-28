@@ -51,8 +51,8 @@ const TipoInspecaoCard = memo<CardProps>(({ tipo, onEdit }) => (
                 </div>
                 <div
                     className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === "A"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
                         }`}
                 >
                     <span
@@ -299,8 +299,8 @@ export default function TiposInspecoesPage() {
                     return (
                         <span
                             className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.situacao === "A"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                                 }`}
                         >
                             <span
@@ -433,13 +433,13 @@ export default function TiposInspecoesPage() {
                 onResetFilters={resetFilters}
             >
                 {viewMode === "table" ? (
-                    <DataTable data={tiposInspecao} columns={tableColumns} />
-                ) : (
+                    <DataTable data={tiposInspecao} columns={tableColumns} />) : (
                     <DataCards
                         data={tiposInspecao}
                         renderCard={(tipo) => (
                             <TipoInspecaoCard key={tipo.id} tipo={tipo} onEdit={handleEdit} />
                         )}
+                        itemsPerRow={4}
                     />
                 )}
             </DataListContainer>

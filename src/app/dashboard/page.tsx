@@ -170,7 +170,7 @@ export default function DashboardPage() {
 
     const userName = user?.name || user?.username || "Usuário"; return (
         <main className="min-h-screen bg-gray-50">
-            <div className="max-w-[1600px] mx-auto p-8 space-y-8">{/* Header Section */}
+            <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
                 <header className="mb-8">
                     <div className="flex items-center justify-between">                        <div>
                         <h1 className="text-4xl font-bold text-gray-900">

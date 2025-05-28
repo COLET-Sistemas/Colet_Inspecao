@@ -332,11 +332,9 @@ export default function TiposInstrumentosMedicaoPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* ARIA Live region for accessibility */}
             <div className="sr-only" role="status" aria-live="polite">
                 {notification}
             </div>
-            {/* Alerta para mensagens de sucesso */}
             <AlertMessage
                 message={alert.message}
                 type={alert.type}
@@ -453,6 +451,7 @@ export default function TiposInstrumentosMedicaoPage() {
                 ) : (
                     <DataCards
                         data={tiposInstrumentosMedicao}
+                          itemsPerRow={4}
                         renderCard={(tipo) => (
                             <Card
                                 key={tipo.id}

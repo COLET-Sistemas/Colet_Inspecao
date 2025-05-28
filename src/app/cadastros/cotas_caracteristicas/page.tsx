@@ -672,6 +672,7 @@ export default function CotasCaracteristicasPage() {
                 ) : (
                     <DataCards
                         data={cotasCaracteristicas}
+                        itemsPerRow={4}
                         renderCard={(cota) => (
                             <Card
                                 key={cota.id}

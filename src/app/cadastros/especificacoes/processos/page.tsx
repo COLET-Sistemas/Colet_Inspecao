@@ -813,7 +813,7 @@ export default function ProcessoPage() {
             />
         );
     } return (
-        <div className="space-y-5 p-2 sm:p-4 md:p-5 lg:p-6 xl:p-8 mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px] text-sm">
+        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
             {/* Alerta para mensagens */}
             <AlertMessage
                 message={alert.message}

@@ -707,6 +707,7 @@ export default function PermissoesInspecaoPage() {
                     ) : (
                         <DataCards
                             data={permissoes}
+                            itemsPerRow={4}
                             renderCard={(permissao: PermissaoInspecaoExtended) => (
                                 <Card key={permissao.operador} permissao={permissao} onEdit={handleEdit} />
                             )}

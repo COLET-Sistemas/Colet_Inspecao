@@ -733,6 +733,7 @@ export default function InstrumentosMedicaoPage() {
                 ) : (
                     <DataCards
                         data={instrumentosMedicao}
+                        itemsPerRow={4}
                         renderCard={(instrumento) => (
                             <Card
                                 key={instrumento.id_tipo_instrumento}

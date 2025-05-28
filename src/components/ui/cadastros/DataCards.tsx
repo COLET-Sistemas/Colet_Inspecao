@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import React, { memo, useCallback } from "react";
+import React, { memo } from "react";
 
 interface DataCardsProps<T> {
     data: T[];
@@ -40,22 +40,18 @@ const MemoizedCardItem = memo(CardItem) as <T extends { id: string | number }>({
     index: number;
 }) => React.ReactElement;
 
-// Componente DataCards otimizado com memoização
 function DataCardsComponent<T extends { id: string | number }>({
     data,
     renderCard,
     itemsPerRow = 3,
-}: DataCardsProps<T>) {
-    // Determine grid columns based on itemsPerRow
+}: DataCardsProps<T>) {    
     const gridCols = {
         1: "grid-cols-1",
-        2: "grid-cols-1 sm:grid-cols-2",
-        3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-        4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    }[itemsPerRow];
+        2: "grid-cols-1 md:grid-cols-2",
+        3: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+        4: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
 
-    // Memoize renderCard para garantir estabilidade de referência
-    const memoizedRenderCard = useCallback(renderCard, [renderCard]);
+    }[itemsPerRow];
 
     return (
         <div className="p-4">
@@ -64,12 +60,13 @@ function DataCardsComponent<T extends { id: string | number }>({
                     <MemoizedCardItem
                         key={item.id}
                         item={item}
-                        renderCard={memoizedRenderCard}
+                        renderCard={renderCard}
                         index={index}
                     />
                 ))}
             </div>
         </div>
+
     );
 }
 
