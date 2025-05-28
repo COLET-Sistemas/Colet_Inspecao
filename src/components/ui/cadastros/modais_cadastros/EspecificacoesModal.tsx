@@ -85,43 +85,50 @@ export function EspecificacoesModal({
         id_caracteristica_especial: dados?.id_caracteristica_especial ?? undefined,
     }); const { apiUrl, getAuthHeaders } = useApiConfig();
 
-    // Consolidated effect for initializing form state in cadastro mode
-    useEffect(() => {
-        if (isOpen && modo === 'cadastro') {
-            // Compute next ordem from especificacoesList
-            let nextOrdem = 1;
-            if (especificacoesList && especificacoesList.length > 0) {
-                nextOrdem = Math.max(...especificacoesList.map(e => Number(e.ordem) || 0)) + 1;
-            }
+    // Função para reiniciar o formulário para um novo cadastro
+    const resetForm = useCallback(() => {
+        // Calcular próxima ordem
+        let nextOrdem = 1;
+        if (especificacoesList && especificacoesList.length > 0) {
+            nextOrdem = Math.max(...especificacoesList.map(e => Number(e.ordem) || 0)) + 1;
+        }
 
-            setFormState({
-                tipo_valor: '',
-                valor_minimo: '',
-                valor_maximo: '',
-                unidade_medida: '',
-                complemento_cota: '',
-                id_tipo_instrumento: '',
-                ordem: String(nextOrdem),
-                uso_inspecao_setup: false,
-                uso_inspecao_processo: false,
-                uso_inspecao_qualidade: false,
-            });
-            setSelectedTipoValor('');
-            setSelectedCota(null);
+        // Resetar o formulário
+        setFormState({
+            tipo_valor: '',
+            valor_minimo: '',
+            valor_maximo: '',
+            unidade_medida: '',
+            complemento_cota: '',
+            id_tipo_instrumento: '',
+            ordem: String(nextOrdem),
+            uso_inspecao_setup: false,
+            uso_inspecao_processo: false,
+            uso_inspecao_qualidade: false,
+        });
 
-            // Set característica especial id 0 se disponível
-            if (caracteristicasOptions.length > 0) {
-                const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
-                if (caracteristicaPadrao) {
-                    setSelectedCaracteristica(caracteristicaPadrao);
-                } else {
-                    setSelectedCaracteristica(null);
-                }
+        setSelectedTipoValor('');
+        setSelectedCota(null);
+
+        // Definir característica especial padrão (id 0) se disponível
+        if (caracteristicasOptions.length > 0) {
+            const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+            if (caracteristicaPadrao) {
+                setSelectedCaracteristica(caracteristicaPadrao);
             } else {
                 setSelectedCaracteristica(null);
             }
+        } else {
+            setSelectedCaracteristica(null);
         }
-    }, [isOpen, modo, especificacoesList, caracteristicasOptions]);
+    }, [especificacoesList, caracteristicasOptions]);
+
+    // Consolidated effect for initializing form state in cadastro mode
+    useEffect(() => {
+        if (isOpen && modo === 'cadastro') {
+            resetForm();
+        }
+    }, [isOpen, modo, resetForm]);
 
     // Simple in-memory cache for options using useRef
     const cotasCache = useRef<Option[] | null>(null);
@@ -282,9 +289,7 @@ export function EspecificacoesModal({
                 [name]: isCheckbox ? checked : value
             }));
         }
-    };
-
-    // Renderiza mensagens de erro
+    };    // Renderiza mensagens de erro
     const renderFeedback = () => {
         if (formError) {
             return (
@@ -301,28 +306,29 @@ export function EspecificacoesModal({
         return null;
     };
 
-    // Handler para mudanças nos inputs do formulário
-    const handleSubmit = useCallback(
-        async () => {
+    // Função para processar o envio do formulário
+    const processSubmit = useCallback(
+        async (keepModalOpen = false) => {
             try {
                 setFormError(null);
                 setIsSubmitting(true);
+
                 // Validação
                 if (!formState.tipo_valor) {
                     setFormError("O tipo de valor é obrigatório");
                     setIsSubmitting(false);
-                    return;
+                    return false;
                 }
 
                 if (!selectedCaracteristica) {
                     setFormError("A característica especial é obrigatória");
                     setIsSubmitting(false);
-                    return;
+                    return false;
                 }
 
                 if (!dados) {
                     setIsSubmitting(false);
-                    return;
+                    return false;
                 }
 
                 // Garantir que roteiro seja enviado como número
@@ -340,7 +346,9 @@ export function EspecificacoesModal({
                 }
 
                 const endpoint = `${apiUrl}/inspecao/especificacoes_inspecao_ft`;
-                const method = modo === 'edicao' ? 'PUT' : 'POST'; const payload = {
+                const method = modo === 'edicao' ? 'PUT' : 'POST';
+
+                const payload = {
                     id: dados.id,
                     referencia: dados.referencia,
                     roteiro: roteiroNum,
@@ -375,27 +383,55 @@ export function EspecificacoesModal({
                     try {
                         errorData = await response.json();
                     } catch { }
-                    if (response.status === 499 && errorData?.erro) {
+                    if (response.status === 499 || response.status === 409 && errorData?.erro) {
                         setFormError(errorData.erro);
                         setIsSubmitting(false);
-                        return;
+                        return false;
                     }
                     throw new Error(errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
-                }
-
-                onSuccess(modo === 'edicao'
+                } const successMessage = modo === 'edicao'
                     ? "Especificação atualizada com sucesso!"
-                    : "Especificação cadastrada com sucesso!");
+                    : "Especificação cadastrada com sucesso!";
 
-                onClose();
+                // Se keepModalOpen for true, resetar o formulário e manter o modal aberto (apenas para modo cadastro)
+                if (keepModalOpen && modo === 'cadastro') {
+                    // Mensagem específica para "Salvar e continuar" - usamos isto como indicador
+                    // para a página pai saber que não deve fechar o modal
+                    onSuccess("Especificação cadastrada com sucesso! (continuar)");
+                    // Resetamos o formulário sem fechar o modal
+                    resetForm();
+                    return true;
+                } else {
+                    // Comportamento padrão - mostrar mensagem e depois fechar o modal
+                    onSuccess(successMessage);
+                    onClose();
+                    return true;
+                }
             } catch (error: Error | unknown) {
                 console.error(`Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} especificação:`, error);
                 setFormError(`Ocorreu um erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} a especificação. Tente novamente.`);
+                return false;
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess, selectedCaracteristica, selectedCota, formState]
+        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess, selectedCaracteristica, selectedCota, formState, resetForm]
+    );
+
+    // Handler para submissão normal do formulário
+    const handleSubmit = useCallback(
+        async () => {
+            await processSubmit(false);
+        },
+        [processSubmit]
+    );
+
+    // Handler para salvar e continuar (manter o modal aberto)
+    const handleSaveAndContinue = useCallback(
+        async () => {
+            await processSubmit(true);
+        },
+        [processSubmit]
     );
 
     if (!isOpen || !dados) return null;
@@ -409,9 +445,7 @@ export function EspecificacoesModal({
     const handleClose = () => {
         setFormError(null);
         onClose();
-    };
-
-    return (<FormModal
+    }; return (<FormModal
         isOpen={isOpen}
         onClose={handleClose}
         title={modalTitle}
@@ -420,6 +454,14 @@ export function EspecificacoesModal({
         submitLabel={modo === 'edicao' ? 'Atualizar' : 'Salvar'}
         isSubmitting={isSubmitting}
         size="xl"
+        extraButton={
+            modo === 'cadastro' ? {
+                label: 'Salvar e continuar',
+                onClick: handleSaveAndContinue,
+                onlyLargeScreen: true,
+                className: "bg-[#09A08D] hover:bg-[#1ABC9E] focus:ring-[#09A08D]/50"
+            } : undefined
+        }
     >
         {/* Informações do contexto */}
         <div className="mb-5 bg-gray-50 p-3 rounded-md border border-gray-100">

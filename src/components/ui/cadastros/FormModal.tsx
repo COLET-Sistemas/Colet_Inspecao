@@ -15,6 +15,12 @@ interface FormModalProps {
     submitLabel?: string;
     size?: "sm" | "md" | "lg" | "xl";
     isSubmitting?: boolean;
+    extraButton?: {
+        label: string;
+        onClick: () => void;
+        onlyLargeScreen?: boolean;
+        className?: string;
+    };
 }
 
 export function FormModal({
@@ -27,6 +33,7 @@ export function FormModal({
     submitLabel = isEditing ? "Salvar alterações" : "Criar",
     size = "md",
     isSubmitting: externalIsSubmitting,
+    extraButton,
 }: FormModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
@@ -161,9 +168,7 @@ export function FormModal({
                         <form onSubmit={handleSubmit}>
                             <div className="p-3 sm:p-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
                                 {children}
-                            </div>
-
-                            {/* Rodapé com ações */}
+                            </div>                            {/* Rodapé com ações */}
                             <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2 sm:gap-0 rounded-b-lg bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100">
                                 <button
                                     type="button"
@@ -173,6 +178,27 @@ export function FormModal({
                                 >
                                     Cancelar
                                 </button>
+
+                                {extraButton && (!extraButton.onlyLargeScreen || (extraButton.onlyLargeScreen && typeof window !== 'undefined' && window.innerWidth >= 768)) && (
+                                    <motion.button
+                                        whileTap={{ scale: isSubmitting ? 1 : 0.97 }}
+                                        type="button"
+                                        onClick={extraButton.onClick}
+                                        disabled={isSubmitting}
+                                        className={cn(
+                                            "hidden md:flex w-auto rounded-md px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 items-center justify-center",
+                                            extraButton.className || "bg-blue-500 hover:bg-blue-600 focus:ring-blue-400/50",
+                                            isSubmitting && "opacity-70 cursor-not-allowed"
+                                        )}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Processando...
+                                            </>
+                                        ) : extraButton.label}
+                                    </motion.button>
+                                )}
 
                                 <motion.button
                                     whileTap={{ scale: isSubmitting ? 1 : 0.97 }}

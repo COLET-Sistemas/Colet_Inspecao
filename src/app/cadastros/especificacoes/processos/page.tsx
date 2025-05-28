@@ -541,12 +541,17 @@ const OperacaoSection = ({
                             roteiro,
                             processo: parseInt(processo, 10),
                             operacao: operacao.operacao
-                        }}
-                        onSuccess={(message: string) => {
+                        }} onSuccess={(message: string) => {
+                            // Mostrar mensagem de sucesso
                             onAlert(message, "success");
+                            // Atualizar a lista de especificações
                             onRefresh();
-                            setIsSpecModalOpen(false);
-                            setSelectedSpec(null);
+
+                            // Se a mensagem contém "continuar", não fechar o modal
+                            if (!message.toLowerCase().includes("continuar")) {
+                                setIsSpecModalOpen(false);
+                                setSelectedSpec(null);
+                            }
                         }}
                         modo={selectedSpec ? "edicao" : "cadastro"}
                         especificacoesList={selectedSpec ? undefined : especificacoes}
