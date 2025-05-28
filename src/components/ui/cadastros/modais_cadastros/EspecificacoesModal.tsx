@@ -107,11 +107,9 @@ export function EspecificacoesModal({
         });
 
         setSelectedTipoValor('');
-        setSelectedCota(null);
-
-        // Definir característica especial padrão (id 0) se disponível
+        setSelectedCota(null);        // Definir característica especial padrão (id 1) se disponível
         if (caracteristicasOptions.length > 0) {
-            const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+            const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 1);
             if (caracteristicaPadrao) {
                 setSelectedCaracteristica(caracteristicaPadrao);
             } else {
