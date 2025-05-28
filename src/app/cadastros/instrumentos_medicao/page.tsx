@@ -18,7 +18,6 @@ import { motion } from "framer-motion";
 import { IterationCcw, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-// Função utilitária para verificar se a data dd/mm/yyyy está expirada
 function isDateExpired(dateStr: string): boolean {
     if (!dateStr) return false;
     const [day, month, year] = dateStr.split("/").map(Number);

@@ -57,8 +57,7 @@ export function EspecificacoesModal({
     const [cotasOptions, setCotasOptions] = useState<Option[]>([]);
     const [caracteristicasOptions, setCaracteristicasOptions] = useState<Option[]>([]);
     const [instrumentOptions, setInstrumentOptions] = useState<{ id: number, label: string }[]>([]);
-    const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-    const [formState, setFormState] = useState<{
+    const [isLoadingOptions, setIsLoadingOptions] = useState(true); const [formState, setFormState] = useState<{
         especificacao?: string,
         tipo_valor: string,
         valor_minimo?: string,
@@ -81,7 +80,7 @@ export function EspecificacoesModal({
         ordem: dados?.ordem?.toString() || '',
         uso_inspecao_setup: dados?.uso_inspecao_setup === 'S',
         uso_inspecao_processo: dados?.uso_inspecao_processo === 'S',
-        uso_inspecao_qualidade: dados?.uso_inspecao_qualidade === 'S',
+        uso_inspecao_qualidade: modo === 'cadastro' ? true : (dados?.uso_inspecao_qualidade === 'S'),
         id_caracteristica_especial: dados?.id_caracteristica_especial ?? undefined,
     }); const { apiUrl, getAuthHeaders } = useApiConfig();
 
@@ -104,7 +103,7 @@ export function EspecificacoesModal({
             ordem: String(nextOrdem),
             uso_inspecao_setup: false,
             uso_inspecao_processo: false,
-            uso_inspecao_qualidade: false,
+            uso_inspecao_qualidade: true,
         });
 
         setSelectedTipoValor('');
@@ -217,8 +216,7 @@ export function EspecificacoesModal({
             const cota = cotasOptions.find(c => c.id === dados.id_cota);
             if (cota) setSelectedCota(cota);
 
-            // Não alterar selectedCaracteristica aqui!
-            // Atualizar o formState com os dados atuais
+            // Não alterar selectedCaracteristica aqui!            // Atualizar o formState com os dados atuais
             setFormState(prev => ({
                 especificacao: dados.especificacao_cota || '',
                 tipo_valor: dados.tipo_valor || '',
@@ -230,7 +228,7 @@ export function EspecificacoesModal({
                 ordem: modo === 'cadastro' ? prev.ordem : (dados.ordem?.toString() || ''),
                 uso_inspecao_setup: dados.uso_inspecao_setup === 'S',
                 uso_inspecao_processo: dados.uso_inspecao_processo === 'S',
-                uso_inspecao_qualidade: dados.uso_inspecao_qualidade === 'S',
+                uso_inspecao_qualidade: modo === 'cadastro' ? true : (dados.uso_inspecao_qualidade === 'S'),
             }));
 
             setSelectedTipoValor(dados.tipo_valor || '');
@@ -251,7 +249,7 @@ export function EspecificacoesModal({
             }
             // Para modo cadastro, use a característica padrão (ID 0) se não houver seleção
             else if (modo === 'cadastro' && !dados?.id_caracteristica_especial) {
-                const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 0);
+                const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 1);
                 if (caracteristicaPadrao) {
                     setSelectedCaracteristica(caracteristicaPadrao);
                     setFormState(prev => ({
