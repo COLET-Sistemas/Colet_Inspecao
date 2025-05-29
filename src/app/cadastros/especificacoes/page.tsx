@@ -337,9 +337,7 @@ export default function Especificacoes() {
     };
 
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const urlReferencia = searchParams?.get('referencia') || '';
-    const autoSearch = searchParams?.get('autoSearch') === 'true';
+    const searchParams = useSearchParams(); const urlReferencia = searchParams?.get('referencia') || '';
 
     const [codigoReferencia, setCodigoReferencia] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -460,29 +458,28 @@ export default function Especificacoes() {
         if (urlReferencia) {
             setCodigoReferencia(urlReferencia);
 
-            // Se autoSearch estiver habilitado, executa a pesquisa automaticamente
-            if (autoSearch) {                // Atualizamos a URL para remover o parâmetro autoSearch mas manter a referência
-                router.replace(`/cadastros/especificacoes?referencia=${encodeURIComponent(urlReferencia)}`, {
+            // Sempre executamos a pesquisa quando existe uma referência na URL
+            // Adicionamos um pequeno delay para garantir que o estado foi atualizado
+            const timer = setTimeout(async () => {
+                await handleSearch();
+
+                // Após a pesquisa concluir, limpa a URL removendo o parâmetro referência
+                router.replace('/cadastros/especificacoes', {
                     scroll: false
                 });
-
-                // Adicionamos um pequeno delay para garantir que o estado foi atualizado
-                const timer = setTimeout(() => {
-                    handleSearch();
-                }, 100);
-                return () => clearTimeout(timer);
-            }
+            }, 100);
+            return () => clearTimeout(timer);
         }
-    }, [urlReferencia, autoSearch, handleSearch, router]);
+    }, [urlReferencia, handleSearch, router]);
 
     // Funções para manipulação do modal de operações
     const handleCloseModalOperacoes = useCallback(() => {
         setModalOperacoes({ isOpen: false, dados: null });
-    }, []);    // Função para abrir o modal de operações
+    }, []);
     const handleOpenModalOperacoes = useCallback((referencia: string, roteiro: string, processo: number, tipo_acao?: string) => {
         setModalOperacoes({
             isOpen: true,
-            dados: { referencia, roteiro, processo, tipo_acao, operacao: 0 } // Usa 0 como valor padrão para satisfazer o tipo OperacaoDados
+            dados: { referencia, roteiro, processo, tipo_acao, operacao: 0 }
         });
     }, []);
 
