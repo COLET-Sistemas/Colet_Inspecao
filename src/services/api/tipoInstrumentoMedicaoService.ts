@@ -1,7 +1,7 @@
 import { TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { fetchWithAuth } from "./authInterceptor";
 
-export const getTiposInstrumentosMedicao = async (authHeaders: HeadersInit): Promise<TipoInstrumentoMedicao[]> => {
+export const getTiposInstrumentosMedicao = async (): Promise<TipoInstrumentoMedicao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
@@ -9,7 +9,6 @@ export const getTiposInstrumentosMedicao = async (authHeaders: HeadersInit): Pro
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
         method: 'GET',
-        headers: authHeaders,
     });
 
     if (!response.ok) {
@@ -29,8 +28,7 @@ export const getTiposInstrumentosMedicao = async (authHeaders: HeadersInit): Pro
 };
 
 export const createTipoInstrumentoMedicao = async (
-    tipoInstrumento: Omit<TipoInstrumentoMedicao, 'id'>,
-    authHeaders: HeadersInit
+    tipoInstrumento: Omit<TipoInstrumentoMedicao, 'id'>
 ): Promise<TipoInstrumentoMedicao> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -39,10 +37,6 @@ export const createTipoInstrumentoMedicao = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
         method: 'POST',
-        headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
             nome_tipo_instrumento: tipoInstrumento.nome_tipo_instrumento,
             observacao: tipoInstrumento.observacao
@@ -61,8 +55,7 @@ export const createTipoInstrumentoMedicao = async (
 };
 
 export const updateTipoInstrumentoMedicao = async (
-    tipoInstrumento: TipoInstrumentoMedicao,
-    authHeaders: HeadersInit
+    tipoInstrumento: TipoInstrumentoMedicao
 ): Promise<TipoInstrumentoMedicao> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -71,10 +64,6 @@ export const updateTipoInstrumentoMedicao = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${tipoInstrumento.id}`, {
         method: 'PUT',
-        headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
             id: tipoInstrumento.id,
             nome_tipo_instrumento: tipoInstrumento.nome_tipo_instrumento,
@@ -94,8 +83,7 @@ export const updateTipoInstrumentoMedicao = async (
 };
 
 export const deleteTipoInstrumentoMedicao = async (
-    id: number,
-    authHeaders: HeadersInit
+    id: number
 ): Promise<void> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -104,7 +92,6 @@ export const deleteTipoInstrumentoMedicao = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao?id=${id}`, {
         method: 'DELETE',
-        headers: authHeaders
     });
 
     if (!response.ok) {

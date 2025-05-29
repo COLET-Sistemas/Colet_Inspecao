@@ -2,32 +2,18 @@
 import { PermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
 import { fetchWithAuth } from "./authInterceptor";
 
-export const getPermissoesInspecao = async (authHeaders: HeadersInit): Promise<PermissaoInspecao[]> => {
+export const getPermissoesInspecao = async (): Promise<PermissaoInspecao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         console.error("URL da API não está configurada");
         throw new Error("URL da API não está configurada");
     }
 
-    // Obtendo o token de autenticação
-    const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    if (!authToken) {
-        console.warn("Token de autenticação não encontrado. O usuário pode não estar autenticado.");
-    }
-
-    // Adicionando o token aos headers
-    const headers: HeadersInit = {
-        ...authHeaders,
-        "Token": authToken || ""
-    };
-
     console.log("Chamando API:", `${apiUrl}/inspecao/operadores`);
-    console.log("Headers:", headers);
 
     try {
         const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores?situacao=A`, {
-            method: 'GET',
-            headers: headers,
+            method: 'GET'
         });
 
         if (!response.ok) {
@@ -90,8 +76,7 @@ function mapPermissoesData(data: ApiPermissaoInspecaoData[]): PermissaoInspecao[
 }
 
 export const updatePermissaoInspecao = async (
-    permissao: PermissaoInspecao,
-    authHeaders: HeadersInit
+    permissao: PermissaoInspecao
 ): Promise<PermissaoInspecao> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -100,14 +85,10 @@ export const updatePermissaoInspecao = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores`, {
         method: 'PUT',
-        headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
             operador: parseInt(permissao.operador), // Convert operador to integer           
             inspecoes: permissao.inspecoes
-        }),
+        })
     });
 
     if (!response.ok) {

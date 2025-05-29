@@ -11,7 +11,6 @@ import { InstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_cadast
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteInstrumentoMedicao, getInstrumentosMedicao } from "@/services/api/instrumentoMedicaoService";
 import { AlertState, InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
 import { motion } from "framer-motion";
@@ -171,15 +170,11 @@ export default function InstrumentosMedicaoPage() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Alert state para mensagens de sucesso fora do modal
-    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-
-    // ARIA Live region for screen readers
+    const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });    // ARIA Live region for screen readers
     const [notification, setNotification] = useState('');
 
     // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
-
-    const { getAuthHeaders } = useApiConfig();
 
     // Calculate active filters
     useEffect(() => {
@@ -192,10 +187,8 @@ export default function InstrumentosMedicaoPage() {
     // Função para carregar dados memoizada para evitar recriação desnecessária
     const loadData = useCallback(async () => {
         setIsLoading(true);
-        setApiError(null);
-
-        try {
-            const data = await getInstrumentosMedicao(getAuthHeaders());
+        setApiError(null); try {
+            const data = await getInstrumentosMedicao();
             setAllData(data);
         } catch (error) {
             console.error("Erro ao buscar instrumentos de medição:", error);
@@ -204,7 +197,7 @@ export default function InstrumentosMedicaoPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders]);
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
@@ -276,11 +269,10 @@ export default function InstrumentosMedicaoPage() {
     const confirmDelete = useCallback(async () => {
         if (deletingId === null) return;
 
-        setIsDeleting(true);
-        setNotification(`Excluindo instrumento de medição...`);
+        setIsDeleting(true); setNotification(`Excluindo instrumento de medição...`);
 
         try {
-            await deleteInstrumentoMedicao(deletingId, getAuthHeaders());
+            await deleteInstrumentoMedicao(deletingId);
 
             // Recarregar dados
             loadData();
@@ -312,7 +304,7 @@ export default function InstrumentosMedicaoPage() {
             setIsDeleting(false);
             setDeletingId(null);
         }
-    }, [deletingId, getAuthHeaders, loadData]);
+    }, [deletingId, loadData]);
 
     const handleCloseDeleteModal = useCallback(() => {
         setIsDeleteModalOpen(false);

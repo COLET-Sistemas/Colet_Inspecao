@@ -1,6 +1,5 @@
 "use client";
 
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { createCotaCaracteristica, updateCotaCaracteristica } from "@/services/api/cotasCaracteristicasService";
 import { CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { motion } from "framer-motion";
@@ -40,7 +39,6 @@ export function CotaCaracteristicaModal({
     onSuccess,
     onError,
 }: CotaCaracteristicaModalProps) {
-    const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [svgPreview, setSvgPreview] = useState<string>(cotaCaracteristica?.simbolo_path_svg || '');
@@ -143,8 +141,7 @@ export function CotaCaracteristicaModal({
 
                 let responseData: CotaCaracteristica;
 
-                if (cotaCaracteristica?.id) {
-                    // Modo de edição - PUT
+                if (cotaCaracteristica?.id) {                    // Modo de edição - PUT
                     try {
                         responseData = await updateCotaCaracteristica(
                             {
@@ -156,15 +153,13 @@ export function CotaCaracteristicaModal({
                                 rejeita_menor: payload.rejeita_menor,
                                 rejeita_maior: payload.rejeita_maior,
                                 local_inspecao: payload.local_inspecao
-                            },
-                            getAuthHeaders()
+                            }
                         );
                     } catch (error: unknown) {
                         const apiError = error as ApiError;
                         throw new Error(apiError.message || apiError.erro || "Erro ao atualizar cota/característica");
                     }
-                } else {
-                    // Modo de criação - POST
+                } else {                    // Modo de criação - POST
                     try {
                         responseData = await createCotaCaracteristica(
                             {
@@ -175,8 +170,7 @@ export function CotaCaracteristicaModal({
                                 rejeita_menor: payload.rejeita_menor,
                                 rejeita_maior: payload.rejeita_maior,
                                 local_inspecao: payload.local_inspecao
-                            },
-                            getAuthHeaders()
+                            }
                         );
                     } catch (error: unknown) {
                         const apiError = error as ApiError;
@@ -223,7 +217,7 @@ export function CotaCaracteristicaModal({
                 }
             }
         },
-        [cotaCaracteristica, onClose, onSuccess, onError, getAuthHeaders]
+        [cotaCaracteristica, onClose, onSuccess, onError]
     );
 
     // Feedback visual para erros

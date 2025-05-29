@@ -4,21 +4,15 @@ import { fetchWithAuth } from "./authInterceptor";
 /**
  * Atualiza a ordem das especificações
  * @param especificacoes Array de especificações com a nova ordem
- * @param headers Cabeçalhos de autenticação
  * @returns Promise com confirmação da atualização
  */
 export const atualizarOrdemEspecificacoes = async (
-    especificacoes: Pick<EspecificacaoInspecao, 'id' | 'ordem'>[],
-    headers: HeadersInit
+    especificacoes: Pick<EspecificacaoInspecao, 'id' | 'ordem'>[]
 ): Promise<{ success: boolean; message: string }> => {
     const apiUrl = localStorage.getItem("apiUrl");
     try {
         const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao_ft_ordem`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers,
-            },
             body: JSON.stringify(especificacoes),
         });
 
@@ -40,21 +34,15 @@ export const atualizarOrdemEspecificacoes = async (
 /**
  * Exclui uma especificação de inspeção
  * @param id ID da especificação a ser excluída
- * @param headers Cabeçalhos de autenticação
  * @returns Promise com confirmação da exclusão
  */
 export const deleteEspecificacaoInspecao = async (
-    id: number,
-    headers: HeadersInit
+    id: number
 ): Promise<{ success: boolean; message: string }> => {
     const apiUrl = localStorage.getItem("apiUrl");
     try {
         const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao_ft?id=${id}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers,
-            },
         });
 
         if (!response.ok) {

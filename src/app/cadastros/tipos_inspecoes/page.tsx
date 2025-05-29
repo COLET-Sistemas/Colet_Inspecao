@@ -10,7 +10,6 @@ import { TipoInspecaoModal } from "@/components/ui/cadastros/modais_cadastros/Ti
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { AlertState, TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
@@ -114,16 +113,14 @@ export default function TiposInspecoesPage() {
     const [selectedTipoInspecao, setSelectedTipoInspecao] = useState<TipoInspecao | undefined>(undefined);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     const [notification, setNotification] = useState("");
-    const [isPending, startTransition] = useTransition();
-    const dataFetchedRef = useRef(false);
-    const { getAuthHeaders } = useApiConfig();
+    const [isPending, startTransition] = useTransition(); const dataFetchedRef = useRef(false);
 
     // Carregar dados
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
         try {
-            const data = await getTiposInspecao(getAuthHeaders());
+            const data = await getTiposInspecao();
             setAllData(data);
         } catch (error) {
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
@@ -131,7 +128,7 @@ export default function TiposInspecoesPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders]);
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);

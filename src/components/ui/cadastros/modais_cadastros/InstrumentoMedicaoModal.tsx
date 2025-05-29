@@ -1,6 +1,7 @@
 "use client";
 
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { fetchWithAuth } from "@/services/api/authInterceptor";
 import { InstrumentoMedicao } from "@/types/cadastros/instrumentoMedicao";
 import { TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
@@ -53,7 +54,7 @@ export function InstrumentoMedicaoModal({
     instrumentoMedicao,
     onSuccess,
 }: InstrumentoMedicaoModalProps) {
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,10 +67,8 @@ export function InstrumentoMedicaoModal({
     useEffect(() => {
         if (isOpen) {
             const fetchTiposInstrumentos = async () => {
-                setIsLoadingTipos(true);
-                try {
-                    const response = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
-                        headers: getAuthHeaders(),
+                setIsLoadingTipos(true); try {
+                    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
                         method: 'GET'
                     });
 
@@ -93,7 +92,7 @@ export function InstrumentoMedicaoModal({
 
             fetchTiposInstrumentos();
         }
-    }, [isOpen, apiUrl, getAuthHeaders]);
+    }, [isOpen, apiUrl]);
 
     // Adapted handleSubmit to accept Record<string, FormDataEntryValue> and map to InstrumentoMedicaoFormData
     const handleSubmit = useCallback(
@@ -185,24 +184,20 @@ export function InstrumentoMedicaoModal({
 
                 const url = `${apiUrl}/inspecao/instrumentos_medicao`;
 
-                let response;
-
-                if (instrumentoMedicao?.id_instrumento) {
+                let response; if (instrumentoMedicao?.id_instrumento) {
                     // Modo de edição - PUT
-                    response = await fetch(url, {
+                    response = await fetchWithAuth(url, {
                         method: "PUT",
                         headers: {
-                            ...getAuthHeaders(),
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(payload),
                     });
                 } else {
                     // Modo de criação - POST
-                    response = await fetch(url, {
+                    response = await fetchWithAuth(url, {
                         method: "POST",
                         headers: {
-                            ...getAuthHeaders(),
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(payload),
@@ -244,7 +239,7 @@ export function InstrumentoMedicaoModal({
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, onClose, onSuccess, instrumentoMedicao, getAuthHeaders]
+        [apiUrl, onClose, onSuccess, instrumentoMedicao]
     );
 
     // Feedback visual para erros

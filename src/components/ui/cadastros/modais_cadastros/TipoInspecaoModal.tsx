@@ -1,6 +1,7 @@
 "use client";
 
 import { useApiConfig } from "@/hooks/useApiConfig";
+import { fetchWithAuth } from "@/services/api/authInterceptor";
 import { motion } from "framer-motion";
 import { AlertCircle, FileText, ToggleLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -28,7 +29,7 @@ export function TipoInspecaoModal({
     onSuccess,
     onError,
 }: TipoInspecaoModalProps) {
-    const { apiUrl, getAuthHeaders } = useApiConfig();
+    const { apiUrl } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState<boolean>(false);
     const [isFocused, setIsFocused] = useState<string | null>(null);
@@ -54,13 +55,10 @@ export function TipoInspecaoModal({
                 const payload = {
                     descricao_tipo_inspecao: descricao,
                     situacao: situacao === "on" ? "A" : "I",
-                };
-
-                // Modo de edição - PUT
+                };                // Modo de edição - PUT
                 const url = `${apiUrl}/inspecao/tipos_inspecao`;
-                const response = await fetch(`${url}?id=${tipoInspecao.id}`, {
+                const response = await fetchWithAuth(`${url}?id=${tipoInspecao.id}`, {
                     method: "PUT",
-                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         ...payload,
                         id: Number(tipoInspecao.id),
@@ -99,7 +97,7 @@ export function TipoInspecaoModal({
                 }
             }
         },
-        [apiUrl, onClose, onSuccess, onError, tipoInspecao, getAuthHeaders]
+        [apiUrl, onClose, onSuccess, onError, tipoInspecao]
     );
 
     // Feedback visual para erros

@@ -1,15 +1,14 @@
 import { Posto } from "@/types/cadastros/posto";
 import { fetchWithAuth } from "./authInterceptor";
 
-export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
+export const getPostos = async (): Promise<Posto[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
     }
 
     const response = await fetchWithAuth(`${apiUrl}/postos`, {
-        method: 'GET',
-        headers: authHeaders,
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -25,7 +24,7 @@ export const getPostos = async (authHeaders: HeadersInit): Promise<Posto[]> => {
             codigo_parada: item.codigo_parada || '',
             descricao_parada: item.descricao_parada || '',
             tipo_recurso: item.tipo_recurso || '',
-            id: item.posto || '', 
+            id: item.posto || '',
         };
     }) : [];
 };

@@ -10,7 +10,6 @@ import { PermissaoInspecaoModal } from "@/components/ui/cadastros/modais_cadastr
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { getPermissoesInspecao } from "@/services/api/permissaoInspecaoService";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
 import { PermissaoInspecao as ApiPermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
@@ -184,22 +183,16 @@ export default function PermissoesInspecaoPage() {
     const [notification, setNotification] = useState("");
 
     // Referência para controlar requisições
-    const dataFetchedRef = useRef(false);
-    const tiposInspecaoFetchedRef = useRef(false);
-
-    const { getAuthHeaders } = useApiConfig();
-
-    // Carrega tipos de inspeção
+    const dataFetchedRef = useRef(false); const tiposInspecaoFetchedRef = useRef(false);    // Carrega tipos de inspeção
     const loadTiposInspecao = useCallback(async () => {
         try {
-            const headers = getAuthHeaders();
-            const data = await getTiposInspecao(headers);
+            const data = await getTiposInspecao();
             setTiposInspecao(data);
             return data;
         } catch {
             return [];
         }
-    }, [getAuthHeaders]);
+    }, []);
 
     // Função para filtrar e ordenar os dados
     const filterAndSortData = useCallback(
@@ -243,11 +236,7 @@ export default function PermissoesInspecaoPage() {
     const loadData = useCallback(
         async () => {
             setIsLoading(true);
-            setApiError(null);
-
-            try {
-                const headers = getAuthHeaders();
-
+            setApiError(null); try {
                 // Carregar tipos de inspeção se ainda não foram carregados
                 if (!tiposInspecaoFetchedRef.current || tiposInspecao.length === 0) {
                     await loadTiposInspecao();
@@ -255,7 +244,7 @@ export default function PermissoesInspecaoPage() {
                 }
 
                 // Carregar permissões
-                const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao(headers);
+                const apiData: ApiPermissaoInspecao[] = await getPermissoesInspecao();
 
                 if (!apiData || apiData.length === 0) {
                     setPermissoes([]);
@@ -300,7 +289,7 @@ export default function PermissoesInspecaoPage() {
                 setIsRefreshing(false);
             }
         },
-        [getAuthHeaders, loadTiposInspecao, searchTerm, selectedPermissionFilter, sortField, filterAndSortData, tiposInspecao.length]
+        [loadTiposInspecao, searchTerm, selectedPermissionFilter, sortField, filterAndSortData, tiposInspecao.length]
     );
 
     useEffect(() => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { updatePermissaoInspecao } from "@/services/api/permissaoInspecaoService";
 import { PermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
@@ -26,7 +25,6 @@ export function PermissaoInspecaoModal({
     onSuccess,
     onError,
 }: PermissaoInspecaoModalProps) {
-    const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedInspecoes, setSelectedInspecoes] = useState<string[]>([]);
@@ -64,11 +62,8 @@ export function PermissaoInspecaoModal({
                     nome_operador: permissaoInspecao.nome_operador,
                     situacao: permissaoInspecao.situacao,
                     inspecoes: sortedInspecoes,
-                };
-
-                try {
-                    const headers = await getAuthHeaders();
-                    const responseData = await updatePermissaoInspecao(payload, headers);
+                }; try {
+                    const responseData = await updatePermissaoInspecao(payload);
 
                     if (onSuccess) {
                         onSuccess({
@@ -97,7 +92,7 @@ export function PermissaoInspecaoModal({
                 }
             }
         },
-        [permissaoInspecao, onClose, onSuccess, onError, getAuthHeaders, selectedInspecoes]
+        [permissaoInspecao, onClose, onSuccess, onError, selectedInspecoes]
     );
 
     // Feedback visual para erros

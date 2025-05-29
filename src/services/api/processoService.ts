@@ -13,12 +13,10 @@ const CACHE_TTL = 500;
 /**
  * Busca os detalhes completos de um processo específico incluindo suas operações e especificações
  * @param params Parâmetros de busca do processo (referencia, roteiro e processo)
- * @param authHeaders Headers de autenticação
  * @returns Detalhes completos do processo
  */
 export const getProcessoDetalhes = async (
-    params: ProcessoParams,
-    authHeaders: HeadersInit
+    params: ProcessoParams
 ): Promise<ProcessoDetalhes> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -37,13 +35,10 @@ export const getProcessoDetalhes = async (
         return cachedRequest.promise;
     }
 
-    const url = `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`;
-
-    // Criar a promessa da requisição
+    const url = `${apiUrl}/inspecao/especificacoes_inspecao_ft?referencia=${encodeURIComponent(referencia)}&roteiro=${encodeURIComponent(roteiro)}&processo=${processo}`;    // Criar a promessa da requisição
     const requestPromise = (async () => {
         const response = await fetchWithAuth(url, {
-            method: 'GET',
-            headers: authHeaders
+            method: 'GET'
         });
 
         if (!response.ok) {
@@ -74,12 +69,10 @@ export const getProcessoDetalhes = async (
 
 /**
  * Busca a lista de processos disponíveis
- * @param authHeaders Headers de autenticação
  * @param filtros Filtros opcionais para a busca
  * @returns Lista de processos
  */
 export const getProcessos = async (
-    authHeaders: HeadersInit,
     filtros?: Partial<ProcessoParams>
 ): Promise<ProcessoListItem[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
@@ -100,11 +93,8 @@ export const getProcessos = async (
         if (searchParamsString) {
             url += `?${searchParamsString}`;
         }
-    }
-
-    const response = await fetchWithAuth(url, {
-        method: 'GET',
-        headers: authHeaders
+    } const response = await fetchWithAuth(url, {
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -118,18 +108,16 @@ export const getProcessos = async (
 
 /**
  * Busca referências disponíveis para filtro
- * @param authHeaders Headers de autenticação
  * @returns Lista de referências
  */
-export const getReferencias = async (authHeaders: HeadersInit): Promise<string[]> => {
+export const getReferencias = async (): Promise<string[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
     }
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/referencias`, {
-        method: 'GET',
-        headers: authHeaders
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -147,8 +135,7 @@ export const getReferencias = async (authHeaders: HeadersInit): Promise<string[]
  * @returns Lista de roteiros
  */
 export const getRoteirosByReferencia = async (
-    referencia: string,
-    authHeaders: HeadersInit
+    referencia: string
 ): Promise<string[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -156,8 +143,7 @@ export const getRoteirosByReferencia = async (
     }
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/roteiros?referencia=${encodeURIComponent(referencia)}`, {
-        method: 'GET',
-        headers: authHeaders
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -175,8 +161,7 @@ export const getRoteirosByReferencia = async (
  * @returns void
  */
 export const deleteOperacaoProcesso = async (
-    id: number,
-    authHeaders: HeadersInit
+    id: number
 ): Promise<void> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -184,8 +169,7 @@ export const deleteOperacaoProcesso = async (
     }
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/operacoes_processos?id=${id}`, {
-        method: 'DELETE',
-        headers: authHeaders
+        method: 'DELETE'
     });
 
     if (!response.ok) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useApiConfig } from '@/hooks/useApiConfig';
+import { fetchWithAuth } from '@/services/api/authInterceptor';
 import { motion } from 'framer-motion';
 import { AlertCircle, FileText, Ruler } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -80,9 +81,10 @@ export function EspecificacoesModal({
         ordem: dados?.ordem?.toString() || '',
         uso_inspecao_setup: dados?.uso_inspecao_setup === 'S',
         uso_inspecao_processo: dados?.uso_inspecao_processo === 'S',
-        uso_inspecao_qualidade: modo === 'cadastro' ? true : (dados?.uso_inspecao_qualidade === 'S'),
-        id_caracteristica_especial: dados?.id_caracteristica_especial ?? undefined,
-    }); const { apiUrl, getAuthHeaders } = useApiConfig();
+        uso_inspecao_qualidade: modo === 'cadastro' ? true : (dados?.uso_inspecao_qualidade === 'S'), id_caracteristica_especial: dados?.id_caracteristica_especial ?? undefined,
+    });
+
+    const { apiUrl } = useApiConfig();
 
     // Função para reiniciar o formulário para um novo cadastro
     const resetForm = useCallback(() => {
@@ -104,10 +106,11 @@ export function EspecificacoesModal({
             uso_inspecao_setup: false,
             uso_inspecao_processo: false,
             uso_inspecao_qualidade: true,
-        });
+        }); setSelectedTipoValor('');
+        setSelectedCota(null);
+        setFormError(null); // Limpar erro ao resetar
 
-        setSelectedTipoValor('');
-        setSelectedCota(null);        // Definir característica especial padrão (id 1) se disponível
+        // Definir característica especial padrão (id 1) se disponível
         if (caracteristicasOptions.length > 0) {
             const caracteristicaPadrao = caracteristicasOptions.find(c => c.id === 1);
             if (caracteristicaPadrao) {
@@ -130,37 +133,26 @@ export function EspecificacoesModal({
     // Simple in-memory cache for options using useRef
     const cotasCache = useRef<Option[] | null>(null);
     const caracteristicasCache = useRef<Option[] | null>(null);
-    const instrumentosCache = useRef<{ id: number, label: string }[] | null>(null);
-
-    // Função para buscar as opções de cotas, características e instrumentos
+    const instrumentosCache = useRef<{ id: number, label: string }[] | null>(null);    // Função para buscar as opções de cotas, características e instrumentos
     const fetchOptions = useCallback(async () => {
-        if (!isOpen) return;
+        if (!isOpen || !apiUrl) return; // Verificar se apiUrl está disponível
         setIsLoadingOptions(true);
         try {
             // Use cache if available
             let cotasData = cotasCache.current;
             let caracteristicasData = caracteristicasCache.current;
-            let instrumentsData = instrumentosCache.current;
-            if (!cotasData) {
-                const cotasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`, {
-                    headers: getAuthHeaders()
-                });
+            let instrumentsData = instrumentosCache.current; if (!cotasData) {
+                const cotasResponse = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=cotas`);
                 cotasData = await cotasResponse.json();
                 cotasCache.current = cotasData;
             }
-            setCotasOptions(cotasData || []);
-            if (!caracteristicasData) {
-                const caracteristicasResponse = await fetch(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=caracteristicas`, {
-                    headers: getAuthHeaders()
-                });
+            setCotasOptions(cotasData || []); if (!caracteristicasData) {
+                const caracteristicasResponse = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?tipo=caracteristicas`);
                 caracteristicasData = await caracteristicasResponse.json();
                 caracteristicasCache.current = caracteristicasData;
             }
-            setCaracteristicasOptions(caracteristicasData || []);
-            if (!instrumentsData) {
-                const instrumentsResponse = await fetch(`${apiUrl}/inspecao/tipos_instrumentos_medicao`, {
-                    headers: getAuthHeaders()
-                });
+            setCaracteristicasOptions(caracteristicasData || []); if (!instrumentsData) {
+                const instrumentsResponse = await fetchWithAuth(`${apiUrl}/inspecao/tipos_instrumentos_medicao`);
                 const instrumentsRaw = await instrumentsResponse.json();
                 instrumentsData = Array.isArray(instrumentsRaw) ? instrumentsRaw.map(item => ({
                     id: item.id,
@@ -170,19 +162,37 @@ export function EspecificacoesModal({
             }
             setInstrumentOptions(instrumentsData || []);
         } catch (error) {
-            console.error("Erro ao carregar opções:", error);
-            setFormError("Erro ao carregar as opções de cotas e instrumentos.");
+            console.error("Erro detalhado ao carregar opções:", {
+                error,
+                apiUrl,
+                isOpen,
+                cotasLength: cotasCache.current?.length || 0,
+                caracteristicasLength: caracteristicasCache.current?.length || 0,
+                instrumentosLength: instrumentosCache.current?.length || 0
+            });
+
+            // Verificar se é erro de rede ou de API
+            const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+            // Se houver dados em cache, usar os dados e não mostrar erro
+            if (cotasCache.current && caracteristicasCache.current && instrumentosCache.current) {
+                console.log("Usando dados do cache devido ao erro:", errorMessage);
+                setCotasOptions(cotasCache.current || []);
+                setCaracteristicasOptions(caracteristicasCache.current || []);
+                setInstrumentOptions(instrumentosCache.current || []);
+            } else {
+                setFormError(`Erro ao carregar opções: ${errorMessage}`);
+            }
         } finally {
             setIsLoadingOptions(false);
         }
-    }, [apiUrl, getAuthHeaders, isOpen]);
-
-    // Carregar opções quando o modal abrir
+    }, [apiUrl, isOpen]);    // Carregar opções quando o modal abrir
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && apiUrl) { // Aguardar apiUrl estar disponível
+            setFormError(null); // Limpar erro anterior ao abrir modal
             fetchOptions();
         }
-    }, [isOpen, fetchOptions, modo]);
+    }, [isOpen, fetchOptions, modo, apiUrl]);
 
     // Efeito para inicializar as seleções quando os dados são carregados
 
@@ -364,12 +374,9 @@ export function EspecificacoesModal({
                     uso_inspecao_setup: formState.uso_inspecao_setup ? 'S' : 'N',
                     uso_inspecao_processo: formState.uso_inspecao_processo ? 'S' : 'N',
                     uso_inspecao_qualidade: formState.uso_inspecao_qualidade ? 'S' : 'N',
-                };
-
-                const response = await fetch(endpoint, {
+                }; const response = await fetchWithAuth(endpoint, {
                     method: method,
                     headers: {
-                        ...getAuthHeaders(),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
@@ -412,7 +419,7 @@ export function EspecificacoesModal({
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess, selectedCaracteristica, selectedCota, formState, resetForm]
+        [apiUrl, dados, modo, onClose, onSuccess, selectedCaracteristica, selectedCota, formState, resetForm]
     );
 
     // Handler para submissão normal do formulário

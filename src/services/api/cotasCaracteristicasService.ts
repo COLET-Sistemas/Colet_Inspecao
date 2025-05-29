@@ -1,15 +1,14 @@
 import { CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { fetchWithAuth } from "./authInterceptor";
 
-export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise<CotaCaracteristica[]> => {
+export const getCotasCaracteristicas = async (): Promise<CotaCaracteristica[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
     }
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas`, {
-        method: 'GET',
-        headers: authHeaders,
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -30,8 +29,7 @@ export const getCotasCaracteristicas = async (authHeaders: HeadersInit): Promise
 };
 
 export const createCotaCaracteristica = async (
-    cotaCaracteristica: Omit<CotaCaracteristica, 'id'>,
-    authHeaders: HeadersInit
+    cotaCaracteristica: Omit<CotaCaracteristica, 'id'>
 ): Promise<CotaCaracteristica> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -40,10 +38,7 @@ export const createCotaCaracteristica = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas`, {
         method: 'POST',
-        headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-        }, body: JSON.stringify({
+        body: JSON.stringify({
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
             simbolo_path_svg: cotaCaracteristica.simbolo_path_svg,
@@ -63,8 +58,7 @@ export const createCotaCaracteristica = async (
 };
 
 export const updateCotaCaracteristica = async (
-    cotaCaracteristica: CotaCaracteristica,
-    authHeaders: HeadersInit
+    cotaCaracteristica: CotaCaracteristica
 ): Promise<CotaCaracteristica> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -73,10 +67,7 @@ export const updateCotaCaracteristica = async (
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?id=${cotaCaracteristica.id}`, {
         method: 'PUT',
-        headers: {
-            ...authHeaders,
-            'Content-Type': 'application/json',
-        }, body: JSON.stringify({
+        body: JSON.stringify({
             id: cotaCaracteristica.id,
             descricao: cotaCaracteristica.descricao,
             tipo: cotaCaracteristica.tipo,
@@ -85,7 +76,7 @@ export const updateCotaCaracteristica = async (
             rejeita_menor: cotaCaracteristica.rejeita_menor === true || cotaCaracteristica.rejeita_menor === "s" || cotaCaracteristica.rejeita_menor === "S" ? "s" : "n",
             rejeita_maior: cotaCaracteristica.rejeita_maior === true || cotaCaracteristica.rejeita_maior === "s" || cotaCaracteristica.rejeita_maior === "S" ? "s" : "n",
             local_inspecao: cotaCaracteristica.tipo === "O" ? cotaCaracteristica.local_inspecao : null
-        }),
+        })
     });
 
     if (!response.ok) {
@@ -97,8 +88,7 @@ export const updateCotaCaracteristica = async (
 };
 
 export const deleteCotaCaracteristica = async (
-    id: number,
-    authHeaders: HeadersInit
+    id: number
 ): Promise<void> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -106,8 +96,7 @@ export const deleteCotaCaracteristica = async (
     }
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/cotas_caracteristicas?id=${id}`, {
-        method: 'DELETE',
-        headers: authHeaders
+        method: 'DELETE'
     });
 
     if (!response.ok) {

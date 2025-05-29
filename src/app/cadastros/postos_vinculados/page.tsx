@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { SelectableCheckbox } from "@/components/ui/cadastros/SelectableCheckbox";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchWithAuth } from "@/services/api/authInterceptor";
 import { AlertState, Posto } from "@/types/cadastros/posto";
 import { CheckSquare, IterationCcw, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -105,9 +106,8 @@ export default function PostosVinculadosPage() {
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
-        setApiError(null);
-        try {
-            const response = await fetch(`${apiUrl}/postos`);
+        setApiError(null); try {
+            const response = await fetchWithAuth(`${apiUrl}/postos`);
             if (!response.ok) throw new Error(`Erro ao obter postos: ${response.status}`);
             const data = await response.json();
             const postsWithId = data.map((posto: Omit<Posto, 'id'>) => ({ ...posto, id: posto.posto }));

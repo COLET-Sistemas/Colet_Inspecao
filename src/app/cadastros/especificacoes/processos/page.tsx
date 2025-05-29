@@ -1,13 +1,14 @@
 'use client';
 
 import { AlertMessage } from '@/components/ui/AlertMessage';
+import { FloatingActionButton } from '@/components/ui/cadastros/FloatingActionButton';
 import { ConfirmDeleteModal } from '@/components/ui/cadastros/modais_cadastros/ConfirmDeleteModal';
 import { EspecificacoesModal } from '@/components/ui/cadastros/modais_cadastros/EspecificacoesModal';
 import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
+import { OperacaoSelectionModal } from '@/components/ui/cadastros/OperacaoSelectionModal';
 import { PageHeader } from '@/components/ui/cadastros/PageHeader';
 import { Tooltip } from '@/components/ui/cadastros/Tooltip';
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from '@/hooks/useApiConfig';
 import { atualizarOrdemEspecificacoes, deleteEspecificacaoInspecao } from '@/services/api/especificacaoService';
 import { deleteOperacaoProcesso, getProcessoDetalhes } from '@/services/api/processoService';
 import { AlertState } from '@/types/cadastros/especificacao';
@@ -291,6 +292,7 @@ interface OperacaoSectionProps {
     onRefresh: () => Promise<void>;
     onEdit?: (operacao: OperacaoProcesso) => void;
     onDelete?: (operacao: OperacaoProcesso) => void;
+    onModalChange?: (operacaoId: number, modalType: 'spec' | 'deleteSpec', isOpen: boolean) => void;
 }
 
 const OperacaoSection = ({
@@ -303,14 +305,14 @@ const OperacaoSection = ({
     onAlert,
     onRefresh,
     onEdit,
-    onDelete
+    onDelete,
+    onModalChange
 }: OperacaoSectionProps): React.ReactNode => {
     const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
     const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
     const [selectedSpec, setSelectedSpec] = useState<EspecificacaoInspecao | null>(null);
-    const [isReordering, setIsReordering] = useState(false);
-    const [isDeleteSpecModalOpen, setIsDeleteSpecModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false); const { getAuthHeaders } = useApiConfig();
+    const [isReordering, setIsReordering] = useState(false); const [isDeleteSpecModalOpen, setIsDeleteSpecModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [especificacoes, setEspecificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
@@ -373,8 +375,7 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);
-    const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
+    }, [isReordering, especificacoes, onReorder, onAlert]); const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
         console.log('Enviando para edição - COMPLETO:', spec);
 
         // Criar uma versão completa do objeto que inclui o campo caracteristica_especial
@@ -385,21 +386,19 @@ const OperacaoSection = ({
 
         setSelectedSpec(completeSpec);
         setIsSpecModalOpen(true);
-    }, []);
+        onModalChange?.(operacao.id_operacao, 'spec', true);
+    }, [operacao.id_operacao, onModalChange]);
 
     // Handler para excluir especificação
     const handleDeleteSpec = useCallback((spec: EspecificacaoInspecao) => {
         setSelectedSpec(spec);
         setIsDeleteSpecModalOpen(true);
-    }, []);
-
-    // Handler para confirmar exclusão de especificação
+        onModalChange?.(operacao.id_operacao, 'deleteSpec', true);
+    }, [operacao.id_operacao, onModalChange]);    // Handler para confirmar exclusão de especificação
     const confirmDeleteSpec = useCallback(async () => {
         if (!selectedSpec) return;
-        setIsDeleting(true);
-
-        try {
-            await deleteEspecificacaoInspecao(selectedSpec.id, getAuthHeaders());
+        setIsDeleting(true); try {
+            await deleteEspecificacaoInspecao(selectedSpec.id);
             onAlert("Especificação excluída com sucesso!", "success");
             onRefresh();
         } catch (error) {
@@ -409,8 +408,9 @@ const OperacaoSection = ({
             setIsDeleting(false);
             setIsDeleteSpecModalOpen(false);
             setSelectedSpec(null);
+            onModalChange?.(operacao.id_operacao, 'deleteSpec', false);
         }
-    }, [selectedSpec, getAuthHeaders, onAlert, onRefresh]);
+    }, [selectedSpec, onAlert, onRefresh, operacao.id_operacao, onModalChange]);
     // The user will explicitly save the order with the "Salvar Ordem" button
     return (
         <div className={`mb-6 border ${isReordering ? 'border-blue-200' : 'border-gray-100'} rounded-xl overflow-hidden shadow-sm relative`}>
@@ -514,13 +514,13 @@ const OperacaoSection = ({
             </div>
 
             {isExpanded && (
-                <>
-                    {/* Modal de Especificações */}
+                <>                    {/* Modal de Especificações */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
                         onClose={() => {
                             setIsSpecModalOpen(false);
                             setSelectedSpec(null);
+                            onModalChange?.(operacao.id_operacao, 'spec', false);
                         }}
                         dados={selectedSpec ? {
                             ...selectedSpec,
@@ -544,19 +544,19 @@ const OperacaoSection = ({
                             if (!message.toLowerCase().includes("continuar")) {
                                 setIsSpecModalOpen(false);
                                 setSelectedSpec(null);
+                                onModalChange?.(operacao.id_operacao, 'spec', false);
                             }
                         }}
                         modo={selectedSpec ? "edicao" : "cadastro"}
                         especificacoesList={selectedSpec ? undefined : especificacoes}
-                    />
-
-                    {/* Modal de confirmação de exclusão de especificação */}
+                    />                    {/* Modal de confirmação de exclusão de especificação */}
                     <ConfirmDeleteModal
                         isOpen={isDeleteSpecModalOpen}
                         onClose={() => {
                             if (!isDeleting) {
                                 setIsDeleteSpecModalOpen(false);
                                 setSelectedSpec(null);
+                                onModalChange?.(operacao.id_operacao, 'deleteSpec', false);
                             }
                         }}
                         onConfirm={confirmDeleteSpec}
@@ -568,7 +568,7 @@ const OperacaoSection = ({
                                 : "Deseja realmente excluir esta especificação?"
                         }
                         itemName={selectedSpec?.especificacao_cota}
-                    />                    {especificacoesCountValue > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
+                    />{especificacoesCountValue > 0 ? (<div className={`border-t border-gray-100 rounded-md overflow-hidden ${isReordering ? 'bg-blue-50' : ''}`}>
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1200px]">
                                 <thead><tr className={`text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 ${isReordering ? 'bg-blue-100/70' : 'bg-gradient-to-r from-gray-50 to-gray-100'}`}>
@@ -676,16 +676,12 @@ export default function ProcessoPage() {
         }
     };
 
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const { getAuthHeaders } = useApiConfig();
+    const router = useRouter(); const searchParams = useSearchParams();
 
     // Parâmetros da URL
     const referencia = searchParams?.get('referencia') || '';
     const roteiro = searchParams?.get('roteiro') || '';
-    const processo = searchParams?.get('processo') || '';
-
-    // Estados
+    const processo = searchParams?.get('processo') || '';    // Estados
     const [isLoading, setIsLoading] = useState(true);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     const [dadosProcesso, setDadosProcesso] = useState<ProcessoDetalhes | null>(null);
@@ -693,12 +689,39 @@ export default function ProcessoPage() {
     const [selectedOperacao, setSelectedOperacao] = useState<OperacaoProcesso | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [operacaoToDelete, setOperacaoToDelete] = useState<OperacaoProcesso | null>(null);
+    const [operacaoToDelete, setOperacaoToDelete] = useState<OperacaoProcesso | null>(null);    // Estados para FAB global de especificações
+    const [isFABSpecModalOpen, setIsFABSpecModalOpen] = useState(false);
+    const [selectedOperacaoForFAB, setSelectedOperacaoForFAB] = useState<OperacaoProcesso | null>(null);
+    const [isOperacaoSelectionModalOpen, setIsOperacaoSelectionModalOpen] = useState(false);
 
-    // Função para limpar alertas
+    // Estados para rastrear modais das seções de operação
+    const [sectionModalsOpen, setSectionModalsOpen] = useState<Set<string>>(new Set());
+
+    // Computed para verificar se algum modal está aberto (para ocultar FAB)
+    const isAnyModalOpen = useMemo(() => {
+        return isOperacaoModalOpen ||
+            isDeleteModalOpen ||
+            isOperacaoSelectionModalOpen ||
+            isFABSpecModalOpen ||
+            sectionModalsOpen.size > 0;
+    }, [isOperacaoModalOpen, isDeleteModalOpen, isOperacaoSelectionModalOpen, isFABSpecModalOpen, sectionModalsOpen]);    // Função para limpar alertas
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
-    }, []);    // Carregar dados do processo
+    }, []);
+
+    // Funções para rastrear modais das seções de operação
+    const handleSectionModalChange = useCallback((operacaoId: number, modalType: 'spec' | 'deleteSpec', isOpen: boolean) => {
+        const modalKey = `${operacaoId}-${modalType}`;
+        setSectionModalsOpen(prev => {
+            const newSet = new Set(prev);
+            if (isOpen) {
+                newSet.add(modalKey);
+            } else {
+                newSet.delete(modalKey);
+            }
+            return newSet;
+        });
+    }, []);// Carregar dados do processo
     const fetchProcessoData = useCallback(async () => {
         if (!referencia || !roteiro || !processo) {
             setAlert({
@@ -707,12 +730,9 @@ export default function ProcessoPage() {
             });
             setIsLoading(false);
             return;
-        }
-
-        try {
+        } try {
             const data = await getProcessoDetalhes(
-                { referencia, roteiro, processo },
-                getAuthHeaders()
+                { referencia, roteiro, processo }
             );
             setDadosProcesso(data);
         } catch (error) {
@@ -724,7 +744,7 @@ export default function ProcessoPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [referencia, roteiro, processo, getAuthHeaders]);
+    }, [referencia, roteiro, processo]);
 
     // Função para voltar à tela de especificações
     const handleVoltar = useCallback(() => {
@@ -749,7 +769,7 @@ export default function ProcessoPage() {
 
         setIsDeleting(true);
         try {
-            await deleteOperacaoProcesso(operacaoToDelete.id_operacao, getAuthHeaders());
+            await deleteOperacaoProcesso(operacaoToDelete.id_operacao);
             setAlert({
                 message: "Operação excluída com sucesso!",
                 type: "success"
@@ -766,20 +786,53 @@ export default function ProcessoPage() {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [operacaoToDelete, getAuthHeaders, fetchProcessoData]);    // Função para fechar modal de exclusão
+    }, [operacaoToDelete, fetchProcessoData]);    // Função para fechar modal de exclusão
     const handleCloseDeleteModal = useCallback(() => {
         if (!isDeleting) {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [isDeleting]);
-
-    // Memoized handler for modal success
+    }, [isDeleting]);    // Memoized handler for modal success
     const handleOperacaoModalSuccess = useCallback((message: string) => {
         setAlert({ message, type: 'success' });
         fetchProcessoData();
         setIsOperacaoModalOpen(false);
         setSelectedOperacao(null);
+    }, [fetchProcessoData]);    // Funções para controlar o FAB global de especificações
+    const handleFABCreateSpec = useCallback(() => {
+        const operacoesDisponiveis = dadosProcesso?.operacoes || [];
+
+        if (operacoesDisponiveis.length === 0) {
+            setAlert({
+                message: "Nenhuma operação disponível para cadastrar especificação",
+                type: "error"
+            });
+            return;
+        }
+
+        if (operacoesDisponiveis.length === 1) {
+            // Se há apenas uma operação, use-a diretamente
+            setSelectedOperacaoForFAB(operacoesDisponiveis[0]);
+            setIsFABSpecModalOpen(true);
+        } else {
+            // Se há múltiplas operações, abra o modal de seleção
+            setIsOperacaoSelectionModalOpen(true);
+        }
+    }, [dadosProcesso?.operacoes]);
+
+    const handleSelectOperacaoForFAB = useCallback((operacao: OperacaoProcesso) => {
+        setSelectedOperacaoForFAB(operacao);
+        setIsOperacaoSelectionModalOpen(false);
+        setIsFABSpecModalOpen(true);
+    }, []);
+
+    const handleFABModalSuccess = useCallback((message: string) => {
+        setAlert({ message, type: 'success' });
+        fetchProcessoData();
+        if (!message.toLowerCase().includes("continuar")) {
+            setIsFABSpecModalOpen(false);
+            setSelectedOperacaoForFAB(null);
+        }
     }, [fetchProcessoData]);// Efeito para carregar os dados do processo
     useEffect(() => {
         fetchProcessoData();
@@ -791,17 +844,14 @@ export default function ProcessoPage() {
         const ordenedSpecs = newOrder.map((esp, index) => ({
             id: esp.id,
             ordem: index + 1  // Ensure sequential order starting from 1
-        }));
-
-        // Send the update to the API
+        }));        // Send the update to the API
         await atualizarOrdemEspecificacoes(
-            ordenedSpecs,
-            getAuthHeaders()
+            ordenedSpecs
         );
 
         // Reload data to reflect the changes
         return fetchProcessoData();
-    }, [getAuthHeaders, fetchProcessoData]);
+    }, [fetchProcessoData]);
 
     if (!hasPermission('G')) {
         return (
@@ -967,21 +1017,22 @@ export default function ProcessoPage() {
 
                             <div className="p-3 lg:p-4">
                                 {dadosProcesso.operacoes.length > 0 ? (
-                                    <div className="space-y-4 lg:space-y-6">
-                                        {dadosProcesso.operacoes.map(operacao => (
-                                            <OperacaoSection
-                                                key={operacao.id_operacao}
-                                                operacao={operacao}
-                                                initialExpanded={dadosProcesso.operacoes.length === 1}
-                                                referencia={referencia}
-                                                roteiro={roteiro}
-                                                processo={processo}
-                                                onAlert={(message, type) => setAlert({ message, type })}
-                                                onRefresh={fetchProcessoData}
-                                                onEdit={handleEditOperacao} onDelete={handleDeleteOperacao}
-                                                onReorder={handleReorderEspecificacoes}
-                                            />
-                                        ))}
+                                    <div className="space-y-4 lg:space-y-6">                                        {dadosProcesso.operacoes.map(operacao => (
+                                        <OperacaoSection
+                                            key={operacao.id_operacao}
+                                            operacao={operacao}
+                                            initialExpanded={dadosProcesso.operacoes.length === 1}
+                                            referencia={referencia}
+                                            roteiro={roteiro}
+                                            processo={processo}
+                                            onAlert={(message, type) => setAlert({ message, type })}
+                                            onRefresh={fetchProcessoData}
+                                            onEdit={handleEditOperacao}
+                                            onDelete={handleDeleteOperacao}
+                                            onReorder={handleReorderEspecificacoes}
+                                            onModalChange={handleSectionModalChange}
+                                        />
+                                    ))}
                                     </div>
                                 ) : (
                                     <div className="py-8 flex flex-col items-center justify-center text-center">
@@ -1039,9 +1090,7 @@ export default function ProcessoPage() {
                         }} onSuccess={handleOperacaoModalSuccess}
                         modo={selectedOperacao ? 'edicao' : 'cadastro'}
                     />
-                )}
-
-            {/* Modal de confirmação de exclusão */}
+                )}            {/* Modal de confirmação de exclusão */}
             {isDeleteModalOpen && (
                 <ConfirmDeleteModal
                     isOpen={isDeleteModalOpen}
@@ -1055,6 +1104,41 @@ export default function ProcessoPage() {
                             : "Deseja realmente excluir esta operação?"
                     }
                     itemName={operacaoToDelete?.descricao_operacao}
+                />
+            )}            {/* Modal de seleção de operação para FAB */}
+            <OperacaoSelectionModal
+                isOpen={isOperacaoSelectionModalOpen}
+                onClose={() => setIsOperacaoSelectionModalOpen(false)}
+                operacoes={dadosProcesso?.operacoes || []}
+                onSelectOperacao={handleSelectOperacaoForFAB}
+            />
+
+            {/* Modal FAB para Especificações */}
+            {selectedOperacaoForFAB && (
+                <EspecificacoesModal
+                    isOpen={isFABSpecModalOpen}
+                    onClose={() => {
+                        setIsFABSpecModalOpen(false);
+                        setSelectedOperacaoForFAB(null);
+                    }}
+                    dados={{
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        operacao: selectedOperacaoForFAB.operacao
+                    }}
+                    onSuccess={handleFABModalSuccess}
+                    modo="cadastro"
+                    especificacoesList={selectedOperacaoForFAB.especificacoes_inspecao || []}
+                />
+            )}            {/* Floating Action Button para Especificações */}
+            {dadosProcesso && dadosProcesso.operacoes && dadosProcesso.operacoes.length > 0 && !isAnyModalOpen && (
+                <FloatingActionButton
+                    onClick={handleFABCreateSpec}
+                    tooltip="Nova Especificação"
+                    color="green"
+                    icon="plus"
+                    size="lg"
                 />
             )}
         </div>

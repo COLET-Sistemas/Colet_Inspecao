@@ -1,6 +1,5 @@
 "use client";
 
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { createTipoInstrumentoMedicao, updateTipoInstrumentoMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
 import { TipoInstrumentoMedicao as TipoInstrumentoMedicaoType } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
@@ -29,7 +28,6 @@ export function TipoInstrumentoMedicaoModal({
     onSuccess,
     onError,
 }: TipoInstrumentoMedicaoModalProps) {
-    const { getAuthHeaders } = useApiConfig();
     const [error, setError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState<string | null>(null);
 
@@ -63,8 +61,7 @@ export function TipoInstrumentoMedicaoModal({
                                 id: Number(tipoInstrumentoMedicao.id),
                                 nome_tipo_instrumento: payload.nome_tipo_instrumento,
                                 observacao: payload.observacao
-                            },
-                            getAuthHeaders()
+                            }
                         );
                         console.log("Resposta da API ao editar:", responseData);
                     } catch (error: unknown) {
@@ -83,8 +80,7 @@ export function TipoInstrumentoMedicaoModal({
                             {
                                 nome_tipo_instrumento: payload.nome_tipo_instrumento,
                                 observacao: payload.observacao
-                            },
-                            getAuthHeaders()
+                            }
                         );
                         console.log("Resposta da API ao criar:", responseData);
                     } catch (error: unknown) {
@@ -131,7 +127,7 @@ export function TipoInstrumentoMedicaoModal({
                 }
             }
         },
-        [onClose, onSuccess, onError, tipoInstrumentoMedicao, getAuthHeaders]
+        [onClose, onSuccess, onError, tipoInstrumentoMedicao]
     );
 
     // Feedback visual para erros

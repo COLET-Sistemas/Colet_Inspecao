@@ -1,6 +1,7 @@
 'use client';
 
 import { useApiConfig } from '@/hooks/useApiConfig';
+import { fetchWithAuth } from '@/services/api/authInterceptor';
 import { motion } from 'framer-motion';
 import { AlertCircle, FileText, IdCard, Timer } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -43,7 +44,7 @@ export function OperacoesModal({
 }: OperacoesModalProps) {
     const [isFocused, setIsFocused] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false); const { apiUrl, getAuthHeaders } = useApiConfig();
+    const [isSubmitting, setIsSubmitting] = useState(false); const { apiUrl } = useApiConfig();
 
     // Renderiza mensagens de erro
     const renderFeedback = () => {
@@ -122,12 +123,9 @@ export function OperacoesModal({
                     operacao: parseInt(formData.operacao),
                     descricao: formData.descricao,
                     frequencia_minutos: parseInt(formData.frequencia)
-                };
-
-                const response = await fetch(endpoint, {
+                }; const response = await fetchWithAuth(endpoint, {
                     method: method,
                     headers: {
-                        ...getAuthHeaders(),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
@@ -159,7 +157,7 @@ export function OperacoesModal({
                 setIsSubmitting(false);
             }
         },
-        [apiUrl, dados, getAuthHeaders, modo, onClose, onSuccess]
+        [apiUrl, dados, modo, onClose, onSuccess]
     );
 
     if (!isOpen || !dados) return null; return (<FormModal

@@ -11,7 +11,6 @@ import { TipoInstrumentoMedicaoModal } from "@/components/ui/cadastros/modais_ca
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteTipoInstrumentoMedicao, getTiposInstrumentosMedicao } from "@/services/api/tipoInstrumentoMedicaoService";
 import { AlertState, TipoInstrumentoMedicao } from "@/types/cadastros/tipoInstrumentoMedicao";
 import { motion } from "framer-motion";
@@ -98,9 +97,7 @@ export default function TiposInstrumentosMedicaoPage() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
-    const [notification, setNotification] = useState("");
-    const dataFetchedRef = useRef(false);
-    const { getAuthHeaders } = useApiConfig();
+    const [notification, setNotification] = useState(""); const dataFetchedRef = useRef(false);
 
     // Check authentication status when component mounts
     useEffect(() => {
@@ -119,7 +116,7 @@ export default function TiposInstrumentosMedicaoPage() {
         setIsLoading(true);
         setApiError(null);
         try {
-            const data = await getTiposInstrumentosMedicao(getAuthHeaders());
+            const data = await getTiposInstrumentosMedicao();
             setAllData(data);
         } catch (error) {
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
@@ -127,7 +124,7 @@ export default function TiposInstrumentosMedicaoPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders]);
+    }, []);
 
     // Refresh handler
     const handleRefresh = useCallback(() => {
@@ -184,7 +181,7 @@ export default function TiposInstrumentosMedicaoPage() {
         setIsDeleting(true);
         setNotification("");
         try {
-            await deleteTipoInstrumentoMedicao(deletingId, getAuthHeaders());
+            await deleteTipoInstrumentoMedicao(deletingId);
             await loadData();
             setIsDeleteModalOpen(false);
             setAlert({ message: `Tipo de instrumento de medição excluído com sucesso!`, type: "success" });
@@ -195,7 +192,7 @@ export default function TiposInstrumentosMedicaoPage() {
             setIsDeleting(false);
             setDeletingId(null);
         }
-    }, [deletingId, getAuthHeaders, loadData]);
+    }, [deletingId, loadData]);
 
     // Close delete modal
     const handleCloseDeleteModal = useCallback(() => {
@@ -451,7 +448,7 @@ export default function TiposInstrumentosMedicaoPage() {
                 ) : (
                     <DataCards
                         data={tiposInstrumentosMedicao}
-                          itemsPerRow={4}
+                        itemsPerRow={4}
                         renderCard={(tipo) => (
                             <Card
                                 key={tipo.id}
