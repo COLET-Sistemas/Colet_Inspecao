@@ -86,7 +86,7 @@ const EspecificacaoCardBase = ({
         especificacao.valor_minimo,
         especificacao.valor_maximo,
         especificacao.unidade_medida
-    ]);    // Render checkbox para "Cota de Segurança"
+    ]);    
     const renderCotaSeguranca = useCallback(() => {
         if (!especificacao.cota_seguranca || especificacao.cota_seguranca !== 'S') return null;
 
@@ -98,7 +98,7 @@ const EspecificacaoCardBase = ({
                 <span className="text-xs text-blue-700 font-medium">Cota de Segurança</span>
             </div>
         );
-    }, [especificacao.cota_seguranca]);    // Renderiza indicador de uso (Setup, Qualidade ou Processo)
+    }, [especificacao.cota_seguranca]);  
     const renderUsoIndicator = useCallback((value: string, label: string) => {
         const isActive = value === 'S';
         return (
@@ -316,7 +316,7 @@ const OperacaoSection = ({
     const [especificacoes, setEspecificacoes] = useState<EspecificacaoInspecao[]>(
         operacao.especificacoes_inspecao || []
     );
-    const [isSaving, setIsSaving] = useState(false);// Reset especificacoes when operacao.especificacoes_inspecao changes
+    const [isSaving, setIsSaving] = useState(false);
     useEffect(() => {
         setEspecificacoes(operacao.especificacoes_inspecao || []);
     }, [operacao.especificacoes_inspecao]);
@@ -343,7 +343,7 @@ const OperacaoSection = ({
 
     // Função para mover especificação para baixo
     const moveSpecDown = useCallback((index: number) => {
-        if (index >= especificacoes.length - 1) return; // Não faz nada se for o último item
+        if (index >= especificacoes.length - 1) return; 
 
         setEspecificacoes(prev => {
             const newOrder = [...prev];
@@ -351,7 +351,7 @@ const OperacaoSection = ({
             [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
             return newOrder;
         });
-    }, [especificacoes.length]);    // Handler para reordenação
+    }, [especificacoes.length]);    
     const handleReorder = useCallback(async () => {
         if (!isReordering || !especificacoes.length) return;
 
@@ -394,7 +394,7 @@ const OperacaoSection = ({
         setSelectedSpec(spec);
         setIsDeleteSpecModalOpen(true);
         onModalChange?.(operacao.id_operacao, 'deleteSpec', true);
-    }, [operacao.id_operacao, onModalChange]);    // Handler para confirmar exclusão de especificação
+    }, [operacao.id_operacao, onModalChange]);   
     const confirmDeleteSpec = useCallback(async () => {
         if (!selectedSpec) return;
         setIsDeleting(true); try {
@@ -514,7 +514,8 @@ const OperacaoSection = ({
             </div>
 
             {isExpanded && (
-                <>                    {/* Modal de Especificações */}
+                <>                    
+                {/* Modal de Especificações */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
                         onClose={() => {
@@ -549,7 +550,8 @@ const OperacaoSection = ({
                         }}
                         modo={selectedSpec ? "edicao" : "cadastro"}
                         especificacoesList={selectedSpec ? undefined : especificacoes}
-                    />                    {/* Modal de confirmação de exclusão de especificação */}
+                    />                    
+                    {/* Modal de confirmação de exclusão de especificação */}
                     <ConfirmDeleteModal
                         isOpen={isDeleteSpecModalOpen}
                         onClose={() => {
@@ -663,7 +665,7 @@ const OperacaoSection = ({
 
 export default function ProcessoPage() {
     // Restrição de acesso para Gestor
-    const authLoading = false; // Ajuste se necessário para loading real
+    const authLoading = false;
     const hasPermission = (permission: string) => {
         try {
             const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
@@ -786,19 +788,19 @@ export default function ProcessoPage() {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [operacaoToDelete, fetchProcessoData]);    // Função para fechar modal de exclusão
+    }, [operacaoToDelete, fetchProcessoData]);    
     const handleCloseDeleteModal = useCallback(() => {
         if (!isDeleting) {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [isDeleting]);    // Memoized handler for modal success
+    }, [isDeleting]);  
     const handleOperacaoModalSuccess = useCallback((message: string) => {
         setAlert({ message, type: 'success' });
         fetchProcessoData();
         setIsOperacaoModalOpen(false);
         setSelectedOperacao(null);
-    }, [fetchProcessoData]);    // Funções para controlar o FAB global de especificações
+    }, [fetchProcessoData]);    
     const handleFABCreateSpec = useCallback(() => {
         const operacoesDisponiveis = dadosProcesso?.operacoes || [];
 
@@ -833,7 +835,7 @@ export default function ProcessoPage() {
             setIsFABSpecModalOpen(false);
             setSelectedOperacaoForFAB(null);
         }
-    }, [fetchProcessoData]);// Efeito para carregar os dados do processo
+    }, [fetchProcessoData]);
     useEffect(() => {
         fetchProcessoData();
     }, [fetchProcessoData]);
@@ -843,8 +845,8 @@ export default function ProcessoPage() {
         // Prepare data for the API - just id and ordem fields
         const ordenedSpecs = newOrder.map((esp, index) => ({
             id: esp.id,
-            ordem: index + 1  // Ensure sequential order starting from 1
-        }));        // Send the update to the API
+            ordem: index + 1  
+        }));       
         await atualizarOrdemEspecificacoes(
             ordenedSpecs
         );
@@ -925,7 +927,8 @@ export default function ProcessoPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="space-y-6"
-                    >                        {/* Informações do processo */}
+                    >                        
+                    {/* Informações do processo */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="p-4 lg:p-6">
                                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -999,7 +1002,8 @@ export default function ProcessoPage() {
 
                                 </div>
                             </div>
-                        </div>                        {/* Operações e especificações */}
+                        </div>                        
+                        {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 px-4 lg:px-6 py-3 gap-3">
                                 <div className="flex items-center">
@@ -1017,7 +1021,8 @@ export default function ProcessoPage() {
 
                             <div className="p-3 lg:p-4">
                                 {dadosProcesso.operacoes.length > 0 ? (
-                                    <div className="space-y-4 lg:space-y-6">                                        {dadosProcesso.operacoes.map(operacao => (
+                                    <div className="space-y-4 lg:space-y-6">                                        
+                                    {dadosProcesso.operacoes.map(operacao => (
                                         <OperacaoSection
                                             key={operacao.id_operacao}
                                             operacao={operacao}
@@ -1066,7 +1071,9 @@ export default function ProcessoPage() {
                             Tentar novamente
                         </button>
                     </motion.div>
-                )}            </AnimatePresence>            {dadosProcesso && (
+                )}            
+                </AnimatePresence>            
+                {dadosProcesso && (
                     <OperacoesModal
                         isOpen={isOperacaoModalOpen}
                         onClose={() => {
@@ -1090,7 +1097,8 @@ export default function ProcessoPage() {
                         }} onSuccess={handleOperacaoModalSuccess}
                         modo={selectedOperacao ? 'edicao' : 'cadastro'}
                     />
-                )}            {/* Modal de confirmação de exclusão */}
+                )}            
+                {/* Modal de confirmação de exclusão */}
             {isDeleteModalOpen && (
                 <ConfirmDeleteModal
                     isOpen={isDeleteModalOpen}
@@ -1105,7 +1113,8 @@ export default function ProcessoPage() {
                     }
                     itemName={operacaoToDelete?.descricao_operacao}
                 />
-            )}            {/* Modal de seleção de operação para FAB */}
+            )}            
+            {/* Modal de seleção de operação para FAB */}
             <OperacaoSelectionModal
                 isOpen={isOperacaoSelectionModalOpen}
                 onClose={() => setIsOperacaoSelectionModalOpen(false)}
@@ -1131,7 +1140,8 @@ export default function ProcessoPage() {
                     modo="cadastro"
                     especificacoesList={selectedOperacaoForFAB.especificacoes_inspecao || []}
                 />
-            )}            {/* Floating Action Button para Especificações */}
+            )}           
+             {/* Floating Action Button para Especificações */}
             {dadosProcesso && dadosProcesso.operacoes && dadosProcesso.operacoes.length > 0 && !isAnyModalOpen && (
                 <FloatingActionButton
                     onClick={handleFABCreateSpec}
