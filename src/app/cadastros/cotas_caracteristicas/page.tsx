@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from "@/hooks/useApiConfig";
 import { deleteCotaCaracteristica, getCotasCaracteristicas } from "@/services/api/cotasCaracteristicasService";
 import { AlertState, CotaCaracteristica } from "@/types/cadastros/cotaCaracteristica";
 import { motion } from 'framer-motion';
@@ -174,10 +173,8 @@ export default function CotasCaracteristicasPage() {
     // Alert state para mensagens de sucesso fora do modal
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "success" });
     // ARIA Live region for screen readers
-    const [notification, setNotification] = useState('');
-    // Utilize uma ref para controlar se a requisição já foi feita
+    const [notification, setNotification] = useState('');    // Utilize uma ref para controlar se a requisição já foi feita
     const dataFetchedRef = useRef(false);
-    const { getAuthHeaders } = useApiConfig();
 
     // Limpar alerta
     const clearAlert = useCallback(() => {
@@ -191,14 +188,12 @@ export default function CotasCaracteristicasPage() {
         if (tipoFilter !== "todos") count++;
         if (localInspecaoFilter !== "todos") count++;
         setActiveFilters(count);
-    }, [searchTerm, tipoFilter, localInspecaoFilter]);
-
-    // Função para carregar dados memoizada para evitar recriação desnecessária
+    }, [searchTerm, tipoFilter, localInspecaoFilter]);    // Função para carregar dados memoizada para evitar recriação desnecessária
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setApiError(null);
         try {
-            const data = await getCotasCaracteristicas(getAuthHeaders());
+            const data = await getCotasCaracteristicas();
             setAllData(data);
         } catch (error) {
             setApiError(`Falha ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -206,7 +201,7 @@ export default function CotasCaracteristicasPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [getAuthHeaders]);
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
@@ -261,14 +256,12 @@ export default function CotasCaracteristicasPage() {
         if (cotaToDelete) {
             setNotification(`Preparando para excluir a cota/característica: ${cotaToDelete.descricao}`);
         }
-    }, [cotasCaracteristicas]);
-
-    const confirmDelete = useCallback(async () => {
+    }, [cotasCaracteristicas]); const confirmDelete = useCallback(async () => {
         if (deletingId === null) return;
         setIsDeleting(true);
         setNotification(`Excluindo cota/característica...`);
         try {
-            await deleteCotaCaracteristica(deletingId, getAuthHeaders());
+            await deleteCotaCaracteristica(deletingId);
             loadData();
             setIsDeleteModalOpen(false);
             setAlert({
@@ -287,7 +280,7 @@ export default function CotasCaracteristicasPage() {
             setIsDeleting(false);
             setDeletingId(null);
         }
-    }, [deletingId, getAuthHeaders, loadData]);
+    }, [deletingId, loadData]);
 
     const handleCloseDeleteModal = useCallback(() => {
         setIsDeleteModalOpen(false);
