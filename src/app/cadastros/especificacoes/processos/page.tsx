@@ -86,7 +86,7 @@ const EspecificacaoCardBase = ({
         especificacao.valor_minimo,
         especificacao.valor_maximo,
         especificacao.unidade_medida
-    ]);    
+    ]);
     const renderCotaSeguranca = useCallback(() => {
         if (!especificacao.cota_seguranca || especificacao.cota_seguranca !== 'S') return null;
 
@@ -98,7 +98,7 @@ const EspecificacaoCardBase = ({
                 <span className="text-xs text-blue-700 font-medium">Cota de Segurança</span>
             </div>
         );
-    }, [especificacao.cota_seguranca]);  
+    }, [especificacao.cota_seguranca]);
     const renderUsoIndicator = useCallback((value: string, label: string) => {
         const isActive = value === 'S';
         return (
@@ -267,13 +267,21 @@ const EspecificacaoCardBase = ({
 
 // Custom equality function for EspecificacaoCard component
 const arePropsEqual = (prevProps: EspecificacaoCardProps, nextProps: EspecificacaoCardProps) => {
-    // Compare only the properties we care about
+    // Compare todos os campos relevantes que possam mudar durante uma edição
     return (
         prevProps.especificacao.id === nextProps.especificacao.id &&
         prevProps.especificacao.ordem === nextProps.especificacao.ordem &&
+        prevProps.especificacao.tipo_valor === nextProps.especificacao.tipo_valor &&
+        prevProps.especificacao.valor_minimo === nextProps.especificacao.valor_minimo &&
+        prevProps.especificacao.valor_maximo === nextProps.especificacao.valor_maximo &&
+        prevProps.especificacao.unidade_medida === nextProps.especificacao.unidade_medida &&
+        prevProps.especificacao.id_caracteristica_especial === nextProps.especificacao.id_caracteristica_especial &&
+        prevProps.especificacao.uso_inspecao_setup === nextProps.especificacao.uso_inspecao_setup &&
+        prevProps.especificacao.uso_inspecao_processo === nextProps.especificacao.uso_inspecao_processo &&
+        prevProps.especificacao.uso_inspecao_qualidade === nextProps.especificacao.uso_inspecao_qualidade &&
         prevProps.isReordering === nextProps.isReordering &&
         prevProps.index === nextProps.index
-        // Not comparing callbacks as they should be memoized by parent
+        // Não comparando callbacks que devem ser memoizados pelo componente pai
     );
 };
 
@@ -319,7 +327,13 @@ const OperacaoSection = ({
     const [isSaving, setIsSaving] = useState(false);
     useEffect(() => {
         setEspecificacoes(operacao.especificacoes_inspecao || []);
-    }, [operacao.especificacoes_inspecao]);
+    }, [operacao.especificacoes_inspecao]);    // Garante que o estado local seja sempre atualizado quando os dados da operação mudarem
+    useEffect(() => {
+        if (JSON.stringify(operacao.especificacoes_inspecao) !== JSON.stringify(especificacoes)) {
+            console.log('Atualizando especificações:', operacao.id_operacao);
+            setEspecificacoes(operacao.especificacoes_inspecao || []);
+        }
+    }, [operacao.especificacoes_inspecao, operacao.id_operacao, especificacoes]);
 
     // Memoized value for especificacoesCount to avoid re-calculations
     const especificacoesCountValue = useMemo(() => especificacoes.length || 0, [especificacoes]);
@@ -327,9 +341,7 @@ const OperacaoSection = ({
     // Função para alternar expansão
     const toggleExpand = useCallback(() => {
         setIsExpanded(prev => !prev);
-    }, []);
-
-    // Função para mover especificação para cima
+    }, []);    // Função para mover especificação para cima
     const moveSpecUp = useCallback((index: number) => {
         if (index <= 0) return; // Não faz nada se for o primeiro item
 
@@ -339,11 +351,9 @@ const OperacaoSection = ({
             [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
             return newOrder;
         });
-    }, []);
-
-    // Função para mover especificação para baixo
+    }, [setEspecificacoes]);    // Função para mover especificação para baixo
     const moveSpecDown = useCallback((index: number) => {
-        if (index >= especificacoes.length - 1) return; 
+        if (index >= especificacoes.length - 1) return;
 
         setEspecificacoes(prev => {
             const newOrder = [...prev];
@@ -351,7 +361,7 @@ const OperacaoSection = ({
             [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
             return newOrder;
         });
-    }, [especificacoes.length]);    
+    }, [especificacoes.length, setEspecificacoes]);
     const handleReorder = useCallback(async () => {
         if (!isReordering || !especificacoes.length) return;
 
@@ -394,7 +404,7 @@ const OperacaoSection = ({
         setSelectedSpec(spec);
         setIsDeleteSpecModalOpen(true);
         onModalChange?.(operacao.id_operacao, 'deleteSpec', true);
-    }, [operacao.id_operacao, onModalChange]);   
+    }, [operacao.id_operacao, onModalChange]);
     const confirmDeleteSpec = useCallback(async () => {
         if (!selectedSpec) return;
         setIsDeleting(true); try {
@@ -514,8 +524,8 @@ const OperacaoSection = ({
             </div>
 
             {isExpanded && (
-                <>                    
-                {/* Modal de Especificações */}
+                <>
+                    {/* Modal de Especificações */}
                     <EspecificacoesModal
                         isOpen={isSpecModalOpen}
                         onClose={() => {
@@ -536,8 +546,20 @@ const OperacaoSection = ({
                             processo: parseInt(processo, 10),
                             operacao: operacao.operacao
                         }} onSuccess={(message: string) => {
-                            // Mostrar mensagem de sucesso
-                            onAlert(message, "success");
+                            // Verificar se a mensagem é um JSON (edição) ou texto simples
+                            try {
+                                const jsonData = JSON.parse(message);
+                                if (jsonData && typeof jsonData.message === 'string') {
+                                    // É um objeto JSON de uma edição
+                                    onAlert(jsonData.message, "success");
+                                } else {
+                                    onAlert("Operação realizada com sucesso!", "success");
+                                }
+                            } catch {
+                                // É uma string simples
+                                onAlert(message, "success");
+                            }
+
                             // Atualizar a lista de especificações
                             onRefresh();
 
@@ -550,7 +572,7 @@ const OperacaoSection = ({
                         }}
                         modo={selectedSpec ? "edicao" : "cadastro"}
                         especificacoesList={selectedSpec ? undefined : especificacoes}
-                    />                    
+                    />
                     {/* Modal de confirmação de exclusão de especificação */}
                     <ConfirmDeleteModal
                         isOpen={isDeleteSpecModalOpen}
@@ -594,13 +616,14 @@ const OperacaoSection = ({
                                     </th>
                                 </tr></thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
-                                    {especificacoes.map((esp, index) => (
+                                    {especificacoes.map((especificacao, index) => (
                                         <EspecificacaoCard
-                                            key={esp.id}
-                                            especificacao={esp}
-                                            onEdit={isReordering ? undefined : handleEditSpec}
-                                            onDelete={isReordering ? undefined : handleDeleteSpec}
-                                            isReordering={isReordering} onMoveUp={moveSpecUp}
+                                            key={`${especificacao.id}-${especificacao.tipo_valor}-${especificacao.valor_minimo}-${especificacao.valor_maximo}-${Date.now()}`}
+                                            especificacao={especificacao}
+                                            onEdit={handleEditSpec}
+                                            onDelete={handleDeleteSpec}
+                                            isReordering={isReordering}
+                                            onMoveUp={moveSpecUp}
                                             onMoveDown={moveSpecDown}
                                             index={index}
                                         />
@@ -612,7 +635,7 @@ const OperacaoSection = ({
                             <div className="flex justify-between items-center p-3 border-t border-gray-100">
                                 <div className="text-sm text-gray-600">
                                     <span className="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         Mova as especificações para reordenar
@@ -788,19 +811,19 @@ export default function ProcessoPage() {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [operacaoToDelete, fetchProcessoData]);    
+    }, [operacaoToDelete, fetchProcessoData]);
     const handleCloseDeleteModal = useCallback(() => {
         if (!isDeleting) {
             setIsDeleteModalOpen(false);
             setOperacaoToDelete(null);
         }
-    }, [isDeleting]);  
+    }, [isDeleting]);
     const handleOperacaoModalSuccess = useCallback((message: string) => {
         setAlert({ message, type: 'success' });
         fetchProcessoData();
         setIsOperacaoModalOpen(false);
         setSelectedOperacao(null);
-    }, [fetchProcessoData]);    
+    }, [fetchProcessoData]);
     const handleFABCreateSpec = useCallback(() => {
         const operacoesDisponiveis = dadosProcesso?.operacoes || [];
 
@@ -826,16 +849,31 @@ export default function ProcessoPage() {
         setSelectedOperacaoForFAB(operacao);
         setIsOperacaoSelectionModalOpen(false);
         setIsFABSpecModalOpen(true);
-    }, []);
+    }, []); const handleFABModalSuccess = useCallback((message: string) => {
+        // Verificar se a mensagem é um JSON (edição) ou texto simples (cadastro)
+        try {
+            const jsonData = JSON.parse(message);
+            // É um objeto JSON de uma edição, extraímos apenas a mensagem de texto
+            if (jsonData && typeof jsonData.message === 'string') {
+                setAlert({ message: jsonData.message, type: 'success' });
+            } else {
+                // Se por algum motivo não tiver a propriedade message como esperado
+                setAlert({ message: "Operação realizada com sucesso!", type: 'success' });
+            }
 
-    const handleFABModalSuccess = useCallback((message: string) => {
-        setAlert({ message, type: 'success' });
-        fetchProcessoData();
-        if (!message.toLowerCase().includes("continuar")) {
-            setIsFABSpecModalOpen(false);
-            setSelectedOperacaoForFAB(null);
+            // Forçar atualização completa dos dados
+            fetchProcessoData().then(() => {
+                console.log('Dados atualizados após edição com ID:', jsonData.id);
+            });
+        } catch {
+            // É uma string simples
+            setAlert({ message, type: 'success' });
+
+            // Para cadastro/exclusão, apenas atualiza normalmente
+            fetchProcessoData();
         }
     }, [fetchProcessoData]);
+
     useEffect(() => {
         fetchProcessoData();
     }, [fetchProcessoData]);
@@ -845,8 +883,8 @@ export default function ProcessoPage() {
         // Prepare data for the API - just id and ordem fields
         const ordenedSpecs = newOrder.map((esp, index) => ({
             id: esp.id,
-            ordem: index + 1  
-        }));       
+            ordem: index + 1
+        }));
         await atualizarOrdemEspecificacoes(
             ordenedSpecs
         );
@@ -927,8 +965,8 @@ export default function ProcessoPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="space-y-6"
-                    >                        
-                    {/* Informações do processo */}
+                    >
+                        {/* Informações do processo */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="p-4 lg:p-6">
                                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -1002,7 +1040,7 @@ export default function ProcessoPage() {
 
                                 </div>
                             </div>
-                        </div>                        
+                        </div>
                         {/* Operações e especificações */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 px-4 lg:px-6 py-3 gap-3">
@@ -1021,23 +1059,23 @@ export default function ProcessoPage() {
 
                             <div className="p-3 lg:p-4">
                                 {dadosProcesso.operacoes.length > 0 ? (
-                                    <div className="space-y-4 lg:space-y-6">                                        
-                                    {dadosProcesso.operacoes.map(operacao => (
-                                        <OperacaoSection
-                                            key={operacao.id_operacao}
-                                            operacao={operacao}
-                                            initialExpanded={dadosProcesso.operacoes.length === 1}
-                                            referencia={referencia}
-                                            roteiro={roteiro}
-                                            processo={processo}
-                                            onAlert={(message, type) => setAlert({ message, type })}
-                                            onRefresh={fetchProcessoData}
-                                            onEdit={handleEditOperacao}
-                                            onDelete={handleDeleteOperacao}
-                                            onReorder={handleReorderEspecificacoes}
-                                            onModalChange={handleSectionModalChange}
-                                        />
-                                    ))}
+                                    <div className="space-y-4 lg:space-y-6">
+                                        {dadosProcesso.operacoes.map(operacao => (
+                                            <OperacaoSection
+                                                key={operacao.id_operacao}
+                                                operacao={operacao}
+                                                initialExpanded={dadosProcesso.operacoes.length === 1}
+                                                referencia={referencia}
+                                                roteiro={roteiro}
+                                                processo={processo}
+                                                onAlert={(message, type) => setAlert({ message, type })}
+                                                onRefresh={fetchProcessoData}
+                                                onEdit={handleEditOperacao}
+                                                onDelete={handleDeleteOperacao}
+                                                onReorder={handleReorderEspecificacoes}
+                                                onModalChange={handleSectionModalChange}
+                                            />
+                                        ))}
                                     </div>
                                 ) : (
                                     <div className="py-8 flex flex-col items-center justify-center text-center">
@@ -1071,34 +1109,34 @@ export default function ProcessoPage() {
                             Tentar novamente
                         </button>
                     </motion.div>
-                )}            
-                </AnimatePresence>            
-                {dadosProcesso && (
-                    <OperacoesModal
-                        isOpen={isOperacaoModalOpen}
-                        onClose={() => {
-                            setIsOperacaoModalOpen(false);
-                            setSelectedOperacao(null);
-                        }} dados={selectedOperacao ? {
-                            referencia,
-                            roteiro,
-                            processo: parseInt(processo, 10),
-                            tipo_acao: dadosProcesso?.tipo_acao || '',
-                            operacao: selectedOperacao.operacao,
-                            id: selectedOperacao.id_operacao,
-                            descricao: selectedOperacao.descricao_operacao,
-                            frequencia_minutos: selectedOperacao.frequencia_minutos
-                        } : {
-                            referencia,
-                            roteiro,
-                            processo: parseInt(processo, 10),
-                            tipo_acao: dadosProcesso?.tipo_acao || '',
-                            operacao: 0
-                        }} onSuccess={handleOperacaoModalSuccess}
-                        modo={selectedOperacao ? 'edicao' : 'cadastro'}
-                    />
-                )}            
-                {/* Modal de confirmação de exclusão */}
+                )}
+            </AnimatePresence>
+            {dadosProcesso && (
+                <OperacoesModal
+                    isOpen={isOperacaoModalOpen}
+                    onClose={() => {
+                        setIsOperacaoModalOpen(false);
+                        setSelectedOperacao(null);
+                    }} dados={selectedOperacao ? {
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        tipo_acao: dadosProcesso?.tipo_acao || '',
+                        operacao: selectedOperacao.operacao,
+                        id: selectedOperacao.id_operacao,
+                        descricao: selectedOperacao.descricao_operacao,
+                        frequencia_minutos: selectedOperacao.frequencia_minutos
+                    } : {
+                        referencia,
+                        roteiro,
+                        processo: parseInt(processo, 10),
+                        tipo_acao: dadosProcesso?.tipo_acao || '',
+                        operacao: 0
+                    }} onSuccess={handleOperacaoModalSuccess}
+                    modo={selectedOperacao ? 'edicao' : 'cadastro'}
+                />
+            )}
+            {/* Modal de confirmação de exclusão */}
             {isDeleteModalOpen && (
                 <ConfirmDeleteModal
                     isOpen={isDeleteModalOpen}
@@ -1113,7 +1151,7 @@ export default function ProcessoPage() {
                     }
                     itemName={operacaoToDelete?.descricao_operacao}
                 />
-            )}            
+            )}
             {/* Modal de seleção de operação para FAB */}
             <OperacaoSelectionModal
                 isOpen={isOperacaoSelectionModalOpen}
@@ -1140,8 +1178,8 @@ export default function ProcessoPage() {
                     modo="cadastro"
                     especificacoesList={selectedOperacaoForFAB.especificacoes_inspecao || []}
                 />
-            )}           
-             {/* Floating Action Button para Especificações */}
+            )}
+            {/* Floating Action Button para Especificações */}
             {dadosProcesso && dadosProcesso.operacoes && dadosProcesso.operacoes.length > 0 && !isAnyModalOpen && (
                 <FloatingActionButton
                     onClick={handleFABCreateSpec}

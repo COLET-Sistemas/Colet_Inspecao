@@ -393,23 +393,34 @@ export function EspecificacoesModal({
                         return false;
                     }
                     throw new Error(errorData?.message || `Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'}: ${response.status}`);
-                } const successMessage = modo === 'edicao'
-                    ? "Especificação atualizada com sucesso!"
-                    : "Especificação cadastrada com sucesso!";
-
-                // Se keepModalOpen for true, resetar o formulário e manter o modal aberto (apenas para modo cadastro)
-                if (keepModalOpen && modo === 'cadastro') {
-                    // Mensagem específica para "Salvar e continuar" - usamos isto como indicador
-                    // para a página pai saber que não deve fechar o modal
-                    onSuccess("Especificação cadastrada com sucesso! (continuar)");
-                    // Resetamos o formulário sem fechar o modal
-                    resetForm();
-                    return true;
-                } else {
-                    // Comportamento padrão - mostrar mensagem e depois fechar o modal
+                }
+                // Incluir dados atualizados na mensagem de sucesso
+                if (modo === 'edicao') {
+                    const successMessage = JSON.stringify({
+                        message: "Especificação atualizada com sucesso!",
+                        id: dados.id, // Enviar ID para facilitar encontrar o item atualizado
+                        timestamp: new Date().getTime() // Forçar invalidação de cache
+                    });
                     onSuccess(successMessage);
                     onClose();
                     return true;
+                } else {
+                    const successMessage = "Especificação cadastrada com sucesso!";
+
+                    // Se keepModalOpen for true, resetar o formulário e manter o modal aberto (apenas para modo cadastro)
+                    if (keepModalOpen) {
+                        // Mensagem específica para "Salvar e continuar" - usamos isto como indicador
+                        // para a página pai saber que não deve fechar o modal
+                        onSuccess("Especificação cadastrada com sucesso! (continuar)");
+                        // Resetamos o formulário sem fechar o modal
+                        resetForm();
+                        return true;
+                    } else {
+                        // Comportamento padrão - mostrar mensagem e depois fechar o modal
+                        onSuccess(successMessage);
+                        onClose();
+                        return true;
+                    }
                 }
             } catch (error: Error | unknown) {
                 console.error(`Erro ao ${modo === 'edicao' ? 'atualizar' : 'cadastrar'} especificação:`, error);
