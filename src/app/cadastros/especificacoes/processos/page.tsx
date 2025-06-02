@@ -372,8 +372,8 @@ const OperacaoSection = ({
         if (!isReordering) {
             setEspecificacoes(operacao.especificacoes_inspecao || []);
         }
-    }, [operacao.especificacoes_inspecao, isReordering]);    
-    
+    }, [operacao.especificacoes_inspecao, isReordering]);
+
     // Garante que o estado local seja sempre atualizado quando os dados da operação mudarem - mas não durante reordenação
     useEffect(() => {
         if (!isReordering && JSON.stringify(operacao.especificacoes_inspecao) !== JSON.stringify(especificacoes)) {
@@ -394,54 +394,54 @@ const OperacaoSection = ({
 
         // Atualização imediata do estado com persistência
         setEspecificacoes(prev => {
-            const newOrder = [...prev].map(item => ({...item})); // Cópia profunda de todos os objetos
-            
+            const newOrder = [...prev].map(item => ({ ...item })); // Cópia profunda de todos os objetos
+
             // Criando uma cópia dos objetos para garantir que React detecte as mudanças
             const itemMoving = newOrder[index];
             const itemReplacing = newOrder[index - 1];
-            
+
             // Troca a propriedade de ordem visualmente 
             const tempOrdem = itemMoving.ordem;
             itemMoving.ordem = itemReplacing.ordem;
             itemReplacing.ordem = tempOrdem;
-            
+
             // Troca a posição no array
             newOrder.splice(index, 1);
             newOrder.splice(index - 1, 0, itemMoving);
-            
+
             // Console para debug
             console.log("Movendo item para cima:", itemMoving.id, "Nova ordem:", newOrder.map(e => e.ordem));
-            
+
             return newOrder;
         });
     }, []);
-    
+
     // Função aprimorada para mover especificação para baixo - com prevenção de React state updates
     const moveSpecDown = useCallback((index: number) => {
         if (index >= especificacoes.length - 1) return; // Não faz nada se for o último item
 
         setEspecificacoes(prev => {
-            const newOrder = [...prev].map(item => ({...item})); // Cópia profunda de todos os objetos
-            
+            const newOrder = [...prev].map(item => ({ ...item })); // Cópia profunda de todos os objetos
+
             // Criando uma cópia dos objetos para garantir que React detecte as mudanças
             const itemMoving = newOrder[index];
             const itemReplacing = newOrder[index + 1];
-            
+
             // Troca a propriedade de ordem visualmente 
             const tempOrdem = itemMoving.ordem;
             itemMoving.ordem = itemReplacing.ordem;
             itemReplacing.ordem = tempOrdem;
-            
+
             // Troca a posição no array usando splice para garantir a reordenação
             newOrder.splice(index, 1);
             newOrder.splice(index + 1, 0, itemMoving);
-            
+
             // Console para debug
             console.log("Movendo item para baixo:", itemMoving.id, "Nova ordem:", newOrder.map(e => e.ordem));
-            
+
             return newOrder;
         });
-    }, [especificacoes.length]);    const handleReorder = useCallback(async () => {
+    }, [especificacoes.length]); const handleReorder = useCallback(async () => {
         if (!isReordering || !especificacoes.length) return;
 
         try {
@@ -452,23 +452,23 @@ const OperacaoSection = ({
             // Mantém todos os campos originais e atualiza apenas a ordem
             const updatedEspecificacoes = especificacoes.map((esp, index) => {
                 // Cópia profunda do objeto para evitar referências
-                const updatedEsp = {...esp}; 
+                const updatedEsp = { ...esp };
                 // Atualiza a ordem com base na posição atual no array
                 updatedEsp.ordem = index + 1;
                 return updatedEsp;
             });
 
             // Log para debug
-            console.log("Nova sequência para salvar:", 
+            console.log("Nova sequência para salvar:",
                 updatedEspecificacoes.map(esp => `ID ${esp.id}: ordem ${esp.ordem}`).join(', '));
 
             // Envia a nova ordem para a API
             await onReorder(updatedEspecificacoes);
             onAlert("Ordem das especificações atualizada com sucesso!", "success");
-            
+
             // Força atualização do estado local para refletir a nova ordem
             setEspecificacoes(updatedEspecificacoes);
-            
+
             // Só depois desativa o modo de reordenação
             setIsReordering(false);
         } catch (error) {
@@ -477,7 +477,7 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]);const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
+    }, [isReordering, especificacoes, onReorder, onAlert]); const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
         console.log('Enviando para edição - COMPLETO:', spec);
 
         // Criar uma versão completa do objeto que inclui o campo caracteristica_especial
