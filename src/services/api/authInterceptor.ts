@@ -31,15 +31,6 @@ export const fetchWithAuth = async (
     // Obtém o token de autenticação
     const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    // Log da requisição para debugging (apenas em desenvolvimento)
-    if (process.env.NODE_ENV === 'development') {
-        console.log(`🔗 API Request: ${options.method || 'GET'} ${url}`);
-        if (authToken) {
-            console.log('🔐 Token presente na requisição');
-        } else {
-            console.warn('⚠️ Token de autenticação não encontrado');
-        }
-    }
 
     // Prepara os headers com o token de autenticação
     const headers: HeadersInit = {
@@ -54,11 +45,6 @@ export const fetchWithAuth = async (
             ...options,
             headers
         });
-
-        // Log da resposta para debugging (apenas em desenvolvimento)
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`📡 API Response: ${response.status} ${response.statusText}`);
-        }
 
         return handleApiResponse(response);
     } catch (error) {
