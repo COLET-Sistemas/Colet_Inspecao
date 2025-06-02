@@ -40,6 +40,41 @@ const EspecificacaoCardBase = ({
     onMoveDown,
     index = 0
 }: EspecificacaoCardProps) => {
+    // Estado local para controlar animações de movimentação
+    const [moveAnimation, setMoveAnimation] = useState<'up' | 'down' | null>(null);
+
+    // Função para tratar a animação quando o item é movido para cima
+    const handleMoveUp = useCallback(() => {
+        if (!onMoveUp || !isReordering) return;
+
+        // Define a animação
+        setMoveAnimation('up');
+
+        // Chama a função de movimentação
+        onMoveUp(index);
+
+        // Remove a classe de animação após ela terminar
+        setTimeout(() => {
+            setMoveAnimation(null);
+        }, 300); // Duração da animação CSS
+    }, [onMoveUp, index, isReordering]);
+
+    // Função para tratar a animação quando o item é movido para baixo
+    const handleMoveDown = useCallback(() => {
+        if (!onMoveDown || !isReordering) return;
+
+        // Define a animação
+        setMoveAnimation('down');
+
+        // Chama a função de movimentação
+        onMoveDown(index);
+
+        // Remove a classe de animação após ela terminar
+        setTimeout(() => {
+            setMoveAnimation(null);
+        }, 300); // Duração da animação CSS
+    }, [onMoveDown, index, isReordering]);
+
     const renderSVG = useCallback((svgString: string | undefined) => {
         if (!svgString) return (
             <div className="w-9 h-9 flex items-center justify-center mx-auto">
@@ -120,8 +155,15 @@ const EspecificacaoCardBase = ({
         );
     }, []);
 
+    // Determinar as classes CSS para animação
+    const animationClass = moveAnimation === 'up'
+        ? 'move-up-animation'
+        : moveAnimation === 'down'
+            ? 'move-down-animation'
+            : '';
+
     return (
-        <tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md' : 'hover:bg-blue-50/30'}`}>
+        <tr className={`transition-all duration-200 border-b border-gray-100 ${isReordering ? 'bg-blue-50/30 hover:bg-blue-100/40 hover:-translate-y-0.5 hover:shadow-md' : 'hover:bg-blue-50/30'} ${animationClass}`}>
             <td className="py-4 text-center">
                 <div className="flex justify-center">
                     <span className={`w-7 h-7 rounded-full ${isReordering ? 'bg-blue-200 text-blue-800 border border-blue-400' : 'bg-blue-100 text-blue-800'} font-medium text-xs flex items-center justify-center transition-all`}>
@@ -220,7 +262,7 @@ const EspecificacaoCardBase = ({
                             <Tooltip text="Mover para cima">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => onMoveUp && onMoveUp(index)}
+                                    onClick={handleMoveUp}
                                     className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                                     disabled={index === 0}
                                 >
@@ -230,7 +272,7 @@ const EspecificacaoCardBase = ({
                             <Tooltip text="Mover para baixo">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => onMoveDown && onMoveDown(index)}
+                                    onClick={handleMoveDown}
                                     className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                                 >
                                     <ArrowDown className="h-4 w-4" />
@@ -326,14 +368,19 @@ const OperacaoSection = ({
     );
     const [isSaving, setIsSaving] = useState(false);
     useEffect(() => {
-        setEspecificacoes(operacao.especificacoes_inspecao || []);
-    }, [operacao.especificacoes_inspecao]);    // Garante que o estado local seja sempre atualizado quando os dados da operação mudarem
+        // Só atualiza quando não estiver no modo de reordenação
+        if (!isReordering) {
+            setEspecificacoes(operacao.especificacoes_inspecao || []);
+        }
+    }, [operacao.especificacoes_inspecao, isReordering]);    
+    
+    // Garante que o estado local seja sempre atualizado quando os dados da operação mudarem - mas não durante reordenação
     useEffect(() => {
-        if (JSON.stringify(operacao.especificacoes_inspecao) !== JSON.stringify(especificacoes)) {
+        if (!isReordering && JSON.stringify(operacao.especificacoes_inspecao) !== JSON.stringify(especificacoes)) {
             console.log('Atualizando especificações:', operacao.id_operacao);
             setEspecificacoes(operacao.especificacoes_inspecao || []);
         }
-    }, [operacao.especificacoes_inspecao, operacao.id_operacao, especificacoes]);
+    }, [operacao.especificacoes_inspecao, operacao.id_operacao, especificacoes, isReordering]);
 
     // Memoized value for especificacoesCount to avoid re-calculations
     const especificacoesCountValue = useMemo(() => especificacoes.length || 0, [especificacoes]);
@@ -341,43 +388,88 @@ const OperacaoSection = ({
     // Função para alternar expansão
     const toggleExpand = useCallback(() => {
         setIsExpanded(prev => !prev);
-    }, []);    // Função para mover especificação para cima
+    }, []);    // Função aprimorada para mover especificação para cima - com prevenção de React state updates
     const moveSpecUp = useCallback((index: number) => {
         if (index <= 0) return; // Não faz nada se for o primeiro item
 
+        // Atualização imediata do estado com persistência
         setEspecificacoes(prev => {
-            const newOrder = [...prev];
-            // Troca a posição com o item anterior
-            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+            const newOrder = [...prev].map(item => ({...item})); // Cópia profunda de todos os objetos
+            
+            // Criando uma cópia dos objetos para garantir que React detecte as mudanças
+            const itemMoving = newOrder[index];
+            const itemReplacing = newOrder[index - 1];
+            
+            // Troca a propriedade de ordem visualmente 
+            const tempOrdem = itemMoving.ordem;
+            itemMoving.ordem = itemReplacing.ordem;
+            itemReplacing.ordem = tempOrdem;
+            
+            // Troca a posição no array
+            newOrder.splice(index, 1);
+            newOrder.splice(index - 1, 0, itemMoving);
+            
+            // Console para debug
+            console.log("Movendo item para cima:", itemMoving.id, "Nova ordem:", newOrder.map(e => e.ordem));
+            
             return newOrder;
         });
-    }, [setEspecificacoes]);    // Função para mover especificação para baixo
+    }, []);
+    
+    // Função aprimorada para mover especificação para baixo - com prevenção de React state updates
     const moveSpecDown = useCallback((index: number) => {
-        if (index >= especificacoes.length - 1) return;
+        if (index >= especificacoes.length - 1) return; // Não faz nada se for o último item
 
         setEspecificacoes(prev => {
-            const newOrder = [...prev];
-            // Troca a posição com o item posterior
-            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+            const newOrder = [...prev].map(item => ({...item})); // Cópia profunda de todos os objetos
+            
+            // Criando uma cópia dos objetos para garantir que React detecte as mudanças
+            const itemMoving = newOrder[index];
+            const itemReplacing = newOrder[index + 1];
+            
+            // Troca a propriedade de ordem visualmente 
+            const tempOrdem = itemMoving.ordem;
+            itemMoving.ordem = itemReplacing.ordem;
+            itemReplacing.ordem = tempOrdem;
+            
+            // Troca a posição no array usando splice para garantir a reordenação
+            newOrder.splice(index, 1);
+            newOrder.splice(index + 1, 0, itemMoving);
+            
+            // Console para debug
+            console.log("Movendo item para baixo:", itemMoving.id, "Nova ordem:", newOrder.map(e => e.ordem));
+            
             return newOrder;
         });
-    }, [especificacoes.length, setEspecificacoes]);
-    const handleReorder = useCallback(async () => {
+    }, [especificacoes.length]);    const handleReorder = useCallback(async () => {
         if (!isReordering || !especificacoes.length) return;
 
         try {
             setIsSaving(true);
+            console.log("Salvando nova ordem de especificações");
 
             // Prepara os dados para enviar à API com ordem sequencial começando de 1
-            // Use a memoized mapping function to avoid creating new object on each render
-            const updatedEspecificacoes = especificacoes.map((esp, index) => ({
-                ...esp,
-                ordem: index + 1
-            }));
+            // Mantém todos os campos originais e atualiza apenas a ordem
+            const updatedEspecificacoes = especificacoes.map((esp, index) => {
+                // Cópia profunda do objeto para evitar referências
+                const updatedEsp = {...esp}; 
+                // Atualiza a ordem com base na posição atual no array
+                updatedEsp.ordem = index + 1;
+                return updatedEsp;
+            });
+
+            // Log para debug
+            console.log("Nova sequência para salvar:", 
+                updatedEspecificacoes.map(esp => `ID ${esp.id}: ordem ${esp.ordem}`).join(', '));
 
             // Envia a nova ordem para a API
             await onReorder(updatedEspecificacoes);
             onAlert("Ordem das especificações atualizada com sucesso!", "success");
+            
+            // Força atualização do estado local para refletir a nova ordem
+            setEspecificacoes(updatedEspecificacoes);
+            
+            // Só depois desativa o modo de reordenação
             setIsReordering(false);
         } catch (error) {
             console.error('Erro ao atualizar ordem:', error);
@@ -385,7 +477,7 @@ const OperacaoSection = ({
         } finally {
             setIsSaving(false);
         }
-    }, [isReordering, especificacoes, onReorder, onAlert]); const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
+    }, [isReordering, especificacoes, onReorder, onAlert]);const handleEditSpec = useCallback((spec: EspecificacaoInspecao) => {
         console.log('Enviando para edição - COMPLETO:', spec);
 
         // Criar uma versão completa do objeto que inclui o campo caracteristica_especial
