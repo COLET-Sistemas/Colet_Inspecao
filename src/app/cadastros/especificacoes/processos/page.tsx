@@ -28,6 +28,7 @@ interface EspecificacaoCardProps {
     onMoveUp?: (index: number) => void;
     onMoveDown?: (index: number) => void;
     index?: number;
+    isLastItem?: boolean;
 }
 
 // Define the component first, then memoize it with explicit equality check
@@ -38,7 +39,8 @@ const EspecificacaoCardBase = ({
     isReordering = false,
     onMoveUp,
     onMoveDown,
-    index = 0
+    index = 0,
+    isLastItem = false
 }: EspecificacaoCardProps) => {
     // Estado local para controlar animações de movimentação
     const [moveAnimation, setMoveAnimation] = useState<'up' | 'down' | null>(null);
@@ -57,11 +59,9 @@ const EspecificacaoCardBase = ({
         setTimeout(() => {
             setMoveAnimation(null);
         }, 300); // Duração da animação CSS
-    }, [onMoveUp, index, isReordering]);
-
-    // Função para tratar a animação quando o item é movido para baixo
+    }, [onMoveUp, index, isReordering]);    // Função para tratar a animação quando o item é movido para baixo
     const handleMoveDown = useCallback(() => {
-        if (!onMoveDown || !isReordering) return;
+        if (!onMoveDown || !isReordering || isLastItem) return;
 
         // Define a animação
         setMoveAnimation('down');
@@ -73,7 +73,7 @@ const EspecificacaoCardBase = ({
         setTimeout(() => {
             setMoveAnimation(null);
         }, 300); // Duração da animação CSS
-    }, [onMoveDown, index, isReordering]);
+    }, [onMoveDown, index, isReordering, isLastItem]);
 
     const renderSVG = useCallback((svgString: string | undefined) => {
         if (!svgString) return (
@@ -258,22 +258,22 @@ const EspecificacaoCardBase = ({
             <td className="py-4">
                 <div className="flex items-center justify-center gap-2">
                     {isReordering ? (
-                        <div className="flex items-center gap-2">
-                            <Tooltip text="Mover para cima">
-                                <motion.button
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={handleMoveUp}
-                                    className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-                                    disabled={index === 0}
-                                >
-                                    <ArrowUp className="h-4 w-4" />
-                                </motion.button>
-                            </Tooltip>
+                        <div className="flex items-center gap-2">                            <Tooltip text="Mover para cima">
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleMoveUp}
+                                className={`p-1.5 rounded-md ${index === 0 ? 'text-blue-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'} transition-colors`}
+                                disabled={index === 0}
+                            >
+                                <ArrowUp className="h-4 w-4" />
+                            </motion.button>
+                        </Tooltip>
                             <Tooltip text="Mover para baixo">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleMoveDown}
-                                    className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                                    className={`p-1.5 rounded-md ${isLastItem ? 'text-blue-300 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'} transition-colors`}
+                                    disabled={isLastItem}
                                 >
                                     <ArrowDown className="h-4 w-4" />
                                 </motion.button>
@@ -322,7 +322,8 @@ const arePropsEqual = (prevProps: EspecificacaoCardProps, nextProps: Especificac
         prevProps.especificacao.uso_inspecao_processo === nextProps.especificacao.uso_inspecao_processo &&
         prevProps.especificacao.uso_inspecao_qualidade === nextProps.especificacao.uso_inspecao_qualidade &&
         prevProps.isReordering === nextProps.isReordering &&
-        prevProps.index === nextProps.index
+        prevProps.index === nextProps.index &&
+        prevProps.isLastItem === nextProps.isLastItem
         // Não comparando callbacks que devem ser memoizados pelo componente pai
     );
 };
@@ -707,19 +708,19 @@ const OperacaoSection = ({
                                         {isReordering ? "Mover" : "Ações"}
                                     </th>
                                 </tr></thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">
-                                    {especificacoes.map((especificacao, index) => (
-                                        <EspecificacaoCard
-                                            key={`${especificacao.id}-${especificacao.tipo_valor}-${especificacao.valor_minimo}-${especificacao.valor_maximo}-${Date.now()}`}
-                                            especificacao={especificacao}
-                                            onEdit={handleEditSpec}
-                                            onDelete={handleDeleteSpec}
-                                            isReordering={isReordering}
-                                            onMoveUp={moveSpecUp}
-                                            onMoveDown={moveSpecDown}
-                                            index={index}
-                                        />
-                                    ))}
+                                <tbody className="divide-y divide-gray-100 bg-white">                                    {especificacoes.map((especificacao, index) => (
+                                    <EspecificacaoCard
+                                        key={`${especificacao.id}-${especificacao.tipo_valor}-${especificacao.valor_minimo}-${especificacao.valor_maximo}-${Date.now()}`}
+                                        especificacao={especificacao}
+                                        onEdit={handleEditSpec}
+                                        onDelete={handleDeleteSpec}
+                                        isReordering={isReordering}
+                                        onMoveUp={moveSpecUp}
+                                        onMoveDown={moveSpecDown}
+                                        index={index}
+                                        isLastItem={index === especificacoes.length - 1}
+                                    />
+                                ))}
                                 </tbody>
                             </table>
                         </div>
