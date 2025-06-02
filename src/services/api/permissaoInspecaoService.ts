@@ -8,8 +8,6 @@ export const getPermissoesInspecao = async (): Promise<PermissaoInspecao[]> => {
         throw new Error("URL da API não está configurada");
     }
 
-    console.log("Chamando API:", `${apiUrl}/inspecao/operadores`);
-
     try {
         const response = await fetchWithAuth(`${apiUrl}/inspecao/operadores?situacao=A`, {
             method: 'GET'
@@ -29,7 +27,6 @@ export const getPermissoesInspecao = async (): Promise<PermissaoInspecao[]> => {
                 const arrayProps = Object.keys(dataObject).filter(key => Array.isArray(dataObject[key]));
                 if (arrayProps.length > 0) {
                     const arrayData = dataObject[arrayProps[0]] as ApiPermissaoInspecaoData[];
-                    console.log("Usando dados da propriedade:", arrayProps[0], arrayData);
                     return mapPermissoesData(arrayData);
                 }
             }
