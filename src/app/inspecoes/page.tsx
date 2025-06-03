@@ -7,10 +7,10 @@ import {
     CheckCircle,
     Cog,
     FileText,
-    Plus,
+    RefreshCw,
     Users
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 
 // Tipos para as abas
@@ -69,41 +69,131 @@ const mockInspections = {
 
 export default function InspecoesPage() {
     const [activeTab, setActiveTab] = useState("processo");
+    const [inspectionData, setInspectionData] = useState(mockInspections);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(new Date());
 
-    // Configuração das abas
+    // Configurações do refresh automático
+    const IDLE_TIME = 30000; // 30 segundos de inatividade
+    const AUTO_REFRESH_INTERVAL = 60000; // 60 segundos entre atualizações automáticas
+
+    const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastActivityRef = useRef(Date.now());
+
+    // Função para simular carregamento de dados (substitua pela sua API)
+    const fetchInspectionData = useCallback(async () => {
+        setIsRefreshing(true);
+        try {
+            // Simula delay da API
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Aqui você faria a chamada real para sua API
+            // const response = await api.getInspections();
+            // setInspectionData(response.data);
+
+            // Por enquanto, mantemos os dados mockados
+            setInspectionData(mockInspections);
+            setLastRefresh(new Date());
+        } catch (error) {
+            console.error('Erro ao atualizar dados:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, []);
+
+    // Reset do timer de inatividade
+    const resetIdleTimer = useCallback(() => {
+        lastActivityRef.current = Date.now();
+
+        if (idleTimerRef.current) {
+            clearTimeout(idleTimerRef.current);
+        }
+
+        if (autoRefreshTimerRef.current) {
+            clearTimeout(autoRefreshTimerRef.current);
+        }
+
+        // Define timer para detectar inatividade
+        idleTimerRef.current = setTimeout(() => {
+            // Usuário ficou inativo, inicia refresh automático
+            const startAutoRefresh = () => {
+                fetchInspectionData();
+                autoRefreshTimerRef.current = setTimeout(startAutoRefresh, AUTO_REFRESH_INTERVAL);
+            };
+            startAutoRefresh();
+        }, IDLE_TIME);
+    }, [fetchInspectionData]);
+
+    // Função para refresh manual
+    const handleManualRefresh = useCallback(() => {
+        fetchInspectionData();
+        resetIdleTimer();
+    }, [fetchInspectionData, resetIdleTimer]);
+
+    // Detecta atividade do usuário
+    useEffect(() => {
+        const handleActivity = () => {
+            resetIdleTimer();
+        };
+
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+        events.forEach(event => {
+            document.addEventListener(event, handleActivity, true);
+        });
+
+        // Inicia o timer de inatividade
+        resetIdleTimer();
+
+        return () => {
+            events.forEach(event => {
+                document.removeEventListener(event, handleActivity, true);
+            });
+
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
+            }
+
+            if (autoRefreshTimerRef.current) {
+                clearTimeout(autoRefreshTimerRef.current);
+            }
+        };
+    }, [resetIdleTimer]);
+
+    // Configuração das abas (atualizada para usar dados dinâmicos)
     const tabs: TabData[] = [
         {
             id: "processo",
             label: "Inspeções de Processo",
             icon: <Cog className="w-4 h-4" />,
-            count: mockInspections.processo.length,
+            count: inspectionData.processo.length,
             description: "Inspeções relacionadas aos processos produtivos"
         },
         {
             id: "qualidade",
             label: "Inspeções de Qualidade",
             icon: <CheckCircle className="w-4 h-4" />,
-            count: mockInspections.qualidade.length,
+            count: inspectionData.qualidade.length,
             description: "Inspeções de controle de qualidade"
         },
         {
             id: "outras",
             label: "Outras Inspeções",
             icon: <Users className="w-4 h-4" />,
-            count: mockInspections.outras.length,
+            count: inspectionData.outras.length,
             description: "Outras inspeções diversas"
         },
         {
             id: "naoConformidade",
             label: "Não Conformidade",
             icon: <AlertTriangle className="w-4 h-4" />,
-            count: mockInspections.naoConformidade.length,
+            count: inspectionData.naoConformidade.length,
             description: "Registros de não conformidades identificadas"
-        },];
-
-    // Função para renderizar o conteúdo de cada aba
+        },
+    ];    // Função para renderizar o conteúdo de cada aba
     const renderTabContent = () => {
-        const currentData = mockInspections[activeTab as keyof typeof mockInspections];
+        const currentData = inspectionData[activeTab as keyof typeof inspectionData];
 
         if (!currentData || currentData.length === 0) {
             return (
@@ -121,89 +211,117 @@ export default function InspecoesPage() {
                     </p>
                 </motion.div>
             );
-        } return (<motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-2"
-        >
-            {currentData.map((item: InspectionItem, index: number) => (
-                <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow duration-200"
-                >
-                    <div className="flex items-center justify-between">
-                        {/* Informações principais */}
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <span className="font-medium text-gray-900 text-sm">
-                                {item.codigo}
-                            </span>
-                            <span className="text-gray-600 text-sm truncate">
-                                {item.posto}
-                            </span>
-                            <span className="text-gray-500 text-sm truncate">
-                                {item.responsavel}
-                            </span>
-                        </div>
+        }
 
-                        {/* Informação específica por aba (minimalista) */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                            {activeTab === "processo" && (
-                                <span className="text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded text-xs">
-                                    {item.dataVencimento}
+        return (
+            <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-2"
+            >
+                {currentData.map((item: InspectionItem, index: number) => (
+                    <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow duration-200"
+                    >
+                        <div className="flex items-center justify-between">
+                            {/* Informações principais */}
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <span className="font-medium text-gray-900 text-sm">
+                                    {item.codigo}
                                 </span>
-                            )}
-                            {activeTab === "qualidade" && (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                        <div
-                                            className={`h-1.5 rounded-full ${item.progresso! >= 80 ? 'bg-green-500' :
-                                                item.progresso! >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                                }`}
-                                            style={{ width: `${item.progresso}%` }}
-                                        ></div>
+                                <span className="text-gray-600 text-sm truncate">
+                                    {item.posto}
+                                </span>
+                                <span className="text-gray-500 text-sm truncate">
+                                    {item.responsavel}
+                                </span>
+                            </div>
+
+                            {/* Informação específica por aba (minimalista) */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                {activeTab === "processo" && (
+                                    <span className="text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded text-xs">
+                                        {item.dataVencimento}
+                                    </span>
+                                )}
+                                {activeTab === "qualidade" && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                            <div
+                                                className={`h-1.5 rounded-full ${item.progresso! >= 80 ? 'bg-green-500' :
+                                                    item.progresso! >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                                    }`}
+                                                style={{ width: `${item.progresso}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-600 min-w-fit">{item.progresso}%</span>
                                     </div>
-                                    <span className="text-xs text-gray-600 min-w-fit">{item.progresso}%</span>
-                                </div>
-                            )}
-                            {activeTab === "outras" && (
-                                <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Aprovada"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                                    }`}>
-                                    {item.status}
-                                </span>
-                            )}
-                            {activeTab === "naoConformidade" && (
-                                <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Crítica"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                                    }`}>
-                                    {item.status}
-                                </span>
-                            )}
+                                )}
+                                {activeTab === "outras" && (
+                                    <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Aprovada"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                        }`}>
+                                        {item.status}
+                                    </span>
+                                )}
+                                {activeTab === "naoConformidade" && (
+                                    <span className={`text-xs px-2 py-1 rounded-full ${item.status === "Crítica"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                        }`}>
+                                        {item.status}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </motion.div>
-            ))}
-        </motion.div>
+                    </motion.div>
+                ))}
+            </motion.div>
         );
     }; return (
-        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
-            <PageHeader
-                title="Inspeções"
-                subtitle="Gerencie todas as inspeções do sistema"
-                buttonLabel="Nova Inspeção"
-                buttonIcon={<Plus className="mr-2 h-4 w-4" />}
-                onButtonClick={() => {
-                    // Implementar abertura do modal de nova inspeção
-                    console.log("Abrir modal de nova inspeção");
-                }}
-            />
+        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">            <div className="flex items-center justify-between">            <PageHeader
+            title="Inspeções"
+            subtitle="Gerencie todas as inspeções do sistema"
+            showButton={false}
+        />
+
+            {/* Área de refresh e status */}
+            <div className="flex items-center gap-3">
+                {/* Indicador de última atualização */}
+                <div className="text-xs text-gray-500 hidden sm:block">
+                    Última atualização: {lastRefresh.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+
+                {/* Botão de refresh manual */}
+                <button
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    className={`
+                            flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200
+                            ${isRefreshing
+                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        }
+                        `}
+                    title="Atualizar dados"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">
+                        {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+                    </span>
+                </button>
+            </div>
+        </div>
 
             {/* Abas de Navegação */}
             <div className="mt-6 sm:mt-8 mb-4 sm:mb-6">
@@ -245,7 +363,8 @@ export default function InspecoesPage() {
                     animate={{ opacity: 1 }}
                     className="text-xs sm:text-sm text-gray-600 mt-3 sm:mt-4 px-1"
                 >
-                    {tabs.find(tab => tab.id === activeTab)?.description}                </motion.p>
+                    {tabs.find(tab => tab.id === activeTab)?.description}
+                </motion.p>
             </div>
 
             {/* Conteúdo da Aba */}
