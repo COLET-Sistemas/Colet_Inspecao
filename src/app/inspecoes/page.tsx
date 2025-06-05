@@ -453,7 +453,7 @@ export default function InspecoesPage() {
                     title="Inspeções"
                     subtitle="Gerencie todas as inspeções do sistema"
                     showButton={false}
-                />                {/* Área de refresh e status */}
+                />                
                 <div className="flex items-center gap-3">
                     <div className=" sm:block text-xs text-gray-500">
                         Última atualização:{" "}
@@ -463,7 +463,6 @@ export default function InspecoesPage() {
                         })}
                     </div>
 
-                    {/* Botão de refresh manual */}
                     <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}

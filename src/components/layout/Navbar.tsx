@@ -90,7 +90,6 @@ export default function Navbar() {
             e.preventDefault();
             e.stopPropagation();
         }
-        console.log("Opening logout modal");
         setUserMenuOpen(false);
         setShowLogoutModal(true);
     };
@@ -98,7 +97,6 @@ export default function Navbar() {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
-            console.log("Logging out");
             await logout();
             router.push("/login");
         } catch (error) {
