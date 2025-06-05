@@ -1,18 +1,61 @@
 
 import { fetchWithAuth } from "./authInterceptor";
 
+interface ApiInspectionItem {
+    id_ficha_inspecao: number;
+    numero_ordem: number;
+    referencia: string;
+    roteiro: string;
+    numero_lote: string;
+    processo: number;
+    operacao: number;
+    codigo_posto: string;
+    origem: string;
+    situacao: string;
+    data_hora_situacao: string;
+    data_hora_criacao: string;
+    codigo_pessoa_criacao: string;
+    nome_pessoa_criacao: string;
+    obs_criacao: string;
+    data_hora_prevista?: string | null;
+    codigo_pessoa_inspecao?: string | null;
+    nome_pessoa_inspecao?: string | null;
+    qtde_produzida?: number | null;
+    qtde_inspecionada?: number | null;
+    resultado_inspecao: string;
+    observacao_inspecao?: string | null;
+    codigo_pessoa_conclusao?: string | null;
+    nome_pessoa_conclusao?: string | null;
+    id_ficha_origem?: number | null;
+}
+
 interface InspectionItem {
     id: string;
-    codigo: string;
-    tipo: string;
-    posto: string;
-    responsavel: string;
-    dataVencimento?: string;
-    dataInicio?: string;
-    dataConclusao?: string;
-    dataAgendamento?: string;
-    progresso?: number;
-    status?: string;
+    id_ficha_inspecao: number;
+    numero_ordem: number;
+    referencia: string;
+    roteiro: string;
+    numero_lote: string;
+    processo: number;
+    operacao: number;
+    codigo_posto: string;
+    origem: string;
+    situacao: string;
+    data_hora_situacao: string;
+    data_hora_criacao: string;
+    codigo_pessoa_criacao: string;
+    nome_pessoa_criacao: string;
+    obs_criacao: string;
+    data_hora_prevista?: string | null;
+    codigo_pessoa_inspecao?: string | null;
+    nome_pessoa_inspecao?: string | null;
+    qtde_produzida?: number | null;
+    qtde_inspecionada?: number | null;
+    resultado_inspecao: string;
+    observacao_inspecao?: string | null;
+    codigo_pessoa_conclusao?: string | null;
+    nome_pessoa_conclusao?: string | null;
+    id_ficha_origem?: number | null;
 }
 
 interface InspectionData {
@@ -31,15 +74,7 @@ interface InspectionFilters {
     dataFim?: string;
 }
 
-interface CreateInspectionRequest {
-    tipo: string;
-    posto: string;
-    responsavel: string;
-    dataVencimento?: string;
-    dataInicio?: string;
-    dataAgendamento?: string;
-    observacoes?: string;
-}
+
 
 class InspecaoService {
     private baseUrl: string;
@@ -113,128 +148,11 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Cria uma nova inspeção
-     */
-    async createInspection(inspection: CreateInspectionRequest): Promise<InspectionItem> {
-        try {
-            const response = await fetch(`${this.baseUrl}/inspections`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(inspection),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Erro ao criar inspeção:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Atualiza uma inspeção existente
-     */
-    async updateInspection(id: string, updates: Partial<InspectionItem>): Promise<InspectionItem> {
-        try {
-            const response = await fetch(`${this.baseUrl}/inspections/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updates),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Erro ao atualizar inspeção:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Atualiza o progresso de uma inspeção de qualidade
-     */
-    async updateProgress(id: string, progresso: number): Promise<InspectionItem> {
-        try {
-            const response = await fetch(`${this.baseUrl}/inspections/${id}/progress`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ progresso }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Erro ao atualizar progresso:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Atualiza o status de uma inspeção
-     */
-    async updateStatus(id: string, status: string): Promise<InspectionItem> {
-        try {
-            const response = await fetch(`${this.baseUrl}/inspections/${id}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ status }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Erro ao atualizar status:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Exclui uma inspeção
-     */
-    async deleteInspection(id: string): Promise<void> {
-        try {
-            const response = await fetch(`${this.baseUrl}/inspections/${id}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
-            }
-        } catch (error) {
-            console.error('Erro ao excluir inspeção:', error);
-            throw error;
-        }
-    }    /**
+   /**
      * Busca fichas de inspeção por aba específica
      * @param codigosPostos - Array de códigos de posto ou string com códigos separados por vírgula
      * @param aba - Aba da inspeção (processo, qualidade, outras, nc)
-     */
-    async getFichasInspecaoPorAba(codigosPostos: string[] | string, aba: string): Promise<InspectionItem[]> {
+     */    async getFichasInspecaoPorAba(codigosPostos: string[] | string, aba: string): Promise<InspectionItem[]> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -250,14 +168,46 @@ class InspecaoService {
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return Array.isArray(data) ? data : [];
+            } const data: ApiInspectionItem[] = await response.json();
+            const mappedData = Array.isArray(data) ? data.map(item => this.mapApiDataToInspectionItem(item)) : [];
+            return mappedData;
         } catch (error) {
             console.error(`Erro ao buscar fichas de inspeção da aba ${aba}:`, error);
             throw error;
         }
+    }    /**
+     * Mapeia os dados da API para o formato InspectionItem
+     */
+    private mapApiDataToInspectionItem(apiItem: ApiInspectionItem): InspectionItem {
+        return {
+            // Dados originais da API
+            id: apiItem.id_ficha_inspecao?.toString() || '',
+            id_ficha_inspecao: apiItem.id_ficha_inspecao || 0,
+            numero_ordem: apiItem.numero_ordem || 0,
+            referencia: apiItem.referencia || '',
+            roteiro: apiItem.roteiro || '',
+            numero_lote: apiItem.numero_lote || '',
+            processo: apiItem.processo || 0,
+            operacao: apiItem.operacao || 0,
+            codigo_posto: apiItem.codigo_posto || '',
+            origem: apiItem.origem || '',
+            situacao: apiItem.situacao || '',
+            data_hora_situacao: apiItem.data_hora_situacao || '',
+            data_hora_criacao: apiItem.data_hora_criacao || '',
+            codigo_pessoa_criacao: apiItem.codigo_pessoa_criacao || '',
+            nome_pessoa_criacao: apiItem.nome_pessoa_criacao || '',
+            obs_criacao: apiItem.obs_criacao || '',
+            data_hora_prevista: apiItem.data_hora_prevista,
+            codigo_pessoa_inspecao: apiItem.codigo_pessoa_inspecao,
+            nome_pessoa_inspecao: apiItem.nome_pessoa_inspecao,
+            qtde_produzida: apiItem.qtde_produzida,
+            qtde_inspecionada: apiItem.qtde_inspecionada,
+            resultado_inspecao: apiItem.resultado_inspecao || '',
+            observacao_inspecao: apiItem.observacao_inspecao,
+            codigo_pessoa_conclusao: apiItem.codigo_pessoa_conclusao,
+            nome_pessoa_conclusao: apiItem.nome_pessoa_conclusao,
+            id_ficha_origem: apiItem.id_ficha_origem,
+        };
     }
 
     /**
@@ -291,7 +241,7 @@ const inspecaoService = new InspecaoService();
 
 export default inspecaoService;
 export type {
-    CreateInspectionRequest, InspectionData,
+    InspectionData,
     InspectionFilters, InspectionItem
 };
 

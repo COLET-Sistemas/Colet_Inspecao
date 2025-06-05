@@ -31,7 +31,7 @@ const TAB_API_MAP = {
     naoConformidade: "nc",
 } as const;
 
-const IDLE_TIME = 180000;
+const IDLE_TIME = 15000;
 const AUTO_REFRESH_INTERVAL = 180000;
 
 const USER_ACTIVITY_EVENTS = [
@@ -53,6 +53,54 @@ export default function InspecoesPage() {
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastActivityRef = useRef(Date.now()); const initialLoadRef = useRef(false);
+
+    // Helper functions to compute display values
+    const getTipoFicha = useCallback((aba: string) => {
+        switch (aba) {
+            case 'processo': return 'Inspeção de Processo';
+            case 'qualidade': return 'Inspeção de Qualidade';
+            case 'outras': return 'Outras Inspeções';
+            case 'naoConformidade': return 'Não Conformidade';
+            default: return 'Inspeção';
+        }
+    }, []); const getSituacao = useCallback((situacao: string) => {
+        switch (situacao) {
+            case '1': return 'Pendente desde';
+            case '2': return 'Peça enviada ao CQ em';
+            case '3': return 'Peça recebida no CQ em';
+            case '4': return 'Em andamento desde';
+            case '5': return 'Aguardando definições desde';
+            case '6': return '';
+            case '7': return 'Interrompida em';
+            case '8': return 'Finalizada em';
+            case '9': return 'Cancelada em';
+            default: return 'Desconhecida';
+        }
+    }, []);
+
+    const formatDateTime = useCallback((dateString: string) => {
+        if (!dateString) return 'N/A';
+
+        // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
+        if (dateString.includes('/')) {
+            return dateString;
+        }
+
+        // Caso contrário, tenta fazer o parse e formatar
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch {
+            return dateString; // Retorna o valor original se houver erro
+        }
+    }, []);
 
     const getPostosFromLocalStorage = useCallback((): string[] => {
         try {
@@ -270,65 +318,28 @@ export default function InspecoesPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex min-w-0 flex-1 items-center gap-4">
-                                <span className="text-sm font-medium text-gray-900">
-                                    {item.codigo}
-                                </span>
-                                <span className="truncate text-sm text-gray-600">
-                                    {item.posto}
-                                </span>
-                                <span className="truncate text-sm text-gray-500">
-                                    {item.responsavel}
-                                </span>
+                        className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
+                    >
+                        <div className="flex items-center justify-between">                            <div className="flex min-w-0 flex-1 items-center gap-4">                                <span className="text-sm font-medium text-gray-900">
+                            ID: {item.id_ficha_inspecao}
+                        </span>
+                            <span className="truncate text-sm text-gray-600">
+                                {getTipoFicha(activeTab)}
+                            </span>
+                        </div><div className="flex flex-shrink-0 items-center gap-3">                                <span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-600">
+                            {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
+                        </span>
                             </div>
-
-                            <div className="flex flex-shrink-0 items-center gap-3">
-                                {activeTab === "processo" && (
-                                    <span className="rounded bg-orange-50 px-2 py-1 text-xs text-orange-600">
-                                        {item.dataVencimento}
-                                    </span>
-                                )}
-                                {activeTab === "qualidade" && (
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-1.5 w-16 rounded-full bg-gray-200">
-                                            <div
-                                                className={`h-1.5 rounded-full ${item.progresso! >= 80
-                                                    ? "bg-green-500"
-                                                    : item.progresso! >= 50
-                                                        ? "bg-yellow-500"
-                                                        : "bg-red-500"
-                                                    }`}
-                                                style={{ width: `${item.progresso}%` }}
-                                            />
-                                        </div>
-                                        <span className="min-w-fit text-xs text-gray-600">
-                                            {item.progresso}%
-                                        </span>
-                                    </div>
-                                )}
-                                {activeTab === "outras" && (
-                                    <span
-                                        className={`rounded-full px-2 py-1 text-xs ${item.status === "Aprovada"
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-yellow-100 text-yellow-700"
-                                            }`}
-                                    >
-                                        {item.status}
-                                    </span>
-                                )}
-                                {activeTab === "naoConformidade" && (
-                                    <span
-                                        className={`rounded-full px-2 py-1 text-xs ${item.status === "Crítica"
-                                            ? "bg-red-100 text-red-700"
-                                            : "bg-yellow-100 text-yellow-700"
-                                            }`}
-                                    >
-                                        {item.status}
-                                    </span>
-                                )}
-                            </div>
+                        </div>                        <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                            <span>Ordem: {item.numero_ordem}</span>
+                            <span>Ref: {item.referencia}</span>
+                            <span>Roteiro: {item.roteiro}</span>
+                            <span>Lote: {item.numero_lote}</span>
+                            <span>Posto: {item.codigo_posto}</span>
+                            <span>Origem: {item.origem || 'N/A'}</span>
+                            {item.data_hora_prevista && (
+                                <span>Prevista: {formatDateTime(item.data_hora_prevista)}</span>
+                            )}
                         </div>
                     </motion.div>
                 ))}
