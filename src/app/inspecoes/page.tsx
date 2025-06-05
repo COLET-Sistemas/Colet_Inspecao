@@ -1,6 +1,8 @@
 "use client";
 
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import { LoadingSpinner } from "@/components/ui/Loading";
+import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
 import {
     AlertTriangle,
@@ -23,189 +25,13 @@ interface TabData {
     description: string;
 }
 
-// Tipos para os dados das inspeções
-interface InspectionItem {
-    id: string;
-    codigo: string;
-    tipo: string;
-    posto: string;
-    responsavel: string;
-    dataVencimento?: string;
-    dataInicio?: string;
-    dataConclusao?: string;
-    dataAgendamento?: string;
-    progresso?: number;
-    status?: string;
-}
-
-// Dados mockados para exemplo
-const mockInspections = {
-    processo: [
-        {
-            id: "1",
-            codigo: "PROC-001",
-            tipo: "Processo Produtivo",
-            posto: "Linha de Produção A",
-            dataVencimento: "2025-05-30",
-            responsavel: "João Silva",
-        },
-        {
-            id: "2",
-            codigo: "PROC-002",
-            tipo: "Processo Logístico",
-            posto: "Linha de Produção B",
-            dataVencimento: "2025-06-01",
-            responsavel: "Maria Santos",
-        },
-        {
-            id: "3",
-            codigo: "PROC-003",
-            tipo: "Processo de Montagem",
-            posto: "Linha de Montagem",
-            dataVencimento: "2025-06-05",
-            responsavel: "Carlos Lima",
-        },
-        {
-            id: "11",
-            codigo: "PROC-004",
-            tipo: "Processo de Embalagem",
-            posto: "Setor de Embalagem",
-            dataVencimento: "2025-05-28",
-            responsavel: "Ana Rodrigues",
-        },
-        {
-            id: "12",
-            codigo: "PROC-005",
-            tipo: "Processo de Expedição",
-            posto: "Doca de Carregamento",
-            dataVencimento: "2025-06-03",
-            responsavel: "Roberto Mendes",
-        },
-    ],
-    qualidade: [
-        {
-            id: "4",
-            codigo: "QUAL-001",
-            tipo: "Controle de Qualidade",
-            posto: "Laboratório A",
-            dataInicio: "2025-05-25",
-            responsavel: "Ana Costa",
-            progresso: 65,
-        },
-        {
-            id: "5",
-            codigo: "QUAL-002",
-            tipo: "Teste de Materiais",
-            posto: "Laboratório B",
-            dataInicio: "2025-05-26",
-            responsavel: "Pedro Oliveira",
-            progresso: 80,
-        },
-        {
-            id: "13",
-            codigo: "QUAL-003",
-            tipo: "Análise Química",
-            posto: "Laboratório C",
-            dataInicio: "2025-05-24",
-            responsavel: "Fernanda Silva",
-            progresso: 95,
-        },
-        {
-            id: "14",
-            codigo: "QUAL-004",
-            tipo: "Teste de Resistência",
-            posto: "Laboratório de Testes",
-            dataInicio: "2025-05-27",
-            responsavel: "Lucas Ferreira",
-            progresso: 30,
-        },
-    ],
-    outras: [
-        {
-            id: "6",
-            codigo: "OUT-001",
-            tipo: "Calibração",
-            posto: "Sala de Instrumentos",
-            dataConclusao: "2025-05-20",
-            responsavel: "Lucas Santos",
-            status: "Aprovada",
-        },
-        {
-            id: "7",
-            codigo: "OUT-002",
-            tipo: "Manutenção",
-            posto: "Oficina Central",
-            dataConclusao: "2025-05-18",
-            responsavel: "Fernanda Lima",
-            status: "Aprovada",
-        },
-        {
-            id: "8",
-            codigo: "OUT-003",
-            tipo: "Preventiva",
-            posto: "Estação de Trabalho",
-            dataConclusao: "2025-05-15",
-            responsavel: "Roberto Silva",
-            status: "Pendente",
-        },
-        {
-            id: "15",
-            codigo: "OUT-004",
-            tipo: "Limpeza",
-            posto: "Área de Produção",
-            dataConclusao: "2025-05-22",
-            responsavel: "Mariana Costa",
-            status: "Aprovada",
-        },
-        {
-            id: "16",
-            codigo: "OUT-005",
-            tipo: "Verificação",
-            posto: "Sala de Controle",
-            dataConclusao: "2025-05-19",
-            responsavel: "Paulo Henrique",
-            status: "Pendente",
-        },
-    ],
-    naoConformidade: [
-        {
-            id: "9",
-            codigo: "NC-001",
-            tipo: "Não Conformidade de Produto",
-            posto: "Setor A",
-            dataAgendamento: "2025-06-10",
-            responsavel: "Juliana Costa",
-            status: "Crítica",
-        },
-        {
-            id: "10",
-            codigo: "NC-002",
-            tipo: "Não Conformidade de Processo",
-            posto: "Setor B",
-            dataAgendamento: "2025-06-15",
-            responsavel: "Ricardo Oliveira",
-            status: "Menor",
-        },
-        {
-            id: "17",
-            codigo: "NC-003",
-            tipo: "Não Conformidade de Sistema",
-            posto: "Setor C",
-            dataAgendamento: "2025-06-08",
-            responsavel: "Carla Pereira",
-            status: "Crítica",
-        },
-        {
-            id: "18",
-            codigo: "NC-004",
-            tipo: "Não Conformidade Ambiental",
-            posto: "Área Externa",
-            dataAgendamento: "2025-06-12",
-            responsavel: "Eduardo Santos",
-            status: "Menor",
-        },
-    ],
-};
+// Mapeamento das abas para os valores da API
+const TAB_API_MAP = {
+    processo: "processo",
+    qualidade: "qualidade",
+    outras: "outras",
+    naoConformidade: "nc",
+} as const;
 
 // Configurações do refresh automático
 const IDLE_TIME = 30000; // 30 segundos de inatividade
@@ -223,34 +49,80 @@ const USER_ACTIVITY_EVENTS = [
 
 export default function InspecoesPage() {
     const [activeTab, setActiveTab] = useState("processo");
-    const [inspectionData, setInspectionData] = useState(mockInspections);
+    const [inspectionData, setInspectionData] = useState<Record<string, InspectionItem[]>>({});
+    const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(new Date());
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastActivityRef = useRef(Date.now());    // Função para simular carregamento de dados (substitua pela sua API)
-    const fetchInspectionData = useCallback(async () => {
+    const lastActivityRef = useRef(Date.now());
+    const initialLoadRef = useRef(false);
+
+    // Função para obter postos do localStorage
+    const getPostosFromLocalStorage = useCallback((): string[] => {
+        try {
+            const postosData = localStorage.getItem("postos-vinculados");
+            if (!postosData) return [];
+
+            const parsedData = JSON.parse(postosData);
+            // Se for um array, retorna diretamente
+            if (Array.isArray(parsedData)) {
+                return parsedData;
+            }
+            // Se for um objeto com a propriedade selectedPostos
+            if (parsedData.selectedPostos && Array.isArray(parsedData.selectedPostos)) {
+                return parsedData.selectedPostos;
+            }
+            return [];
+        } catch (error) {
+            console.error("Erro ao obter postos do localStorage:", error);
+            return [];
+        }
+    }, []);    // Função para carregar dados de uma aba específica
+    const fetchTabData = useCallback(async (tabId: string) => {
+        const postos = getPostosFromLocalStorage();
+        if (postos.length === 0) {
+            console.warn("Nenhum posto encontrado no localStorage");
+            return [];
+        }
+
+        setLoadingTabs(prev => ({ ...prev, [tabId]: true }));
+
+        try {
+            // Mapear o ID da aba para o valor da API
+            const abaApi = TAB_API_MAP[tabId as keyof typeof TAB_API_MAP];
+            if (!abaApi) {
+                console.error(`Aba não mapeada: ${tabId}`);
+                return [];
+            }
+
+            // Faz uma única chamada com todos os postos separados por vírgula
+            const allData = await inspecaoService.getFichasInspecaoPorAba(postos, abaApi);
+
+            setInspectionData(prev => ({ ...prev, [tabId]: allData }));
+            return allData;
+        } catch (error) {
+            console.error(`Erro ao carregar dados da aba ${tabId}:`, error);
+            setInspectionData(prev => ({ ...prev, [tabId]: [] }));
+            return [];
+        } finally {
+            setLoadingTabs(prev => ({ ...prev, [tabId]: false }));
+        }
+    }, [getPostosFromLocalStorage]);
+
+    // Função para refresh da aba ativa
+    const refreshActiveTab = useCallback(async () => {
         setIsRefreshing(true);
         try {
-            // Simula delay da API
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Aqui você faria a chamada real para sua API
-            // const response = await api.getInspections();
-            // setInspectionData(response.data);
-
-            // Por enquanto, mantemos os dados mockados
-            setInspectionData(mockInspections);
+            await fetchTabData(activeTab);
             setLastRefresh(new Date());
         } catch (error) {
             console.error("Erro ao atualizar dados:", error);
         } finally {
             setIsRefreshing(false);
         }
-    }, []);
-
-    // Reset do timer de inatividade
+    }, [activeTab, fetchTabData]);    // Reset do timer de inatividade (sem refresh automático imediato)
     const resetIdleTimer = useCallback(() => {
         lastActivityRef.current = Date.now();
 
@@ -260,11 +132,13 @@ export default function InspecoesPage() {
 
         if (autoRefreshTimerRef.current) {
             clearTimeout(autoRefreshTimerRef.current);
-        }        // Define timer para detectar inatividade
+        }
+
+        // Define timer para detectar inatividade
         idleTimerRef.current = setTimeout(() => {
             // Usuário ficou inativo, inicia refresh automático
             const startAutoRefresh = () => {
-                fetchInspectionData();
+                refreshActiveTab();
                 autoRefreshTimerRef.current = setTimeout(
                     startAutoRefresh,
                     AUTO_REFRESH_INTERVAL
@@ -272,13 +146,32 @@ export default function InspecoesPage() {
             };
             startAutoRefresh();
         }, IDLE_TIME);
-    }, [fetchInspectionData]);
+    }, [refreshActiveTab]);
 
     // Função para refresh manual
     const handleManualRefresh = useCallback(() => {
-        fetchInspectionData();
+        refreshActiveTab();
         resetIdleTimer();
-    }, [fetchInspectionData, resetIdleTimer]);
+    }, [refreshActiveTab, resetIdleTimer]);    // Função para mudança de aba com carregamento lazy
+    const handleTabChange = useCallback(async (tabId: string) => {
+        setActiveTab(tabId);
+
+        // Se a aba não tem dados carregados, carrega agora
+        if (!inspectionData[tabId]) {
+            await fetchTabData(tabId);
+        }
+    }, [inspectionData, fetchTabData]);    // Carregar dados da aba inicial apenas uma vez no mount
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if (!initialLoadRef.current) {
+                initialLoadRef.current = true;
+                const initialTab = "processo"; // Define a aba inicial sempre como processo
+                await fetchTabData(initialTab);
+            }
+        };
+        loadInitialData();
+    }, [fetchTabData]); // Dependência apenas em fetchTabData que é estável
+
     useEffect(() => {
         const handleActivity = () => {
             resetIdleTimer();
@@ -305,45 +198,58 @@ export default function InspecoesPage() {
             }
         };
     }, [resetIdleTimer]);
-    const tabs: TabData[] = [{
-        id: "processo",
-        label: "Inspeções de Processo",
-        tabletLabel: "Inspeções Processo",
-        mobileLabel: "Processo",
-        icon: <Cog className="h-4 w-4" />,
-        count: inspectionData.processo.length,
-        description: "Inspeções relacionadas aos processos produtivos",
-    },
-    {
-        id: "qualidade",
-        label: "Inspeções de Qualidade",
-        tabletLabel: "Inspeções Qualidade",
-        mobileLabel: "Qualidade",
-        icon: <CheckCircle className="h-4 w-4" />,
-        count: inspectionData.qualidade.length,
-        description: "Inspeções de controle de qualidade",
-    },
-    {
-        id: "outras",
-        label: "Outras Inspeções",
-        tabletLabel: "Outras Inspeções",
-        mobileLabel: "Outras Inspeções",
-        icon: <Users className="h-4 w-4" />,
-        count: inspectionData.outras.length,
-        description: "Outras inspeções diversas",
-    },
-    {
-        id: "naoConformidade",
-        label: "Não Conformidade",
-        tabletLabel: "Não Conform.",
-        mobileLabel: "N. Conform.",
-        icon: <AlertTriangle className="h-4 w-4" />,
-        count: inspectionData.naoConformidade.length,
-        description: "Registros de não conformidades identificadas",
-    },
+
+    const tabs: TabData[] = [
+        {
+            id: "processo",
+            label: "Inspeções de Processo",
+            tabletLabel: "Inspeções Processo",
+            mobileLabel: "Processo",
+            icon: <Cog className="h-4 w-4" />,
+            count: inspectionData.processo?.length || 0,
+            description: "Inspeções relacionadas aos processos produtivos",
+        },
+        {
+            id: "qualidade",
+            label: "Inspeções de Qualidade",
+            tabletLabel: "Inspeções Qualidade",
+            mobileLabel: "Qualidade",
+            icon: <CheckCircle className="h-4 w-4" />,
+            count: inspectionData.qualidade?.length || 0,
+            description: "Inspeções de controle de qualidade",
+        },
+        {
+            id: "outras",
+            label: "Outras Inspeções",
+            tabletLabel: "Outras Inspeções",
+            mobileLabel: "Outras Inspeções",
+            icon: <Users className="h-4 w-4" />,
+            count: inspectionData.outras?.length || 0,
+            description: "Outras inspeções diversas",
+        },
+        {
+            id: "naoConformidade",
+            label: "Não Conformidade",
+            tabletLabel: "Não Conform.",
+            mobileLabel: "N. Conform.",
+            icon: <AlertTriangle className="h-4 w-4" />,
+            count: inspectionData.naoConformidade?.length || 0,
+            description: "Registros de não conformidades identificadas",
+        },
     ];    // Função para renderizar o conteúdo de cada aba
     const renderTabContent = () => {
-        const currentData = inspectionData[activeTab as keyof typeof inspectionData];
+        const currentData = inspectionData[activeTab];
+        const isLoading = loadingTabs[activeTab];        // Mostra loading enquanto carrega os dados
+        if (isLoading) {
+            return (
+                <LoadingSpinner
+                    size="large"
+                    text="Carregando inspeções..."
+                    color="primary"
+                    showText={true}
+                />
+            );
+        }
 
         if (!currentData || currentData.length === 0) {
             return (
@@ -453,7 +359,7 @@ export default function InspecoesPage() {
                     title="Inspeções"
                     subtitle="Gerencie todas as inspeções do sistema"
                     showButton={false}
-                />                
+                />
                 <div className="flex items-center gap-3">
                     <div className=" sm:block text-xs text-gray-500">
                         Última atualização:{" "}
@@ -489,42 +395,41 @@ export default function InspecoesPage() {
             <div className="mb-4 mt-6 sm:mb-6 sm:mt-8">
                 <div className="border-b border-gray-200">
                     <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide sm:space-x-6 lg:space-x-8">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`
+                        {tabs.map((tab) => (<button
+                            key={tab.id}
+                            onClick={() => handleTabChange(tab.id)}
+                            className={`
                                     flex min-w-0 flex-shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-xs font-medium transition-colors duration-200 sm:gap-2 sm:px-2 sm:py-4 sm:text-sm
                                     ${activeTab === tab.id
-                                        ? "border-[#1ABC9C] text-[#1ABC9C]"
-                                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                                    }
+                                    ? "border-[#1ABC9C] text-[#1ABC9C]"
+                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                }
                                 `}
-                            >                                <span className="flex-shrink-0">{tab.icon}</span>
-                                {/* Desktop: label completo */}
-                                <span className="hidden lg:inline">
-                                    {tab.label}
-                                </span>
-                                {/* Tablet: label simplificado */}
-                                <span className="hidden sm:inline lg:hidden">
-                                    {tab.tabletLabel || tab.label}
-                                </span>
-                                {/* Mobile: primeira palavra */}
-                                <span className="text-xs font-normal sm:hidden">
-                                    {tab.mobileLabel || tab.label.split(" ")[0]}
-                                </span>
-                                <span
-                                    className={`
+                        >                                <span className="flex-shrink-0">{tab.icon}</span>
+                            {/* Desktop: label completo */}
+                            <span className="hidden lg:inline">
+                                {tab.label}
+                            </span>
+                            {/* Tablet: label simplificado */}
+                            <span className="hidden sm:inline lg:hidden">
+                                {tab.tabletLabel || tab.label}
+                            </span>
+                            {/* Mobile: primeira palavra */}
+                            <span className="text-xs font-normal sm:hidden">
+                                {tab.mobileLabel || tab.label.split(" ")[0]}
+                            </span>
+                            <span
+                                className={`
                                         ml-1 flex-shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium sm:ml-2 sm:px-2
                                         ${activeTab === tab.id
-                                            ? "bg-[#1ABC9C] text-white"
-                                            : "bg-gray-100 text-gray-900"
-                                        }
+                                        ? "bg-[#1ABC9C] text-white"
+                                        : "bg-gray-100 text-gray-900"
+                                    }
                                     `}
-                                >
-                                    {tab.count}
-                                </span>
-                            </button>
+                            >
+                                {tab.count}
+                            </span>
+                        </button>
                         ))}
                     </nav>
                 </div>

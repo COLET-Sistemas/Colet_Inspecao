@@ -1,4 +1,6 @@
 
+import { fetchWithAuth } from "./authInterceptor";
+
 interface InspectionItem {
     id: string;
     codigo: string;
@@ -225,6 +227,35 @@ class InspecaoService {
             }
         } catch (error) {
             console.error('Erro ao excluir inspeção:', error);
+            throw error;
+        }
+    }    /**
+     * Busca fichas de inspeção por aba específica
+     * @param codigosPostos - Array de códigos de posto ou string com códigos separados por vírgula
+     * @param aba - Aba da inspeção (processo, qualidade, outras, nc)
+     */
+    async getFichasInspecaoPorAba(codigosPostos: string[] | string, aba: string): Promise<InspectionItem[]> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }            // Se for array, junta com vírgula; se já for string, usa diretamente
+            const postosParam = Array.isArray(codigosPostos)
+                ? codigosPostos.join(',')
+                : codigosPostos;
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao?codigo_posto=${postosParam}&aba=${aba}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error(`Erro ao buscar fichas de inspeção da aba ${aba}:`, error);
             throw error;
         }
     }
