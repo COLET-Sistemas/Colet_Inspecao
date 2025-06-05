@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Tipos para as abas
 interface TabData {
     id: string;
     label: string;
@@ -25,7 +24,6 @@ interface TabData {
     description: string;
 }
 
-// Mapeamento das abas para os valores da API
 const TAB_API_MAP = {
     processo: "processo",
     qualidade: "qualidade",
@@ -33,11 +31,9 @@ const TAB_API_MAP = {
     naoConformidade: "nc",
 } as const;
 
-// Configurações do refresh automático
-const IDLE_TIME = 30000; // 30 segundos de inatividade
-const AUTO_REFRESH_INTERVAL = 60000; // 60 segundos entre atualizações automáticas
+const IDLE_TIME = 180000;
+const AUTO_REFRESH_INTERVAL = 180000;
 
-// Lista de eventos para detectar atividade do usuário
 const USER_ACTIVITY_EVENTS = [
     "mousedown",
     "mousemove",
@@ -56,21 +52,17 @@ export default function InspecoesPage() {
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastActivityRef = useRef(Date.now());
-    const initialLoadRef = useRef(false);
+    const lastActivityRef = useRef(Date.now()); const initialLoadRef = useRef(false);
 
-    // Função para obter postos do localStorage
     const getPostosFromLocalStorage = useCallback((): string[] => {
         try {
             const postosData = localStorage.getItem("postos-vinculados");
             if (!postosData) return [];
 
             const parsedData = JSON.parse(postosData);
-            // Se for um array, retorna diretamente
             if (Array.isArray(parsedData)) {
                 return parsedData;
             }
-            // Se for um objeto com a propriedade selectedPostos
             if (parsedData.selectedPostos && Array.isArray(parsedData.selectedPostos)) {
                 return parsedData.selectedPostos;
             }
@@ -79,25 +71,22 @@ export default function InspecoesPage() {
             console.error("Erro ao obter postos do localStorage:", error);
             return [];
         }
-    }, []);    // Função para carregar dados de uma aba específica
+    }, []);
+
     const fetchTabData = useCallback(async (tabId: string) => {
         const postos = getPostosFromLocalStorage();
         if (postos.length === 0) {
             console.warn("Nenhum posto encontrado no localStorage");
             return [];
-        }
-
-        setLoadingTabs(prev => ({ ...prev, [tabId]: true }));
+        } setLoadingTabs(prev => ({ ...prev, [tabId]: true }));
 
         try {
-            // Mapear o ID da aba para o valor da API
             const abaApi = TAB_API_MAP[tabId as keyof typeof TAB_API_MAP];
             if (!abaApi) {
                 console.error(`Aba não mapeada: ${tabId}`);
                 return [];
             }
 
-            // Faz uma única chamada com todos os postos separados por vírgula
             const allData = await inspecaoService.getFichasInspecaoPorAba(postos, abaApi);
 
             setInspectionData(prev => ({ ...prev, [tabId]: allData }));
@@ -111,7 +100,6 @@ export default function InspecoesPage() {
         }
     }, [getPostosFromLocalStorage]);
 
-    // Função para refresh da aba ativa
     const refreshActiveTab = useCallback(async () => {
         setIsRefreshing(true);
         try {
@@ -122,7 +110,8 @@ export default function InspecoesPage() {
         } finally {
             setIsRefreshing(false);
         }
-    }, [activeTab, fetchTabData]);    // Reset do timer de inatividade (sem refresh automático imediato)
+    }, [activeTab, fetchTabData]);
+
     const resetIdleTimer = useCallback(() => {
         lastActivityRef.current = Date.now();
 
@@ -134,9 +123,7 @@ export default function InspecoesPage() {
             clearTimeout(autoRefreshTimerRef.current);
         }
 
-        // Define timer para detectar inatividade
         idleTimerRef.current = setTimeout(() => {
-            // Usuário ficou inativo, inicia refresh automático
             const startAutoRefresh = () => {
                 refreshActiveTab();
                 autoRefreshTimerRef.current = setTimeout(
@@ -148,40 +135,36 @@ export default function InspecoesPage() {
         }, IDLE_TIME);
     }, [refreshActiveTab]);
 
-    // Função para refresh manual
     const handleManualRefresh = useCallback(() => {
-        refreshActiveTab();
-        resetIdleTimer();
-    }, [refreshActiveTab, resetIdleTimer]);    // Função para mudança de aba com carregamento lazy
+        refreshActiveTab(); resetIdleTimer();
+    }, [refreshActiveTab, resetIdleTimer]);
+
     const handleTabChange = useCallback(async (tabId: string) => {
         setActiveTab(tabId);
 
-        // Se a aba não tem dados carregados, carrega agora
         if (!inspectionData[tabId]) {
             await fetchTabData(tabId);
         }
-    }, [inspectionData, fetchTabData]);    // Carregar dados da aba inicial apenas uma vez no mount
+    }, [inspectionData, fetchTabData]);
+
     useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
-                const initialTab = "processo"; // Define a aba inicial sempre como processo
+                const initialTab = "processo";
                 await fetchTabData(initialTab);
             }
         };
         loadInitialData();
-    }, [fetchTabData]); // Dependência apenas em fetchTabData que é estável
+    }, [fetchTabData]);
 
     useEffect(() => {
         const handleActivity = () => {
             resetIdleTimer();
-        };
-
-        USER_ACTIVITY_EVENTS.forEach((event) => {
+        }; USER_ACTIVITY_EVENTS.forEach((event) => {
             document.addEventListener(event, handleActivity, true);
         });
 
-        // Inicia o timer de inatividade
         resetIdleTimer();
 
         return () => {
@@ -236,10 +219,12 @@ export default function InspecoesPage() {
             count: inspectionData.naoConformidade?.length || 0,
             description: "Registros de não conformidades identificadas",
         },
-    ];    // Função para renderizar o conteúdo de cada aba
+    ];
+
     const renderTabContent = () => {
         const currentData = inspectionData[activeTab];
-        const isLoading = loadingTabs[activeTab];        // Mostra loading enquanto carrega os dados
+        const isLoading = loadingTabs[activeTab];
+
         if (isLoading) {
             return (
                 <LoadingSpinner
@@ -263,7 +248,7 @@ export default function InspecoesPage() {
                         Nenhuma inspeção encontrada
                     </h3>
                     <p className="px-4 text-sm text-gray-500 sm:text-base">
-                        Não há inspeções{" "}
+                        Não há {" "}
                         {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
                         momento.
                     </p>
@@ -285,10 +270,8 @@ export default function InspecoesPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
-                    >
+                        className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"                    >
                         <div className="flex items-center justify-between">
-                            {/* Informações principais */}
                             <div className="flex min-w-0 flex-1 items-center gap-4">
                                 <span className="text-sm font-medium text-gray-900">
                                     {item.codigo}
@@ -301,7 +284,6 @@ export default function InspecoesPage() {
                                 </span>
                             </div>
 
-                            {/* Informação específica por aba (minimalista) */}
                             <div className="flex flex-shrink-0 items-center gap-3">
                                 {activeTab === "processo" && (
                                     <span className="rounded bg-orange-50 px-2 py-1 text-xs text-orange-600">
@@ -387,54 +369,49 @@ export default function InspecoesPage() {
                         <span className="hidden sm:inline">
                             {isRefreshing ? "Atualizando..." : "Atualizar"}
                         </span>
-                    </button>
-                </div>
+                    </button>                </div>
             </div>
 
-            {/* Abas de Navegação */}
             <div className="mb-4 mt-6 sm:mb-6 sm:mt-8">
                 <div className="border-b border-gray-200">
                     <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide sm:space-x-6 lg:space-x-8">
-                        {tabs.map((tab) => (<button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.id)}
-                            className={`
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => handleTabChange(tab.id)}
+                                className={`
                                     flex min-w-0 flex-shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-xs font-medium transition-colors duration-200 sm:gap-2 sm:px-2 sm:py-4 sm:text-sm
                                     ${activeTab === tab.id
-                                    ? "border-[#1ABC9C] text-[#1ABC9C]"
-                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                                }
+                                        ? "border-[#1ABC9C] text-[#1ABC9C]"
+                                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                    }
                                 `}
-                        >                                <span className="flex-shrink-0">{tab.icon}</span>
-                            {/* Desktop: label completo */}
-                            <span className="hidden lg:inline">
-                                {tab.label}
-                            </span>
-                            {/* Tablet: label simplificado */}
-                            <span className="hidden sm:inline lg:hidden">
-                                {tab.tabletLabel || tab.label}
-                            </span>
-                            {/* Mobile: primeira palavra */}
-                            <span className="text-xs font-normal sm:hidden">
-                                {tab.mobileLabel || tab.label.split(" ")[0]}
-                            </span>
-                            <span
-                                className={`
+                            >
+                                <span className="flex-shrink-0">{tab.icon}</span>
+                                <span className="hidden lg:inline">
+                                    {tab.label}
+                                </span>
+                                <span className="hidden sm:inline lg:hidden">
+                                    {tab.tabletLabel || tab.label}
+                                </span>
+                                <span className="text-xs font-normal sm:hidden">
+                                    {tab.mobileLabel || tab.label.split(" ")[0]}
+                                </span>
+                                <span
+                                    className={`
                                         ml-1 flex-shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium sm:ml-2 sm:px-2
                                         ${activeTab === tab.id
-                                        ? "bg-[#1ABC9C] text-white"
-                                        : "bg-gray-100 text-gray-900"
-                                    }
-                                    `}
-                            >
-                                {tab.count}
-                            </span>
-                        </button>
+                                            ? "bg-[#1ABC9C] text-white"
+                                            : "bg-gray-100 text-gray-900"
+                                        }
+                                    `}                            >
+                                    {tab.count}
+                                </span>
+                            </button>
                         ))}
                     </nav>
                 </div>
 
-                {/* Descrição da aba ativa */}
                 <motion.p
                     key={activeTab}
                     initial={{ opacity: 0 }}
@@ -445,7 +422,6 @@ export default function InspecoesPage() {
                 </motion.p>
             </div>
 
-            {/* Conteúdo da Aba */}
             <div className="rounded-lg bg-gray-50 p-3 sm:p-4 md:p-6">
                 {renderTabContent()}
             </div>
