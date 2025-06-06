@@ -58,18 +58,8 @@ export default function InspecoesPage() {
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastActivityRef = useRef(Date.now()); const initialLoadRef = useRef(false);
-
-    // Helper functions to compute display values
-    const getTipoFicha = useCallback((aba: string) => {
-        switch (aba) {
-            case 'processo': return 'Inspeção de Processo';
-            case 'qualidade': return 'Inspeção de Qualidade';
-            case 'outras': return 'Outras Inspeções';
-            case 'naoConformidade': return 'Não Conformidade';
-            default: return 'Inspeção';
-        }
-    }, []); const getSituacao = useCallback((situacao: string) => {
+    const lastActivityRef = useRef(Date.now()); const initialLoadRef = useRef(false);    // Helper functions to compute display values
+    const getSituacao = useCallback((situacao: string) => {
         switch (situacao) {
             case '1': return 'Pendente desde';
             case '2': return 'Peça enviada ao CQ em';
@@ -365,23 +355,24 @@ export default function InspecoesPage() {
         }
 
         if (!currentData || currentData.length === 0) {
-            return (<motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="py-12 text-center sm:py-16"
-            >
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
-                    <FileText className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
-                </div>
-                <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
-                    Nenhuma inspeção encontrada
-                </h3>
-                <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
-                    Não há {" "}
-                    {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
-                    momento.
-                </p>
-            </motion.div>
+            return (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="py-12 text-center sm:py-16"
+                >
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
+                        <FileText className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
+                    </div>
+                    <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
+                        Nenhuma inspeção encontrada
+                    </h3>
+                    <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
+                        Não há {" "}
+                        {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
+                        momento.
+                    </p>
+                </motion.div>
             );
         }
 
@@ -407,13 +398,12 @@ export default function InspecoesPage() {
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
                                     {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                </div>
-                                <div>
+                                </div>                                <div>
                                     <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                        {getTipoFicha(activeTab)}
+                                        {item.tipo_inspecao} (#{item.numero_ordem})
                                     </h3>
                                     <p className="text-sm text-gray-500">
-                                        Posto: {item.codigo_posto}
+                                        Produto: {item.referencia} - {item.produto}
                                     </p>
                                 </div>
                             </div>
@@ -449,15 +439,14 @@ export default function InspecoesPage() {
                             </div>
                         </div>
                         {/* Informações em Grid */}
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
                             <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ordem</p>
-                                <p className="text-sm font-medium text-gray-900">#{item.numero_ordem}</p>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
+                                <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
                             </div>
-
                             <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Referência</p>
-                                <p className="text-sm font-medium text-gray-900">{item.referencia}</p>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
+                                <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
                             </div>
 
                             <div className="space-y-1">
@@ -465,14 +454,14 @@ export default function InspecoesPage() {
                                 <p className="text-sm font-medium text-gray-900">{item.roteiro}</p>
                             </div>
 
-                            <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Lote</p>
-                                <p className="text-sm font-medium text-gray-900">{item.numero_lote}</p>
-                            </div>
 
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
                                 <p className="text-sm font-medium text-gray-900">{item.origem}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
+                                <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
                             </div>
 
                             {item.data_hora_prevista && (

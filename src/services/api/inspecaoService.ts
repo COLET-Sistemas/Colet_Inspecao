@@ -36,6 +36,9 @@ interface ApiInspectionItem {
     codigo_pessoa_conclusao?: string | null;
     nome_pessoa_conclusao?: string | null;
     id_ficha_origem?: number | null;
+    tipo_inspecao: string;
+    tipo_acao?: string | null;
+    produto?: string | null;
 }
 
 interface InspectionItem {
@@ -65,6 +68,9 @@ interface InspectionItem {
     codigo_pessoa_conclusao?: string | null;
     nome_pessoa_conclusao?: string | null;
     id_ficha_origem?: number | null;
+    tipo_inspecao: string;
+    tipo_acao?: string | null;
+    produto?: string | null;
 }
 
 interface InspectionData {
@@ -206,8 +212,7 @@ class InspecaoService {
         }
     }    /**
      * Mapeia os dados da API para o formato InspectionItem
-     */
-    private mapApiDataToInspectionItem(apiItem: ApiInspectionItem): InspectionItem {
+     */    private mapApiDataToInspectionItem(apiItem: ApiInspectionItem): InspectionItem {
         return {
             // Dados originais da API
             id: apiItem.id_ficha_inspecao?.toString() || '',
@@ -236,6 +241,9 @@ class InspecaoService {
             codigo_pessoa_conclusao: apiItem.codigo_pessoa_conclusao,
             nome_pessoa_conclusao: apiItem.nome_pessoa_conclusao,
             id_ficha_origem: apiItem.id_ficha_origem,
+            tipo_inspecao: apiItem.tipo_inspecao || '',
+            tipo_acao: apiItem.tipo_acao || null,
+            produto: apiItem.produto || null,
         };
     }    /**
      * Busca especificações de uma ficha de inspeção

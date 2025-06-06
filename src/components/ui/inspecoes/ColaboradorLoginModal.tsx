@@ -1,9 +1,25 @@
 import { LoadingSpinner } from '@/components/ui/Loading';
 import inspecaoService, { InspectionItem } from '@/services/api/inspecaoService';
-import { criptografarSenha } from '@/utils/criptografia';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, EyeOff, KeyRound, User, X } from 'lucide-react';
 import React, { useState } from 'react';
+
+// Função para codificar senha usando cifra XOR (mesma usada em useAuth)
+const encodePassword = (password: string) => {
+    const key = Math.floor(Math.random() * 255);
+    const hexResult = [];
+    let result = "";
+    hexResult.push((key >> 4).toString(16).toUpperCase());
+    hexResult.push((key & 0xf).toString(16).toUpperCase());
+    result += hexResult.join("");
+    for (let i = 0; i < password.length; i++) {
+        const converted = password.charCodeAt(i) ^ key;
+        hexResult[0] = (converted >> 4).toString(16).toUpperCase();
+        hexResult[1] = (converted & 0xf).toString(16).toUpperCase();
+        result += hexResult.join("");
+    }
+    return result;
+};
 
 interface ColaboradorLoginModalProps {
     isOpen: boolean;
@@ -41,10 +57,8 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         }
 
         setError('');
-        setIsLoading(true);
-
-        try {
-            const senhaCriptografada = criptografarSenha(senha);
+        setIsLoading(true); try {
+            const senhaCriptografada = encodePassword(senha);
             const response = await inspecaoService.authColaborador(codigo, senhaCriptografada);            // Salvar dados do colaborador no localStorage em ambos os formatos (colaborador e userData)
             const colaboradorData = {
                 codigo_pessoa: response.codigo_pessoa,
