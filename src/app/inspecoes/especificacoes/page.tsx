@@ -464,7 +464,8 @@ export default function EspecificacoesPage() {
                 >{specifications
                     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
                     .map((spec, index) => {
-                        const statusInfo = getConformeStatus(spec.conforme, spec.valor_encontrado); return (<motion.div
+                        const statusInfo = getConformeStatus(spec.conforme, spec.valor_encontrado);
+                        return (<motion.div
                             key={spec.id_especificacao}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}

@@ -1,5 +1,14 @@
-
 import { fetchWithAuth } from "./authInterceptor";
+
+// Add interface for collaborator response
+interface ColaboradorResponse {
+    codigo_pessoa: string;
+    nome: string;
+    setor: string;
+    funcao: string;
+    registrar_ficha: boolean;
+    encaminhar_ficha: boolean;
+}
 
 interface ApiInspectionItem {
     id_ficha_inspecao: number;
@@ -95,8 +104,6 @@ interface InspectionSpecification {
     conforme?: boolean | null;
     observacao?: string | null;
 }
-
-
 
 class InspecaoService {
     private baseUrl: string;
@@ -314,6 +321,41 @@ class InspecaoService {
             throw error;
         }
     }
+
+    /**
+     * Autentica um colaborador para inspeção
+     * @param codigoPessoa - Código do colaborador
+     * @param senhaCriptografada - Senha criptografada
+     */
+    async authColaborador(codigoPessoa: string, senhaCriptografada: string): Promise<ColaboradorResponse> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/colaboradores`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    codigo_pessoa: codigoPessoa,
+                    senha_criptografada: senhaCriptografada
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const data: ColaboradorResponse = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Erro ao autenticar colaborador:', error);
+            throw error;
+        }
+    }
 }
 
 // Instância singleton do serviço
@@ -321,7 +363,7 @@ const inspecaoService = new InspecaoService();
 
 export default inspecaoService;
 export type {
-    InspectionData,
+    ColaboradorResponse, InspectionData,
     InspectionFilters,
     InspectionItem,
     InspectionSpecification

@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import { ColaboradorLoginModal } from "@/components/ui/inspecoes/ColaboradorLoginModal";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
@@ -51,6 +52,9 @@ export default function InspecoesPage() {
     const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
+    const [hasColaboradorData, setHasColaboradorData] = useState(false);
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,6 +81,33 @@ export default function InspecoesPage() {
             case '8': return 'Finalizada em';
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
+        }
+    }, []); const checkColaboradorData = useCallback((): boolean => {
+        try {
+            // Check for codigo_pessoa in colaborador or userData
+            const colaboradorData = localStorage.getItem('colaborador');
+            const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+
+            // First check colaborador data
+            if (colaboradorData) {
+                const parsed = JSON.parse(colaboradorData);
+                if (!!parsed && typeof parsed.codigo_pessoa === 'string' && parsed.codigo_pessoa.length > 0) {
+                    return true;
+                }
+            }
+
+            // Then check userData
+            if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                if (!!userData && typeof userData.codigo_pessoa === 'string' && userData.codigo_pessoa.length > 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Erro ao verificar dados do colaborador:', error);
+            return false;
         }
     }, []);
 
@@ -193,22 +224,67 @@ export default function InspecoesPage() {
         if (!inspectionData[tabId]) {
             await fetchTabData(tabId);
         }
-    }, [inspectionData, fetchTabData]);
+    }, [inspectionData, fetchTabData]); const handleModalSuccess = useCallback((data: {
+        codigo_pessoa: string;
+        nome: string;
+        setor: string;
+        funcao: string;
+        registrar_ficha: boolean;
+        encaminhar_ficha: boolean;
+        inspection: InspectionItem;
+    }) => {
+        setIsModalOpen(false);
+        setHasColaboradorData(true);
 
-    const handleInspectionClick = useCallback((item: InspectionItem) => {
-        router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
-    }, [router]);
+        // Construct URL with all necessary parameters
+        const queryParams = new URLSearchParams({
+            id: String(data.inspection.id_ficha_inspecao),
+            nome: data.nome,
+            setor: data.setor,
+            funcao: data.funcao,
+            registrar_ficha: String(data.registrar_ficha),
+            encaminhar_ficha: String(data.encaminhar_ficha)
+        });
 
-    useEffect(() => {
+        // Redirect to inspection details page with all required data
+        router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
+    }, [router]); const handleInspectionClick = useCallback((item: InspectionItem) => {
+        // Verificar se o usuário tem código_pessoa no localStorage
+        const hasData = checkColaboradorData();
+        console.log('Verificação de dados do colaborador:', {
+            hasData,
+            colaborador: localStorage.getItem('colaborador'),
+            userData: localStorage.getItem('userData')
+        });
+
+        if (hasData) {
+            // Se tiver, redireciona direto para a página de detalhes
+            router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
+        } else {
+            // Se não tiver, exibe o modal de autenticação
+            setSelectedInspection(item);
+            setIsModalOpen(true);
+        }
+    }, [router, checkColaboradorData]); useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
                 const initialTab = "processo";
                 await fetchTabData(initialTab);
+
+                // Verificar se há dados do colaborador no localStorage
+                const hasData = checkColaboradorData();
+                console.log('Verificação inicial de dados do colaborador:', {
+                    hasData,
+                    colaborador: localStorage.getItem('colaborador'),
+                    userData: localStorage.getItem('userData')
+                });
+
+                setHasColaboradorData(hasData);
             }
         };
         loadInitialData();
-    }, [fetchTabData]);
+    }, [fetchTabData, checkColaboradorData]);
 
     useEffect(() => {
         const handleActivity = () => {
@@ -331,11 +407,11 @@ export default function InspecoesPage() {
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
                                     {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                </div>                                
-                                <div>                            
+                                </div>
+                                <div>
                                     <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                    {getTipoFicha(activeTab)}
-                                </h3>
+                                        {getTipoFicha(activeTab)}
+                                    </h3>
                                     <p className="text-sm text-gray-500">
                                         Posto: {item.codigo_posto}
                                     </p>
@@ -371,7 +447,7 @@ export default function InspecoesPage() {
                                 </span>
                             </span>
                             </div>
-                        </div>                        
+                        </div>
                         {/* Informações em Grid */}
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                             <div className="space-y-1">
@@ -404,9 +480,9 @@ export default function InspecoesPage() {
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
                                     <p className="text-sm font-medium text-gray-900">{formatDateTime(item.data_hora_prevista)}</p>
                                 </div>
-                            )}                
-                            </div>                
-                            {/* Gradient overlay on hover */}
+                            )}
+                        </div>
+                        {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </motion.button>
                 ))}
@@ -416,6 +492,11 @@ export default function InspecoesPage() {
 
     return (
         <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
+            {/* Debug info (hidden) */}
+            <div className="hidden">
+                Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
+            </div>
+
             <div className="flex items-center justify-between">
                 <PageHeader
                     title="Inspeções"
@@ -429,7 +510,7 @@ export default function InspecoesPage() {
                             hour: "2-digit",
                             minute: "2-digit",
                         })}
-                    </div>                    
+                    </div>
                     <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
@@ -450,7 +531,18 @@ export default function InspecoesPage() {
                         </span>
                     </button>
                 </div>
-            </div>            
+            </div>
+
+            {/* Colaborador Login Modal */}
+            {selectedInspection && (
+                <ColaboradorLoginModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={handleModalSuccess}
+                    inspection={selectedInspection}
+                />
+            )}
+
             <div className="mb-6 mt-8 sm:mb-8 sm:mt-10">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide sm:space-x-8 lg:space-x-10">
@@ -517,9 +609,9 @@ export default function InspecoesPage() {
                     <p className="text-sm text-gray-600 sm:text-base">
                         {tabs.find((tab) => tab.id === activeTab)?.description}
                     </p>
-                </motion.div>            
-                </div>
-                <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
+                </motion.div>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
                 {renderTabContent()}
             </div>
         </div>
