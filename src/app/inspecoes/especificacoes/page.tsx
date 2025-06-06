@@ -9,8 +9,10 @@ import {
     ArrowLeft,
     CheckCircle,
     Eye,
+    MapPin,
     RefreshCw,
     Ruler,
+    Target,
     XCircle,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -217,70 +219,68 @@ export default function EspecificacoesPage() {
                 </div>
             </div>
         );
-    } return (
-        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-                <div className="flex items-center">
-                    <button
-                        onClick={handleBack}
-                        className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                    >
-                        <ArrowLeft className="h-5 w-5 text-gray-500" />
-                    </button>
-                    <PageHeader
-                        title="Especificações da Inspeção"
-                        subtitle={`Ficha ID: ${id} - ${specifications.length} especificação${specifications.length !== 1 ? 'ões' : ''}`}
-                        showButton={false}
-                    />
-                </div>
-                {/* Totalizadores Minimalistas */}
-                {specifications.length > 0 && (
-                    <div className="minimal-counters">
-                        <div className="counter-item">
-                            <div className="counter-dot bg-green-500"></div>
-                            <span className="counter-label">Conformes:</span>
-                            <span className="counter-value text-green-700">
-                                {specifications.filter(s => s.conforme === true).length}
-                            </span>
-                        </div>
-                        <div className="counter-item">
-                            <div className="counter-dot bg-red-500"></div>
-                            <span className="counter-label">Não conformes:</span>
-                            <span className="counter-value text-red-700">
-                                {specifications.filter(s => s.conforme === false).length}
-                            </span>
-                        </div>
-                        <div className="counter-item">
-                            <div className="counter-dot bg-amber-500"></div>
-                            <span className="counter-label">Pendentes:</span>
-                            <span className="counter-value text-amber-700">
-                                {specifications.filter(s => s.valor_encontrado === null).length}
-                            </span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {specifications.length === 0 ? (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="py-12 text-center sm:py-16"
+    } return (<div className="w-full space-y-4 sm:space-y-5 p-2 sm:p-4 md:p-6">
+        <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
+            <div className="flex items-center">
+                <button
+                    onClick={handleBack}
+                    className="mr-2 sm:mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
                 >
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
-                        <Ruler className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
+                    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                </button>
+                <PageHeader
+                    title="Especificações da Inspeção"
+                    subtitle={`Ficha ID: ${id} - ${specifications.length} especificação${specifications.length !== 1 ? 'ões' : ''}`}
+                    showButton={false}
+                />
+            </div>
+            {/* Totalizadores Minimalistas */}
+            {specifications.length > 0 && (
+                <div className="minimal-counters">
+                    <div className="counter-item">
+                        <div className="counter-dot bg-green-500"></div>
+                        <span className="counter-label">Conformes:</span>
+                        <span className="counter-value text-green-700">
+                            {specifications.filter(s => s.conforme === true).length}
+                        </span>
                     </div>
-                    <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
-                        Nenhuma especificação encontrada
-                    </h3>
-                    <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
-                        Não há especificações cadastradas para esta ficha de inspeção.
-                    </p>                </motion.div>) : (
-                <motion.div
+                    <div className="counter-item">
+                        <div className="counter-dot bg-red-500"></div>
+                        <span className="counter-label">Não conformes:</span>
+                        <span className="counter-value text-red-700">
+                            {specifications.filter(s => s.conforme === false).length}
+                        </span>
+                    </div>
+                    <div className="counter-item">
+                        <div className="counter-dot bg-gray-500"></div>
+                        <span className="counter-label">Pendentes:</span>
+                        <span className="counter-value text-gray-700">
+                            {specifications.filter(s => s.valor_encontrado === null).length}
+                        </span>
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {specifications.length === 0 ? (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="py-12 text-center sm:py-16"
+            >
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
+                    <Ruler className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
+                </div>
+                <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
+                    Nenhuma especificação encontrada
+                </h3>
+                <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
+                    Não há especificações cadastradas para esta ficha de inspeção.
+                </p>                </motion.div>) : (<motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="space-y-4"
+                    className="space-y-3"
                 >{specifications
                     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
                     .map((spec, index) => {
@@ -289,127 +289,131 @@ export default function EspecificacoesPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className="spec-card group relative bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-300"
+                            className="spec-card spec-card-compact group relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300"
                         >
                             {/* Status Bar */}
                             <div className={`status-bar h-1 w-full ${statusInfo.text === 'Conforme' ? 'bg-green-500' :
                                 statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
                                     statusInfo.text === 'Não medido' ? 'bg-gray-400' : 'bg-amber-500'
-                                }`} />
-
-                            {/* Layout Principal: 80% esquerda (valores) + 20% direita (campos edição) */}
-                            <div className="flex h-full min-h-[200px]">
-                                {/* Área de Valores - 80% */}
-                                <div className="flex-grow w-4/5 p-6 border-r border-gray-100">
-                                    {/* Header Section */}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-start gap-4 flex-1">
+                                }`} />                        {/* Layout Principal: 80% esquerda (valores) + 20% direita (campos edição) */}
+                            <div className="flex flex-col lg:flex-row h-full min-h-[140px]">
+                                {/* Área de Valores - 80% desktop, 100% mobile */}
+                                <div className="flex-grow w-full lg:w-4/5 p-3 sm:p-4 border-b lg:border-b-0 lg:border-r border-gray-100">                                {/* Header Section */}
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-start gap-3 flex-1">
                                             {/* Left Side Icons Container */}
                                             <div className="flex-shrink-0">
-                                                <div className="flex items-center gap-3">
-                                                    {/* Order Number */}
-                                                    <div className="w-12 h-12 bg-gradient-to-br from-[#1ABC9C] to-[#16A085] rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform duration-200">
-                                                        <span className="text-white font-bold text-sm">{spec.ordem}</span>
+                                                <div className="flex items-center gap-2">                                                {/* Order Number */}
+                                                    <div className="order-badge w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#1ABC9C] to-[#16A085] rounded-lg flex items-center justify-center shadow-md hover:scale-105 transition-transform duration-200">
+                                                        <span className="text-white font-bold text-xs">{spec.ordem}</span>
                                                     </div>
                                                     {/* SVG Cota Icon with Border */}
-                                                    <div className="w-12 h-12 svg-icon-container bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5 transition-all duration-200 group/svg shadow-sm">
-                                                        {spec.svg_cota ? (
-                                                            <div
-                                                                className="w-9 h-9 flex items-center justify-center transition-transform duration-200 group-hover/svg:scale-110"
-                                                                dangerouslySetInnerHTML={{
-                                                                    __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full svg-icon" style="fill: #1ABC9C;">${spec.svg_cota}</svg>`
-                                                                }}
-                                                            />
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 svg-icon-container bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5 transition-all duration-200 group/svg shadow-sm">
+                                                        {spec.svg_cota ? (<div
+                                                            className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center transition-transform duration-200 group-hover/svg:scale-110"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full svg-icon" style="fill: #1ABC9C;">${spec.svg_cota}</svg>`
+                                                            }}
+                                                        />
                                                         ) : (
-                                                            <div className="w-9 h-9 flex items-center justify-center">
-                                                                <div className="w-5 h-5 svg-placeholder rounded-full border-2 border-dashed border-gray-300"></div>
+                                                            <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
+                                                                <div className="w-3 h-3 sm:w-4 sm:h-4 svg-placeholder rounded-full border-2 border-dashed border-gray-300"></div>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Title Section */}
-                                            <div className="min-w-0 flex-1">
-                                                <h3 className="text-base font-bold text-gray-900 mb-1 leading-tight">
+                                            {/* Title Section */}                                        <div className="min-w-0 flex-1">
+                                                <h3 className="spec-title-compact text-sm sm:text-base font-bold text-gray-900 mb-1 leading-tight line-clamp-1">
                                                     {spec.descricao_cota}
                                                 </h3>
-                                                <p className="text-gray-600 text-sm mb-2">
+                                                <p className="spec-subtitle-compact text-gray-600 text-xs sm:text-sm mb-2 line-clamp-1">
                                                     {spec.complemento_cota}
                                                 </p>
                                             </div>
 
-                                            {/* Right Side Icon Container */}
-                                            <div className="flex-shrink-0">
-                                                <div className="w-12 h-12 svg-icon-container bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5 transition-all duration-200 group/svg shadow-sm">
-                                                    {spec.svg_caracteristica ? (
-                                                        <div
-                                                            className="w-9 h-9 flex items-center justify-center transition-transform duration-200 group-hover/svg:scale-110"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full svg-icon" style="fill: #1ABC9C;">${spec.svg_caracteristica}</svg>`
-                                                            }}
-                                                        />
+                                            {/* Right Side Icon Container - hidden on small screens */}
+                                            <div className="hidden sm:flex flex-shrink-0">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 svg-icon-container bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5 transition-all duration-200 group/svg shadow-sm">
+                                                    {spec.svg_caracteristica ? (<div
+                                                        className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center transition-transform duration-200 group-hover/svg:scale-110"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full svg-icon" style="fill: #1ABC9C;">${spec.svg_caracteristica}</svg>`
+                                                        }}
+                                                    />
                                                     ) : (
-                                                        <div className="w-9 h-9 flex items-center justify-center">
-                                                            <div className="w-5 h-5 svg-placeholder rounded-full border-2 border-dashed border-gray-300"></div>
+                                                        <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
+                                                            <div className="w-3 h-3 sm:w-4 sm:h-4 svg-placeholder rounded-full border-2 border-dashed border-gray-300"></div>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        {/* Status Badge */}
-                                        <div className="flex-shrink-0 ml-4">
-                                            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold border-2 transition-all duration-200 hover:scale-105 ${statusInfo.className}`}>
+                                        </div>                                    {/* Status Badge */}
+                                        <div className="flex-shrink-0 sm:ml-3">
+                                            <span className={`status-badge-modern inline-flex items-center gap-1 rounded-lg px-2 sm:px-3 py-1 text-xs font-semibold border transition-all duration-200 hover:scale-105 ${statusInfo.className}`}>
                                                 <span className="w-3 h-3 flex items-center justify-center">
                                                     {statusInfo.icon}
                                                 </span>
-                                                {statusInfo.text}
+                                                <span className="hidden xs:inline">{statusInfo.text}</span>
                                             </span>
                                         </div>
-                                    </div>
+                                    </div>                                {/* Info Cards Compactas - Design mais profissional */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">                                        {/* Location Card - Redesenhado */}
+                                        <div className="info-card-compact group relative bg-white border border-gray-200 rounded-lg p-2.5 hover:shadow-md hover:border-blue-300 transition-all duration-200 overflow-hidden">
+                                            {/* Subtle gradient background */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
 
-                                    {/* Info Cards Compactas */}
-                                    <div className="grid grid-cols-3 gap-3 mb-4">
-                                        {/* Location Card */}
-                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200 hover:shadow-md transition-all duration-200">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-white border border-purple-200 rounded-lg flex items-center justify-center">
-                                                    <Eye className="h-4 w-4 text-purple-600" />
+                                            <div className="relative flex items-center gap-2.5">
+                                                <div className="icon-wrapper flex-shrink-0 w-7 h-7 bg-blue-100 border border-blue-200 rounded-md flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                                                    <MapPin className="h-3.5 w-3.5 text-blue-600" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs text-purple-600 font-medium uppercase tracking-wide">Local</p>
-                                                    <p className="text-xs font-semibold text-purple-800 truncate">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Local</span>
+                                                        <div className="divider-dot w-1 h-1 bg-blue-300 rounded-full"></div>
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
                                                         {getLocalInspecaoLabel(spec.local_inspecao)}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Instrument Card */}
-                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-white border border-blue-200 rounded-lg flex items-center justify-center">
-                                                    <span className="text-blue-600 flex items-center justify-center">
+                                        {/* Instrument Card - Redesenhado */}
+                                        <div className="info-card-compact group relative bg-white border border-gray-200 rounded-lg p-2.5 hover:shadow-md hover:border-blue-300 transition-all duration-200 overflow-hidden">
+                                            {/* Subtle gradient background */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+
+                                            <div className="relative flex items-center gap-2.5">
+                                                <div className="icon-wrapper flex-shrink-0 w-7 h-7 bg-blue-100 border border-blue-200 rounded-md flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                                                    <span className="text-blue-600 flex items-center justify-center text-xs font-bold">
                                                         {getInstrumentIcon(spec.tipo_instrumento)}
                                                     </span>
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Instrumento</p>
-                                                    <p className="text-xs font-semibold text-blue-800 truncate">{spec.tipo_instrumento}</p>
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Instrumento</span>
+                                                        <div className="divider-dot w-1 h-1 bg-blue-300 rounded-full"></div>
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-gray-800 truncate leading-tight">{spec.tipo_instrumento}</p>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div>                                        {/* Tolerance Card - Redesenhado */}
+                                        <div className="info-card-compact group relative bg-white border border-gray-200 rounded-lg p-2.5 hover:shadow-md hover:border-blue-300 transition-all duration-200 overflow-hidden">
+                                            {/* Subtle gradient background */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
 
-                                        {/* Tolerance Card */}
-                                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200 hover:shadow-md transition-all duration-200">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-white border border-orange-200 rounded-lg flex items-center justify-center">
-                                                    <Ruler className="h-4 w-4 text-orange-600" />
+                                            <div className="relative flex items-center gap-2.5">
+                                                <div className="icon-wrapper flex-shrink-0 w-7 h-7 bg-blue-100 border border-blue-200 rounded-md flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                                                    <Target className="h-3.5 w-3.5 text-blue-600" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs text-orange-600 font-medium uppercase tracking-wide">Tolerância</p>
-                                                    <p className="text-xs font-semibold text-orange-800 truncate">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Tolerância</span>
+                                                        <div className="divider-dot w-1 h-1 bg-blue-300 rounded-full"></div>
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
                                                         {spec.valor_minimo !== null && spec.valor_maximo !== null
                                                             ? `${spec.valor_minimo} - ${spec.valor_maximo} ${spec.unidade_medida}`
                                                             : spec.valor_maximo !== null
@@ -422,29 +426,27 @@ export default function EspecificacoesPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Measurement Result */}
+                                    </div>{/* Measurement Result */}
                                     {spec.valor_encontrado !== null && (
-                                        <div className="mb-4">
-                                            <div className={`p-4 rounded-lg border-2 ${spec.conforme === true ? 'bg-green-50 border-green-200' :
+                                        <div className="mb-3">
+                                            <div className={`p-3 rounded-lg border ${spec.conforme === true ? 'bg-green-50 border-green-200' :
                                                 spec.conforme === false ? 'bg-red-50 border-red-200' :
                                                     'bg-gray-50 border-gray-200'
                                                 }`}>
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                                     <div>
                                                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
                                                             Valor Medido
                                                         </p>
-                                                        <p className="text-xl font-bold text-gray-900">
-                                                            {spec.valor_encontrado} <span className="text-base text-gray-600">{spec.unidade_medida}</span>
+                                                        <p className="text-lg font-bold text-gray-900">
+                                                            {spec.valor_encontrado} <span className="text-sm text-gray-600">{spec.unidade_medida}</span>
                                                         </p>
                                                     </div>
-                                                    <div className={`p-2 rounded-full ${spec.conforme === true ? 'bg-green-500' :
+                                                    <div className={`p-1.5 rounded-full self-start sm:self-auto ${spec.conforme === true ? 'bg-green-500' :
                                                         spec.conforme === false ? 'bg-red-500' :
                                                             'bg-gray-500'
                                                         }`}>
-                                                        {statusInfo.icon && React.cloneElement(statusInfo.icon, { className: 'h-5 w-5 text-white' })}
+                                                        {statusInfo.icon && React.cloneElement(statusInfo.icon, { className: 'h-4 w-4 text-white' })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -453,7 +455,7 @@ export default function EspecificacoesPage() {
 
                                     {/* Observação existente */}
                                     {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && spec.observacao && (
-                                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                        <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
                                             <p className="text-xs font-semibold text-blue-800 mb-1">Observação da Medição</p>
                                             <p className="text-xs text-blue-700">{spec.observacao}</p>
                                         </div>
@@ -461,64 +463,59 @@ export default function EspecificacoesPage() {
 
                                     {/* Botão para editar medição existente */}
                                     {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && (
-                                        <div className="flex justify-center mt-4">
-                                            <button
-                                                onClick={() => setEditingValues(prev => ({
-                                                    ...prev,
-                                                    [spec.id_especificacao]: {
-                                                        valor_encontrado: spec.valor_encontrado?.toString() || '',
-                                                        observacao: spec.observacao || ''
-                                                    }
-                                                }))}
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 rounded-lg font-medium hover:from-amber-200 hover:to-amber-300 transition-all border border-amber-300 text-sm"
-                                            >
-                                                <RefreshCw className="h-4 w-4" />
-                                                Reeditar
-                                            </button>
+                                        <div className="flex justify-center mt-3">                                        <button
+                                            onClick={() => setEditingValues(prev => ({
+                                                ...prev,
+                                                [spec.id_especificacao]: {
+                                                    valor_encontrado: spec.valor_encontrado?.toString() || '',
+                                                    observacao: spec.observacao || ''
+                                                }
+                                            }))}
+                                            className="compact-button inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 rounded-lg font-medium hover:from-amber-200 hover:to-amber-300 transition-all border border-amber-300 text-xs"
+                                        >
+                                            <RefreshCw className="h-3.5 w-3.5" />
+                                            Reeditar
+                                        </button>
                                         </div>
-                                    )}
-                                </div>                                {/* Área de Edição - 20% */}
-                                <div className={`w-1/5 bg-gray-50 p-4 flex flex-col justify-center ${(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) ? 'measuring' :
+                                    )}</div>                            {/* Área de Edição - 20% desktop, 100% mobile */}
+                                <div className={`w-full lg:w-1/5 bg-gray-50 p-3 flex flex-col justify-center min-h-[100px] lg:min-h-[140px] ${(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) ? 'measuring' :
                                     spec.conforme === true ? 'completed' :
                                         spec.conforme === false ? 'non-compliant' : ''
                                     }`}>
+
                                     {(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-2.5">
                                             {/* Campo Valor */}
-                                            <div className="space-y-2">
+                                            <div className="space-y-1.5">
                                                 <label className="text-xs font-semibold text-gray-700">
                                                     Valor
                                                 </label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        placeholder={`0.00 ${spec.unidade_medida}`}
-                                                        value={editingValues[spec.id_especificacao]?.valor_encontrado ||
-                                                            (spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ? spec.valor_encontrado.toString() : '')}
-                                                        onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                        className="w-full px-3 py-2 text-sm font-semibold border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none transition-all"
-                                                    />
+                                                <div className="relative">                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder={`0.00 ${spec.unidade_medida}`}
+                                                    value={editingValues[spec.id_especificacao]?.valor_encontrado ||
+                                                        (spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ? spec.valor_encontrado.toString() : '')}
+                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                    className="compact-input w-full px-2.5 py-1.5 text-xs font-semibold border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none transition-all"
+                                                />
                                                 </div>
                                             </div>
 
                                             {/* Campo Observação */}
-                                            <div className="space-y-2 mt-2">
+                                            <div className="space-y-1.5">
                                                 <label className="text-xs font-semibold text-gray-700">
                                                     Observação
-                                                </label>
-                                                <textarea
+                                                </label>                                            <textarea
                                                     placeholder="Opcional..."
                                                     value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
                                                     onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                    className="w-full px-3 py-2 text-xs border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none resize-none transition-all"
+                                                    className="compact-input w-full px-2.5 py-1.5 text-xs border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none resize-none transition-all"
                                                     rows={2}
                                                 />
-                                            </div>
-
-                                            {/* Status Preview */}
+                                            </div>                                        {/* Status Preview */}
                                             {editingValues[spec.id_especificacao]?.valor_encontrado && (
-                                                <div className="mt-4">
+                                                <div className="mt-2">
                                                     {(() => {
                                                         const valor = parseFloat(editingValues[spec.id_especificacao].valor_encontrado);
                                                         if (isNaN(valor)) return null;
@@ -542,11 +539,10 @@ export default function EspecificacoesPage() {
                                                         return null;
                                                     })()}
                                                 </div>)}
-                                        </div>
-                                    ) : (
+                                        </div>) : (
                                         <div className="text-center text-gray-500">
-                                            <div className="mb-2">
-                                                <CheckCircle className="h-8 w-8 mx-auto text-green-500" />
+                                            <div className="mb-1.5">
+                                                <CheckCircle className="h-5 w-5 mx-auto text-green-500" />
                                             </div>
                                             <p className="text-xs font-medium">Medição Concluída</p>
                                         </div>
@@ -560,7 +556,7 @@ export default function EspecificacoesPage() {
                         );
                     })}
                 </motion.div>
-            )}
-        </div>
+        )}
+    </div>
     );
 }
