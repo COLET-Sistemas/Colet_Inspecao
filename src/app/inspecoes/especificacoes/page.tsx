@@ -208,21 +208,21 @@ export default function EspecificacoesPage() {
     }
 
     return (
-        <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div className="flex items-center">
                     <button
                         onClick={handleBack}
-                        className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                        className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
                     >
-                        <ArrowLeft className="h-4 w-4" />
-                        Voltar
+                        <ArrowLeft className="h-5 w-5 text-gray-500" />
                     </button>
                     <PageHeader
                         title="Especificações da Inspeção"
                         subtitle={`Ficha ID: ${id} - ${specifications.length} especificação${specifications.length !== 1 ? 'ões' : ''}`}
                         showButton={false}
-                    />                </div>
+                    />
+                </div>
             </div>
 
             {specifications.length === 0 ? (
