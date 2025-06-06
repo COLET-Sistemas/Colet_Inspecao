@@ -8,10 +8,15 @@ import {
     AlertCircle,
     ArrowLeft,
     CheckCircle,
+    CheckSquare,
     Eye,
     MapPin,
+    MessageSquare,
     RefreshCw,
     Ruler,
+    Save,
+    Send,
+    StopCircle,
     Target,
     XCircle,
 } from "lucide-react";
@@ -26,8 +31,9 @@ export default function EspecificacoesPage() {
     const id = searchParams?.get('id');
     const hasInitialized = useRef(false); const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string } }>({});
+    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
+    const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set());
+    const [isSaving, setIsSaving] = useState(false);
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
@@ -85,9 +91,7 @@ export default function EspecificacoesPage() {
         }
     }, [id]); const handleBack = useCallback(() => {
         router.back();
-    }, [router]);
-
-    const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao', value: string) => {
+    }, [router]); const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | boolean | null) => {
         setEditingValues(prev => ({
             ...prev,
             [specId]: {
@@ -95,18 +99,192 @@ export default function EspecificacoesPage() {
                 [field]: value
             }
         }));
+    }, []); const toggleObservationField = useCallback((specId: number) => {
+        setExpandedObservations(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(specId)) {
+                newSet.delete(specId);
+            } else {
+                newSet.add(specId);
+            }
+            return newSet;
+        });
     }, []);
 
-    const calculateConforme = useCallback((valorEncontrado: number, valorMinimo: number | null, valorMaximo: number | null): boolean | null => {
-        if (valorMinimo !== null && valorMaximo !== null) {
-            return valorEncontrado >= valorMinimo && valorEncontrado <= valorMaximo;
-        } else if (valorMaximo !== null) {
-            return valorEncontrado <= valorMaximo;
-        } else if (valorMinimo !== null) {
-            return valorEncontrado >= valorMinimo;
+    // Função para obter as opções de select baseadas no tipo_valor
+    const getSelectOptions = useCallback((tipoValor: string) => {
+        switch (tipoValor) {
+            case 'A': return [
+                { value: true, label: 'Aprovado' },
+                { value: false, label: 'Reprovado' }
+            ];
+            case 'C': return [
+                { value: true, label: 'Conforme' },
+                { value: false, label: 'Não Conforme' }
+            ];
+            case 'S': return [
+                { value: true, label: 'Sim' },
+                { value: false, label: 'Não' }
+            ];
+            case 'L': return [
+                { value: true, label: 'Liberdade' },
+                { value: false, label: 'Retido' }
+            ];
+            default: return [];
         }
-        return null;
     }, []);
+
+    // Função para verificar se o tipo_valor requer select
+    const isSelectType = useCallback((tipoValor: string) => {
+        return ['A', 'C', 'S', 'L'].includes(tipoValor);
+    }, []);
+
+    // Função para verificar se o tipo_valor requer input numérico
+    const isNumericType = useCallback((tipoValor: string) => {
+        return ['F', 'U'].includes(tipoValor);
+    }, []); const calculateConforme = useCallback((valorEncontrado: number, valorMinimo: number | null, valorMaximo: number | null, tipoValor: string, conformeValue?: boolean | null): boolean | null => {
+        // Para tipos de select (A, C, S, L), retorna o valor de conforme diretamente
+        if (isSelectType(tipoValor)) {
+            return conformeValue !== undefined ? conformeValue : null;
+        }
+
+        // Para tipos numéricos (F, U), calcula baseado nos limites
+        if (isNumericType(tipoValor)) {
+            if (valorMinimo !== null && valorMaximo !== null) {
+                return valorEncontrado >= valorMinimo && valorEncontrado <= valorMaximo;
+            } else if (valorMaximo !== null) {
+                return valorEncontrado <= valorMaximo;
+            } else if (valorMinimo !== null) {
+                return valorEncontrado >= valorMinimo;
+            }
+        } return null;
+    }, [isSelectType, isNumericType]);    // Global action handlers
+    const handleSaveAllChanges = useCallback(async () => {
+        setIsSaving(true);
+        const errors: string[] = [];
+
+        try {
+            // Get all specifications that have pending changes
+            const specsToSave = specifications.filter(spec =>
+                editingValues[spec.id_especificacao] !== undefined
+            );
+
+            for (const spec of specsToSave) {
+                try {
+                    const editingData = editingValues[spec.id_especificacao];
+
+                    if (isSelectType(spec.tipo_valor)) {
+                        // Para tipos de select, salvamos apenas o valor conforme
+                        if (editingData.conforme === undefined || editingData.conforme === null) continue;
+
+                        const updateData = {
+                            valor_encontrado: editingData.conforme === true ? 1 : 0,
+                            conforme: editingData.conforme,
+                            observacao: editingData.observacao || null
+                        };
+
+                        await inspecaoService.updateInspectionSpecification(spec.id_especificacao, updateData);
+
+                    } else {
+                        // Para tipos numéricos
+                        const valorEncontrado = parseFloat(editingData.valor_encontrado);
+                        if (isNaN(valorEncontrado)) continue;
+
+                        const conforme = calculateConforme(valorEncontrado, spec.valor_minimo, spec.valor_maximo, spec.tipo_valor);
+
+                        const updateData = {
+                            valor_encontrado: valorEncontrado,
+                            conforme: conforme,
+                            observacao: editingData.observacao || null
+                        };
+
+                        await inspecaoService.updateInspectionSpecification(spec.id_especificacao, updateData);
+                    }
+                } catch (error) {
+                    console.error(`Erro ao salvar especificação ${spec.id_especificacao}:`, error);
+                    errors.push(`Especificação ${spec.ordem}: ${error}`);
+                }
+            }
+
+            if (errors.length === 0) {
+                // Reload specifications to get updated data
+                await handleRefresh();
+                // Clear all editing values
+                setEditingValues({});
+                // TODO: Show success notification
+                console.log('Todas as alterações foram salvas com sucesso!');
+            } else {
+                // TODO: Show partial success notification with errors
+                console.error('Algumas especificações não puderam ser salvas:', errors);
+            }
+
+        } catch (error) {
+            console.error("Erro geral ao salvar alterações:", error);
+            // TODO: Show error notification
+        } finally {
+            setIsSaving(false);
+        }
+    }, [specifications, editingValues, isSelectType, calculateConforme, handleRefresh]);
+
+    const handleInterruptInspection = useCallback(async () => {
+        if (!id) return;
+
+        try {
+            // TODO: Implement interrupt inspection API call
+            console.log('Interrompendo inspeção ID:', id);
+            // await inspecaoService.interruptInspection(parseInt(id));
+
+            // TODO: Show success notification and redirect
+            router.back();
+        } catch (error) {
+            console.error("Erro ao interromper inspeção:", error);
+            // TODO: Show error notification
+        }
+    }, [id, router]);
+
+    const handleFinalizeInspection = useCallback(async () => {
+        if (!id) return;
+
+        // Check if all specifications are completed
+        const pendingSpecs = specifications.filter(s =>
+            (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+            (isSelectType(s.tipo_valor) && s.conforme === null)
+        );
+
+        if (pendingSpecs.length > 0) {
+            // TODO: Show warning notification
+            console.warn(`Ainda existem ${pendingSpecs.length} especificações pendentes`);
+            return;
+        }
+
+        try {
+            // TODO: Implement finalize inspection API call
+            console.log('Finalizando inspeção ID:', id);
+            // await inspecaoService.finalizeInspection(parseInt(id));
+
+            // TODO: Show success notification and redirect
+            router.back();
+        } catch (error) {
+            console.error("Erro ao finalizar inspeção:", error);
+            // TODO: Show error notification
+        }
+    }, [id, specifications, isNumericType, isSelectType, router]);
+
+    const handleForwardToCQ = useCallback(async () => {
+        if (!id) return;
+
+        try {
+            // TODO: Implement forward to CQ API call
+            console.log('Encaminhando para CQ, inspeção ID:', id);
+            // await inspecaoService.forwardToCQ(parseInt(id));
+
+            // TODO: Show success notification and redirect
+            router.back();
+        } catch (error) {
+            console.error("Erro ao encaminhar para CQ:", error);
+            // TODO: Show error notification
+        }
+    }, [id, router]);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {
@@ -230,7 +408,7 @@ export default function EspecificacoesPage() {
                 </button>
                 <PageHeader
                     title="Especificações da Inspeção"
-                    subtitle={`Ficha ID: ${id} - ${specifications.length} especificação${specifications.length !== 1 ? 'ões' : ''}`}
+                    subtitle={`Ficha de Inspeção ID: ${id} - ${specifications.length} especifica${specifications.length !== 1 ? 'ções' : 'ção'}`}
                     showButton={false}
                 />
             </div>
@@ -250,12 +428,14 @@ export default function EspecificacoesPage() {
                         <span className="counter-value text-red-700">
                             {specifications.filter(s => s.conforme === false).length}
                         </span>
-                    </div>
-                    <div className="counter-item">
+                    </div>                    <div className="counter-item">
                         <div className="counter-dot bg-gray-500"></div>
                         <span className="counter-label">Pendentes:</span>
                         <span className="counter-value text-gray-700">
-                            {specifications.filter(s => s.valor_encontrado === null).length}
+                            {specifications.filter(s =>
+                                (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+                                (isSelectType(s.tipo_valor) && s.conforme === null)
+                            ).length}
                         </span>
                     </div>
                 </div>
@@ -351,12 +531,20 @@ export default function EspecificacoesPage() {
                                             </div>
                                         </div>                                    {/* Status Badge */}
                                         <div className="flex-shrink-0 sm:ml-3">
-                                            <span className={`status-badge-modern inline-flex items-center gap-1 rounded-lg px-2 sm:px-3 py-1 text-xs font-semibold border transition-all duration-200 hover:scale-105 ${statusInfo.className}`}>
-                                                <span className="w-3 h-3 flex items-center justify-center">
-                                                    {statusInfo.icon}
+                                            <div className="flex items-center gap-1.5">
+                                                {/* Indicador de observação */}
+                                                {spec.observacao && (
+                                                    <div className="flex items-center justify-center w-5 h-5 bg-blue-100 border border-blue-200 rounded-full group-hover:bg-blue-200 transition-colors">
+                                                        <MessageSquare className="h-2.5 w-2.5 text-blue-600" />
+                                                    </div>
+                                                )}
+                                                <span className={`status-badge-modern inline-flex items-center gap-1 rounded-lg px-2 sm:px-3 py-1 text-xs font-semibold border transition-all duration-200 hover:scale-105 ${statusInfo.className}`}>
+                                                    <span className="w-3 h-3 flex items-center justify-center">
+                                                        {statusInfo.icon}
+                                                    </span>
+                                                    <span className="hidden xs:inline">{statusInfo.text}</span>
                                                 </span>
-                                                <span className="hidden xs:inline">{statusInfo.text}</span>
-                                            </span>
+                                            </div>
                                         </div>
                                     </div>                                {/* Info Cards Compactas - Design mais profissional */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">                                        {/* Location Card - Redesenhado */}
@@ -427,7 +615,7 @@ export default function EspecificacoesPage() {
                                             </div>
                                         </div>
                                     </div>{/* Measurement Result */}
-                                    {spec.valor_encontrado !== null && (
+                                    {(spec.valor_encontrado !== null || (isSelectType(spec.tipo_valor) && spec.conforme !== null)) && (
                                         <div className="mb-3">
                                             <div className={`p-3 rounded-lg border ${spec.conforme === true ? 'bg-green-50 border-green-200' :
                                                 spec.conforme === false ? 'bg-red-50 border-red-200' :
@@ -436,11 +624,19 @@ export default function EspecificacoesPage() {
                                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                                     <div>
                                                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-                                                            Valor Medido
+                                                            {isSelectType(spec.tipo_valor) ? 'Resultado da Avaliação' : 'Valor Medido'}
                                                         </p>
-                                                        <p className="text-lg font-bold text-gray-900">
-                                                            {spec.valor_encontrado} <span className="text-sm text-gray-600">{spec.unidade_medida}</span>
-                                                        </p>
+                                                        {isSelectType(spec.tipo_valor) ? (
+                                                            <p className="text-lg font-bold text-gray-900">
+                                                                {spec.conforme !== null ? (
+                                                                    getSelectOptions(spec.tipo_valor).find(opt => opt.value === spec.conforme)?.label || 'N/A'
+                                                                ) : 'Não avaliado'}
+                                                            </p>
+                                                        ) : (
+                                                            <p className="text-lg font-bold text-gray-900">
+                                                                {spec.valor_encontrado} <span className="text-sm text-gray-600">{spec.unidade_medida}</span>
+                                                            </p>
+                                                        )}
                                                     </div>
                                                     <div className={`p-1.5 rounded-full self-start sm:self-auto ${spec.conforme === true ? 'bg-green-500' :
                                                         spec.conforme === false ? 'bg-red-500' :
@@ -451,94 +647,198 @@ export default function EspecificacoesPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                    )}                                    {/* Observação existente com botão para expandir/recolher */}
+                                    {(spec.valor_encontrado !== null || (isSelectType(spec.tipo_valor) && spec.conforme !== null)) &&
+                                        !editingValues[spec.id_especificacao] && spec.observacao && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs font-semibold text-blue-800">Observação da Medição</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleObservationField(spec.id_especificacao)}
+                                                        className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 transition-colors rounded-md hover:bg-blue-100"
+                                                    >
+                                                        <MessageSquare className="h-3 w-3" />
+                                                        {expandedObservations.has(spec.id_especificacao) ? 'Ocultar' : 'Mostrar'}
+                                                    </button>
+                                                </div>
 
-                                    {/* Observação existente */}
-                                    {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && spec.observacao && (
-                                        <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
-                                            <p className="text-xs font-semibold text-blue-800 mb-1">Observação da Medição</p>
-                                            <p className="text-xs text-blue-700">{spec.observacao}</p>
-                                        </div>
-                                    )}
+                                                {expandedObservations.has(spec.id_especificacao) && (
+                                                    <div className="animate-in slide-in-from-top-2 duration-200 bg-blue-50 p-2.5 rounded-lg border border-blue-200">
+                                                        <p className="text-xs text-blue-700">{spec.observacao}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                     {/* Botão para editar medição existente */}
-                                    {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && (
-                                        <div className="flex justify-center mt-3">                                        <button
-                                            onClick={() => setEditingValues(prev => ({
-                                                ...prev,
-                                                [spec.id_especificacao]: {
-                                                    valor_encontrado: spec.valor_encontrado?.toString() || '',
-                                                    observacao: spec.observacao || ''
-                                                }
-                                            }))}
-                                            className="compact-button inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 rounded-lg font-medium hover:from-amber-200 hover:to-amber-300 transition-all border border-amber-300 text-xs"
-                                        >
-                                            <RefreshCw className="h-3.5 w-3.5" />
-                                            Reeditar
-                                        </button>
-                                        </div>
-                                    )}</div>                            {/* Área de Edição - 20% desktop, 100% mobile */}
-                                <div className={`w-full lg:w-1/5 bg-gray-50 p-3 flex flex-col justify-center min-h-[100px] lg:min-h-[140px] ${(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) ? 'measuring' :
+                                    {(spec.valor_encontrado !== null || (isSelectType(spec.tipo_valor) && spec.conforme !== null)) &&
+                                        !editingValues[spec.id_especificacao] && (
+                                            <div className="flex justify-center mt-3">                                        <button
+                                                onClick={() => setEditingValues(prev => ({
+                                                    ...prev,
+                                                    [spec.id_especificacao]: {
+                                                        valor_encontrado: spec.valor_encontrado?.toString() || '',
+                                                        observacao: spec.observacao || '',
+                                                        conforme: spec.conforme
+                                                    }
+                                                }))}
+                                                className="compact-button inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 rounded-lg font-medium hover:from-amber-200 hover:to-amber-300 transition-all border border-amber-300 text-xs"
+                                            >
+                                                <RefreshCw className="h-3.5 w-3.5" />
+                                                Reeditar
+                                            </button>
+                                            </div>
+                                        )}</div>                            {/* Área de Edição - 20% desktop, 100% mobile */}
+                                <div className={`w-full lg:w-1/5 bg-gray-50 p-3 flex flex-col justify-center min-h-[100px] lg:min-h-[140px] ${((spec.valor_encontrado === null && isNumericType(spec.tipo_valor)) ||
+                                    (spec.conforme === null && isSelectType(spec.tipo_valor)) ||
+                                    editingValues[spec.id_especificacao]) ? 'measuring' :
                                     spec.conforme === true ? 'completed' :
                                         spec.conforme === false ? 'non-compliant' : ''
-                                    }`}>
+                                    }`}>                                    {((spec.valor_encontrado === null && isNumericType(spec.tipo_valor)) ||
+                                        (spec.conforme === null && isSelectType(spec.tipo_valor)) ||
+                                        editingValues[spec.id_especificacao]) ? (
+                                        <div className="space-y-2.5">                                            {/* Título da seção de medição com status */}
+                                            <div className="measurement-header flex items-center justify-between pb-2 border-b border-gray-200 px-2 py-1.5 rounded-md mb-3">
+                                                <h4 className="text-sm font-bold text-gray-800">Medição</h4>
+                                                <div className="flex items-center">                                                    {(() => {
+                                                    const valorAtual = editingValues[spec.id_especificacao]?.valor_encontrado;
+                                                    const conformeAtual = editingValues[spec.id_especificacao]?.conforme;
 
-                                    {(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) ? (
-                                        <div className="space-y-2.5">
-                                            {/* Campo Valor */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-semibold text-gray-700">
-                                                    Valor
-                                                </label>
-                                                <div className="relative">                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder={`0.00 ${spec.unidade_medida}`}
-                                                    value={editingValues[spec.id_especificacao]?.valor_encontrado ||
-                                                        (spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ? spec.valor_encontrado.toString() : '')}
-                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                    className="compact-input w-full px-2.5 py-1.5 text-xs font-semibold border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none transition-all"
-                                                />
-                                                </div>
-                                            </div>
-
-                                            {/* Campo Observação */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-semibold text-gray-700">
-                                                    Observação
-                                                </label>                                            <textarea
-                                                    placeholder="Opcional..."
-                                                    value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
-                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                    className="compact-input w-full px-2.5 py-1.5 text-xs border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none resize-none transition-all"
-                                                    rows={2}
-                                                />
-                                            </div>                                        {/* Status Preview */}
-                                            {editingValues[spec.id_especificacao]?.valor_encontrado && (
-                                                <div className="mt-2">
-                                                    {(() => {
-                                                        const valor = parseFloat(editingValues[spec.id_especificacao].valor_encontrado);
-                                                        if (isNaN(valor)) return null;
-                                                        const conforme = calculateConforme(valor, spec.valor_minimo, spec.valor_maximo);
-
-                                                        if (conforme === true) {
+                                                    // Para tipos de select (A, C, S, L)
+                                                    if (isSelectType(spec.tipo_valor)) {
+                                                        if (conformeAtual === null || conformeAtual === undefined) {
                                                             return (
-                                                                <div className="flex items-center gap-1 text-green-600 text-xs">
-                                                                    <CheckCircle className="h-3 w-3" />
-                                                                    <span className="font-semibold">Conforme</span>
-                                                                </div>
-                                                            );
-                                                        } else if (conforme === false) {
-                                                            return (
-                                                                <div className="flex items-center gap-1 text-red-600 text-xs">
-                                                                    <XCircle className="h-3 w-3" />
-                                                                    <span className="font-semibold">Não Conforme</span>
+                                                                <div className="flex items-center gap-1">
+                                                                    <AlertCircle className="measurement-status-icon h-4 w-4 text-gray-500" />
+                                                                    <span className="text-xs font-medium text-gray-600">Pendente</span>
                                                                 </div>
                                                             );
                                                         }
-                                                        return null;
-                                                    })()}
-                                                </div>)}
+
+                                                        if (conformeAtual === true) {
+                                                            return (
+                                                                <div className="flex items-center gap-1">
+                                                                    <CheckCircle className="measurement-status-icon h-4 w-4 text-green-500" />
+                                                                    <span className="text-xs font-medium text-green-600">Conforme</span>
+                                                                </div>
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <div className="flex items-center gap-1">
+                                                                    <XCircle className="measurement-status-icon h-4 w-4 text-red-500" />
+                                                                    <span className="text-xs font-medium text-red-600">Não Conforme</span>
+                                                                </div>
+                                                            );
+                                                        }
+                                                    }
+
+                                                    // Para tipos numéricos (F, U)
+                                                    if (!valorAtual) {
+                                                        return (
+                                                            <div className="flex items-center gap-1">
+                                                                <AlertCircle className="measurement-status-icon h-4 w-4 text-gray-500" />
+                                                                <span className="text-xs font-medium text-gray-600">Pendente</span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    const valor = parseFloat(valorAtual);
+                                                    if (isNaN(valor)) {
+                                                        return (
+                                                            <div className="flex items-center gap-1">
+                                                                <AlertCircle className="measurement-status-icon h-4 w-4 text-gray-500" />
+                                                                <span className="text-xs font-medium text-gray-600">Pendente</span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    const conforme = calculateConforme(valor, spec.valor_minimo, spec.valor_maximo, spec.tipo_valor);
+
+                                                    if (conforme === true) {
+                                                        return (
+                                                            <div className="flex items-center gap-1">
+                                                                <CheckCircle className="measurement-status-icon h-4 w-4 text-green-500" />
+                                                                <span className="text-xs font-medium text-green-600">Conforme</span>
+                                                            </div>
+                                                        );
+                                                    } else if (conforme === false) {
+                                                        return (
+                                                            <div className="flex items-center gap-1">
+                                                                <XCircle className="measurement-status-icon h-4 w-4 text-red-500" />
+                                                                <span className="text-xs font-medium text-red-600">Não Conforme</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <div className="flex items-center gap-1">
+                                                            <AlertCircle className="measurement-status-icon h-4 w-4 text-gray-500" />
+                                                            <span className="text-xs font-medium text-gray-600">Pendente</span>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                </div>
+                                            </div>                                            {/* Campo Valor - Condicional baseado em tipo_valor */}
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-semibold text-gray-700">
+                                                    {isSelectType(spec.tipo_valor) ? 'Resultado' : 'Valor'}
+                                                </label>
+                                                <div className="relative">
+                                                    {isSelectType(spec.tipo_valor) ? (
+                                                        <select
+                                                            value={editingValues[spec.id_especificacao]?.conforme?.toString() || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value === '' ? null : e.target.value === 'true';
+                                                                handleValueChange(spec.id_especificacao, 'conforme', value);
+                                                            }}
+                                                            className="compact-input w-full px-2.5 py-1.5 text-xs font-semibold border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none transition-all bg-white"
+                                                        >
+                                                            <option value="">Selecione...</option>
+                                                            {getSelectOptions(spec.tipo_valor).map((option) => (
+                                                                <option key={option.value.toString()} value={option.value.toString()}>
+                                                                    {option.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder={`0.00 ${spec.unidade_medida}`}
+                                                            value={editingValues[spec.id_especificacao]?.valor_encontrado ||
+                                                                (spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ? spec.valor_encontrado.toString() : '')}
+                                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                            className="compact-input w-full px-2.5 py-1.5 text-xs font-semibold border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none transition-all"
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>{/* Campo Observação */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-xs font-semibold text-gray-700">
+                                                        Observação
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleObservationField(spec.id_especificacao)}
+                                                        className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-[#1ABC9C] transition-colors rounded-md hover:bg-gray-100"
+                                                    >
+                                                        <MessageSquare className="h-3 w-3" />
+                                                        {expandedObservations.has(spec.id_especificacao) ? 'Ocultar' : 'Adicionar'}
+                                                    </button>
+                                                </div>
+
+                                                {/* Campo de observação expansível */}
+                                                {expandedObservations.has(spec.id_especificacao) && (
+                                                    <div className="animate-in slide-in-from-top-2 duration-200">                                                        <textarea
+                                                        placeholder="Digite sua observação..."
+                                                        value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                                        onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                                        className="compact-input w-full px-2.5 py-1.5 text-xs border-2 border-gray-300 rounded-lg focus:border-[#1ABC9C] focus:outline-none resize-none transition-all"
+                                                        rows={2}
+                                                    />
+                                                    </div>)}
+                                            </div>
                                         </div>) : (
                                         <div className="text-center text-gray-500">
                                             <div className="mb-1.5">
@@ -554,8 +854,101 @@ export default function EspecificacoesPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         </motion.div>
                         );
-                    })}
-                </motion.div>
+                    })}                </motion.div>
+        )}        {/* Global Action Buttons */}
+        {specifications.length > 0 && (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="sticky bottom-4 z-10 mt-6"
+            >
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        {/* Status Summary - Left Side */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <strong className="text-gray-800">{Object.keys(editingValues).length}</strong> alterações pendentes
+                            </span>
+                            <span className="text-gray-400">•</span>
+                            <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <strong className="text-green-700">{specifications.filter(s => s.conforme === true).length}</strong> conformes
+                            </span>
+                            <span className="text-gray-400">•</span>
+                            <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <strong className="text-red-700">{specifications.filter(s => s.conforme === false).length}</strong> não conformes
+                            </span>                            <span className="text-gray-400">•</span>
+                            <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                                <strong className="text-gray-700">
+                                    {specifications.filter(s =>
+                                        (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+                                        (isSelectType(s.tipo_valor) && s.conforme === null)
+                                    ).length}
+                                </strong> pendentes
+                            </span>
+                        </div>
+
+                        {/* Action Buttons - Right Side */}
+                        <div className="flex flex-wrap gap-2 justify-center lg:justify-end">
+                            {/* Save All Changes Button */}
+                            <button
+                                onClick={handleSaveAllChanges}
+                                disabled={isSaving || Object.keys(editingValues).length === 0}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-[#1ABC9C] text-white rounded-lg font-semibold hover:bg-[#16A085] disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm min-w-[120px]"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-4 w-4" />
+                                        Salvar ({Object.keys(editingValues).length})
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Interrupt Inspection Button */}
+                            <button
+                                onClick={handleInterruptInspection}
+                                disabled={isSaving}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 text-white rounded-lg font-semibold hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm min-w-[120px]"
+                            >
+                                <StopCircle className="h-4 w-4" />
+                                Interromper
+                            </button>
+
+                            {/* Finalize Inspection Button */}
+                            <button
+                                onClick={handleFinalizeInspection}
+                                disabled={isSaving || specifications.some(s =>
+                                    (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+                                    (isSelectType(s.tipo_valor) && s.conforme === null)
+                                )}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm min-w-[120px]"
+                            >
+                                <CheckSquare className="h-4 w-4" />
+                                Finalizar
+                            </button>
+
+                            {/* Forward to CQ Button */}
+                            <button
+                                onClick={handleForwardToCQ}
+                                disabled={isSaving}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm min-w-[120px]"
+                            >
+                                <Send className="h-4 w-4" />
+                                Encaminhar CQ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
         )}
     </div>
     );

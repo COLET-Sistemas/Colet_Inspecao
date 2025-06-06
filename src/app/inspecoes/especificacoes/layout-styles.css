@@ -342,6 +342,70 @@
     }
 }
 
+/* Estilos para o título da seção de medição */
+.measurement-header {
+    position: relative;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    transition: all 0.3s ease;
+}
+
+.measurement-status-icon {
+    transition: all 0.2s ease;
+}
+
+.measurement-status-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Estilos para diferentes status de medição */
+.status-pending {
+    color: #6b7280;
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.status-compliant {
+    color: #059669;
+    background-color: #d1fae5;
+    border-color: #10b981;
+}
+
+.status-non-compliant {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-color: #ef4444;
+}
+
+/* Animação para mudança de status */
+.measurement-header .flex {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animação para campo de observação expansível */
+.animate-in {
+    animation-fill-mode: both;
+}
+
+.slide-in-from-top-2 {
+    animation-name: slideInFromTop;
+}
+
+.duration-200 {
+    animation-duration: 200ms;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Estados específicos para diferentes situações */
 .spec-card.measuring .w-1\/5 {
     background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);

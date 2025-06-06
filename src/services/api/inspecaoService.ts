@@ -90,6 +90,7 @@ interface InspectionSpecification {
     valor_minimo: number;
     valor_maximo: number;
     unidade_medida: string;
+    tipo_valor: string; // F (Float), U (Unit), A (Aprovado/Reprovado), C (Conforme/Não Conforme), S (Sim/Não), L (Liberdade/Retido)
     valor_encontrado?: number | null;
     conforme?: boolean | null;
     observacao?: string | null;
