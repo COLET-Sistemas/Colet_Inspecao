@@ -100,7 +100,7 @@ export default function InspecoesPage() {
                 second: '2-digit'
             });
         } catch {
-            return dateString; // Retorna o valor original se houver erro
+            return dateString;
         }
     }, []);
 
@@ -331,7 +331,9 @@ export default function InspecoesPage() {
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
                                     {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                </div>                                <div>                            <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
+                                </div>                                
+                                <div>                            
+                                    <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
                                     {getTipoFicha(activeTab)}
                                 </h3>
                                     <p className="text-sm text-gray-500">
@@ -339,29 +341,38 @@ export default function InspecoesPage() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className={`
+                            <div className="flex items-center gap-2">                                <span className={`
                                     inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
-                                    ${item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                            : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                                `}>
-                                    <div className={`
+                                    ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                        : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                    : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                        : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                            : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                `}>                                    <div className={`
                                         h-1.5 w-1.5 rounded-full
-                                        ${item.situacao === '8' ? 'bg-emerald-500'
-                                            : item.situacao === '9' ? 'bg-red-500'
-                                                : item.situacao === '7' ? 'bg-orange-500'
-                                                    : item.situacao === '4' ? 'bg-blue-500'
-                                                        : 'bg-gray-400'}
+                                        ${item.situacao === '1' ? 'bg-amber-500'
+                                        : item.situacao === '2' ? 'bg-purple-500'
+                                            : item.situacao === '3' ? 'bg-purple-500'
+                                                : item.situacao === '4' ? 'bg-blue-500'
+                                                    : item.situacao === '5' ? 'bg-gray-400'
+                                                        : item.situacao === '6' ? 'bg-gray-400'
+                                                            : item.situacao === '7' ? 'bg-orange-500'
+                                                                : item.situacao === '8' ? 'bg-emerald-500'
+                                                                    : item.situacao === '9' ? 'bg-red-500'
+                                                                        : 'bg-gray-400'}
                                     `} />
-                                    <span className="whitespace-nowrap">
-                                        {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
-                                    </span>
+                                <span className="whitespace-nowrap">
+                                    {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
                                 </span>
+                            </span>
                             </div>
-                        </div>                        {/* Informações em Grid */}
+                        </div>                        
+                        {/* Informações em Grid */}
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ordem</p>
@@ -393,7 +404,9 @@ export default function InspecoesPage() {
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
                                     <p className="text-sm font-medium text-gray-900">{formatDateTime(item.data_hora_prevista)}</p>
                                 </div>
-                            )}                </div>                {/* Gradient overlay on hover */}
+                            )}                
+                            </div>                
+                            {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </motion.button>
                 ))}
@@ -416,7 +429,8 @@ export default function InspecoesPage() {
                             hour: "2-digit",
                             minute: "2-digit",
                         })}
-                    </div>                    <button
+                    </div>                    
+                    <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
                         className={`
@@ -434,8 +448,10 @@ export default function InspecoesPage() {
                         <span className="hidden sm:inline">
                             {isRefreshing ? "Atualizando..." : "Atualizar"}
                         </span>
-                    </button></div>
-            </div>            <div className="mb-6 mt-8 sm:mb-8 sm:mt-10">
+                    </button>
+                </div>
+            </div>            
+            <div className="mb-6 mt-8 sm:mb-8 sm:mt-10">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide sm:space-x-8 lg:space-x-10">
                         {tabs.map((tab) => (
@@ -501,7 +517,9 @@ export default function InspecoesPage() {
                     <p className="text-sm text-gray-600 sm:text-base">
                         {tabs.find((tab) => tab.id === activeTab)?.description}
                     </p>
-                </motion.div>            </div><div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
+                </motion.div>            
+                </div>
+                <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
                 {renderTabContent()}
             </div>
         </div>

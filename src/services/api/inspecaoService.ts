@@ -241,7 +241,7 @@ class InspecaoService {
                 throw new Error("URL da API não está configurada");
             }
 
-            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao/especificacoes?id=${id}`, {
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes?id=${id}`, {
                 method: 'GET'
             });
 
