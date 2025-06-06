@@ -305,3 +305,429 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #16A085;
 }
+
+/* Icon Container Styles - Quadrados com bordas para SVGs */
+.icon-container {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-container:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.icon-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(26, 188, 156, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.icon-container:hover::before {
+    left: 100%;
+}
+
+/* SVG Icon Animations */
+.svg-icon {
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.svg-icon:hover {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Header Section Improvements */
+.header-section {
+    position: relative;
+    z-index: 1;
+}
+
+.header-section::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+}
+
+/* Enhanced Status Badge */
+.status-badge {
+    position: relative;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.status-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, currentColor, transparent);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: subtract;
+    opacity: 0.3;
+}
+
+/* Modern Card Layouts */
+.info-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.info-card:hover::before {
+    opacity: 0.6;
+}
+
+/* Enhanced Button Styles */
+.action-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+.action-button:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.action-button:active {
+    transform: scale(0.98);
+}
+
+/* Improved Responsiveness */
+@media (max-width: 768px) {
+    .icon-container {
+        width: 2.5rem;
+        /* 40px */
+        height: 2.5rem;
+        /* 40px */
+    }
+
+    .icon-container .svg-icon {
+        width: 1.25rem;
+        /* 20px */
+        height: 1.25rem;
+        /* 20px */
+    }
+}
+
+@media (max-width: 640px) {
+    .header-section {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .status-badge {
+        align-self: flex-start;
+    }
+}
+
+/* Enhanced Micro-interactions */
+.interactive-element {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-element:hover {
+    transform: translateY(-1px);
+}
+
+.interactive-element:active {
+    transform: translateY(0);
+}
+
+/* Focus States for Accessibility */
+.icon-container:focus-visible,
+.action-button:focus-visible,
+.status-badge:focus-visible {
+    outline: 2px solid #1ABC9C;
+    outline-offset: 2px;
+}
+
+/* Modern Loading States */
+.loading-shimmer {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.2) 20%,
+            rgba(255, 255, 255, 0.5) 60%,
+            rgba(255, 255, 255, 0));
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Enhanced Visual Hierarchy */
+.visual-hierarchy-1 {
+    z-index: 10;
+    position: relative;
+}
+
+.visual-hierarchy-2 {
+    z-index: 5;
+    position: relative;
+}
+
+.visual-hierarchy-3 {
+    z-index: 1;
+    position: relative;
+}
+
+/* SVG Icon Container Styles */
+.svg-icon-container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.svg-icon-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(26, 188, 156, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.svg-icon-container:hover::before {
+    left: 100%;
+}
+
+.svg-icon-container:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.15);
+}
+
+/* Empty SVG placeholder */
+.svg-placeholder {
+    background: radial-gradient(circle, #f1f5f9 0%, #e2e8f0 100%);
+    border-radius: 50%;
+    animation: pulse-subtle 2s infinite;
+}
+
+@keyframes pulse-subtle {
+
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* SVG Icon specific styles */
+.svg-icon {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    transition: all 0.3s ease;
+}
+
+.svg-icon:hover {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+    transform: scale(1.05);
+}
+
+/* Layout 80% / 20% - Específico para especificações */
+.spec-card .flex.h-full {
+    min-height: 200px;
+}
+
+.spec-card .w-4\/5 {
+    border-right: 2px solid #f3f4f6;
+    transition: border-color 0.3s ease;
+}
+
+.spec-card:hover .w-4\/5 {
+    border-right-color: rgba(26, 188, 156, 0.2);
+}
+
+.spec-card .w-1\/5 {
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    transition: all 0.3s ease;
+}
+
+.spec-card:hover .w-1\/5 {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1024px) {
+    .spec-card .flex.h-full {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .spec-card .w-4\/5 {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #f3f4f6;
+        min-height: 300px;
+    }
+
+    .spec-card .w-1\/5 {
+        width: 100%;
+        min-height: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .spec-card .grid-cols-3 {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .spec-card .w-12.h-12 {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .spec-card .w-8.h-8 {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+/* Animações específicas para campos de entrada */
+.spec-card input:focus,
+.spec-card textarea:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.1);
+}
+
+/* Melhorias para botões compactos */
+.spec-card button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spec-card button:hover {
+    transform: translateY(-1px);
+}
+
+.spec-card button:active {
+    transform: translateY(0);
+}
+
+/* Indicador visual de medição pendente */
+.spec-card .w-1\/5:has(input[value=""]) {
+    border-left: 4px solid #f59e0b;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+
+    0%,
+    100% {
+        border-left-color: #f59e0b;
+        opacity: 1;
+    }
+
+    50% {
+        border-left-color: #fbbf24;
+        opacity: 0.8;
+    }
+}
+
+/* Indicador visual de medição concluída */
+.spec-card .w-1\/5:has(.text-green-500) {
+    border-left: 4px solid #10b981;
+}
+
+/* Melhorias para status badges compactos */
+.spec-card .text-xs.font-semibold {
+    letter-spacing: 0.025em;
+}
+
+/* Ajustes para área de edição */
+.spec-card .w-1\/5 .space-y-4>div {
+    transition: all 0.3s ease;
+}
+
+.spec-card .w-1\/5 input:focus+span {
+    color: #1ABC9C;
+    font-weight: 600;
+}
+
+/* Grid responsive para info cards */
+@media (max-width: 640px) {
+    .spec-card .grid-cols-3>div {
+        padding: 0.5rem;
+    }
+
+    .spec-card .grid-cols-3 .text-xs {
+        font-size: 0.6875rem;
+    }
+}
+
+/* Smooth transitions para mudanças de estado */
+.spec-card .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+/* Hover effects para área de valores */
+.spec-card .w-4\/5:hover {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Focus states melhorados */
+.spec-card input:focus-visible,
+.spec-card textarea:focus-visible {
+    outline: 2px solid #1ABC9C;
+    outline-offset: 2px;
+}
