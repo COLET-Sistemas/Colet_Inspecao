@@ -229,9 +229,7 @@ class InspecaoService {
             nome_pessoa_conclusao: apiItem.nome_pessoa_conclusao,
             id_ficha_origem: apiItem.id_ficha_origem,
         };
-    }
-
-    /**
+    }    /**
      * Busca especificações de uma ficha de inspeção
      */
     async getInspectionSpecifications(id: number): Promise<InspectionSpecification[]> {
@@ -253,6 +251,40 @@ class InspecaoService {
             return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Erro ao buscar especificações da ficha ${id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Atualiza uma especificação da inspeção
+     */
+    async updateInspectionSpecification(idEspecificacao: number, data: {
+        valor_encontrado: number;
+        conforme: boolean | null;
+        observacao?: string | null;
+    }): Promise<InspectionSpecification> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes/${idEspecificacao}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const updatedData: InspectionSpecification = await response.json();
+            return updatedData;
+        } catch (error) {
+            console.error(`Erro ao atualizar especificação ${idEspecificacao}:`, error);
             throw error;
         }
     }

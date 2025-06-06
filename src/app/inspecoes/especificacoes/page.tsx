@@ -20,11 +20,10 @@ export default function EspecificacoesPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams?.get('id');
-    const hasInitialized = useRef(false);
-
-    const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
+    const hasInitialized = useRef(false); const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string } }>({});
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
@@ -80,11 +79,71 @@ export default function EspecificacoesPage() {
         } finally {
             setLoading(false);
         }
-    }, [id]);
-
-    const handleBack = useCallback(() => {
+    }, [id]); const handleBack = useCallback(() => {
         router.back();
     }, [router]);
+
+    const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao', value: string) => {
+        setEditingValues(prev => ({
+            ...prev,
+            [specId]: {
+                ...prev[specId],
+                [field]: value
+            }
+        }));
+    }, []);
+
+    const calculateConforme = useCallback((valorEncontrado: number, valorMinimo: number | null, valorMaximo: number | null): boolean | null => {
+        if (valorMinimo !== null && valorMaximo !== null) {
+            return valorEncontrado >= valorMinimo && valorEncontrado <= valorMaximo;
+        } else if (valorMaximo !== null) {
+            return valorEncontrado <= valorMaximo;
+        } else if (valorMinimo !== null) {
+            return valorEncontrado >= valorMinimo;
+        }
+        return null;
+    }, []);
+
+    const handleSaveSpecification = useCallback(async (spec: InspectionSpecification) => {
+        const editedValues = editingValues[spec.id_especificacao];
+        if (!editedValues) return;
+
+        const valorEncontrado = parseFloat(editedValues.valor_encontrado);
+        if (isNaN(valorEncontrado)) return;
+
+        const conforme = calculateConforme(valorEncontrado, spec.valor_minimo, spec.valor_maximo);
+        try {
+            // Chamar API para salvar a especificação
+            await inspecaoService.updateInspectionSpecification(spec.id_especificacao, {
+                valor_encontrado: valorEncontrado,
+                conforme,
+                observacao: editedValues.observacao || null
+            });
+
+            // Atualizar o estado local
+            setSpecifications(prev => prev.map(s =>
+                s.id_especificacao === spec.id_especificacao
+                    ? {
+                        ...s,
+                        valor_encontrado: valorEncontrado,
+                        conforme,
+                        observacao: editedValues.observacao || null
+                    }
+                    : s
+            ));
+
+            // Limpar valores de edição
+            setEditingValues(prev => {
+                const updated = { ...prev };
+                delete updated[spec.id_especificacao];
+                return updated;
+            });
+
+        } catch (error) {
+            console.error('Erro ao salvar especificação:', error);
+            setError('Erro ao salvar especificação');
+        }
+    }, [editingValues, calculateConforme]);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {
@@ -275,17 +334,19 @@ export default function EspecificacoesPage() {
                                                     {spec.descricao_cota} {spec.complemento_cota && `(${spec.complemento_cota})`}
                                                 </p>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
+                                        </div>                                        <div className="flex items-center gap-2">
                                             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border ${statusInfo.className}`}>
                                                 {statusInfo.icon}
                                                 {statusInfo.text}
                                             </span>
+                                            {spec.valor_encontrado !== null && (
+                                                <span className="text-xs text-gray-500">
+                                                    {spec.valor_encontrado} {spec.unidade_medida}
+                                                </span>
+                                            )}
                                         </div>
-                                    </div>
-
-                                    {/* Informações em Grid */}
-                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                                    </div>                                    {/* Informações em Grid */}
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                         <div className="space-y-1">
                                             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Instrumento</p>
                                             <div className="flex items-center gap-2">
@@ -304,48 +365,165 @@ export default function EspecificacoesPage() {
                                         <div className="space-y-1">
                                             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Tolerância</p>
                                             <p className="text-sm font-medium text-gray-900">
-                                                {spec.valor_minimo} - {spec.valor_maximo} {spec.unidade_medida}
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Valor Encontrado</p>
-                                            <p className="text-sm font-medium text-gray-900">
-                                                {spec.valor_encontrado !== null
-                                                    ? `${spec.valor_encontrado} ${spec.unidade_medida}`
-                                                    : 'Não medido'
+                                                {spec.valor_minimo !== null && spec.valor_maximo !== null
+                                                    ? `${spec.valor_minimo} - ${spec.valor_maximo} ${spec.unidade_medida}`
+                                                    : spec.valor_maximo !== null
+                                                        ? `≤ ${spec.valor_maximo} ${spec.unidade_medida}`
+                                                        : spec.valor_minimo !== null
+                                                            ? `≥ ${spec.valor_minimo} ${spec.unidade_medida}`
+                                                            : 'Não definida'
                                                 }
                                             </p>
                                         </div>
 
-                                        {spec.observacao && (
-                                            <div className="space-y-1 col-span-2 sm:col-span-3 lg:col-span-5">
-                                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
-                                                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-2">{spec.observacao}</p>
-                                            </div>
-                                        )}
-                                    </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Unidade</p>
+                                            <p className="text-sm font-medium text-gray-900">{spec.unidade_medida}</p>
+                                        </div>
+                                    </div>                                    {/* Campos Editáveis - Mostrar apenas se não foi medido ou está sendo editado */}
+                                    {(spec.valor_encontrado === null || editingValues[spec.id_especificacao]) && (
+                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                        Valor Encontrado *
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder={`Valor em ${spec.unidade_medida}`} value={editingValues[spec.id_especificacao]?.valor_encontrado ||
+                                                                (spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ? spec.valor_encontrado.toString() : '')}
+                                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#1ABC9C] focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/20"
+                                                        />
+                                                        <span className="text-sm text-gray-500 min-w-fit">{spec.unidade_medida}</span>
+                                                    </div>
+                                                    {editingValues[spec.id_especificacao]?.valor_encontrado && (
+                                                        <div className="flex items-center gap-2 text-xs">
+                                                            {(() => {
+                                                                const valor = parseFloat(editingValues[spec.id_especificacao].valor_encontrado);
+                                                                if (isNaN(valor)) return null;
+                                                                const conforme = calculateConforme(valor, spec.valor_minimo, spec.valor_maximo);
 
-                                    {/* SVG Display */}
+                                                                if (conforme === true) {
+                                                                    return (
+                                                                        <span className="flex items-center gap-1 text-green-600">
+                                                                            <CheckCircle className="h-3 w-3" />
+                                                                            Conforme
+                                                                        </span>
+                                                                    );
+                                                                } else if (conforme === false) {
+                                                                    return (
+                                                                        <span className="flex items-center gap-1 text-red-600">
+                                                                            <XCircle className="h-3 w-3" />
+                                                                            Não Conforme
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                        Observação (Opcional)
+                                                    </label>
+                                                    <textarea
+                                                        placeholder="Adicione uma observação..."
+                                                        value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                                        onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#1ABC9C] focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/20 resize-none"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>                                            {/* Botão de Salvar */}
+                                            {editingValues[spec.id_especificacao]?.valor_encontrado && (
+                                                <div className="mt-4 flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingValues(prev => {
+                                                                const updated = { ...prev };
+                                                                delete updated[spec.id_especificacao];
+                                                                return updated;
+                                                            });
+                                                        }}
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                        Cancelar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveSpecification(spec)}
+                                                        disabled={!editingValues[spec.id_especificacao]?.valor_encontrado ||
+                                                            isNaN(parseFloat(editingValues[spec.id_especificacao].valor_encontrado))}
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-[#1ABC9C] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#16A085] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <CheckCircle className="h-4 w-4" />
+                                                        Salvar Medição
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Mostrar observação se já foi medido e não está sendo editado */}
+                                    {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && spec.observacao && (
+                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
+                                                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{spec.observacao}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Botão para editar medição já salva */}
+                                    {spec.valor_encontrado !== null && !editingValues[spec.id_especificacao] && (
+                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                            <button
+                                                onClick={() => setEditingValues(prev => ({
+                                                    ...prev,
+                                                    [spec.id_especificacao]: {
+                                                        valor_encontrado: spec.valor_encontrado?.toString() || '',
+                                                        observacao: spec.observacao || ''
+                                                    }
+                                                }))}
+                                                className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                                            >
+                                                <RefreshCw className="h-4 w-4" />
+                                                Editar Medição
+                                            </button>
+                                        </div>
+                                    )}                                    {/* SVG Display */}
                                     {(spec.svg_caracteristica || spec.svg_cota) && (
                                         <div className="mt-4 pt-4 border-t border-gray-100">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {spec.svg_caracteristica && (
                                                     <div className="space-y-2">
                                                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Característica</p>
-                                                        <div
-                                                            className="bg-white rounded-lg p-3 border border-gray-200 flex items-center justify-center min-h-[100px]"
-                                                            dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
-                                                        />
+                                                        <div className="bg-white rounded-lg p-3 border border-gray-200 flex items-center justify-center min-h-[100px]">
+                                                            <div
+                                                                className="w-20 h-20 flex items-center justify-center"
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12))">${spec.svg_caracteristica}</svg>`
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {spec.svg_cota && (
                                                     <div className="space-y-2">
                                                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cota</p>
-                                                        <div
-                                                            className="bg-white rounded-lg p-3 border border-gray-200 flex items-center justify-center min-h-[100px]"
-                                                            dangerouslySetInnerHTML={{ __html: spec.svg_cota }}
-                                                        />
+                                                        <div className="bg-white rounded-lg p-3 border border-gray-200 flex items-center justify-center min-h-[100px]">
+                                                            <div
+                                                                className="w-20 h-20 flex items-center justify-center"
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12))">${spec.svg_cota}</svg>`
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
