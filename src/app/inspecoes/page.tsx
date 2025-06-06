@@ -23,7 +23,6 @@ interface TabData {
     mobileLabel?: string;
     icon: React.ReactNode;
     count: number;
-    description: string;
 }
 
 const TAB_API_MAP = {
@@ -34,7 +33,7 @@ const TAB_API_MAP = {
 } as const;
 
 const IDLE_TIME = 15000;
-const AUTO_REFRESH_INTERVAL = 180000;
+const AUTO_REFRESH_INTERVAL = 18000;
 
 const USER_ACTIVITY_EVENTS = [
     "mousedown",
@@ -58,7 +57,10 @@ export default function InspecoesPage() {
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastActivityRef = useRef(Date.now()); const initialLoadRef = useRef(false);    // Helper functions to compute display values
+    const lastActivityRef = useRef(Date.now());
+    const initialLoadRef = useRef(false);
+
+    // Helper functions to compute display values
     const getSituacao = useCallback((situacao: string) => {
         switch (situacao) {
             case '1': return 'Pendente desde';
@@ -72,7 +74,9 @@ export default function InspecoesPage() {
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
         }
-    }, []); const checkColaboradorData = useCallback((): boolean => {
+    }, []);    // Helper functions to compute display values
+
+    const checkColaboradorData = useCallback((): boolean => {
         try {
             // Check for codigo_pessoa in colaborador or userData
             const colaboradorData = localStorage.getItem('colaborador');
@@ -298,9 +302,7 @@ export default function InspecoesPage() {
                 clearTimeout(autoRefreshTimerRef.current);
             }
         };
-    }, [resetIdleTimer]);
-
-    const tabs: TabData[] = [
+    }, [resetIdleTimer]); const tabs: TabData[] = [
         {
             id: "processo",
             label: "Inspeções de Processo",
@@ -308,7 +310,6 @@ export default function InspecoesPage() {
             mobileLabel: "Processo",
             icon: <Cog className="h-4 w-4" />,
             count: inspectionData.processo?.length || 0,
-            description: "Inspeções relacionadas aos processos produtivos",
         },
         {
             id: "qualidade",
@@ -317,7 +318,6 @@ export default function InspecoesPage() {
             mobileLabel: "Qualidade",
             icon: <CheckCircle className="h-4 w-4" />,
             count: inspectionData.qualidade?.length || 0,
-            description: "Inspeções de controle de qualidade",
         },
         {
             id: "outras",
@@ -326,7 +326,6 @@ export default function InspecoesPage() {
             mobileLabel: "Outras Inspeções",
             icon: <Users className="h-4 w-4" />,
             count: inspectionData.outras?.length || 0,
-            description: "Outras inspeções diversas",
         },
         {
             id: "naoConformidade",
@@ -335,7 +334,6 @@ export default function InspecoesPage() {
             mobileLabel: "N. Conform.",
             icon: <AlertTriangle className="h-4 w-4" />,
             count: inspectionData.naoConformidade?.length || 0,
-            description: "Registros de não conformidades identificadas",
         },
     ];
 
@@ -368,9 +366,7 @@ export default function InspecoesPage() {
                         Nenhuma inspeção encontrada
                     </h3>
                     <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
-                        Não há {" "}
-                        {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
-                        momento.
+                        Nenhum registro encontrado
                     </p>
                 </motion.div>
             );
@@ -384,103 +380,152 @@ export default function InspecoesPage() {
                 transition={{ duration: 0.3 }}
                 className="space-y-4"
             >
-                {currentData.map((item: InspectionItem, index: number) => (
-                    <motion.button
-                        key={item.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        onClick={() => handleInspectionClick(item)}
-                        className="group relative w-full overflow-hidden rounded-xl border border-gray-100 bg-white/60 backdrop-blur-sm p-5 transition-all duration-300 hover:border-gray-200 hover:bg-white hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left"
-                    >
-                        {/* Header Principal */}
-                        <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
-                                    {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                </div>                                <div>
-                                    <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                        {item.tipo_inspecao} (#{item.numero_ordem})
-                                    </h3>
-                                    <p className="text-sm text-gray-500">
-                                        Produto: {item.referencia} - {item.produto}
+                {currentData.map((item: InspectionItem, index: number) => {
+                    // Verificar se a data prevista está expirada ou prestes a expirar
+                    let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
+
+                    if (item.data_hora_prevista) {
+                        try {
+                            // Parse da data prevista
+                            let dataPrevista: Date;
+
+                            // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
+                            if (item.data_hora_prevista.includes('/')) {
+                                const parts = item.data_hora_prevista.split(' ');
+                                const dateParts = parts[0].split('/');
+                                const timeParts = parts[1].split(':');
+
+                                dataPrevista = new Date(
+                                    parseInt(dateParts[2]), // ano
+                                    parseInt(dateParts[1]) - 1, // mês (0-11)
+                                    parseInt(dateParts[0]), // dia
+                                    parseInt(timeParts[0]), // hora
+                                    parseInt(timeParts[1]), // minuto
+                                    parseInt(timeParts[2] || '0') // segundo (opcional)
+                                );
+                            } else {
+                                dataPrevista = new Date(item.data_hora_prevista);
+                            }
+
+                            const agora = new Date();
+                            const diffMs = dataPrevista.getTime() - agora.getTime();
+                            const diffMinutes = diffMs / (1000 * 60);
+
+                            // Data já passou - fundo vermelho
+                            if (diffMs < 0) {
+                                bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
+                            }
+                            // Menos de 5 minutos para o prazo - fundo âmbar
+                            else if (diffMinutes <= 5) {
+                                bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
+                            }
+                        } catch (error) {
+                            console.error("Erro ao processar data prevista:", error);
+                        }
+                    }
+
+                    return (
+                        <motion.button
+                            key={item.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            onClick={() => handleInspectionClick(item)}
+                            className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-5 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                        >
+                            {/* Header Principal */}
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
+                                        {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
+                                            {item.tipo_inspecao} (#{item.numero_ordem})
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                            Produto: {item.referencia} - {item.produto}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`
+                                        inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
+                                        ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                    : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                        : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                            : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                                    : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                        : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                            : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                    `}>
+                                        <div className={`
+                                            h-1.5 w-1.5 rounded-full
+                                            ${item.situacao === '1' ? 'bg-amber-500'
+                                                : item.situacao === '2' ? 'bg-purple-500'
+                                                    : item.situacao === '3' ? 'bg-purple-500'
+                                                        : item.situacao === '4' ? 'bg-blue-500'
+                                                            : item.situacao === '5' ? 'bg-gray-400'
+                                                                : item.situacao === '6' ? 'bg-gray-400'
+                                                                    : item.situacao === '7' ? 'bg-orange-500'
+                                                                        : item.situacao === '8' ? 'bg-emerald-500'
+                                                                            : item.situacao === '9' ? 'bg-red-500'
+                                                                                : 'bg-gray-400'}
+                                        `} />
+                                        <span className="whitespace-nowrap">
+                                            {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            {/* Informações em Grid */}
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Roteiro</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.roteiro}</p>
+                                </div>
+
+
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.origem}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
+                                </div>
+
+                                {/* Data prevista - sempre exibida */}
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {item.data_hora_prevista ? formatDateTime(item.data_hora_prevista) : 'Não definida'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">                                <span className={`
-                                    inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
-                                    ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                        : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                            : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                    : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                        : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                            : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                                `}>                                    <div className={`
-                                        h-1.5 w-1.5 rounded-full
-                                        ${item.situacao === '1' ? 'bg-amber-500'
-                                        : item.situacao === '2' ? 'bg-purple-500'
-                                            : item.situacao === '3' ? 'bg-purple-500'
-                                                : item.situacao === '4' ? 'bg-blue-500'
-                                                    : item.situacao === '5' ? 'bg-gray-400'
-                                                        : item.situacao === '6' ? 'bg-gray-400'
-                                                            : item.situacao === '7' ? 'bg-orange-500'
-                                                                : item.situacao === '8' ? 'bg-emerald-500'
-                                                                    : item.situacao === '9' ? 'bg-red-500'
-                                                                        : 'bg-gray-400'}
-                                    `} />
-                                <span className="whitespace-nowrap">
-                                    {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
-                                </span>
-                            </span>
-                            </div>
-                        </div>
-                        {/* Informações em Grid */}
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
-                            <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
-                                <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
-                                <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
-                            </div>
-
-                            <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Roteiro</p>
-                                <p className="text-sm font-medium text-gray-900">{item.roteiro}</p>
-                            </div>
-
-
-                            <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
-                                <p className="text-sm font-medium text-gray-900">{item.origem}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
-                                <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
-                            </div>
-
-                            {item.data_hora_prevista && (
-                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
-                                    <p className="text-sm font-medium text-gray-900">{formatDateTime(item.data_hora_prevista)}</p>
-                                </div>
-                            )}
-                        </div>
-                        {/* Gradient overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    </motion.button>
-                ))}
+                            {/* Gradient overlay on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        </motion.button>
+                    );
+                })}
             </motion.div>
         );
     };
 
     return (
-        <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
+        <div className="w-full space-y-3 p-2 sm:p-3 md:p-4">
             {/* Debug info (hidden) */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
@@ -532,7 +577,7 @@ export default function InspecoesPage() {
                 />
             )}
 
-            <div className="mb-6 mt-8 sm:mb-8 sm:mt-10">
+            <div className="mt-2 sm:mt-4">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide sm:space-x-8 lg:space-x-10">
                         {tabs.map((tab) => (
@@ -540,7 +585,7 @@ export default function InspecoesPage() {
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id)}
                                 className={`
-                                    relative flex min-w-0 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-all duration-300 sm:gap-3 sm:px-2 sm:py-5 sm:text-base
+                                    relative flex min-w-0 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-all duration-300 sm:gap-3 sm:px-2 sm:py-4 sm:text-base
                                     ${activeTab === tab.id
                                         ? "border-[#1ABC9C] text-[#1ABC9C]"
                                         : "border-transparent text-gray-500 hover:border-gray-200 hover:text-gray-700"
@@ -587,18 +632,6 @@ export default function InspecoesPage() {
                         ))}
                     </nav>
                 </div>
-
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-4 px-1 sm:mt-6"
-                >
-                    <p className="text-sm text-gray-600 sm:text-base">
-                        {tabs.find((tab) => tab.id === activeTab)?.description}
-                    </p>
-                </motion.div>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
                 {renderTabContent()}
