@@ -12,6 +12,7 @@ import {
     RefreshCw,
     Users,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface TabData {
@@ -44,6 +45,7 @@ const USER_ACTIVITY_EVENTS = [
 ];
 
 export default function InspecoesPage() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState("processo");
     const [inspectionData, setInspectionData] = useState<Record<string, InspectionItem[]>>({});
     const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
@@ -185,15 +187,17 @@ export default function InspecoesPage() {
 
     const handleManualRefresh = useCallback(() => {
         refreshActiveTab(); resetIdleTimer();
-    }, [refreshActiveTab, resetIdleTimer]);
-
-    const handleTabChange = useCallback(async (tabId: string) => {
+    }, [refreshActiveTab, resetIdleTimer]); const handleTabChange = useCallback(async (tabId: string) => {
         setActiveTab(tabId);
 
         if (!inspectionData[tabId]) {
             await fetchTabData(tabId);
         }
     }, [inspectionData, fetchTabData]);
+
+    const handleInspectionClick = useCallback((item: InspectionItem) => {
+        router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
+    }, [router]);
 
     useEffect(() => {
         const loadInitialData = async () => {
@@ -285,22 +289,23 @@ export default function InspecoesPage() {
         }
 
         if (!currentData || currentData.length === 0) {
-            return (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="py-8 text-center sm:py-12"
-                >
-                    <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300 sm:mb-4 sm:h-16 sm:w-16" />
-                    <h3 className="mb-2 text-base font-semibold text-gray-600 sm:text-lg">
-                        Nenhuma inspeção encontrada
-                    </h3>
-                    <p className="px-4 text-sm text-gray-500 sm:text-base">
-                        Não há {" "}
-                        {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
-                        momento.
-                    </p>
-                </motion.div>
+            return (<motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="py-12 text-center sm:py-16"
+            >
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
+                    <FileText className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
+                </div>
+                <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
+                    Nenhuma inspeção encontrada
+                </h3>
+                <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
+                    Não há {" "}
+                    {tabs.find((t) => t.id === activeTab)?.label.toLowerCase()} no
+                    momento.
+                </p>
+            </motion.div>
             );
         }
 
@@ -310,43 +315,94 @@ export default function InspecoesPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-2"
+                className="space-y-4"
             >
                 {currentData.map((item: InspectionItem, index: number) => (
-                    <motion.div
+                    <motion.button
                         key={item.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-sm"
+                        onClick={() => handleInspectionClick(item)}
+                        className="group relative w-full overflow-hidden rounded-xl border border-gray-100 bg-white/60 backdrop-blur-sm p-5 transition-all duration-300 hover:border-gray-200 hover:bg-white hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left"
                     >
-                        <div className="flex items-center justify-between">                            <div className="flex min-w-0 flex-1 items-center gap-4">                                <span className="text-sm font-medium text-gray-900">
-                            ID: {item.id_ficha_inspecao}
-                        </span>
-                            <span className="truncate text-sm text-gray-600">
-                                {getTipoFicha(activeTab)}
-                            </span>
-                        </div><div className="flex flex-shrink-0 items-center gap-3">                                <span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-600">
-                            {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
-                        </span>
+                        {/* Header Principal */}
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
+                                    {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                </div>                                <div>                            <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
+                                    {getTipoFicha(activeTab)}
+                                </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Posto: {item.codigo_posto}
+                                    </p>
+                                </div>
                             </div>
-                        </div>                        <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                            <span>Ordem: {item.numero_ordem}</span>
-                            <span>Ref: {item.referencia}</span>
-                            <span>Roteiro: {item.roteiro}</span>
-                            <span>Lote: {item.numero_lote}</span>
-                            <span>Posto: {item.codigo_posto}</span>
-                            <span>Origem: {item.origem || 'N/A'}</span>
+                            <div className="flex items-center gap-2">
+                                <span className={`
+                                    inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
+                                    ${item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                            : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                `}>
+                                    <div className={`
+                                        h-1.5 w-1.5 rounded-full
+                                        ${item.situacao === '8' ? 'bg-emerald-500'
+                                            : item.situacao === '9' ? 'bg-red-500'
+                                                : item.situacao === '7' ? 'bg-orange-500'
+                                                    : item.situacao === '4' ? 'bg-blue-500'
+                                                        : 'bg-gray-400'}
+                                    `} />
+                                    <span className="whitespace-nowrap">
+                                        {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>                        {/* Informações em Grid */}
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ordem</p>
+                                <p className="text-sm font-medium text-gray-900">#{item.numero_ordem}</p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Referência</p>
+                                <p className="text-sm font-medium text-gray-900">{item.referencia}</p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Roteiro</p>
+                                <p className="text-sm font-medium text-gray-900">{item.roteiro}</p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Lote</p>
+                                <p className="text-sm font-medium text-gray-900">{item.numero_lote}</p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
+                                <p className="text-sm font-medium text-gray-900">{item.origem}</p>
+                            </div>
+
                             {item.data_hora_prevista && (
-                                <span>Prevista: {formatDateTime(item.data_hora_prevista)}</span>
-                            )}
-                        </div>
-                    </motion.div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
+                                    <p className="text-sm font-medium text-gray-900">{formatDateTime(item.data_hora_prevista)}</p>
+                                </div>
+                            )}                </div>                {/* Gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    </motion.button>
                 ))}
             </motion.div>
         );
-    }; return (
-        <div className="w-full space-y-5 p-2 sm:p-4 md:p-6">
+    };
+
+    return (
+        <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
             <div className="flex items-center justify-between">
                 <PageHeader
                     title="Inspeções"
@@ -360,16 +416,14 @@ export default function InspecoesPage() {
                             hour: "2-digit",
                             minute: "2-digit",
                         })}
-                    </div>
-
-                    <button
+                    </div>                    <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
                         className={`
-                            flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200
+                            relative flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 shadow-sm
                             ${isRefreshing
-                                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+                                ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-[#1ABC9C] hover:bg-[#1ABC9C] hover:text-white hover:shadow-md"
                             }
                         `}
                         title="Atualizar dados"
@@ -380,60 +434,74 @@ export default function InspecoesPage() {
                         <span className="hidden sm:inline">
                             {isRefreshing ? "Atualizando..." : "Atualizar"}
                         </span>
-                    </button>                </div>
-            </div>
-
-            <div className="mb-4 mt-6 sm:mb-6 sm:mt-8">
-                <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide sm:space-x-6 lg:space-x-8">
+                    </button></div>
+            </div>            <div className="mb-6 mt-8 sm:mb-8 sm:mt-10">
+                <div className="border-b border-gray-100">
+                    <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide sm:space-x-8 lg:space-x-10">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id)}
                                 className={`
-                                    flex min-w-0 flex-shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-xs font-medium transition-colors duration-200 sm:gap-2 sm:px-2 sm:py-4 sm:text-sm
+                                    relative flex min-w-0 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-all duration-300 sm:gap-3 sm:px-2 sm:py-5 sm:text-base
                                     ${activeTab === tab.id
                                         ? "border-[#1ABC9C] text-[#1ABC9C]"
-                                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                        : "border-transparent text-gray-500 hover:border-gray-200 hover:text-gray-700"
                                     }
                                 `}
                             >
-                                <span className="flex-shrink-0">{tab.icon}</span>
+                                <span className={`
+                                    flex-shrink-0 transition-all duration-300
+                                    ${activeTab === tab.id ? 'scale-110' : ''}
+                                `}>
+                                    {tab.icon}
+                                </span>
                                 <span className="hidden lg:inline">
                                     {tab.label}
                                 </span>
                                 <span className="hidden sm:inline lg:hidden">
                                     {tab.tabletLabel || tab.label}
                                 </span>
-                                <span className="text-xs font-normal sm:hidden">
+                                <span className="text-sm font-normal sm:hidden">
                                     {tab.mobileLabel || tab.label.split(" ")[0]}
                                 </span>
                                 <span
                                     className={`
-                                        ml-1 flex-shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium sm:ml-2 sm:px-2
+                                        ml-1 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300 sm:ml-2 sm:px-2.5 sm:py-1
                                         ${activeTab === tab.id
-                                            ? "bg-[#1ABC9C] text-white"
-                                            : "bg-gray-100 text-gray-900"
+                                            ? "bg-[#1ABC9C] text-white shadow-sm"
+                                            : "bg-gray-100 text-gray-600 group-hover:bg-gray-200"
                                         }
-                                    `}                            >
+                                    `}
+                                >
                                     {tab.count}
                                 </span>
+
+                                {/* Active indicator */}
+                                {activeTab === tab.id && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-[#1ABC9C] rounded-full"
+                                        initial={false}
+                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    />
+                                )}
                             </button>
                         ))}
                     </nav>
                 </div>
 
-                <motion.p
+                <motion.div
                     key={activeTab}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-3 px-1 text-xs text-gray-600 sm:mt-4 sm:text-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-4 px-1 sm:mt-6"
                 >
-                    {tabs.find((tab) => tab.id === activeTab)?.description}
-                </motion.p>
-            </div>
-
-            <div className="rounded-lg bg-gray-50 p-3 sm:p-4 md:p-6">
+                    <p className="text-sm text-gray-600 sm:text-base">
+                        {tabs.find((tab) => tab.id === activeTab)?.description}
+                    </p>
+                </motion.div>            </div><div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
                 {renderTabContent()}
             </div>
         </div>

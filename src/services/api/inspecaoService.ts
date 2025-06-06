@@ -74,6 +74,27 @@ interface InspectionFilters {
     dataFim?: string;
 }
 
+interface InspectionSpecification {
+    id_especificacao: number;
+    ordem: number;
+    id_tipo_instrumento: number;
+    tipo_instrumento: string;
+    id_caracteristica: number;
+    descricao_caracteristica: string;
+    svg_caracteristica: string;
+    id_cota: number;
+    descricao_cota: string;
+    svg_cota: string;
+    local_inspecao: string;
+    complemento_cota: string;
+    valor_minimo: number;
+    valor_maximo: number;
+    unidade_medida: string;
+    valor_encontrado?: number | null;
+    conforme?: boolean | null;
+    observacao?: string | null;
+}
+
 
 
 class InspecaoService {
@@ -211,6 +232,32 @@ class InspecaoService {
     }
 
     /**
+     * Busca especificações de uma ficha de inspeção
+     */
+    async getInspectionSpecifications(id: number): Promise<InspectionSpecification[]> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao/especificacoes?id=${id}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            const data: InspectionSpecification[] = await response.json();
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error(`Erro ao buscar especificações da ficha ${id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Busca estatísticas das inspeções
      */
     async getInspectionStats(): Promise<{
@@ -242,6 +289,8 @@ const inspecaoService = new InspecaoService();
 export default inspecaoService;
 export type {
     InspectionData,
-    InspectionFilters, InspectionItem
+    InspectionFilters,
+    InspectionItem,
+    InspectionSpecification
 };
 
