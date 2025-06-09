@@ -1,0 +1,89 @@
+/* Minimalista CSS para a página de especificações */
+
+/* Animações suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos base */
+.spec-card {
+    transition: all 0.2s ease;
+}
+
+.spec-card:hover {
+    transform: translateY(-1px);
+}
+
+/* Estilo para cards expandidos */
+.expanded-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Status badges */
+.status-badge {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+/* Input focus styles */
+input:focus,
+textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+}
+
+/* Botões com hover suave */
+button {
+    transition: all 0.2s ease;
+}
+
+/* Estilizar scrollbar para um look mais minimalista */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f9f9f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+/* Estilo para itens pendentes */
+.pending-item {
+    border-left: 2px solid #f0f0f0;
+}
+
+/* Estilos de animação para interações */
+.animate-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.slide-in {
+    animation: slideUp 0.3s ease forwards;
+}

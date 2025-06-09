@@ -34,8 +34,8 @@ const TAB_API_MAP = {
     naoConformidade: "nc",
 } as const;
 
-const IDLE_TIME = 60000;
-const AUTO_REFRESH_INTERVAL = 80000;
+const IDLE_TIME = 1800000;
+const AUTO_REFRESH_INTERVAL = 1800000;
 
 const USER_ACTIVITY_EVENTS = [
     "mousedown",
@@ -76,7 +76,7 @@ export default function InspecoesPage() {
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
         }
-    }, []);   
+    }, []);
     const TABLET_MIN_WIDTH = 640;
     const TABLET_MAX_WIDTH = 1024;
 
@@ -110,17 +110,14 @@ export default function InspecoesPage() {
         // Configuração inicial
         handleResize();
 
-        // Adiciona listener para redimensionamento e mudança de orientação
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', handleResize);
 
-        // Armazena a referência do timer para limpeza
         let orientationHintTimer: NodeJS.Timeout | null = null;
 
         // Mostra um tooltip sobre orientação apenas em tablets (uma vez por sessão)
         if (shouldUseCompactLayout() && isInPortraitMode() && !sessionStorage.getItem('orientation-hint')) {
             orientationHintTimer = setTimeout(() => {
-                // Marca que o hint já foi mostrado nesta sessão
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
         }
@@ -491,13 +488,17 @@ export default function InspecoesPage() {
                                 <div className="flex items-center gap-2 min-w-0">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
                                         {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                    </div>
-                                    <div className="min-w-0">
+                                    </div>                                        <div className="min-w-0">
                                         <h3 className="text-xs font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
                                             {item.tipo_inspecao}
                                         </h3>
-                                        <div className="flex flex-col gap-0.5 text-[11px] text-gray-500 leading-tight">
+                                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 leading-tight">
                                             <span className="truncate">OF: #{item.numero_ordem}</span>
+                                            <span className="flex items-center">
+                                                <span className="text-gray-400 font-medium mx-1">|</span>
+                                                <span className="text-gray-400 font-medium mr-0.5">Proc:</span>
+                                                {item.processo}-{item.tipo_acao}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -542,29 +543,40 @@ export default function InspecoesPage() {
                                     )}</span>
 
                                 </div>
-                            </div>
-                            {/* Linha adicional para informações críticas */}
-                            <div className="flex items-center justify-between mt-2  gap-2">
-                                <div className="flex items-center gap-2 text-[11px]">
+                            </div>                            {/* Linha adicional para informações críticas */}
+                            <div className="flex items-center justify-between mt-2 gap-2">
+                                <div className="flex items-center flex-wrap gap-2 text-[11px] flex-1">
                                     <span className="flex items-center text-gray-900">
-                                        <span className="text-gray-400  font-medium mr-1">Proc:</span>
-                                        {item.processo} - {item.tipo_acao}
-                                    </span>
-                                    <span className="flex items-center text-gray-900">
-                                        <span className="text-gray-400  font-medium mr-1">Posto:</span>
+                                        <span className="text-gray-400 font-medium mr-1">Posto:</span>
                                         {item.codigo_posto}
                                     </span>
                                     <span className="flex items-center text-gray-900">
-                                        <span className="text-gray-400  font-medium mr-1">Origem:</span>
+                                        <span className="text-gray-400 font-medium mr-1">Origem:</span>
                                         {item.origem}
                                     </span>
                                     {item.obs_criacao && (
                                         <span className="flex items-center text-gray-900">
-                                            <span className="text-gray-400  font-medium mr-1">Obs:</span>
+                                            <span className="text-gray-400 font-medium mr-1">Obs:</span>
                                             {item.obs_criacao}
                                         </span>
                                     )}
                                 </div>
+
+                                {/* Botão Registrar Não Conformidade somente na aba de processo */}
+                                {activeTab === "processo" && (
+                                    <div className="flex-shrink-0">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Evita que o click no botão também acione o clique do card
+                                                console.log("Registrando não conformidade para o item (layout compacto):", item.id_ficha_inspecao);
+                                            }}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1"
+                                        >
+                                            <AlertTriangle className="h-2 w-2" />
+                                            Registrar NC
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             {/* Gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -669,16 +681,34 @@ export default function InspecoesPage() {
                                 <p className="text-xs font-medium text-gray-500 uppercase mr-2">Origem:</p>
                                 <p className="text-xs font-medium text-gray-900">{item.origem}</p>
                             </div>
-                        </div>
-
-                        {item.obs_criacao && (
-                            <div className="col-span-2 sm:col-span-3">
-                                <div className="flex items-center">
-                                    <p className="text-xs font-medium text-gray-500 uppercase mr-2">Observação:</p>
-                                    <p className="text-xs font-medium text-gray-900 line-clamp-1">{item.obs_criacao}</p>
-                                </div>
+                        </div>                        <div className="col-span-2 sm:col-span-3 flex items-center justify-between">
+                            <div className="flex items-center">
+                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">
+                                    {item.obs_criacao ? "Observação:" : ""}
+                                </p>
+                                <p className="text-xs font-medium text-gray-900 line-clamp-1">
+                                    {item.obs_criacao || ""}
+                                </p>
                             </div>
-                        )}
+
+                            {/* Botão Registrar Não Conformidade apenas na aba de processo */}
+                            {activeTab === "processo" && (
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Evita que o click no botão também acione o clique do card
+                                            // Aqui você pode adicionar a lógica para registrar a não conformidade
+                                            console.log("Registrando não conformidade para o item:", item.id_ficha_inspecao);
+                                        }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5"
+                                    >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>
+                                            {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
+                                        </span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
