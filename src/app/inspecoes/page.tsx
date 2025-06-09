@@ -32,8 +32,8 @@ const TAB_API_MAP = {
     naoConformidade: "nc",
 } as const;
 
-const IDLE_TIME = 15000;
-const AUTO_REFRESH_INTERVAL = 18000;
+const IDLE_TIME = 60000;
+const AUTO_REFRESH_INTERVAL = 80000;
 
 const USER_ACTIVITY_EVENTS = [
     "mousedown",
@@ -484,10 +484,7 @@ export default function InspecoesPage() {
                                 <div className="overflow-hidden">
                                     <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
                                         {item.tipo_inspecao} (OF: #{item.numero_ordem})
-                                    </h3>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
-                                        <p className="truncate">Ref: {item.referencia}</p>
-                                        <div className="hidden sm:inline-block mx-2">•</div>
+                                    </h3>                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
                                         <p className="truncate">
                                             Posto: {item.codigo_posto}
                                         </p>
@@ -499,8 +496,7 @@ export default function InspecoesPage() {
                                 </div>
                             </div>
 
-                            {/* Seção direita com status e data prevista */}
-                            <div className="flex flex-col items-end min-w-fit">
+                            {/* Seção direita com status e data prevista */}                            <div className="flex flex-col items-end min-w-fit">
                                 <span className={`
                                             inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium
                                             ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -526,7 +522,8 @@ export default function InspecoesPage() {
                                                                     : item.situacao === '8' ? 'bg-emerald-500'
                                                                         : item.situacao === '9' ? 'bg-red-500'
                                                                             : 'bg-gray-400'}
-                                            `} />                                            <span className="whitespace-nowrap">
+                                            `} />
+                                    <span className="whitespace-nowrap">
                                         {getSituacao(item.situacao)}
                                         <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
                                         <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
@@ -654,12 +651,15 @@ export default function InspecoesPage() {
             })}
         </motion.div>
         );
-    }; return (
+    };
+
+    return (
         <div className="w-full space-y-3 p-1 sm:p-2 md:p-2">
             {/* Debug info (hidden) */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
-            </div>            <div className="flex items-center justify-between mb-0 py-0">
+            </div>
+            <div className="flex items-center justify-between mb-0 py-0">
                 <PageHeader
                     title="Inspeções"
                     subtitle="Gerencie todas as inspeções do sistema"
@@ -717,8 +717,7 @@ export default function InspecoesPage() {
                                         : "border-transparent text-gray-500 hover:border-gray-200 hover:text-gray-700"
                                     }
                                 `}
-                            >
-                                <span className={`
+                            >                                <span className={`
                                     flex-shrink-0 transition-all duration-300
                                     ${activeTab === tab.id ? 'scale-110' : ''}
                                 `}>
@@ -732,7 +731,8 @@ export default function InspecoesPage() {
                                 </span>
                                 <span className="text-sm font-normal sm:hidden">
                                     {tab.mobileLabel || tab.label.split(" ")[0]}
-                                </span>                                <span
+                                </span>
+                                <span
                                     className={`
                                         ml-1 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300 sm:ml-2 sm:px-2.5 sm:py-1
                                         ${activeTab === tab.id
@@ -755,8 +755,8 @@ export default function InspecoesPage() {
                                 )}
                             </button>
                         ))}
-                    </nav>
-                </div>            </div>
+                    </nav>                </div>
+            </div>
             <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
                 {renderTabContent()}
             </div>
