@@ -441,20 +441,18 @@ export default function InspecoesPage() {
             );
         } return (<motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="space-y-3"
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            className="space-y-3 overflow-hidden"
         >
             {currentData.map((item: InspectionItem, index: number) => {
-                // Verificar se a data prevista está expirada ou prestes a expirar
                 let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
                 let dateTextColorClass = "text-gray-600 font-medium";
 
                 if (item.data_hora_prevista) {
                     try {
-                        // Parse da data prevista
                         let dataPrevista: Date;
 
                         // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
@@ -464,12 +462,12 @@ export default function InspecoesPage() {
                             const timeParts = parts[1].split(':');
 
                             dataPrevista = new Date(
-                                parseInt(dateParts[2]), // ano
-                                parseInt(dateParts[1]) - 1, // mês (0-11)
-                                parseInt(dateParts[0]), // dia
-                                parseInt(timeParts[0]), // hora
-                                parseInt(timeParts[1]), // minuto
-                                parseInt(timeParts[2] || '0') // segundo (opcional)
+                                parseInt(dateParts[2]), 
+                                parseInt(dateParts[1]) - 1, 
+                                parseInt(dateParts[0]), 
+                                parseInt(timeParts[0]), 
+                                parseInt(timeParts[1]),
+                                parseInt(timeParts[2] || '0') 
                             );
                         } else {
                             dataPrevista = new Date(item.data_hora_prevista);
@@ -479,22 +477,22 @@ export default function InspecoesPage() {
 
                         if (diffMs < 0) {
                             bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
-                            dateTextColorClass = "text-red-600 font-bold !text-red-600"; // Usando !important via tailwind
+                            dateTextColorClass = "text-red-600 font-bold !text-red-600";
                         }
                         else if (diffMinutes <= 5) {
                             bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
-                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; // Usando !important via tailwind
+                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; 
                         }
                     } catch (error) {
                         console.error("Erro ao processar data prevista:", error);
                     }
-                }                // Renderizar layout compacto para tablets ou quando em modo retrato
+                }                
                 if (isCompactLayout || isPortrait) {
                     return (<motion.button
                         key={item.id_ficha_inspecao}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                        transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                         onClick={() => handleInspectionClick(item)}
                         className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
                     >
@@ -593,13 +591,13 @@ export default function InspecoesPage() {
                 }                // Layout original para desktop e mobile
                 return (<motion.button
                     key={item.id_ficha_inspecao}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                     onClick={() => handleInspectionClick(item)}
-                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-200/50 cursor-pointer text-left`}
                 >
-                    {/* Header Principal com layout melhorado */}
+
                     <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
@@ -798,7 +796,7 @@ export default function InspecoesPage() {
                     </nav>
                 </div>
             </div>            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
-                <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+                <div className="max-h-[calc(100vh-220px)] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
                     {renderTabContent()}
                 </div>
             </div>
