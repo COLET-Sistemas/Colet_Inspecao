@@ -407,246 +407,246 @@ export default function InspecoesPage() {
             );
         }
 
-        return (            <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-2"
-            >
-                {currentData.map((item: InspectionItem, index: number) => {
-                    // Verificar se a data prevista está expirada ou prestes a expirar
-                    let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
-                    let dateTextColorClass = "text-gray-600 font-medium";
+        return (<motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-2"
+        >
+            {currentData.map((item: InspectionItem, index: number) => {
+                // Verificar se a data prevista está expirada ou prestes a expirar
+                let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
+                let dateTextColorClass = "text-gray-600 font-medium";
 
-                    if (item.data_hora_prevista) {
-                        try {
-                            // Parse da data prevista
-                            let dataPrevista: Date;
+                if (item.data_hora_prevista) {
+                    try {
+                        // Parse da data prevista
+                        let dataPrevista: Date;
 
-                            // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
-                            if (item.data_hora_prevista.includes('/')) {
-                                const parts = item.data_hora_prevista.split(' ');
-                                const dateParts = parts[0].split('/');
-                                const timeParts = parts[1].split(':');
+                        // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
+                        if (item.data_hora_prevista.includes('/')) {
+                            const parts = item.data_hora_prevista.split(' ');
+                            const dateParts = parts[0].split('/');
+                            const timeParts = parts[1].split(':');
 
-                                dataPrevista = new Date(
-                                    parseInt(dateParts[2]), // ano
-                                    parseInt(dateParts[1]) - 1, // mês (0-11)
-                                    parseInt(dateParts[0]), // dia
-                                    parseInt(timeParts[0]), // hora
-                                    parseInt(timeParts[1]), // minuto
-                                    parseInt(timeParts[2] || '0') // segundo (opcional)
-                                );
-                            } else {
-                                dataPrevista = new Date(item.data_hora_prevista);
-                            } const agora = new Date();
-                            const diffMs = dataPrevista.getTime() - agora.getTime();
-                            const diffMinutes = diffMs / (1000 * 60);
+                            dataPrevista = new Date(
+                                parseInt(dateParts[2]), // ano
+                                parseInt(dateParts[1]) - 1, // mês (0-11)
+                                parseInt(dateParts[0]), // dia
+                                parseInt(timeParts[0]), // hora
+                                parseInt(timeParts[1]), // minuto
+                                parseInt(timeParts[2] || '0') // segundo (opcional)
+                            );
+                        } else {
+                            dataPrevista = new Date(item.data_hora_prevista);
+                        } const agora = new Date();
+                        const diffMs = dataPrevista.getTime() - agora.getTime();
+                        const diffMinutes = diffMs / (1000 * 60);
 
-                            if (diffMs < 0) {
-                                bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
-                                dateTextColorClass = "text-red-600 font-bold !text-red-600"; // Usando !important via tailwind
-                            }
-                            else if (diffMinutes <= 5) {
-                                bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
-                                dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; // Usando !important via tailwind
-                            }
-                        } catch (error) {
-                            console.error("Erro ao processar data prevista:", error);
+                        if (diffMs < 0) {
+                            bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
+                            dateTextColorClass = "text-red-600 font-bold !text-red-600"; // Usando !important via tailwind
                         }
+                        else if (diffMinutes <= 5) {
+                            bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
+                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; // Usando !important via tailwind
+                        }
+                    } catch (error) {
+                        console.error("Erro ao processar data prevista:", error);
                     }
+                }
 
-                    // Renderizar layout compacto para tablets se necessário
-                    if (isCompactLayout) {
-                        return (                            <motion.button
-                                key={item.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleInspectionClick(item)}
-                                className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    {/* Seção esquerda com informações principais */}
-                                    <div className="flex items-center gap-2 flex-grow">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
-                                            {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                        </div>
-                                        <div className="overflow-hidden">
-                                            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
-                                                {item.tipo_inspecao} (OF: #{item.numero_ordem})
-                                            </h3>
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
-                                                <p className="truncate">Ref: {item.referencia}</p>
-                                                <div className="hidden sm:inline-block mx-2">•</div>
-                                                <p className="truncate">
-                                                    Posto: {item.codigo_posto}
-                                                </p>
-                                                <div className="hidden sm:inline-block mx-2">•</div>
-                                                <p className="truncate">
-                                                    Proc: {item.processo} - {item.tipo_acao}
-                                                </p>
-                                            </div>
-                                        </div>
+                // Renderizar layout compacto para tablets se necessário
+                if (isCompactLayout) {
+                    return (<motion.button
+                        key={item.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleInspectionClick(item)}
+                        className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                    >
+                        <div className="flex items-center justify-between">
+                            {/* Seção esquerda com informações principais */}
+                            <div className="flex items-center gap-2 flex-grow">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
+                                    {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                </div>
+                                <div className="overflow-hidden">
+                                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                        {item.tipo_inspecao} (OF: #{item.numero_ordem})
+                                    </h3>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
+                                        <p className="truncate">Ref: {item.referencia}</p>
+                                        <div className="hidden sm:inline-block mx-2">•</div>
+                                        <p className="truncate">
+                                            Posto: {item.codigo_posto}
+                                        </p>
+                                        <div className="hidden sm:inline-block mx-2">•</div>
+                                        <p className="truncate">
+                                            Proc: {item.processo} - {item.tipo_acao}
+                                        </p>
                                     </div>
+                                </div>
+                            </div>
 
-                                    {/* Seção direita com status e data prevista */}
-                                    <div className="flex flex-col items-end min-w-fit">
-                                        <span className={`
+                            {/* Seção direita com status e data prevista */}
+                            <div className="flex flex-col items-end min-w-fit">
+                                <span className={`
                                             inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium
                                             ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                    : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                        : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                            : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                                : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                                    : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                                        : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                            : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                                : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                        : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                        : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                            : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                                : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                    : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                        : 'bg-gray-50 text-gray-700 border border-gray-200'}
                                         `}>
-                                            <div className={`
+                                    <div className={`
                                                 h-1.5 w-1.5 rounded-full
                                                 ${item.situacao === '1' ? 'bg-amber-500'
-                                                    : item.situacao === '2' ? 'bg-purple-500'
-                                                        : item.situacao === '3' ? 'bg-purple-500'
-                                                            : item.situacao === '4' ? 'bg-blue-500'
-                                                                : item.situacao === '5' ? 'bg-gray-400'
-                                                                    : item.situacao === '6' ? 'bg-gray-400'
-                                                                        : item.situacao === '7' ? 'bg-orange-500'
-                                                                            : item.situacao === '8' ? 'bg-emerald-500'
-                                                                                : item.situacao === '9' ? 'bg-red-500'
-                                                                                    : 'bg-gray-400'}
+                                            : item.situacao === '2' ? 'bg-purple-500'
+                                                : item.situacao === '3' ? 'bg-purple-500'
+                                                    : item.situacao === '4' ? 'bg-blue-500'
+                                                        : item.situacao === '5' ? 'bg-gray-400'
+                                                            : item.situacao === '6' ? 'bg-gray-400'
+                                                                : item.situacao === '7' ? 'bg-orange-500'
+                                                                    : item.situacao === '8' ? 'bg-emerald-500'
+                                                                        : item.situacao === '9' ? 'bg-red-500'
+                                                                            : 'bg-gray-400'}
                                             `} />                                            <span className="whitespace-nowrap">
-                                                {getSituacao(item.situacao)}
-                                                <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                                <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                            </span>
-                                        </span>                                        {item.data_hora_prevista && (
-                                            <p className="mt-1 text-xs">
-                                                Previsto: <span className={dateTextColorClass}>
-                                                    <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
-                                                    <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
-                                                </span>
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Observação (se houver) */}
-                                {item.obs_criacao && (
-                                    <div className="bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
-                                        <p className="text-xs text-gray-600 line-clamp-1">
-                                            <span className="font-medium">Obs:</span> {item.obs_criacao}
-                                        </p>
-                                    </div>
+                                        {getSituacao(item.situacao)}
+                                        <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                        <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                    </span>
+                                </span>                                        {item.data_hora_prevista && (
+                                    <p className="mt-1 text-xs">
+                                        Previsto: <span className={dateTextColorClass}>
+                                            <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
+                                            <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
+                                        </span>
+                                    </p>
                                 )}
+                            </div>
+                        </div>
 
-                                {/* Gradient overlay on hover */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                            </motion.button>
-                        );
-                    }
+                        {/* Observação (se houver) */}
+                        {item.obs_criacao && (
+                            <div className="bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
+                                <p className="text-xs text-gray-600 line-clamp-1">
+                                    <span className="font-medium">Obs:</span> {item.obs_criacao}
+                                </p>
+                            </div>
+                        )}
 
-                    // Layout original para desktop e mobile
-                    return (                        <motion.button
-                            key={item.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            onClick={() => handleInspectionClick(item)}
-                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
-                        >
-                            {/* Header Principal */}
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
-                                        {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                            {item.tipo_inspecao} (OF: #{item.numero_ordem})
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            Produto: {item.referencia} - {item.produto}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`
+                        {/* Gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    </motion.button>
+                    );
+                }
+
+                // Layout original para desktop e mobile
+                return (<motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleInspectionClick(item)}
+                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                >
+                    {/* Header Principal */}
+                    <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
+                                {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
+                                    {item.tipo_inspecao} (OF: #{item.numero_ordem})
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    Produto: {item.referencia} - {item.produto}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className={`
                                         inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
                                         ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                            : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                    : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                        : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                            : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                                : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                                    : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                        : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                            : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                    : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                        : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                    : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                        : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                            : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
                                     `}>
-                                        <div className={`
+                                <div className={`
                                             h-1.5 w-1.5 rounded-full
                                             ${item.situacao === '1' ? 'bg-amber-500'
-                                                : item.situacao === '2' ? 'bg-purple-500'
-                                                    : item.situacao === '3' ? 'bg-purple-500'
-                                                        : item.situacao === '4' ? 'bg-blue-500'
-                                                            : item.situacao === '5' ? 'bg-gray-400'
-                                                                : item.situacao === '6' ? 'bg-gray-400'
-                                                                    : item.situacao === '7' ? 'bg-orange-500'
-                                                                        : item.situacao === '8' ? 'bg-emerald-500'
-                                                                            : item.situacao === '9' ? 'bg-red-500'
-                                                                                : 'bg-gray-400'}
+                                        : item.situacao === '2' ? 'bg-purple-500'
+                                            : item.situacao === '3' ? 'bg-purple-500'
+                                                : item.situacao === '4' ? 'bg-blue-500'
+                                                    : item.situacao === '5' ? 'bg-gray-400'
+                                                        : item.situacao === '6' ? 'bg-gray-400'
+                                                            : item.situacao === '7' ? 'bg-orange-500'
+                                                                : item.situacao === '8' ? 'bg-emerald-500'
+                                                                    : item.situacao === '9' ? 'bg-red-500'
+                                                                        : 'bg-gray-400'}
                                         `} />
-                                        <span className="whitespace-nowrap">
-                                            {getSituacao(item.situacao)}
-                                            <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                            <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                        </span>
-                                    </span>
-                                </div>
-                            </div>
-                            {/* Informações em Grid */}
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">                                <div className="space-y-1">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
-                                <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
-                            </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
-                                </div>
+                                <span className="whitespace-nowrap">
+                                    {getSituacao(item.situacao)}
+                                    <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                    <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    {/* Informações em Grid */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">                                <div className="space-y-1">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
+                        <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
+                    </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
+                            <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
+                        </div>
 
-                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.origem}</p>                                </div>
-                                {/* Data prevista - sempre exibida */}                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {item.data_hora_prevista ?
-                                            <span className={dateTextColorClass}>
-                                                <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
-                                                <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
-                                            </span> :
-                                            'Não definida'}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
-                                </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
+                            <p className="text-sm font-medium text-gray-900">{item.origem}</p>                                </div>
+                        {/* Data prevista - sempre exibida */}                                <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
+                            <p className="text-sm font-medium text-gray-900">
+                                {item.data_hora_prevista ?
+                                    <span className={dateTextColorClass}>
+                                        <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
+                                        <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
+                                    </span> :
+                                    'Não definida'}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
+                            <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
+                        </div>
 
 
-                            </div>
-                            {/* Gradient overlay on hover */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                        </motion.button>
-                    );
-                })}
-            </motion.div>
+                    </div>
+                    {/* Gradient overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                </motion.button>
+                );
+            })}
+        </motion.div>
         );
-    };    return (
+    }; return (
         <div className="w-full space-y-3 p-1 sm:p-2 md:p-2">
             {/* Debug info (hidden) */}
             <div className="hidden">
