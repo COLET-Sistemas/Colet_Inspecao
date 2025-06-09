@@ -407,13 +407,12 @@ export default function InspecoesPage() {
             );
         }
 
-        return (
-            <motion.div
+        return (            <motion.div
                 key={activeTab}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className="space-y-2"
             >
                 {currentData.map((item: InspectionItem, index: number) => {
                     // Verificar se a data prevista está expirada ou prestes a expirar
@@ -460,14 +459,13 @@ export default function InspecoesPage() {
 
                     // Renderizar layout compacto para tablets se necessário
                     if (isCompactLayout) {
-                        return (
-                            <motion.button
+                        return (                            <motion.button
                                 key={item.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
                                 onClick={() => handleInspectionClick(item)}
-                                className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                                className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
                             >
                                 <div className="flex items-center justify-between">
                                     {/* Seção esquerda com informações principais */}
@@ -479,13 +477,15 @@ export default function InspecoesPage() {
                                             <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
                                                 {item.tipo_inspecao} (OF: #{item.numero_ordem})
                                             </h3>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-xs text-gray-500 truncate">
-                                                    {item.referencia} - {item.processo}
-                                                </p>
-                                                <span className="h-1 w-1 rounded-full bg-gray-300"></span>
-                                                <p className="text-xs text-gray-500">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
+                                                <p className="truncate">Ref: {item.referencia}</p>
+                                                <div className="hidden sm:inline-block mx-2">•</div>
+                                                <p className="truncate">
                                                     Posto: {item.codigo_posto}
+                                                </p>
+                                                <div className="hidden sm:inline-block mx-2">•</div>
+                                                <p className="truncate">
+                                                    Proc: {item.processo} - {item.tipo_acao}
                                                 </p>
                                             </div>
                                         </div>
@@ -518,13 +518,17 @@ export default function InspecoesPage() {
                                                                             : item.situacao === '8' ? 'bg-emerald-500'
                                                                                 : item.situacao === '9' ? 'bg-red-500'
                                                                                     : 'bg-gray-400'}
-                                            `} />
-                                            <span className="whitespace-nowrap">
-                                                {getSituacao(item.situacao)}                                            </span>
-                                        </span>
-                                        {item.data_hora_prevista && (
+                                            `} />                                            <span className="whitespace-nowrap">
+                                                {getSituacao(item.situacao)}
+                                                <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                                <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                            </span>
+                                        </span>                                        {item.data_hora_prevista && (
                                             <p className="mt-1 text-xs">
-                                                Previsto: <span className={dateTextColorClass}>{formatDateTime(item.data_hora_prevista).split(' ')[0]}</span>
+                                                Previsto: <span className={dateTextColorClass}>
+                                                    <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
+                                                    <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
+                                                </span>
                                             </p>
                                         )}
                                     </div>
@@ -532,7 +536,7 @@ export default function InspecoesPage() {
 
                                 {/* Observação (se houver) */}
                                 {item.obs_criacao && (
-                                    <div className="mt-2 bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
+                                    <div className="bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
                                         <p className="text-xs text-gray-600 line-clamp-1">
                                             <span className="font-medium">Obs:</span> {item.obs_criacao}
                                         </p>
@@ -546,14 +550,13 @@ export default function InspecoesPage() {
                     }
 
                     // Layout original para desktop e mobile
-                    return (
-                        <motion.button
+                    return (                        <motion.button
                             key={item.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
                             onClick={() => handleInspectionClick(item)}
-                            className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
                         >
                             {/* Header Principal */}
                             <div className="flex items-start justify-between mb-3">
@@ -598,17 +601,18 @@ export default function InspecoesPage() {
                                                                                 : 'bg-gray-400'}
                                         `} />
                                         <span className="whitespace-nowrap">
-                                            {getSituacao(item.situacao)} {item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}
+                                            {getSituacao(item.situacao)}
+                                            <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                            <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
                                         </span>
                                     </span>
                                 </div>
                             </div>
                             {/* Informações em Grid */}
-                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                                <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
-                                </div>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">                                <div className="space-y-1">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
+                                <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
+                            </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
                                     <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
@@ -617,12 +621,14 @@ export default function InspecoesPage() {
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
                                     <p className="text-sm font-medium text-gray-900">{item.origem}</p>                                </div>
-                                {/* Data prevista - sempre exibida */}
-                                <div className="space-y-1">
+                                {/* Data prevista - sempre exibida */}                                <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
                                     <p className="text-sm font-medium text-gray-900">
                                         {item.data_hora_prevista ?
-                                            <span className={dateTextColorClass}>{formatDateTime(item.data_hora_prevista)}</span> :
+                                            <span className={dateTextColorClass}>
+                                                <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
+                                                <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
+                                            </span> :
                                             'Não definida'}
                                     </p>
                                 </div>
@@ -640,16 +646,12 @@ export default function InspecoesPage() {
                 })}
             </motion.div>
         );
-    };
-
-    return (
-        <div className="w-full space-y-3 p-2 sm:p-3 md:p-4">
+    };    return (
+        <div className="w-full space-y-3 p-1 sm:p-2 md:p-2">
             {/* Debug info (hidden) */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
-            </div>
-
-            <div className="flex items-center justify-between">
+            </div>            <div className="flex items-center justify-between mb-0 py-0">
                 <PageHeader
                     title="Inspeções"
                     subtitle="Gerencie todas as inspeções do sistema"
@@ -693,11 +695,9 @@ export default function InspecoesPage() {
                     onSuccess={handleModalSuccess}
                     inspection={selectedInspection}
                 />
-            )}
-
-            <div className="mt-2 sm:mt-4">
+            )}            <div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
-                    <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide sm:space-x-8 lg:space-x-10">
+                    <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide sm:space-x-6 lg:space-x-8">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
@@ -748,9 +748,8 @@ export default function InspecoesPage() {
                             </button>
                         ))}
                     </nav>
-                </div>
-            </div>
-            <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-4 sm:p-5 shadow-sm">
+                </div>            </div>
+            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
                 {renderTabContent()}
             </div>
         </div>
