@@ -76,11 +76,15 @@ export default function InspecoesPage() {
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
         }
-    }, []);    // Função para definir se deve mostrar o layout compacto para tablets
+    }, []);   
+    const TABLET_MIN_WIDTH = 640;
+    const TABLET_MAX_WIDTH = 1024;
+
+    // Função para definir se deve mostrar o layout compacto para tablets
     const shouldUseCompactLayout = useCallback(() => {
-        // Verifica se a largura da tela está entre 640px e 1024px (tamanho de tablet)
+        // Verifica se a largura da tela está entre valores definidos (tamanho de tablet)
         if (typeof window !== 'undefined') {
-            return window.innerWidth >= 640 && window.innerWidth < 1024;
+            return window.innerWidth >= TABLET_MIN_WIDTH && window.innerWidth < TABLET_MAX_WIDTH;
         }
         return false;
     }, []);
@@ -95,10 +99,9 @@ export default function InspecoesPage() {
 
     // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);
-
-    // Atualiza o estado do layout quando a tela for redimensionada
+    const [isPortrait, setIsPortrait] = useState(false);    // Atualiza o estado do layout quando a tela for redimensionada
     useEffect(() => {
+        // Handler para atualizar os estados de layout baseados no tamanho da tela
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
             setIsPortrait(isInPortraitMode());
@@ -111,24 +114,25 @@ export default function InspecoesPage() {
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', handleResize);
 
+        // Armazena a referência do timer para limpeza
+        let orientationHintTimer: NodeJS.Timeout | null = null;
+
         // Mostra um tooltip sobre orientação apenas em tablets (uma vez por sessão)
         if (shouldUseCompactLayout() && isInPortraitMode() && !sessionStorage.getItem('orientation-hint')) {
-            const timer = setTimeout(() => {
-                // Aqui você poderia implementar um tooltip orientando sobre a melhor visualização
+            orientationHintTimer = setTimeout(() => {
+                // Marca que o hint já foi mostrado nesta sessão
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
-
-            return () => {
-                clearTimeout(timer);
-                window.removeEventListener('resize', handleResize);
-                window.removeEventListener('orientationchange', handleResize);
-            };
         }
 
         // Cleanup
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
+
+            if (orientationHintTimer) {
+                clearTimeout(orientationHintTimer);
+            }
         };
     }, [shouldUseCompactLayout, isInPortraitMode]);
 
@@ -300,27 +304,19 @@ export default function InspecoesPage() {
             encaminhar_ficha: String(data.encaminhar_ficha)
         });        // Redirect to inspection details page with all required data
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]);
-
-    const handleInspectionClick = useCallback((item: InspectionItem) => {
+    }, [router]); const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
-        console.log('Verificação de dados do colaborador:', {
-            hasData,
-            colaborador: localStorage.getItem('colaborador'),
-            userData: localStorage.getItem('userData')
-        });
 
         if (hasData) {
             // Se tiver, redireciona direto para a página de detalhes
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
             // Se não tiver, exibe o modal de autenticação
-            setSelectedInspection(item); setIsModalOpen(true);
+            setSelectedInspection(item);
+            setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]);
-
-    useEffect(() => {
+    }, [router, checkColaboradorData]); useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
@@ -329,22 +325,16 @@ export default function InspecoesPage() {
 
                 // Verificar se há dados do colaborador no localStorage
                 const hasData = checkColaboradorData();
-                console.log('Verificação inicial de dados do colaborador:', {
-                    hasData,
-                    colaborador: localStorage.getItem('colaborador'),
-                    userData: localStorage.getItem('userData')
-                });
-
                 setHasColaboradorData(hasData);
             }
         };
         loadInitialData();
-    }, [fetchTabData, checkColaboradorData]);
-
-    useEffect(() => {
+    }, [fetchTabData, checkColaboradorData]); useEffect(() => {
         const handleActivity = () => {
             resetIdleTimer();
-        }; USER_ACTIVITY_EVENTS.forEach((event) => {
+        };
+
+        USER_ACTIVITY_EVENTS.forEach((event) => {
             document.addEventListener(event, handleActivity, true);
         });
 
@@ -462,12 +452,12 @@ export default function InspecoesPage() {
                             const timeParts = parts[1].split(':');
 
                             dataPrevista = new Date(
-                                parseInt(dateParts[2]), 
-                                parseInt(dateParts[1]) - 1, 
-                                parseInt(dateParts[0]), 
-                                parseInt(timeParts[0]), 
+                                parseInt(dateParts[2]),
+                                parseInt(dateParts[1]) - 1,
+                                parseInt(dateParts[0]),
+                                parseInt(timeParts[0]),
                                 parseInt(timeParts[1]),
-                                parseInt(timeParts[2] || '0') 
+                                parseInt(timeParts[2] || '0')
                             );
                         } else {
                             dataPrevista = new Date(item.data_hora_prevista);
@@ -481,112 +471,104 @@ export default function InspecoesPage() {
                         }
                         else if (diffMinutes <= 5) {
                             bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
-                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; 
+                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600";
                         }
                     } catch (error) {
                         console.error("Erro ao processar data prevista:", error);
                     }
-                }                
+                }
                 if (isCompactLayout || isPortrait) {
-                    return (<motion.button
-                        key={item.id_ficha_inspecao}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
-                        onClick={() => handleInspectionClick(item)}
-                        className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
-                    >
-                        <div className="flex items-center justify-between">
-                            {/* Seção esquerda com informações principais */}
-                            <div className="flex items-center gap-2 flex-grow">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
-                                    {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
-                                        {item.tipo_inspecao} (OF: #{item.numero_ordem})
-                                    </h3>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
-                                        <p className="truncate">
-                                            Posto: {item.codigo_posto}
-                                        </p>
-                                        <div className="hidden sm:inline-block mx-1">•</div>
-                                        <p className="truncate">
-                                            {item.referencia} - {item.produto}
-                                        </p>
+                    return (
+                        <motion.button
+                            key={item.id_ficha_inspecao}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+                            onClick={() => handleInspectionClick(item)}
+                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                        >
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
+                                        {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-xs font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                            {item.tipo_inspecao}
+                                        </h3>
+                                        <div className="flex flex-col gap-0.5 text-[11px] text-gray-500 leading-tight">
+                                            <span className="truncate">OF: #{item.numero_ordem}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Seção direita com status e data prevista */}
-
-                            <div className="flex flex-col items-end min-w-fit">
-                                <span className={`
-                                            inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium
-                                            ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                        : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                            : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                    : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                        : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                            : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                                : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                    : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                        : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                                        `}>
-                                    <div className={`
-                                                h-1.5 w-1.5 rounded-full
-                                                ${item.situacao === '1' ? 'bg-amber-500'
-                                            : item.situacao === '2' ? 'bg-purple-500'
-                                                : item.situacao === '3' ? 'bg-purple-500'
-                                                    : item.situacao === '4' ? 'bg-blue-500'
-                                                        : item.situacao === '5' ? 'bg-gray-400'
-                                                            : item.situacao === '6' ? 'bg-gray-400'
-                                                                : item.situacao === '7' ? 'bg-orange-500'
-                                                                    : item.situacao === '8' ? 'bg-emerald-500'
-                                                                        : item.situacao === '9' ? 'bg-red-500'
-                                                                            : 'bg-gray-400'}
-                                            `} />
-                                    <span className="whitespace-nowrap">
-                                        {getSituacao(item.situacao)}
-                                        <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                        <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao).split(' ')[0] : ''}</span>
-                                    </span>
-                                </span>
-                                {item.data_hora_prevista && (
-                                    <p className="mt-1 text-xs">
-                                        Previsto: <span className={dateTextColorClass}>
-                                            <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
-                                            <span className="sm:hidden">{formatDateTime(item.data_hora_prevista).split(' ')[0]}</span>
+                                {/* Status e data prevista */}
+                                <div className="flex flex-col items-end min-w-fit gap-0.5">
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium
+                                        ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                    : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                        : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                            : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                                    : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                        : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                            : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                        `}>
+                                        <div className={`h-1.5 w-1.5 rounded-full mr-1
+                                ${item.situacao === '1' ? 'bg-amber-500'
+                                                : item.situacao === '2' ? 'bg-purple-500'
+                                                    : item.situacao === '3' ? 'bg-purple-500'
+                                                        : item.situacao === '4' ? 'bg-blue-500'
+                                                            : item.situacao === '5' ? 'bg-gray-400'
+                                                                : item.situacao === '6' ? 'bg-gray-400'
+                                                                    : item.situacao === '7' ? 'bg-orange-500'
+                                                                        : item.situacao === '8' ? 'bg-emerald-500'
+                                                                            : item.situacao === '9' ? 'bg-red-500'
+                                                                                : 'bg-gray-400'}
+                            `} />
+                                        <span className="whitespace-nowrap">
+                                            {getSituacao(item.situacao)}
+                                            {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
                                         </span>
-                                    </p>
-                                )}
-                            </div>
-                        </div>                        {/* Linha adicional para informações críticas */}
-                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-gray-100">
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
-                                <span className="flex items-center">
-                                    <span className="text-gray-500 uppercase font-medium mr-1">Processo:</span>
-                                    {item.processo}
-                                </span>
-                                <span className="hidden sm:flex items-center">
-                                    <span className="text-gray-500 uppercase font-medium mr-1">Origem:</span>
-                                    {item.origem}
-                                </span>
-                            </div>
-                            {item.obs_criacao && (
-                                <div className="bg-gray-50/70 px-2 py-0.5 rounded-md border border-gray-100 ml-2 text-xs">
-                                    <p className="text-xs text-gray-600 line-clamp-1">
-                                        <span className="text-gray-500 uppercase font-medium mr-1">Obs:</span>
-                                        {item.obs_criacao}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                                    </span>
 
-                        {/* Gradient overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    </motion.button>
+                                    <span className={`text-[11px] mt-0.5 ${dateTextColorClass}`}>Prevista: {item.data_hora_prevista ? (
+                                        <span className={`font-medium ${dateTextColorClass}`}>
+                                            {formatDateTime(item.data_hora_prevista)}
+                                        </span>
+                                    ) : (
+                                        <span className="font-medium text-gray-400">Não definida</span>
+                                    )}</span>
+
+                                </div>
+                            </div>
+                            {/* Linha adicional para informações críticas */}
+                            <div className="flex items-center justify-between mt-2  gap-2">
+                                <div className="flex items-center gap-2 text-[11px]">
+                                    <span className="flex items-center text-gray-900">
+                                        <span className="text-gray-400  font-medium mr-1">Proc:</span>
+                                        {item.processo} - {item.tipo_acao}
+                                    </span>
+                                    <span className="flex items-center text-gray-900">
+                                        <span className="text-gray-400  font-medium mr-1">Posto:</span>
+                                        {item.codigo_posto}
+                                    </span>
+                                    <span className="flex items-center text-gray-900">
+                                        <span className="text-gray-400  font-medium mr-1">Origem:</span>
+                                        {item.origem}
+                                    </span>
+                                    {item.obs_criacao && (
+                                        <span className="flex items-center text-gray-900">
+                                            <span className="text-gray-400  font-medium mr-1">Obs:</span>
+                                            {item.obs_criacao}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            {/* Gradient overlay on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        </motion.button>
                     );
                 }                // Layout original para desktop e mobile
                 return (<motion.button
