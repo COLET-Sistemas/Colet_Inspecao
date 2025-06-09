@@ -74,9 +74,7 @@ export default function InspecoesPage() {
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
         }
-    }, []);
-
-    // Função para definir se deve mostrar o layout compacto para tablets
+    }, []);    // Função para definir se deve mostrar o layout compacto para tablets
     const shouldUseCompactLayout = useCallback(() => {
         // Verifica se a largura da tela está entre 640px e 1024px (tamanho de tablet)
         if (typeof window !== 'undefined') {
@@ -85,26 +83,38 @@ export default function InspecoesPage() {
         return false;
     }, []);
 
-    // Estado para controlar o layout compacto
+    // Função para verificar se o dispositivo está em orientação vertical (portrait)
+    const isInPortraitMode = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerHeight > window.innerWidth;
+        }
+        return false;
+    }, []);
+
+    // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
+    const [isPortrait, setIsPortrait] = useState(false);
 
     // Atualiza o estado do layout quando a tela for redimensionada
     useEffect(() => {
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
+            setIsPortrait(isInPortraitMode());
         };
 
         // Configuração inicial
         handleResize();
 
-        // Adiciona listener para redimensionamento
+        // Adiciona listener para redimensionamento e mudança de orientação
         window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
 
         // Cleanup
         return () => {
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
         };
-    }, [shouldUseCompactLayout]);
+    }, [shouldUseCompactLayout, isInPortraitMode]);
 
     const checkColaboradorData = useCallback((): boolean => {
         try {
@@ -455,10 +465,8 @@ export default function InspecoesPage() {
                     } catch (error) {
                         console.error("Erro ao processar data prevista:", error);
                     }
-                }
-
-                // Renderizar layout compacto para tablets se necessário
-                if (isCompactLayout) {
+                }                // Renderizar layout compacto para tablets ou quando em modo retrato
+                if (isCompactLayout || isPortrait) {
                     return (<motion.button
                         key={item.id}
                         initial={{ opacity: 0, y: 10 }}
