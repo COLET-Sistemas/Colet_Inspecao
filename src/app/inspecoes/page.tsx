@@ -3,7 +3,7 @@
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { ColaboradorLoginModal } from "@/components/ui/inspecoes/ColaboradorLoginModal";
-import inspecaoService from "@/services/api/inspecaoService";
+import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
 import {
     AlertTriangle,
@@ -16,22 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-interface InspectionItem {
-    id: string;
-    id_ficha_inspecao: number;
-    numero_ordem: string;
-    tipo_inspecao: string;
-    referencia: string;
-    produto: string;
-    situacao: string;
-    data_hora_situacao: string;
-    data_hora_prevista: string;
-    processo: string;
-    tipo_acao: string;
-    origem: string;
-    codigo_posto: string;
-    obs_criacao: string;
-}
+
 
 interface TabData {
     id: string;
