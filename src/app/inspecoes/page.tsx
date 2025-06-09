@@ -74,7 +74,37 @@ export default function InspecoesPage() {
             case '9': return 'Cancelada em';
             default: return 'Desconhecida';
         }
-    }, []);    // Helper functions to compute display values
+    }, []);
+
+    // Função para definir se deve mostrar o layout compacto para tablets
+    const shouldUseCompactLayout = useCallback(() => {
+        // Verifica se a largura da tela está entre 640px e 1024px (tamanho de tablet)
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 640 && window.innerWidth < 1024;
+        }
+        return false;
+    }, []);
+
+    // Estado para controlar o layout compacto
+    const [isCompactLayout, setIsCompactLayout] = useState(false);
+
+    // Atualiza o estado do layout quando a tela for redimensionada
+    useEffect(() => {
+        const handleResize = () => {
+            setIsCompactLayout(shouldUseCompactLayout());
+        };
+
+        // Configuração inicial
+        handleResize();
+
+        // Adiciona listener para redimensionamento
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [shouldUseCompactLayout]);
 
     const checkColaboradorData = useCallback((): boolean => {
         try {
@@ -149,11 +179,12 @@ export default function InspecoesPage() {
     }, []);
 
     const fetchTabData = useCallback(async (tabId: string) => {
-        const postos = getPostosFromLocalStorage();
-        if (postos.length === 0) {
+        const postos = getPostosFromLocalStorage(); if (postos.length === 0) {
             console.warn("Nenhum posto encontrado no localStorage");
             return [];
-        } setLoadingTabs(prev => ({ ...prev, [tabId]: true }));
+        }
+
+        setLoadingTabs(prev => ({ ...prev, [tabId]: true }));
 
         try {
             const abaApi = TAB_API_MAP[tabId as keyof typeof TAB_API_MAP];
@@ -208,17 +239,20 @@ export default function InspecoesPage() {
             };
             startAutoRefresh();
         }, IDLE_TIME);
-    }, [refreshActiveTab]);
+    }, [refreshActiveTab]); const handleManualRefresh = useCallback(() => {
+        refreshActiveTab();
+        resetIdleTimer();
+    }, [refreshActiveTab, resetIdleTimer]);
 
-    const handleManualRefresh = useCallback(() => {
-        refreshActiveTab(); resetIdleTimer();
-    }, [refreshActiveTab, resetIdleTimer]); const handleTabChange = useCallback(async (tabId: string) => {
+    const handleTabChange = useCallback(async (tabId: string) => {
         setActiveTab(tabId);
 
         if (!inspectionData[tabId]) {
             await fetchTabData(tabId);
         }
-    }, [inspectionData, fetchTabData]); const handleModalSuccess = useCallback((data: {
+    }, [inspectionData, fetchTabData]);
+
+    const handleModalSuccess = useCallback((data: {
         codigo_pessoa: string;
         nome: string;
         setor: string;
@@ -238,11 +272,11 @@ export default function InspecoesPage() {
             funcao: data.funcao,
             registrar_ficha: String(data.registrar_ficha),
             encaminhar_ficha: String(data.encaminhar_ficha)
-        });
-
-        // Redirect to inspection details page with all required data
+        });        // Redirect to inspection details page with all required data
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]); const handleInspectionClick = useCallback((item: InspectionItem) => {
+    }, [router]);
+
+    const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
         console.log('Verificação de dados do colaborador:', {
@@ -256,10 +290,11 @@ export default function InspecoesPage() {
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
             // Se não tiver, exibe o modal de autenticação
-            setSelectedInspection(item);
-            setIsModalOpen(true);
+            setSelectedInspection(item); setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]); useEffect(() => {
+    }, [router, checkColaboradorData]);
+
+    useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
@@ -383,6 +418,7 @@ export default function InspecoesPage() {
                 {currentData.map((item: InspectionItem, index: number) => {
                     // Verificar se a data prevista está expirada ou prestes a expirar
                     let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
+                    let dateTextColorClass = "text-gray-600 font-medium";
 
                     if (item.data_hora_prevista) {
                         try {
@@ -405,25 +441,111 @@ export default function InspecoesPage() {
                                 );
                             } else {
                                 dataPrevista = new Date(item.data_hora_prevista);
-                            }
-
-                            const agora = new Date();
+                            } const agora = new Date();
                             const diffMs = dataPrevista.getTime() - agora.getTime();
                             const diffMinutes = diffMs / (1000 * 60);
 
-                            // Data já passou - fundo vermelho
                             if (diffMs < 0) {
                                 bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
+                                dateTextColorClass = "text-red-600 font-bold !text-red-600"; // Usando !important via tailwind
                             }
-                            // Menos de 5 minutos para o prazo - fundo âmbar
                             else if (diffMinutes <= 5) {
                                 bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
+                                dateTextColorClass = "text-amber-600 font-bold !text-amber-600"; // Usando !important via tailwind
                             }
                         } catch (error) {
                             console.error("Erro ao processar data prevista:", error);
                         }
                     }
 
+                    // Renderizar layout compacto para tablets se necessário
+                    if (isCompactLayout) {
+                        return (
+                            <motion.button
+                                key={item.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                onClick={() => handleInspectionClick(item)}
+                                className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    {/* Seção esquerda com informações principais */}
+                                    <div className="flex items-center gap-2 flex-grow">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
+                                            {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                                {item.tipo_inspecao} (OF: #{item.numero_ordem})
+                                            </h3>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {item.referencia} - {item.processo}
+                                                </p>
+                                                <span className="h-1 w-1 rounded-full bg-gray-300"></span>
+                                                <p className="text-xs text-gray-500">
+                                                    Posto: {item.codigo_posto}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Seção direita com status e data prevista */}
+                                    <div className="flex flex-col items-end min-w-fit">
+                                        <span className={`
+                                            inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium
+                                            ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                    : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                        : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                            : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                    : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                                        : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                            : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                                : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                                        `}>
+                                            <div className={`
+                                                h-1.5 w-1.5 rounded-full
+                                                ${item.situacao === '1' ? 'bg-amber-500'
+                                                    : item.situacao === '2' ? 'bg-purple-500'
+                                                        : item.situacao === '3' ? 'bg-purple-500'
+                                                            : item.situacao === '4' ? 'bg-blue-500'
+                                                                : item.situacao === '5' ? 'bg-gray-400'
+                                                                    : item.situacao === '6' ? 'bg-gray-400'
+                                                                        : item.situacao === '7' ? 'bg-orange-500'
+                                                                            : item.situacao === '8' ? 'bg-emerald-500'
+                                                                                : item.situacao === '9' ? 'bg-red-500'
+                                                                                    : 'bg-gray-400'}
+                                            `} />
+                                            <span className="whitespace-nowrap">
+                                                {getSituacao(item.situacao)}                                            </span>
+                                        </span>
+                                        {item.data_hora_prevista && (
+                                            <p className="mt-1 text-xs">
+                                                Previsto: <span className={dateTextColorClass}>{formatDateTime(item.data_hora_prevista).split(' ')[0]}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Observação (se houver) */}
+                                {item.obs_criacao && (
+                                    <div className="mt-2 bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
+                                        <p className="text-xs text-gray-600 line-clamp-1">
+                                            <span className="font-medium">Obs:</span> {item.obs_criacao}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Gradient overlay on hover */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            </motion.button>
+                        );
+                    }
+
+                    // Layout original para desktop e mobile
                     return (
                         <motion.button
                             key={item.id}
@@ -431,7 +553,7 @@ export default function InspecoesPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
                             onClick={() => handleInspectionClick(item)}
-                            className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-5 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                            className={`group relative w-full overflow-hidden rounded-xl border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
                         >
                             {/* Header Principal */}
                             <div className="flex items-start justify-between mb-3">
@@ -441,7 +563,7 @@ export default function InspecoesPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                            {item.tipo_inspecao} (#{item.numero_ordem})
+                                            {item.tipo_inspecao} (OF: #{item.numero_ordem})
                                         </h3>
                                         <p className="text-sm text-gray-500">
                                             Produto: {item.referencia} - {item.produto}
@@ -482,7 +604,7 @@ export default function InspecoesPage() {
                                 </div>
                             </div>
                             {/* Informações em Grid */}
-                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
                                     <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
@@ -493,27 +615,23 @@ export default function InspecoesPage() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Roteiro</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.roteiro}</p>
-                                </div>
-
-
-                                <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.origem}</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
-                                    <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
-                                </div>
-
+                                    <p className="text-sm font-medium text-gray-900">{item.origem}</p>                                </div>
                                 {/* Data prevista - sempre exibida */}
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
                                     <p className="text-sm font-medium text-gray-900">
-                                        {item.data_hora_prevista ? formatDateTime(item.data_hora_prevista) : 'Não definida'}
+                                        {item.data_hora_prevista ?
+                                            <span className={dateTextColorClass}>{formatDateTime(item.data_hora_prevista)}</span> :
+                                            'Não definida'}
                                     </p>
                                 </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
+                                    <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
+                                </div>
+
+
                             </div>
                             {/* Gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
