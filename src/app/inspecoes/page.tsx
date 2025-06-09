@@ -724,8 +724,7 @@ export default function InspecoesPage() {
                                 </span>
                                 <span className="text-sm font-normal sm:hidden">
                                     {tab.mobileLabel || tab.label.split(" ")[0]}
-                                </span>
-                                <span
+                                </span>                                <span
                                     className={`
                                         ml-1 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300 sm:ml-2 sm:px-2.5 sm:py-1
                                         ${activeTab === tab.id
@@ -734,7 +733,7 @@ export default function InspecoesPage() {
                                         }
                                     `}
                                 >
-                                    {tab.count}
+                                    {tab.id in inspectionData ? tab.count : (loadingTabs[tab.id] ? '...' : '?')}
                                 </span>
 
                                 {/* Active indicator */}
