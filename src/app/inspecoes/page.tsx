@@ -1,9 +1,9 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { ColaboradorLoginModal } from "@/components/ui/inspecoes/ColaboradorLoginModal";
-import { LoadingSpinner } from "@/components/ui/Loading";
-import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService";
+import inspecaoService from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
 import {
     AlertTriangle,
@@ -11,10 +11,27 @@ import {
     Cog,
     FileText,
     RefreshCw,
-    Users,
+    Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+interface InspectionItem {
+    id: string;
+    id_ficha_inspecao: number;
+    numero_ordem: string;
+    tipo_inspecao: string;
+    referencia: string;
+    produto: string;
+    situacao: string;
+    data_hora_situacao: string;
+    data_hora_prevista: string;
+    processo: string;
+    tipo_acao: string;
+    origem: string;
+    codigo_posto: string;
+    obs_criacao: string;
+}
 
 interface TabData {
     id: string;
@@ -108,6 +125,20 @@ export default function InspecoesPage() {
         // Adiciona listener para redimensionamento e mudança de orientação
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', handleResize);
+
+        // Mostra um tooltip sobre orientação apenas em tablets (uma vez por sessão)
+        if (shouldUseCompactLayout() && isInPortraitMode() && !sessionStorage.getItem('orientation-hint')) {
+            const timer = setTimeout(() => {
+                // Aqui você poderia implementar um tooltip orientando sobre a melhor visualização
+                sessionStorage.setItem('orientation-hint', 'true');
+            }, 2000);
+
+            return () => {
+                clearTimeout(timer);
+                window.removeEventListener('resize', handleResize);
+                window.removeEventListener('orientationchange', handleResize);
+            };
+        }
 
         // Cleanup
         return () => {
@@ -388,12 +419,13 @@ export default function InspecoesPage() {
 
         if (isLoading) {
             return (
-                <LoadingSpinner
-                    size="large"
-                    text="Carregando inspeções..."
-                    color="primary"
-                    showText={true}
-                />
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <div className="relative">
+                        <LoadingSpinner
+                            color="primary" size="medium" text="Carregando inspeções..."
+                        />
+                    </div>
+                </div>
             );
         }
 
@@ -411,18 +443,24 @@ export default function InspecoesPage() {
                         Nenhuma inspeção encontrada
                     </h3>
                     <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">
-                        Nenhum registro encontrado
+                        Não existem inspeções cadastradas para esta categoria no momento
                     </p>
+                    <button
+                        onClick={handleManualRefresh}
+                        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        Verificar novamente
+                    </button>
                 </motion.div>
             );
-        }
-
-        return (<motion.div
+        } return (<motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-2"
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="space-y-3"
         >
             {currentData.map((item: InspectionItem, index: number) => {
                 // Verificar se a data prevista está expirada ou prestes a expirar
@@ -468,7 +506,7 @@ export default function InspecoesPage() {
                 }                // Renderizar layout compacto para tablets ou quando em modo retrato
                 if (isCompactLayout || isPortrait) {
                     return (<motion.button
-                        key={item.id}
+                        key={item.id_ficha_inspecao}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
@@ -484,19 +522,22 @@ export default function InspecoesPage() {
                                 <div className="overflow-hidden">
                                     <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
                                         {item.tipo_inspecao} (OF: #{item.numero_ordem})
-                                    </h3>                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
+                                    </h3>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
                                         <p className="truncate">
                                             Posto: {item.codigo_posto}
                                         </p>
-                                        <div className="hidden sm:inline-block mx-2">•</div>
+                                        <div className="hidden sm:inline-block mx-1">•</div>
                                         <p className="truncate">
-                                            Proc: {item.processo} - {item.tipo_acao}
+                                            {item.referencia} - {item.produto}
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Seção direita com status e data prevista */}                            <div className="flex flex-col items-end min-w-fit">
+                            {/* Seção direita com status e data prevista */}
+
+                            <div className="flex flex-col items-end min-w-fit">
                                 <span className={`
                                             inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium
                                             ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -526,62 +567,79 @@ export default function InspecoesPage() {
                                     <span className="whitespace-nowrap">
                                         {getSituacao(item.situacao)}
                                         <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                        <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                        <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao).split(' ')[0] : ''}</span>
                                     </span>
-                                </span>                                        {item.data_hora_prevista && (
+                                </span>
+                                {item.data_hora_prevista && (
                                     <p className="mt-1 text-xs">
                                         Previsto: <span className={dateTextColorClass}>
                                             <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
-                                            <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
+                                            <span className="sm:hidden">{formatDateTime(item.data_hora_prevista).split(' ')[0]}</span>
                                         </span>
                                     </p>
                                 )}
                             </div>
-                        </div>
-
-                        {/* Observação (se houver) */}
-                        {item.obs_criacao && (
-                            <div className="bg-gray-50/70 px-2 py-1 rounded-md border border-gray-100">
-                                <p className="text-xs text-gray-600 line-clamp-1">
-                                    <span className="font-medium">Obs:</span> {item.obs_criacao}
-                                </p>
+                        </div>                        {/* Linha adicional para informações críticas */}
+                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-gray-100">
+                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                                <span className="flex items-center">
+                                    <span className="text-gray-500 uppercase font-medium mr-1">Processo:</span>
+                                    {item.processo}
+                                </span>
+                                <span className="hidden sm:flex items-center">
+                                    <span className="text-gray-500 uppercase font-medium mr-1">Origem:</span>
+                                    {item.origem}
+                                </span>
                             </div>
-                        )}
+                            {item.obs_criacao && (
+                                <div className="bg-gray-50/70 px-2 py-0.5 rounded-md border border-gray-100 ml-2 text-xs">
+                                    <p className="text-xs text-gray-600 line-clamp-1">
+                                        <span className="text-gray-500 uppercase font-medium mr-1">Obs:</span>
+                                        {item.obs_criacao}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </motion.button>
                     );
-                }
-
-                // Layout original para desktop e mobile
+                }                // Layout original para desktop e mobile
                 return (<motion.button
-                    key={item.id}
+                    key={item.id_ficha_inspecao}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={() => handleInspectionClick(item)}
-                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
                 >
-                    {/* Header Principal */}
-                    <div className="flex items-start justify-between mb-3">
+                    {/* Header Principal com layout melhorado */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
                                 {item.id_ficha_inspecao.toString().padStart(2, '0')}
                             </div>
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors">
-                                    {item.tipo_inspecao} (OF: #{item.numero_ordem})
+                            <div className="min-w-0">
+                                <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                    {item.tipo_inspecao}
                                 </h3>
-                                <p className="text-sm text-gray-500">
-                                    Produto: {item.referencia} - {item.produto}
-                                </p>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 text-sm text-gray-600">
+                                    <span className="flex items-center font-medium truncate">
+                                        <span className="mr-1">OF:</span>
+                                        #{item.numero_ordem}
+                                    </span>
+                                    <span className="hidden sm:block text-gray-300">|</span>
+                                    <span className="truncate">{item.referencia} - {item.produto}</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        {/* Status badge melhorado */}
+                        <div className="flex flex-col items-end gap-1 shrink-0">
                             <span className={`
-                                        inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
-                                        ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1 text-xs font-medium
+                                ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                     : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
                                         : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
                                             : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -591,10 +649,10 @@ export default function InspecoesPage() {
                                                             : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                                                 : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
                                                                     : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                                    `}>
+                            `}>
                                 <div className={`
-                                            h-1.5 w-1.5 rounded-full
-                                            ${item.situacao === '1' ? 'bg-amber-500'
+                                    h-2 w-2 rounded-full
+                                    ${item.situacao === '1' ? 'bg-amber-500'
                                         : item.situacao === '2' ? 'bg-purple-500'
                                             : item.situacao === '3' ? 'bg-purple-500'
                                                 : item.situacao === '4' ? 'bg-blue-500'
@@ -604,45 +662,58 @@ export default function InspecoesPage() {
                                                                 : item.situacao === '8' ? 'bg-emerald-500'
                                                                     : item.situacao === '9' ? 'bg-red-500'
                                                                         : 'bg-gray-400'}
-                                        `} />
+                                `} />
                                 <span className="whitespace-nowrap">
                                     {getSituacao(item.situacao)}
-                                    <span className="hidden sm:inline">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
-                                    <span className="sm:hidden ml-1">{item.data_hora_situacao ? formatDateTime(item.data_hora_situacao) : ''}</span>
+                                    {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
                                 </span>
                             </span>
+
+                            {/* Data prevista como badge separada quando existe */}
+                            <div className="flex items-center text-xs mr-3"> {/* mr-4 para espaço à direita */}
+                                <span className="text-gray-500 mr-1">Prevista:</span>
+                                {item.data_hora_prevista ? (
+                                    <span className={`font-medium ${dateTextColorClass}`}>
+                                        {formatDateTime(item.data_hora_prevista)}
+                                    </span>
+                                ) : (
+                                    <span className="font-medium text-gray-400">Não definida</span>
+                                )}
+                            </div>
+
                         </div>
                     </div>
-                    {/* Informações em Grid */}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">                                <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Processo</p>
-                        <p className="text-sm font-medium text-gray-900">{item.processo} - {item.tipo_acao}</p>
-                    </div>
-                        <div className="space-y-1">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Posto</p>
-                            <p className="text-sm font-medium text-gray-900">{item.codigo_posto}</p>
+                    {/* Informações em Grid com borda superior para separar visualmente */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1">
+                        <div>
+                            <div className="flex col-span-2 sm:col-span-3 items-center">
+                                <p className="text-xs font-medium text-gray-500 uppercase mr-1">Proc:</p>
+                                <p className="text-xs font-medium text-gray-900">{item.processo}-{item.tipo_acao}</p>
+                            </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Origem</p>
-                            <p className="text-sm font-medium text-gray-900">{item.origem}</p>                                </div>
-                        {/* Data prevista - sempre exibida */}                                <div className="space-y-1">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Prevista</p>
-                            <p className="text-sm font-medium text-gray-900">
-                                {item.data_hora_prevista ?
-                                    <span className={dateTextColorClass}>
-                                        <span className="hidden sm:inline">{formatDateTime(item.data_hora_prevista)}</span>
-                                        <span className="sm:hidden">{formatDateTime(item.data_hora_prevista)}</span>
-                                    </span> :
-                                    'Não definida'}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Observação</p>
-                            <p className="text-sm font-medium text-gray-900">{item.obs_criacao}</p>
+                        <div>
+                            <div className="flex items-center">
+                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">Posto:</p>
+                                <p className="text-xs font-medium text-gray-900">{item.codigo_posto}</p>
+                            </div>
                         </div>
 
+                        <div>
+                            <div className="flex items-center">
+                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">Origem:</p>
+                                <p className="text-xs font-medium text-gray-900">{item.origem}</p>
+                            </div>
+                        </div>
 
+                        {item.obs_criacao && (
+                            <div className="col-span-2 sm:col-span-3">
+                                <div className="flex items-center">
+                                    <p className="text-xs font-medium text-gray-500 uppercase mr-2">Observação:</p>
+                                    <p className="text-xs font-medium text-gray-900 line-clamp-1">{item.obs_criacao}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -654,24 +725,21 @@ export default function InspecoesPage() {
     };
 
     return (
-        <div className="w-full space-y-3 p-1 sm:p-2 md:p-2">
+        <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {/* Debug info (hidden) */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
             </div>
-            <div className="flex items-center justify-between mb-0 py-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
                 <PageHeader
                     title="Inspeções"
                     subtitle="Gerencie todas as inspeções do sistema"
                     showButton={false}
                 />
                 <div className="flex items-center gap-3">
-                    <div className=" sm:block text-xs text-gray-500">
-                        Última atualização:{" "}
-                        {lastRefresh.toLocaleTimeString("pt-BR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })}
+                    <div className="hidden sm:flex items-center text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span className="mr-1.5">Última atualização:</span>
+                        <span className="font-medium text-gray-700">{lastRefresh.toLocaleTimeString('pt-BR')}</span>
                     </div>
                     <button
                         onClick={handleManualRefresh}
@@ -705,60 +773,49 @@ export default function InspecoesPage() {
                 />
             )}            <div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
-                    <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide sm:space-x-6 lg:space-x-8">
+                    <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id)}
                                 className={`
-                                    relative flex min-w-0 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-all duration-300 sm:gap-3 sm:px-2 sm:py-4 sm:text-base
+                                    group relative flex items-center gap-2 whitespace-nowrap px-1.5 py-2.5 text-sm font-medium transition-all duration-200
                                     ${activeTab === tab.id
-                                        ? "border-[#1ABC9C] text-[#1ABC9C]"
-                                        : "border-transparent text-gray-500 hover:border-gray-200 hover:text-gray-700"
+                                        ? "text-[#1ABC9C] after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-[#1ABC9C]"
+                                        : "text-gray-500 hover:text-gray-800"
                                     }
                                 `}
-                            >                                <span className={`
-                                    flex-shrink-0 transition-all duration-300
-                                    ${activeTab === tab.id ? 'scale-110' : ''}
+                            >
+                                <div className={`
+                                    flex h-6 w-6 items-center justify-center rounded-md transition-all duration-200
+                                    ${activeTab === tab.id
+                                        ? "bg-[#1ABC9C]/10 text-[#1ABC9C]"
+                                        : "bg-gray-100 text-gray-500 group-hover:bg-gray-200 group-hover:text-gray-700"
+                                    }
                                 `}>
                                     {tab.icon}
-                                </span>
-                                <span className="hidden lg:inline">
-                                    {tab.label}
-                                </span>
-                                <span className="hidden sm:inline lg:hidden">
-                                    {tab.tabletLabel || tab.label}
-                                </span>
-                                <span className="text-sm font-normal sm:hidden">
-                                    {tab.mobileLabel || tab.label.split(" ")[0]}
-                                </span>
-                                <span
-                                    className={`
-                                        ml-1 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300 sm:ml-2 sm:px-2.5 sm:py-1
+                                </div>
+                                <span className="hidden sm:inline">{isCompactLayout ? tab.tabletLabel || tab.label : tab.label}</span>
+                                <span className="sm:hidden">{tab.mobileLabel || tab.label}</span>
+                                {tab.count > 0 && (
+                                    <span className={`
+                                        inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-semibold
                                         ${activeTab === tab.id
-                                            ? "bg-[#1ABC9C] text-white shadow-sm"
+                                            ? "bg-[#1ABC9C] text-white"
                                             : "bg-gray-100 text-gray-600 group-hover:bg-gray-200"
                                         }
-                                    `}
-                                >
-                                    {tab.id in inspectionData ? tab.count : (loadingTabs[tab.id] ? '...' : '?')}
-                                </span>
-
-                                {/* Active indicator */}
-                                {activeTab === tab.id && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-[#1ABC9C] rounded-full"
-                                        initial={false}
-                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    />
+                                    `}>
+                                        {tab.count}
+                                    </span>
                                 )}
                             </button>
                         ))}
-                    </nav>                </div>
-            </div>
-            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
-                {renderTabContent()}
+                    </nav>
+                </div>
+            </div>            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
+                <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+                    {renderTabContent()}
+                </div>
             </div>
         </div>
     );
