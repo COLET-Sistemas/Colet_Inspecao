@@ -45,7 +45,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         setError('');
         setQuantidade(1);
         onClose();
-        // Chamar callback de cancelamento se fornecido
         if (onCancel) {
             onCancel();
         }
@@ -74,14 +73,13 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 );
 
                 if (e.shiftKey) {
-                    // Tab + Shift (navegar para trás)
                     e.preventDefault();
                     const previousIndex = currentIndex <= 0
                         ? focusableElements.length - 1
                         : currentIndex - 1;
                     focusableElements[previousIndex]?.focus();
                 } else {
-                    // Tab (navegar para frente)
+
                     e.preventDefault();
                     const nextIndex = currentIndex >= focusableElements.length - 1
                         ? 0
@@ -112,7 +110,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         setError('');
         setQuantidade(1);
         onClose();
-        // Chamar callback de cancelamento se fornecido
         if (onCancel) {
             onCancel();
         }
@@ -157,7 +154,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
                         <div className="mb-6">
                             <p className="text-sm text-gray-600">
-                                A quantidade produzida desde a última inspeção ?
+                                A quantidade produzida desde a última inspeção:
                             </p>
                         </div>
 
@@ -176,7 +173,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         onChange={(e) => setQuantidade(Number(e.target.value))}
                                         min="1"
                                         step="1"
-                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2"
+                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
                                         required
                                     />
                                 </div>

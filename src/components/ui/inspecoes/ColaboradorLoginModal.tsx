@@ -343,7 +343,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                         </form>
                     </motion.div>
                 </div>
-            )}            {/* Modal de Quantidade de Não Conformidade */}
+            )}           
             <QuantidadeInputModal
                 isOpen={showQuantidadeModal}
                 onClose={() => setShowQuantidadeModal(false)}
