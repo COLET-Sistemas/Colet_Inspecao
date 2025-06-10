@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { ColaboradorLoginModal } from "@/components/ui/inspecoes/ColaboradorLoginModal";
@@ -54,6 +55,8 @@ export default function InspecoesPage() {
     const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
     const [hasColaboradorData, setHasColaboradorData] = useState(false);
     const [isNaoConformidadeContext, setIsNaoConformidadeContext] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,7 +161,7 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar dados do colaborador:', error);
             return false;
         }
-    }, []);    
+    }, []);
     const canRegisterNaoConformidade = useCallback((): boolean => {
         try {
             const userDataStr = sessionStorage.getItem('userData');
@@ -167,9 +170,9 @@ export default function InspecoesPage() {
             }
 
             const userData = JSON.parse(userDataStr);
-          
 
-            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {    
+
+            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
                 return true;
             }
 
@@ -192,7 +195,7 @@ export default function InspecoesPage() {
             }
 
             const encaminharFicha = userData.encaminhar_ficha;
-        
+
 
             let hasEncaminhar4 = false;
             if (typeof encaminharFicha === 'string') {
@@ -209,7 +212,7 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar permissão de não conformidade:', error);
             return false;
         }
-    }, []);    
+    }, []);
     const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
         e.stopPropagation();
 
@@ -455,13 +458,22 @@ export default function InspecoesPage() {
             setIsNaoConformidadeContext(false); // Contexto normal
             setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]);
-
-    // Função para fechar o modal e resetar estados
+    }, [router, checkColaboradorData]);    // Função para fechar o modal e resetar estados
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
         setIsNaoConformidadeContext(false);
         setSelectedInspection(null);
+    }, []);
+
+    // Função para mostrar alertas
+    const showAlert = useCallback((message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+    }, []);
+
+    // Função para fechar alertas
+    const handleAlertDismiss = useCallback(() => {
+        setAlertMessage(null);
     }, []); useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
@@ -906,8 +918,18 @@ export default function InspecoesPage() {
                     inspection={selectedInspection}
                     isNaoConformidadeContext={isNaoConformidadeContext}
                     onNaoConformidadeSuccess={handleNaoConformidadeSuccess}
+                    onShowAlert={showAlert}
                 />
-            )}<div className="mt-1 sm:mt-2">
+            )}
+
+            {/* Alert Message Component */}
+            <AlertMessage
+                message={alertMessage}
+                type={alertType}
+                onDismiss={handleAlertDismiss}
+                autoDismiss={true}
+                dismissDuration={5000}
+            /><div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
                         {tabs.map((tab) => (

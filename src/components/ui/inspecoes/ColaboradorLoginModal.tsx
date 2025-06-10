@@ -1,8 +1,7 @@
-import { LoadingSpinner } from '@/components/ui/Loading';
 import inspecaoService, { InspectionItem } from '@/services/api/inspecaoService';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, EyeOff, KeyRound, User, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import QuantidadeInputModal from './QuantidadeInputModal';
 
 
@@ -39,7 +38,7 @@ interface ColaboradorLoginModalProps {
     // Propriedades opcionais para controle de contexto de não conformidade
     isNaoConformidadeContext?: boolean;
     onNaoConformidadeSuccess?: (quantidade: number, inspection: InspectionItem) => void;
-
+    onShowAlert?: (message: string, type?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
@@ -49,14 +48,75 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     inspection,
     isNaoConformidadeContext = false,
     onNaoConformidadeSuccess,
-
+    onShowAlert,
 }) => {
     const [codigo, setCodigo] = useState('');
     const [senha, setSenha] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [showQuantidadeModal, setShowQuantidadeModal] = useState(false);    // Função para verificar se o usuário tem permissão para registrar não conformidade
+    const [showQuantidadeModal, setShowQuantidadeModal] = useState(false);
+
+    // Refs para controle de foco
+    const codigoInputRef = useRef<HTMLInputElement>(null);
+    const senhaInputRef = useRef<HTMLInputElement>(null);
+    const showPasswordButtonRef = useRef<HTMLButtonElement>(null);
+    const submitButtonRef = useRef<HTMLButtonElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    // Effect para focar no input quando o modal abrir
+    useEffect(() => {
+        if (isOpen && codigoInputRef.current) {
+            const timer = setTimeout(() => {
+                codigoInputRef.current?.focus();
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    // Effect para trap focus dentro do modal
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Tab') {
+                const focusableElements = modalRef.current?.querySelectorAll(
+                    'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                );
+
+                if (!focusableElements || focusableElements.length === 0) return;
+
+                const firstElement = focusableElements[0] as HTMLElement;
+                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                if (e.shiftKey) {
+                    // Shift + Tab (indo para trás)
+                    if (document.activeElement === firstElement || !modalRef.current?.contains(document.activeElement)) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    }
+                } else {
+                    // Tab (indo para frente)
+                    if (document.activeElement === lastElement || !modalRef.current?.contains(document.activeElement)) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            }
+
+            // Fechar modal com ESC
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
+    // Função para verificar se o usuário tem permissão para registrar não conformidade
     const hasNaoConformidadePermission = (registrarFicha: string | number | boolean | Array<string | number>): boolean => {
         if (registrarFicha === undefined || registrarFicha === null) {
             return false;
@@ -135,9 +195,16 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     // Usuário tem permissão - abrir modal de quantidade
                     setShowQuantidadeModal(true);
                 } else {
-                    // Usuário não tem permissão - mostrar erro
-                    setError('Você não possui permissão para registrar não conformidades.');
+                    // Usuário não tem permissão - fechar modal e mostrar alerta
+                    setCodigo('');
+                    setSenha('');
+                    setError('');
                     setIsLoading(false);
+                    onClose();
+
+                    if (onShowAlert) {
+                        onShowAlert('Você não possui permissão para registrar não conformidades.', 'error');
+                    }
                     return;
                 }
             } else {
@@ -166,17 +233,22 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     />
 
                     <motion.div
+                        ref={modalRef}
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 400 }}
                         className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="modal-title"
                     >
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-xl font-semibold text-gray-900">
+                            <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
                                 Autenticação de Colaborador
                             </h2>
                             <button
+                                ref={closeButtonRef}
                                 onClick={onClose}
                                 className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
                                 aria-label="Fechar"
@@ -198,6 +270,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                         <User size={18} />
                                     </div>
                                     <input
+                                        ref={codigoInputRef}
                                         type="text"
                                         id="codigo"
                                         placeholder="Código do colaborador"
@@ -207,11 +280,14 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                         className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
                                         required
                                     />
-                                </div>                                <div className="relative">
+                                </div>
+
+                                <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                         <KeyRound size={18} />
                                     </div>
                                     <input
+                                        ref={senhaInputRef}
                                         type={showPassword ? "text" : "password"}
                                         id="senha"
                                         placeholder="Senha"
@@ -222,15 +298,16 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                         required
                                     />
                                     <button
+                                        ref={showPasswordButtonRef}
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                                        tabIndex={-1}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-1 rounded"
+                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                                     >
                                         {showPassword ? (
-                                            <EyeOff size={18} aria-label="Ocultar senha" />
+                                            <EyeOff size={18} />
                                         ) : (
-                                            <Eye size={18} aria-label="Mostrar senha" />
+                                            <Eye size={18} />
                                         )}
                                     </button>
                                 </div>
@@ -242,21 +319,26 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                 )}
 
                                 <button
+                                    ref={submitButtonRef}
                                     type="submit"
                                     disabled={isLoading}
                                     className={`
-                    relative w-full rounded-lg px-4 py-3 font-medium shadow-sm transition-all duration-200
-                    ${isLoading
+                                        relative w-full rounded-lg px-4 py-3 font-medium shadow-sm transition-all duration-200
+                                        ${isLoading
                                             ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                                            : 'bg-[#1ABC9C] text-white hover:bg-[#16A085] hover:shadow-md'
+                                            : 'bg-[#1ABC9C] text-white hover:bg-[#16A085] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2'
                                         }
-                  `}
+                                    `}
                                 >
                                     {isLoading ? (
-                                        <LoadingSpinner size="small" text="Autenticando..." color="gray" showText={true} />
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="text-sm">Autenticando...</span>
+                                        </div>
                                     ) : (
                                         'Acessar Inspeção'
-                                    )}                                </button>
+                                    )}
+                                </button>
                             </div>
                         </form>
                     </motion.div>
