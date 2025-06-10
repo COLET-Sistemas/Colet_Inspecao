@@ -19,7 +19,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     title = "Quantidade de Não Conformidade",
     onCancel
 }) => {
-    const [quantidade, setQuantidade] = useState<number>(1);
+    const [quantidade, setQuantidade] = useState<string>('');
     const [error, setError] = useState('');
 
     // Refs para elementos focáveis
@@ -38,12 +38,10 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
             return () => clearTimeout(timer);
         }
-    }, [isOpen]);
-
-    // Define handleClose before using it in useEffect
+    }, [isOpen]);    // Define handleClose before using it in useEffect
     const handleClose = useCallback(() => {
         setError('');
-        setQuantidade(1);
+        setQuantidade('');
         onClose();
         if (onCancel) {
             onCancel();
@@ -91,24 +89,21 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, handleClose]);
-
-    const handleSubmit = (e: React.FormEvent) => {
+    }, [isOpen, handleClose]); const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!quantidade || quantidade <= 0) {
+        const quantidadeNumber = Number(quantidade);
+        if (!quantidade || quantidadeNumber <= 0) {
             setError('A quantidade deve ser maior que zero');
             return;
         }
 
         setError('');
-        onConfirm(quantidade);
-        setQuantidade(1);
-    };
-
-    const handleCancel = useCallback(() => {
+        onConfirm(quantidadeNumber);
+        setQuantidade('');
+    }; const handleCancel = useCallback(() => {
         setError('');
-        setQuantidade(1);
+        setQuantidade('');
         onClose();
         if (onCancel) {
             onCancel();
@@ -163,14 +158,13 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                 <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                         <Package size={18} />
-                                    </div>
-                                    <input
+                                    </div>                                    <input
                                         ref={inputRef}
                                         type="number"
                                         id="quantidade"
                                         placeholder="Quantidade"
                                         value={quantidade}
-                                        onChange={(e) => setQuantidade(Number(e.target.value))}
+                                        onChange={(e) => setQuantidade(e.target.value)}
                                         min="1"
                                         step="1"
                                         className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
