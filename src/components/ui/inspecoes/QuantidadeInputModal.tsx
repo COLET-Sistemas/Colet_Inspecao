@@ -2,23 +2,98 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface QuantidadeInputModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (quantidade: number) => void;
     title?: string;
+    onCancel?: () => void; // Nova prop para callback de cancelamento
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     isOpen,
     onClose,
     onConfirm,
-    title = "Quantidade de Não Conformidade"
+    title = "Quantidade de Não Conformidade",
+    onCancel
 }) => {
     const [quantidade, setQuantidade] = useState<number>(1);
     const [error, setError] = useState('');
+
+    // Refs para elementos focáveis
+    const inputRef = useRef<HTMLInputElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const cancelButtonRef = useRef<HTMLButtonElement>(null);
+    const confirmButtonRef = useRef<HTMLButtonElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    // Focar no input quando o modal abrir
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            const timer = setTimeout(() => {
+                inputRef.current?.focus();
+            }, 100); // Pequeno delay para garantir que a animação termine
+
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    // Define handleClose before using it in useEffect
+    const handleClose = useCallback(() => {
+        setError('');
+        setQuantidade(1);
+        onClose();
+        // Chamar callback de cancelamento se fornecido
+        if (onCancel) {
+            onCancel();
+        }
+    }, [onClose, onCancel]);
+
+    // Trap de foco dentro do modal
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleClose();
+                return;
+            }
+
+            if (e.key === 'Tab') {
+                const focusableElements = [
+                    inputRef.current,
+                    cancelButtonRef.current,
+                    confirmButtonRef.current,
+                    closeButtonRef.current
+                ].filter(Boolean) as HTMLElement[];
+
+                const currentIndex = focusableElements.findIndex(
+                    element => element === document.activeElement
+                );
+
+                if (e.shiftKey) {
+                    // Tab + Shift (navegar para trás)
+                    e.preventDefault();
+                    const previousIndex = currentIndex <= 0
+                        ? focusableElements.length - 1
+                        : currentIndex - 1;
+                    focusableElements[previousIndex]?.focus();
+                } else {
+                    // Tab (navegar para frente)
+                    e.preventDefault();
+                    const nextIndex = currentIndex >= focusableElements.length - 1
+                        ? 0
+                        : currentIndex + 1;
+                    focusableElements[nextIndex]?.focus();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, handleClose]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,11 +108,15 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         setQuantidade(1);
     };
 
-    const handleClose = () => {
+    const handleCancel = useCallback(() => {
         setError('');
         setQuantidade(1);
         onClose();
-    };
+        // Chamar callback de cancelamento se fornecido
+        if (onCancel) {
+            onCancel();
+        }
+    }, [onClose, onCancel]);
 
     return (
         <AnimatePresence>
@@ -52,19 +131,24 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     />
 
                     <motion.div
+                        ref={modalRef}
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 400 }}
                         className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="modal-title"
                     >
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-xl font-semibold text-gray-900">
+                            <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
                                 {title}
                             </h2>
                             <button
+                                ref={closeButtonRef}
                                 onClick={handleClose}
-                                className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                                className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2"
                                 aria-label="Fechar"
                             >
                                 <X size={20} />
@@ -84,6 +168,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         <Package size={18} />
                                     </div>
                                     <input
+                                        ref={inputRef}
                                         type="number"
                                         id="quantidade"
                                         placeholder="Quantidade"
@@ -91,7 +176,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         onChange={(e) => setQuantidade(Number(e.target.value))}
                                         min="1"
                                         step="1"
-                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
+                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2"
                                         required
                                     />
                                 </div>
@@ -104,21 +189,24 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
                                 <div className="flex space-x-3">
                                     <button
+                                        ref={cancelButtonRef}
                                         type="button"
-                                        onClick={handleClose}
-                                        className="flex-1 rounded-lg px-4 py-3 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                        onClick={handleCancel}
+                                        className="flex-1 rounded-lg px-4 py-3 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
                                     >
                                         Cancelar
                                     </button>
                                     <button
+                                        ref={confirmButtonRef}
                                         type="submit"
-                                        className="flex-1 rounded-lg px-4 py-3 font-medium bg-[#1ABC9C] text-white hover:bg-[#16A085] transition-colors"
+                                        className="flex-1 rounded-lg px-4 py-3 font-medium bg-[#1ABC9C] text-white hover:bg-[#16A085] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2"
                                     >
                                         Confirmar
                                     </button>
                                 </div>
                             </div>
-                        </form>                    </motion.div>
+                        </form>
+                    </motion.div>
                 </div>
             )}
         </AnimatePresence>
