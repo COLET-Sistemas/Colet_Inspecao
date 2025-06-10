@@ -113,13 +113,12 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         if (onCancel) {
             onCancel();
         }
-    }, [onClose, onCancel]);
-
-    return (
+    }, [onClose, onCancel]); return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto">
                     <motion.div
+                        key="quantidade-modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -128,6 +127,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     />
 
                     <motion.div
+                        key="quantidade-modal-content"
                         ref={modalRef}
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}

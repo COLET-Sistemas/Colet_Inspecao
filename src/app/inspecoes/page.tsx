@@ -161,10 +161,9 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar dados do colaborador:', error);
             return false;
         }
-    }, []);
-    const canRegisterNaoConformidade = useCallback((): boolean => {
+    }, []);    const canRegisterNaoConformidade = useCallback((): boolean => {
         try {
-            const userDataStr = sessionStorage.getItem('userData');
+            const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
             if (!userDataStr) {
                 return true;
             }
@@ -633,16 +632,24 @@ export default function InspecoesPage() {
                     } catch (error) {
                         console.error("Erro ao processar data prevista:", error);
                     }
-                }
-                if (isCompactLayout || isPortrait) {
+                } if (isCompactLayout || isPortrait) {
                     return (
-                        <motion.button
+                        <motion.div
                             key={item.id_ficha_inspecao}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                             onClick={() => handleInspectionClick(item)}
-                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left`}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleInspectionClick(item);
+                                }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Abrir inspeção ${item.tipo_inspecao} - OF: ${item.numero_ordem}`}
+                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2`}
                         >
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -720,29 +727,24 @@ export default function InspecoesPage() {
                                             {item.obs_criacao}
                                         </span>
                                     )}
-                                </div>                                {/* Botão Registrar Não Conformidade somente na aba de processo */}
+                                </div>
                                 {activeTab === "processo" && (() => {
                                     const canShow = canRegisterNaoConformidade();
-                                    console.log('🔍 Button render check - activeTab:', activeTab, 'canShow:', canShow);
                                     return canShow;
-                                })() && (
-                                        <div className="flex-shrink-0">
-                                            <button
-                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1"
-                                            >
-                                                <AlertTriangle className="h-2 w-2" />
-                                                Registrar NC
-                                            </button>
-                                        </div>
-                                    )}
-                            </div>
-                            {/* Gradient overlay on hover */}
+                                })() && (<div className="flex-shrink-0">
+                                    <button
+                                        onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                        className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <AlertTriangle className="h-2 w-2" />
+                                        Registrar NC
+                                    </button>
+                                </div>
+                                    )}                            </div>
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                        </motion.button>
+                        </motion.div>
                     );
-                }                // Layout original para desktop e mobile
-                return (<motion.button
+                } return (<motion.div
                     key={item.id_ficha_inspecao}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -852,7 +854,7 @@ export default function InspecoesPage() {
                                 <div className="flex justify-end">
                                     <button
                                         onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5"
+                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
                                     >
                                         <AlertTriangle className="h-3 w-3" />
                                         <span>
@@ -861,11 +863,10 @@ export default function InspecoesPage() {
                                     </button>
                                 </div>
                             )}
-                        </div>
-                    </div>
+                        </div>                    </div>
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                </motion.button>
+                </motion.div>
                 );
             })}
         </motion.div>

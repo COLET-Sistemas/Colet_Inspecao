@@ -220,130 +220,136 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }; return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 w-full h-full bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150"
-                        onClick={onClose}
-                    />
+    };
 
-                    <motion.div
-                        ref={modalRef}
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ type: "spring", damping: 25, stiffness: 400 }}
-                        className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="modal-title"
-                    >
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
-                                Autenticação de Colaborador
-                            </h2>
-                            <button
-                                ref={closeButtonRef}
-                                onClick={onClose}
-                                className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                                aria-label="Fechar"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
+    return (
+        <>
+            <AnimatePresence>
+                {isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
+                        <motion.div
+                            key="colaborador-modal-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 w-full h-full bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150"
+                            onClick={onClose}
+                        />
 
-                        <div className="mb-6">
-                            <p className="text-sm text-gray-600">
-                                Para acessar os detalhes da inspeção, por favor informe seu código e senha
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="space-y-4">
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                        <User size={18} />
-                                    </div>
-                                    <input
-                                        ref={codigoInputRef}
-                                        type="text"
-                                        id="codigo"
-                                        placeholder="Código do colaborador"
-                                        value={codigo}
-                                        onChange={(e) => setCodigo(e.target.value)}
-                                        disabled={isLoading}
-                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                        <KeyRound size={18} />
-                                    </div>
-                                    <input
-                                        ref={senhaInputRef}
-                                        type={showPassword ? "text" : "password"}
-                                        id="senha"
-                                        placeholder="Senha"
-                                        value={senha}
-                                        onChange={(e) => setSenha(e.target.value)}
-                                        disabled={isLoading}
-                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
-                                        required
-                                    />
-                                    <button
-                                        ref={showPasswordButtonRef}
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-1 rounded"
-                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                                    >
-                                        {showPassword ? (
-                                            <EyeOff size={18} />
-                                        ) : (
-                                            <Eye size={18} />
-                                        )}
-                                    </button>
-                                </div>
-
-                                {error && (
-                                    <div className="rounded-lg bg-red-50 p-3">
-                                        <p className="text-sm text-red-600">{error}</p>
-                                    </div>
-                                )}
-
+                        <motion.div
+                            key="colaborador-modal-content"
+                            ref={modalRef}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 400 }}
+                            className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="modal-title"
+                        >
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
+                                    Autenticação de Colaborador
+                                </h2>
                                 <button
-                                    ref={submitButtonRef}
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className={`
-                                        relative w-full rounded-lg px-4 py-3 font-medium shadow-sm transition-all duration-200
-                                        ${isLoading
-                                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                                            : 'bg-[#1ABC9C] text-white hover:bg-[#16A085] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2'
-                                        }
-                                    `}
+                                    ref={closeButtonRef}
+                                    onClick={onClose}
+                                    className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                                    aria-label="Fechar"
                                 >
-                                    {isLoading ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="text-sm">Autenticando...</span>
-                                        </div>
-                                    ) : (
-                                        'Acessar Inspeção'
-                                    )}
+                                    <X size={20} />
                                 </button>
                             </div>
-                        </form>
-                    </motion.div>
-                </div>
-            )}           
+
+                            <div className="mb-6">
+                                <p className="text-sm text-gray-600">
+                                    Para acessar os detalhes da inspeção, por favor informe seu código e senha
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleSubmit}>
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <User size={18} />
+                                        </div>
+                                        <input
+                                            ref={codigoInputRef}
+                                            type="text"
+                                            id="codigo"
+                                            placeholder="Código do colaborador"
+                                            value={codigo}
+                                            onChange={(e) => setCodigo(e.target.value)}
+                                            disabled={isLoading}
+                                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <KeyRound size={18} />
+                                        </div>
+                                        <input
+                                            ref={senhaInputRef}
+                                            type={showPassword ? "text" : "password"}
+                                            id="senha"
+                                            placeholder="Senha"
+                                            value={senha}
+                                            onChange={(e) => setSenha(e.target.value)}
+                                            disabled={isLoading}
+                                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
+                                            required
+                                        />
+                                        <button
+                                            ref={showPasswordButtonRef}
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-1 rounded"
+                                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff size={18} />
+                                            ) : (
+                                                <Eye size={18} />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {error && (
+                                        <div className="rounded-lg bg-red-50 p-3">
+                                            <p className="text-sm text-red-600">{error}</p>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        ref={submitButtonRef}
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className={`
+                                        relative w-full rounded-lg px-4 py-3 font-medium shadow-sm transition-all duration-200
+                                        ${isLoading
+                                                ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                                : 'bg-[#1ABC9C] text-white hover:bg-[#16A085] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2'
+                                            }
+                                    `}
+                                    >
+                                        {isLoading ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-sm">Autenticando...</span>
+                                            </div>
+                                        ) : (
+                                            'Acessar Inspeção'
+                                        )}                                </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <QuantidadeInputModal
                 isOpen={showQuantidadeModal}
                 onClose={() => setShowQuantidadeModal(false)}
@@ -355,6 +361,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 }}
                 title="Registrar Não Conformidade"
             />
-        </AnimatePresence>
+        </>
     );
 };
