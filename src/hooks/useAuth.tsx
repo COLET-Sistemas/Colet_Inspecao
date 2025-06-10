@@ -11,6 +11,8 @@ interface User {
     permissao?: string;
     perfil_inspecao?: string;
     codigo_pessoa?: string;
+    encaminhar_ficha?: Int16Array;
+    registrar_ficha?: Int16Array;
 }
 
 export const getProfileNames = (perfil_inspecao?: string): string => {
@@ -134,8 +136,7 @@ function useProvideAuth(): AuthContextType {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ usuario: username, senha_cripto }),
-                });
-                const data = await response.json(); if (response.status === 200) {
+                }); const data = await response.json(); if (response.status === 200) {
                     if (data.success === undefined || data.success) {
                         const userData: User = {
                             username: username,
@@ -143,6 +144,8 @@ function useProvideAuth(): AuthContextType {
                             permissao: data.permissao || "",
                             perfil_inspecao: data.perfil_inspecao || "",
                             codigo_pessoa: data.codigo_pessoa || "",
+                            encaminhar_ficha: data.encaminhar_ficha || "",
+                            registrar_ficha: data.registrar_ficha || "",
                         };
                         if (remember) {
                             localStorage.setItem("isAuthenticated", "true");

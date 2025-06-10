@@ -16,8 +16,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-
-
 interface TabData {
     id: string;
     label: string;
@@ -165,7 +163,7 @@ export default function InspecoesPage() {
     const formatDateTime = useCallback((dateString: string) => {
         if (!dateString) return 'N/A';
 
-        // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
+     
         if (dateString.includes('/')) {
             return dateString;
         }
@@ -216,7 +214,6 @@ export default function InspecoesPage() {
         try {
             const abaApi = TAB_API_MAP[tabId as keyof typeof TAB_API_MAP];
             if (!abaApi) {
-                console.error(`Aba não mapeada: ${tabId}`);
                 return [];
             }
 
@@ -224,8 +221,7 @@ export default function InspecoesPage() {
 
             setInspectionData(prev => ({ ...prev, [tabId]: allData }));
             return allData;
-        } catch (error) {
-            console.error(`Erro ao carregar dados da aba ${tabId}:`, error);
+        } catch {
             setInspectionData(prev => ({ ...prev, [tabId]: [] }));
             return [];
         } finally {
@@ -306,10 +302,8 @@ export default function InspecoesPage() {
         const hasData = checkColaboradorData();
 
         if (hasData) {
-            // Se tiver, redireciona direto para a página de detalhes
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
-            // Se não tiver, exibe o modal de autenticação
             setSelectedInspection(item);
             setIsModalOpen(true);
         }
@@ -320,7 +314,6 @@ export default function InspecoesPage() {
                 const initialTab = "processo";
                 await fetchTabData(initialTab);
 
-                // Verificar se há dados do colaborador no localStorage
                 const hasData = checkColaboradorData();
                 setHasColaboradorData(hasData);
             }
@@ -567,8 +560,8 @@ export default function InspecoesPage() {
                                     <div className="flex-shrink-0">
                                         <button
                                             onClick={(e) => {
-                                                e.stopPropagation(); // Evita que o click no botão também acione o clique do card
-                                                console.log("Registrando não conformidade para o item (layout compacto):", item.id_ficha_inspecao);
+                                                e.stopPropagation();
+
                                             }}
                                             className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1"
                                         >
@@ -691,14 +684,11 @@ export default function InspecoesPage() {
                                 </p>
                             </div>
 
-                            {/* Botão Registrar Não Conformidade apenas na aba de processo */}
                             {activeTab === "processo" && (
                                 <div className="flex justify-end">
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Evita que o click no botão também acione o clique do card
-                                            // Aqui você pode adicionar a lógica para registrar a não conformidade
-                                            console.log("Registrando não conformidade para o item:", item.id_ficha_inspecao);
+                                            e.stopPropagation();
                                         }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5"
                                     >
                                         <AlertTriangle className="h-3 w-3" />

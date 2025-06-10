@@ -207,7 +207,6 @@ class InspecaoService {
             const mappedData = Array.isArray(data) ? data.map(item => this.mapApiDataToInspectionItem(item)) : [];
             return mappedData;
         } catch (error) {
-            console.error(`Erro ao buscar fichas de inspeção da aba ${aba}:`, error);
             throw error;
         }
     }    /**
