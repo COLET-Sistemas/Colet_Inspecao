@@ -3,6 +3,8 @@ import inspecaoService, { InspectionItem } from '@/services/api/inspecaoService'
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, EyeOff, KeyRound, User, X } from 'lucide-react';
 import React, { useState } from 'react';
+import QuantidadeInputModal from './QuantidadeInputModal';
+
 
 // Função para codificar senha usando cifra XOR (mesma usada em useAuth)
 const encodePassword = (password: string) => {
@@ -34,19 +36,58 @@ interface ColaboradorLoginModalProps {
         inspection: InspectionItem;
     }) => void;
     inspection: InspectionItem;
+    // Propriedades opcionais para controle de contexto de não conformidade
+    isNaoConformidadeContext?: boolean;
+    onNaoConformidadeSuccess?: (quantidade: number, inspection: InspectionItem) => void;
+
 }
 
 export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
-    inspection
+    inspection,
+    isNaoConformidadeContext = false,
+    onNaoConformidadeSuccess,
+
 }) => {
     const [codigo, setCodigo] = useState('');
     const [senha, setSenha] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [showQuantidadeModal, setShowQuantidadeModal] = useState(false);    // Função para verificar se o usuário tem permissão para registrar não conformidade
+    const hasNaoConformidadePermission = (registrarFicha: string | number | boolean | Array<string | number>): boolean => {
+        if (registrarFicha === undefined || registrarFicha === null) {
+            return false;
+        }
+
+        if (typeof registrarFicha === 'string') {
+            return registrarFicha.includes('4');
+        } else if (Array.isArray(registrarFicha)) {
+            return registrarFicha.includes(4) || registrarFicha.includes('4');
+        } else if (typeof registrarFicha === 'number') {
+            return registrarFicha === 4;
+        } else if (typeof registrarFicha === 'boolean') {
+            // Se for boolean true, consideramos que tem permissão (para compatibilidade)
+            return registrarFicha;
+        }
+
+        return false;
+    };
+
+    // Handler para confirmar quantidade no modal de quantidade
+    const handleQuantidadeConfirm = (quantidade: number) => {
+        setShowQuantidadeModal(false);
+        if (onNaoConformidadeSuccess) {
+            onNaoConformidadeSuccess(quantidade, inspection);
+        }
+        // Limpar form após sucesso
+        setCodigo('');
+        setSenha('');
+        setError('');
+        onClose();
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,13 +126,27 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 }));
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
-            }
+            }            // Callback de sucesso com os dados do usuário e a inspeção selecionada
+            // Se estamos no contexto de não conformidade, verificar permissão
+            if (isNaoConformidadeContext && onNaoConformidadeSuccess) {
+                const hasPermission = hasNaoConformidadePermission(response.registrar_ficha);
 
-            // Callback de sucesso com os dados do usuário e a inspeção selecionada
-            onSuccess({
-                ...response,
-                inspection
-            });
+                if (hasPermission) {
+                    // Usuário tem permissão - abrir modal de quantidade
+                    setShowQuantidadeModal(true);
+                } else {
+                    // Usuário não tem permissão - mostrar erro
+                    setError('Você não possui permissão para registrar não conformidades.');
+                    setIsLoading(false);
+                    return;
+                }
+            } else {
+                // Contexto normal - prosseguir com callback padrão
+                onSuccess({
+                    ...response,
+                    inspection
+                });
+            }
         } catch (err) {
             console.error('Erro ao autenticar:', err);
             setError('Código ou senha inválidos. Por favor, tente novamente.');
@@ -201,13 +256,20 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                         <LoadingSpinner size="small" text="Autenticando..." color="gray" showText={true} />
                                     ) : (
                                         'Acessar Inspeção'
-                                    )}
-                                </button>
+                                    )}                                </button>
                             </div>
                         </form>
                     </motion.div>
                 </div>
             )}
+
+            {/* Modal de Quantidade de Não Conformidade */}
+            <QuantidadeInputModal
+                isOpen={showQuantidadeModal}
+                onClose={() => setShowQuantidadeModal(false)}
+                onConfirm={handleQuantidadeConfirm}
+                title="Registrar Não Conformidade"
+            />
         </AnimatePresence>
     );
 };

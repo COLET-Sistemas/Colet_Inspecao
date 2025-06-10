@@ -50,10 +50,10 @@ export default function InspecoesPage() {
     const [inspectionData, setInspectionData] = useState<Record<string, InspectionItem[]>>({});
     const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [lastRefresh, setLastRefresh] = useState(new Date());
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(new Date()); const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
     const [hasColaboradorData, setHasColaboradorData] = useState(false);
+    const [isNaoConformidadeContext, setIsNaoConformidadeContext] = useState(false);
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,12 +158,143 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar dados do colaborador:', error);
             return false;
         }
+    }, []);    
+    const canRegisterNaoConformidade = useCallback((): boolean => {
+        try {
+            const userDataStr = sessionStorage.getItem('userData');
+            if (!userDataStr) {
+                return true;
+            }
+
+            const userData = JSON.parse(userDataStr);
+          
+
+            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {    
+                return true;
+            }
+
+            const perfilInspecao = userData.perfil_inspecao;
+
+            // Check if perfil_inspecao contains letter 'O'
+            let hasPerfilO = false;
+            if (typeof perfilInspecao === 'string') {
+                hasPerfilO = perfilInspecao.includes('O');
+            } else if (Array.isArray(perfilInspecao)) {
+                hasPerfilO = perfilInspecao.includes('O');
+            }
+
+            if (hasPerfilO) {
+                return true;
+            }
+
+            if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
+                return false;
+            }
+
+            const encaminharFicha = userData.encaminhar_ficha;
+        
+
+            let hasEncaminhar4 = false;
+            if (typeof encaminharFicha === 'string') {
+                hasEncaminhar4 = encaminharFicha.includes('4');
+            } else if (Array.isArray(encaminharFicha)) {
+                hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
+            } else if (typeof encaminharFicha === 'number') {
+                hasEncaminhar4 = encaminharFicha === 4;
+            }
+
+            return hasEncaminhar4;
+
+        } catch (error) {
+            console.error('Erro ao verificar permissão de não conformidade:', error);
+            return false;
+        }
+    }, []);    
+    const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
+        e.stopPropagation();
+
+        const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+        if (!userDataStr) {
+            // No userData, open login modal in non-conformity context
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(true);
+            setIsModalOpen(true);
+            return;
+        }
+
+        try {
+            const userData = JSON.parse(userDataStr);
+
+            // Check if userData has perfil_inspecao field
+            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
+                // User has userData but no perfil_inspecao field - open login modal in non-conformity context
+                setSelectedInspection(item);
+                setIsNaoConformidadeContext(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            const perfilInspecao = userData.perfil_inspecao;
+
+            // Check if perfil_inspecao contains letter 'O'
+            let hasPerfilO = false;
+            if (typeof perfilInspecao === 'string') {
+                hasPerfilO = perfilInspecao.includes('O');
+            } else if (Array.isArray(perfilInspecao)) {
+                hasPerfilO = perfilInspecao.includes('O');
+            }
+
+            if (hasPerfilO) {
+                // If has 'O' in perfil_inspecao, open login modal for verification
+                console.log("perfil_inspecao has 'O', opening modal for login verification");
+                setSelectedInspection(item);
+                setIsNaoConformidadeContext(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            // If perfil_inspecao doesn't have 'O', check encaminhar_ficha for direct access
+            if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
+                console.log("No encaminhar_ficha field, opening modal");
+                setSelectedInspection(item);
+                setIsNaoConformidadeContext(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            const encaminharFicha = userData.encaminhar_ficha;
+            let hasEncaminhar4 = false;
+
+            if (typeof encaminharFicha === 'string') {
+                hasEncaminhar4 = encaminharFicha.includes('4');
+            } else if (Array.isArray(encaminharFicha)) {
+                hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
+            } else if (typeof encaminharFicha === 'number') {
+                hasEncaminhar4 = encaminharFicha === 4;
+            }
+
+            if (hasEncaminhar4) {
+                // User has direct permission through encaminhar_ficha, proceed with registration
+                console.log("User has encaminhar_ficha permission, proceeding with registration for item:", item.id_ficha_inspecao);
+                // TODO: Implement non-conformity registration logic here
+            } else {
+                // No permission, should not happen as button shouldn't be visible
+                console.log("No permission found, this shouldn't happen");
+            }
+
+        } catch (error) {
+            console.error('Erro ao processar userData:', error);
+            // In case of error parsing userData, open login modal in non-conformity context
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(true);
+            setIsModalOpen(true);
+        }
     }, []);
 
     const formatDateTime = useCallback((dateString: string) => {
         if (!dateString) return 'N/A';
 
-     
+
         if (dateString.includes('/')) {
             return dateString;
         }
@@ -297,7 +428,23 @@ export default function InspecoesPage() {
             encaminhar_ficha: String(data.encaminhar_ficha)
         });        // Redirect to inspection details page with all required data
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]); const handleInspectionClick = useCallback((item: InspectionItem) => {
+    }, [router]);
+
+    // Handler para sucesso de não conformidade
+    const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
+        console.log(`Registrando ${quantidade} não conformidade(s) para inspeção ${inspection.id_ficha_inspecao}`);
+
+        // TODO: Implementar a lógica de registro de não conformidade aqui
+        // Exemplo de chamada para API:
+        // await inspecaoService.registrarNaoConformidade(inspection.id_ficha_inspecao, quantidade);
+
+        // Por enquanto, apenas logar o resultado
+        alert(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
+
+        // Reset do estado
+        setIsNaoConformidadeContext(false);
+        setSelectedInspection(null);
+    }, []); const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 
@@ -305,9 +452,17 @@ export default function InspecoesPage() {
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
             setSelectedInspection(item);
+            setIsNaoConformidadeContext(false); // Contexto normal
             setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]); useEffect(() => {
+    }, [router, checkColaboradorData]);
+
+    // Função para fechar o modal e resetar estados
+    const handleModalClose = useCallback(() => {
+        setIsModalOpen(false);
+        setIsNaoConformidadeContext(false);
+        setSelectedInspection(null);
+    }, []); useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
@@ -553,23 +708,22 @@ export default function InspecoesPage() {
                                             {item.obs_criacao}
                                         </span>
                                     )}
-                                </div>
-
-                                {/* Botão Registrar Não Conformidade somente na aba de processo */}
-                                {activeTab === "processo" && (
-                                    <div className="flex-shrink-0">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-
-                                            }}
-                                            className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1"
-                                        >
-                                            <AlertTriangle className="h-2 w-2" />
-                                            Registrar NC
-                                        </button>
-                                    </div>
-                                )}
+                                </div>                                {/* Botão Registrar Não Conformidade somente na aba de processo */}
+                                {activeTab === "processo" && (() => {
+                                    const canShow = canRegisterNaoConformidade();
+                                    console.log('🔍 Button render check - activeTab:', activeTab, 'canShow:', canShow);
+                                    return canShow;
+                                })() && (
+                                        <div className="flex-shrink-0">
+                                            <button
+                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1"
+                                            >
+                                                <AlertTriangle className="h-2 w-2" />
+                                                Registrar NC
+                                            </button>
+                                        </div>
+                                    )}
                             </div>
                             {/* Gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -682,14 +836,11 @@ export default function InspecoesPage() {
                                 <p className="text-xs font-medium text-gray-900 line-clamp-1">
                                     {item.obs_criacao || ""}
                                 </p>
-                            </div>
-
-                            {activeTab === "processo" && (
+                            </div>                            {activeTab === "processo" && canRegisterNaoConformidade() && (
                                 <div className="flex justify-end">
                                     <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                        }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5"
+                                        onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5"
                                     >
                                         <AlertTriangle className="h-3 w-3" />
                                         <span>
@@ -746,17 +897,17 @@ export default function InspecoesPage() {
                         </span>
                     </button>
                 </div>
-            </div>
-
-            {/* Colaborador Login Modal */}
+            </div>            {/* Colaborador Login Modal */}
             {selectedInspection && (
                 <ColaboradorLoginModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={handleModalClose}
                     onSuccess={handleModalSuccess}
                     inspection={selectedInspection}
+                    isNaoConformidadeContext={isNaoConformidadeContext}
+                    onNaoConformidadeSuccess={handleNaoConformidadeSuccess}
                 />
-            )}            <div className="mt-1 sm:mt-2">
+            )}<div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
                         {tabs.map((tab) => (
