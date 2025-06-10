@@ -161,7 +161,7 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar dados do colaborador:', error);
             return false;
         }
-    }, []);    const canRegisterNaoConformidade = useCallback((): boolean => {
+    }, []); const canRegisterNaoConformidade = useCallback((): boolean => {
         try {
             const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
             if (!userDataStr) {
