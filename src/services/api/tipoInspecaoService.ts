@@ -15,13 +15,13 @@ export const getTiposInspecao = async (): Promise<TipoInspecao[]> => {
         throw new Error(`Erro ao buscar dados: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    return Array.isArray(data) ? data.map(item => ({
+    const data = await response.json(); return Array.isArray(data) ? data.map(item => ({
         id: item.id || '',
         codigo: item.codigo || item.id || '',
         descricao_tipo_inspecao: item.descricao_tipo_inspecao || '',
         situacao: item.situacao || 'A',
+        exibe_faixa: item.exibe_faixa || 'N',
+        exibe_resultado: item.exibe_resultado || 'N',
     })) : [];
 };
 
@@ -31,15 +31,15 @@ export const updateTipoInspecao = async (
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
         throw new Error("URL da API não está configurada");
-    }
-
-    const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
+    } const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
         method: 'PUT',
         body: JSON.stringify({
             id: tipoInspecao.id,
             descricao_tipo_inspecao: tipoInspecao.descricao_tipo_inspecao,
             situacao: tipoInspecao.situacao,
-            codigo: tipoInspecao.codigo
+            codigo: tipoInspecao.codigo,
+            exibe_faixa: tipoInspecao.exibe_faixa,
+            exibe_resultado: tipoInspecao.exibe_resultado
         }),
     });
 

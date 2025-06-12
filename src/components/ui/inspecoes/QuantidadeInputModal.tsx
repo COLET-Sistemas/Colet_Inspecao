@@ -9,7 +9,7 @@ interface QuantidadeInputModalProps {
     onClose: () => void;
     onConfirm: (quantidade: number) => void;
     title?: string;
-    onCancel?: () => void; // Nova prop para callback de cancelamento
+    onCancel?: () => void;
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({

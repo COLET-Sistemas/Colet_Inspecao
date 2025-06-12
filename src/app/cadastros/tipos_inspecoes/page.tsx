@@ -60,13 +60,31 @@ const TipoInspecaoCard = memo<CardProps>(({ tipo, onEdit }) => (
                     ></span>
                     {tipo.situacao === "A" ? "Ativo" : "Inativo"}
                 </div>
-            </div>
-            <div className="mb-4">
+            </div>            <div className="mb-4">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-800 leading-tight line-clamp-2 group-hover:text-gray-900 transition-colors duration-200">
                     {tipo.descricao_tipo_inspecao}
                 </h3>
-            </div>
-            <div className="flex items-center justify-end pt-3 border-t border-gray-50">
+            </div>            <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                    <div
+                        className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.exibe_faixa === "S"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
+                    >
+
+                        Faixa: {tipo.exibe_faixa === "S" ? "Sim" : "Não"}
+                    </div>
+                    <div
+                        className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.exibe_resultado === "S"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
+                    >
+
+                        Resultado: {tipo.exibe_resultado === "S" ? "Sim" : "Não"}
+                    </div>
+                </div>
                 <div className="flex items-center gap-1">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -163,7 +181,9 @@ export default function TiposInspecoesPage() {
                     const matchesSearch =
                         !searchTerm ||
                         item.descricao_tipo_inspecao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+                        item.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (item.exibe_faixa === "S" && searchTerm.toLowerCase().includes("faixa")) ||
+                        (item.exibe_resultado === "S" && searchTerm.toLowerCase().includes("resultado"));
                     const matchesStatus = statusFilter === "todos" || item.situacao === statusFilter;
                     return matchesSearch && matchesStatus;
                 });
@@ -187,15 +207,15 @@ export default function TiposInspecoesPage() {
             }
         },
         [allData]
-    );
-
-    const handleModalSuccess = useCallback(
-        async (data: Pick<TipoInspecao, "descricao_tipo_inspecao" | "situacao"> & { codigo?: string }) => {
+    ); const handleModalSuccess = useCallback(
+        async (data: Pick<TipoInspecao, "descricao_tipo_inspecao" | "situacao" | "exibe_faixa" | "exibe_resultado"> & { codigo?: string }) => {
             if (selectedTipoInspecao) {
                 const updatedTipoInspecao: TipoInspecao = {
                     id: selectedTipoInspecao.id,
                     descricao_tipo_inspecao: data.descricao_tipo_inspecao,
                     situacao: data.situacao,
+                    exibe_faixa: data.exibe_faixa,
+                    exibe_resultado: data.exibe_resultado,
                     codigo: data.codigo || selectedTipoInspecao.codigo,
                 };
                 const updateItem = (item: TipoInspecao) =>
@@ -287,8 +307,7 @@ export default function TiposInspecoesPage() {
                     const tipo = item as TipoInspecao;
                     return <div className="text-sm text-gray-900 max-w-md truncate">{tipo.descricao_tipo_inspecao}</div>;
                 },
-            },
-            {
+            }, {
                 key: "status",
                 title: "Status",
                 render: (item: { id: string | number }) => {
@@ -305,6 +324,42 @@ export default function TiposInspecoesPage() {
                                     }`}
                             ></span>
                             {tipo.situacao === "A" ? "Ativo" : "Inativo"}
+                        </span>
+                    );
+                },
+            },
+            {
+                key: "exibe_faixa",
+                title: "Exibe Faixa",
+                render: (item: { id: string | number }) => {
+                    const tipo = item as TipoInspecao;
+                    return (
+                        <span
+                            className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.exibe_faixa === "S"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-800"
+                                }`}
+                        >
+
+                            {tipo.exibe_faixa === "S" ? "Sim" : "Não"}
+                        </span>
+                    );
+                },
+            },
+            {
+                key: "exibe_resultado",
+                title: "Exibe Resultado",
+                render: (item: { id: string | number }) => {
+                    const tipo = item as TipoInspecao;
+                    return (
+                        <span
+                            className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${tipo.exibe_resultado === "S"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-800"
+                                }`}
+                        >
+
+                            {tipo.exibe_resultado === "S" ? "Sim" : "Não"}
                         </span>
                     );
                 },

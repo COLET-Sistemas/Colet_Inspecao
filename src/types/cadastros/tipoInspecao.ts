@@ -3,6 +3,8 @@ export interface TipoInspecao {
     codigo: string;
     descricao_tipo_inspecao: string;
     situacao: "A" | "I";
+    exibe_faixa: "S" | "N";
+    exibe_resultado: "S" | "N";
 }
 
 export interface TipoInspecaoFilter {

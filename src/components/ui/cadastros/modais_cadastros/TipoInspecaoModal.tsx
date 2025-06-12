@@ -12,6 +12,8 @@ interface TipoInspecao {
     codigo?: string;
     descricao_tipo_inspecao: string;
     situacao: "A" | "I";
+    exibe_faixa: "S" | "N";
+    exibe_resultado: "S" | "N";
 }
 
 interface TipoInspecaoModalProps {
@@ -29,24 +31,25 @@ export function TipoInspecaoModal({
     onSuccess,
     onError,
 }: TipoInspecaoModalProps) {
-    const { apiUrl } = useApiConfig();
-    const [error, setError] = useState<string | null>(null);
+    const { apiUrl } = useApiConfig(); const [error, setError] = useState<string | null>(null);
     const [isAtivo, setIsAtivo] = useState<boolean>(false);
-    const [isFocused, setIsFocused] = useState<string | null>(null);
-
-    // Initialize isAtivo state based on tipoInspecao when component mounts or tipoInspecao changes
+    const [exibeFaixa, setExibeFaixa] = useState<boolean>(false);
+    const [exibeResultado, setExibeResultado] = useState<boolean>(false);
+    const [isFocused, setIsFocused] = useState<string | null>(null);    // Initialize isAtivo state based on tipoInspecao when component mounts or tipoInspecao changes
     useEffect(() => {
         setIsAtivo(tipoInspecao.situacao === "A");
+        setExibeFaixa(tipoInspecao.exibe_faixa === "S");
+        setExibeResultado(tipoInspecao.exibe_resultado === "S");
     }, [tipoInspecao]);
 
     const handleSubmit = useCallback(
         async (formData: Record<string, FormDataEntryValue>) => {
             try {
-                setError(null);
-
-                // Validar campos obrigatórios
+                setError(null);                // Validar campos obrigatórios
                 const descricao = String(formData.descricao_tipo_inspecao || '').trim();
                 const situacao = String(formData.situacao || '');
+                const exibeFaixaValue = String(formData.exibe_faixa || '');
+                const exibeResultadoValue = String(formData.exibe_resultado || '');
                 if (!descricao) {
                     setError("A descrição do tipo de inspeção é obrigatória");
                     return;
@@ -55,7 +58,9 @@ export function TipoInspecaoModal({
                 const payload = {
                     descricao_tipo_inspecao: descricao,
                     situacao: situacao === "on" ? "A" : "I",
-                };                // Modo de edição - PUT
+                    exibe_faixa: exibeFaixaValue === "on" ? "S" : "N",
+                    exibe_resultado: exibeResultadoValue === "on" ? "S" : "N",
+                };// Modo de edição - PUT
                 const url = `${apiUrl}/inspecao/tipos_inspecao`;
                 const response = await fetchWithAuth(`${url}?id=${tipoInspecao.id}`, {
                     method: "PUT",
@@ -72,13 +77,13 @@ export function TipoInspecaoModal({
                     );
                 }
 
-                const responseData = await response.json();
-
-                if (onSuccess) {
+                const responseData = await response.json(); if (onSuccess) {
                     onSuccess({
                         ...responseData,
                         descricao_tipo_inspecao: responseData.descricao_tipo_inspecao || descricao,
-                        situacao: responseData.situacao || payload.situacao
+                        situacao: responseData.situacao || payload.situacao,
+                        exibe_faixa: responseData.exibe_faixa || payload.exibe_faixa,
+                        exibe_resultado: responseData.exibe_resultado || payload.exibe_resultado
                     });
                 }
                 onClose();
@@ -179,9 +184,7 @@ export function TipoInspecaoModal({
                                         ? 'O tipo de inspeção estará disponível para uso.'
                                         : 'O tipo de inspeção não estará disponível para uso.'}
                                 </p>
-                            </div>
-
-                            <label htmlFor="situacao" className="relative inline-flex cursor-pointer items-center">
+                            </div>                            <label htmlFor="situacao" className="relative inline-flex cursor-pointer items-center">
                                 <input
                                     type="checkbox"
                                     id="situacao"
@@ -189,6 +192,80 @@ export function TipoInspecaoModal({
                                     className="peer sr-only"
                                     defaultChecked={tipoInspecao.situacao === "A"}
                                     onChange={(e) => setIsAtivo(e.target.checked)}
+                                />
+                                <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Campo de Exibe Faixa */}
+                    <div className="mb-2">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <ToggleLeft className="h-4 w-4 text-gray-500" />
+                                <label className="text-sm font-medium text-gray-700">
+                                    Exibe Faixa
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center p-3 bg-gray-50 rounded-md border border-gray-100">
+                            <div className="flex-grow mb-2 sm:mb-0">
+                                <p className="text-sm text-gray-700 font-medium">
+                                    {exibeFaixa ? 'Sim' : 'Não'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    {exibeFaixa
+                                        ? 'A faixa será exibida nas inspeções.'
+                                        : 'A faixa não será exibida nas inspeções.'}
+                                </p>
+                            </div>
+
+                            <label htmlFor="exibe_faixa" className="relative inline-flex cursor-pointer items-center">
+                                <input
+                                    type="checkbox"
+                                    id="exibe_faixa"
+                                    name="exibe_faixa"
+                                    className="peer sr-only"
+                                    defaultChecked={tipoInspecao.exibe_faixa === "S"}
+                                    onChange={(e) => setExibeFaixa(e.target.checked)}
+                                />
+                                <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Campo de Exibe Resultado */}
+                    <div className="mb-2">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <ToggleLeft className="h-4 w-4 text-gray-500" />
+                                <label className="text-sm font-medium text-gray-700">
+                                    Exibe Resultado
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center p-3 bg-gray-50 rounded-md border border-gray-100">
+                            <div className="flex-grow mb-2 sm:mb-0">
+                                <p className="text-sm text-gray-700 font-medium">
+                                    {exibeResultado ? 'Sim' : 'Não'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    {exibeResultado
+                                        ? 'O resultado será exibido nas inspeções.'
+                                        : 'O resultado não será exibido nas inspeções.'}
+                                </p>
+                            </div>
+
+                            <label htmlFor="exibe_resultado" className="relative inline-flex cursor-pointer items-center">
+                                <input
+                                    type="checkbox"
+                                    id="exibe_resultado"
+                                    name="exibe_resultado"
+                                    className="peer sr-only"
+                                    defaultChecked={tipoInspecao.exibe_resultado === "S"}
+                                    onChange={(e) => setExibeResultado(e.target.checked)}
                                 />
                                 <div className="peer h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-[#09A08D] peer-checked:after:translate-x-full peer-focus:ring-4 peer-focus:ring-[#09A08D]/30"></div>
                             </label>
