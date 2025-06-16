@@ -89,6 +89,14 @@ interface InspectionFilters {
     dataFim?: string;
 }
 
+interface InspectionSpecificationResponse {
+    id_ficha_inspecao: number;
+    qtde_produzida: number | null;
+    exibe_faixa: string;
+    exibe_resultado: string;
+    especificacoes: InspectionSpecification[];
+}
+
 interface InspectionSpecification {
     id_especificacao: number;
     ordem: number;
@@ -96,14 +104,14 @@ interface InspectionSpecification {
     tipo_instrumento: string;
     id_caracteristica: number;
     descricao_caracteristica: string;
-    svg_caracteristica: string;
+    svg_caracteristica: string | null;
     id_cota: number;
     descricao_cota: string;
-    svg_cota: string;
+    svg_cota: string | null;
     local_inspecao: string;
-    complemento_cota: string;
-    valor_minimo: number;
-    valor_maximo: number;
+    complemento_cota: string | null;
+    valor_minimo: number | null;
+    valor_maximo: number | null;
     unidade_medida: string;
     tipo_valor: string; // F (Float), U (Unit), A (Aprovado/Reprovado), C (Conforme/Não Conforme), S (Sim/Não), L (Liberdade/Retido)
     valor_encontrado?: number | null;
@@ -247,7 +255,15 @@ class InspecaoService {
     }    /**
      * Busca especificações de uma ficha de inspeção
      */
-    async getInspectionSpecifications(id: number): Promise<InspectionSpecification[]> {
+    async getInspectionSpecifications(id: number): Promise<{
+        specifications: InspectionSpecification[],
+        fichaDados: {
+            id_ficha_inspecao: number,
+            qtde_produzida: number | null,
+            exibe_faixa: string,
+            exibe_resultado: string
+        }
+    }> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -262,8 +278,30 @@ class InspecaoService {
                 throw new Error(`Erro HTTP: ${response.status}`);
             }
 
-            const data: InspectionSpecification[] = await response.json();
-            return Array.isArray(data) ? data : [];
+            const data = await response.json();
+
+            // Novo formato da API
+            if (data && data.especificacoes) {
+                return {
+                    specifications: data.especificacoes || [],
+                    fichaDados: {
+                        id_ficha_inspecao: data.id_ficha_inspecao,
+                        qtde_produzida: data.qtde_produzida,
+                        exibe_faixa: data.exibe_faixa,
+                        exibe_resultado: data.exibe_resultado
+                    }
+                };
+            }
+            // Formato antigo da API (compatibilidade)
+            return {
+                specifications: Array.isArray(data) ? data : [],
+                fichaDados: {
+                    id_ficha_inspecao: id,
+                    qtde_produzida: null,
+                    exibe_faixa: 'S',
+                    exibe_resultado: 'S'
+                }
+            };
         } catch (error) {
             console.error(`Erro ao buscar especificações da ficha ${id}:`, error);
             throw error;
@@ -272,9 +310,8 @@ class InspecaoService {
 
     /**
      * Atualiza uma especificação da inspeção
-     */
-    async updateInspectionSpecification(idEspecificacao: number, data: {
-        valor_encontrado: number;
+     */    async updateInspectionSpecification(idEspecificacao: number, data: {
+        valor_encontrado: number | string;
         conforme: boolean | null;
         observacao?: string | null;
     }): Promise<InspectionSpecification> {

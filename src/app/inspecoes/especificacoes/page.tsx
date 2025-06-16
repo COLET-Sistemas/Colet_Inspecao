@@ -28,15 +28,25 @@ export default function EspecificacoesPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams?.get('id');
-    const hasInitialized = useRef(false); const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
+    const hasInitialized = useRef(false);
+    const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
+    const [fichaDados, setFichaDados] = useState<{
+        id_ficha_inspecao: number,
+        qtde_produzida: number | null,
+        exibe_faixa: string,
+        exibe_resultado: string
+    }>({
+        id_ficha_inspecao: 0,
+        qtde_produzida: null,
+        exibe_faixa: 'S',
+        exibe_resultado: 'S'
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
     const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
     // Nova variável para expandir/retrair cards
-    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
-
-    // UseEffect com proteção contra StrictMode e chamadas duplicadas
+    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());    // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
         // Proteção contra múltiplas execuções (React StrictMode)
         if (hasInitialized.current) {
@@ -57,8 +67,9 @@ export default function EspecificacoesPage() {
             setError(null);
 
             try {
-                const data = await inspecaoService.getInspectionSpecifications(parseInt(id));
-                setSpecifications(data);
+                const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
+                setSpecifications(response.specifications);
+                setFichaDados(response.fichaDados);
             } catch (error) {
                 console.error("Erro ao carregar especificações:", error);
                 setError("Erro ao carregar especificações da inspeção");
@@ -82,8 +93,9 @@ export default function EspecificacoesPage() {
         setError(null);
 
         try {
-            const data = await inspecaoService.getInspectionSpecifications(parseInt(id));
-            setSpecifications(data);
+            const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
+            setSpecifications(response.specifications);
+            setFichaDados(response.fichaDados);
         } catch (error) {
             console.error("Erro ao carregar especificações:", error);
             setError("Erro ao carregar especificações da inspeção");
@@ -340,8 +352,7 @@ export default function EspecificacoesPage() {
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Voltar
-                    </button>
-                    <div>
+                    </button>                    <div>
                         <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
                         <p className="text-sm text-gray-500">Ficha #{id}</p>
                     </div>
@@ -368,8 +379,7 @@ export default function EspecificacoesPage() {
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Voltar
-                    </button>
-                    <div>
+                    </button>                    <div>
                         <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
                         <p className="text-sm text-gray-500">Ficha #{id}</p>
                     </div>
@@ -404,7 +414,7 @@ export default function EspecificacoesPage() {
                     </button>
                     <div>
                         <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-gray-500">{specifications.length} item(s) • Ficha #{id}</p>
+                        <p className="text-sm text-gray-500">{specifications.length} item(s) • Ficha #{fichaDados.id_ficha_inspecao}</p>
                     </div>
                 </div>            {/* Botões de ação no cabeçalho */}
                 {specifications.length > 0 && (

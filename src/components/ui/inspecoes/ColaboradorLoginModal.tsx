@@ -160,9 +160,14 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         setError('');
         setIsLoading(true); try {
             const senhaCriptografada = encodePassword(senha);
-            const response = await inspecaoService.authColaborador(codigo, senhaCriptografada);            // Salvar dados do colaborador no localStorage em ambos os formatos (colaborador e userData)
+            const response = await inspecaoService.authColaborador(codigo, senhaCriptografada);
+
+            // Salvar o código digitado diretamente como codigo_pessoa
+            localStorage.setItem('codigo_pessoa', codigo);
+
+            // Salvar dados do colaborador no localStorage em ambos os formatos (colaborador e userData)
             const colaboradorData = {
-                codigo_pessoa: response.codigo_pessoa,
+                codigo_pessoa: codigo,
                 nome: response.nome,
                 setor: response.setor,
                 funcao: response.funcao,
@@ -177,13 +182,11 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
             // Mantém os campos existentes em userData, se houver
             try {
                 const existingUserData = localStorage.getItem('userData') ?
-                    JSON.parse(localStorage.getItem('userData') || '{}') : {};
-
-                localStorage.setItem('userData', JSON.stringify({
-                    ...existingUserData,
-                    codigo_pessoa: response.codigo_pessoa,
-                    nome: response.nome,
-                }));
+                    JSON.parse(localStorage.getItem('userData') || '{}') : {}; localStorage.setItem('userData', JSON.stringify({
+                        ...existingUserData,
+                        codigo_pessoa: codigo,
+                        nome: response.nome,
+                    }));
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
             }            // Callback de sucesso com os dados do usuário e a inspeção selecionada
@@ -348,9 +351,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
-
-            <QuantidadeInputModal
+            </AnimatePresence>            <QuantidadeInputModal
                 isOpen={showQuantidadeModal}
                 onClose={() => setShowQuantidadeModal(false)}
                 onConfirm={handleQuantidadeConfirm}
@@ -360,6 +361,13 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     onClose(); // Fechar o modal de colaborador
                 }}
                 title="Registrar Não Conformidade"
+                // Passar os campos necessários da inspeção para o POST
+                numeroOrdem={inspection.numero_ordem}
+                referencia={inspection.referencia}
+                roteiro={inspection.roteiro}
+                processo={inspection.processo}
+                codigoPostо={inspection.codigo_posto}
+                operacao={inspection.operacao}
             />
         </>
     );

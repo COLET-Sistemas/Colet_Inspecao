@@ -1,8 +1,24 @@
 'use client';
 
+import { fetchWithAuth } from '@/services/api/authInterceptor';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+interface InspecaoData {
+    tipo_inspecao: number;
+    codigo_pessoa: string;
+    numero_ordem: number;
+    referencia: string;
+    roteiro: string;
+    processo: number;
+    codigo_posto: string;
+    origem: string;
+    operacao: number;
+    observacao: null | string;
+    qtde_produzida: number;
+    ficha_origem: null | number;
+}
 
 interface QuantidadeInputModalProps {
     isOpen: boolean;
@@ -10,6 +26,14 @@ interface QuantidadeInputModalProps {
     onConfirm: (quantidade: number) => void;
     title?: string;
     onCancel?: () => void;
+    // Dados necessários para o POST
+    tipoInspecao?: number;
+    numeroOrdem?: number;
+    referencia?: string;
+    roteiro?: string;
+    processo?: number;
+    codigoPostо?: string;
+    operacao?: number;
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
@@ -17,10 +41,18 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     onClose,
     onConfirm,
     title = "Quantidade de Não Conformidade",
-    onCancel
+    onCancel,
+    tipoInspecao = 4, // Default tipo_inspecao
+    numeroOrdem,
+    referencia,
+    roteiro,
+    processo,
+    codigoPostо,
+    operacao
 }) => {
     const [quantidade, setQuantidade] = useState<string>('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     // Refs para elementos focáveis
     const inputRef = useRef<HTMLInputElement>(null);
@@ -89,18 +121,99 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, handleClose]); const handleSubmit = (e: React.FormEvent) => {
+    }, [isOpen, handleClose]); const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const quantidadeNumber = Number(quantidade);
         if (!quantidade || quantidadeNumber <= 0) {
             setError('A quantidade deve ser maior que zero');
             return;
-        }
+        } try {
+            setIsLoading(true);
 
-        setError('');
-        onConfirm(quantidadeNumber);
-        setQuantidade('');
+            // Obter o código da pessoa do localStorage
+            let codigoPessoa = localStorage.getItem('codigo_pessoa');
+
+            // Se não encontrar o código no código_pessoa, buscar no objeto colaborador
+            if (!codigoPessoa) {
+                try {
+                    const colaboradorData = localStorage.getItem('colaborador');
+                    if (colaboradorData) {
+                        const colaborador = JSON.parse(colaboradorData);
+                        codigoPessoa = colaborador.codigo_pessoa;
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar código do colaborador:', e);
+                }
+            }
+
+            // Se ainda não encontrou, buscar em userData
+            if (!codigoPessoa) {
+                try {
+                    const userDataStr = localStorage.getItem('userData');
+                    if (userDataStr) {
+                        const userData = JSON.parse(userDataStr);
+                        codigoPessoa = userData.codigo_pessoa;
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar código do usuário em userData:', e);
+                }
+            }
+
+            if (!codigoPessoa) {
+                setError('Usuário não está logado corretamente');
+                setIsLoading(false);
+                return;
+            }
+
+            // Obter a URL da API do localStorage
+            const apiUrl = localStorage.getItem('apiUrl');
+            if (!apiUrl) {
+                setError('URL da API não está configurada');
+                setIsLoading(false);
+                return;
+            }
+
+            // Preparar os dados para o POST
+            const inspecaoData: InspecaoData = {
+                tipo_inspecao: tipoInspecao,
+                codigo_pessoa: codigoPessoa,
+                numero_ordem: numeroOrdem ?? 0,
+                referencia: referencia ?? '',
+                roteiro: roteiro ?? '',
+                processo: processo ?? 0,
+                codigo_posto: codigoPostо ?? '',
+                origem: 'Não Conformidade',
+                operacao: operacao ?? 0,
+                observacao: null,
+                qtde_produzida: quantidadeNumber,
+                ficha_origem: null
+            };
+
+            // Enviar o POST para o endpoint
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(inspecaoData)
+            });
+
+            setIsLoading(false);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || `Erro HTTP: ${response.status}`);
+            }
+
+            // Se tudo deu certo, executar o onConfirm e fechar o modal
+            setError('');
+            onConfirm(quantidadeNumber);
+            setQuantidade('');
+        } catch (error) {
+            console.error('Erro ao enviar dados da inspeção:', error);
+            setError(error instanceof Error ? error.message : 'Erro ao registrar a inspeção');
+        }
     }; const handleCancel = useCallback(() => {
         setError('');
         setQuantidade('');
@@ -186,13 +299,13 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         className="flex-1 rounded-lg px-4 py-3 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
                                     >
                                         Cancelar
-                                    </button>
-                                    <button
+                                    </button>                                    <button
                                         ref={confirmButtonRef}
                                         type="submit"
-                                        className="flex-1 rounded-lg px-4 py-3 font-medium bg-[#1ABC9C] text-white hover:bg-[#16A085] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2"
+                                        disabled={isLoading}
+                                        className="flex-1 rounded-lg px-4 py-3 font-medium bg-[#1ABC9C] text-white hover:bg-[#16A085] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2 disabled:opacity-70"
                                     >
-                                        Confirmar
+                                        {isLoading ? 'Enviando...' : 'Confirmar'}
                                     </button>
                                 </div>
                             </div>

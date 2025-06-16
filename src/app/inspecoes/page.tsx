@@ -430,23 +430,27 @@ export default function InspecoesPage() {
             encaminhar_ficha: String(data.encaminhar_ficha)
         });        // Redirect to inspection details page with all required data
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]);
-
-    // Handler para sucesso de não conformidade
+    }, [router]);    // Handler para sucesso de não conformidade
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         console.log(`Registrando ${quantidade} não conformidade(s) para inspeção ${inspection.id_ficha_inspecao}`);
 
-        // TODO: Implementar a lógica de registro de não conformidade aqui
-        // Exemplo de chamada para API:
-        // await inspecaoService.registrarNaoConformidade(inspection.id_ficha_inspecao, quantidade);
+        // A lógica de envio do post foi movida para o QuantidadeInputModal
+        // que já recebe os dados necessários da inspeção (numero_ordem, referencia, etc.)
+        // e realiza o POST para /inspecao/fichas_inspecao
 
-        // Por enquanto, apenas logar o resultado
-        alert(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
+        // Mostrar mensagem de sucesso
+        setAlertMessage(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
+        setAlertType("success");
 
         // Reset do estado
         setIsNaoConformidadeContext(false);
         setSelectedInspection(null);
-    }, []); const handleInspectionClick = useCallback((item: InspectionItem) => {
+
+        // Atualizar a lista de inspeções após o registro bem-sucedido
+        refreshActiveTab();
+    }, [refreshActiveTab]);
+
+    const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 

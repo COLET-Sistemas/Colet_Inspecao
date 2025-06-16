@@ -477,7 +477,6 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* API Configuration Modal with Colet Theme Colors */}
             {showConfigModal && (
                 <>
                     <div
