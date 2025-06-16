@@ -257,12 +257,7 @@ class InspecaoService {
      */
     async getInspectionSpecifications(id: number): Promise<{
         specifications: InspectionSpecification[],
-        fichaDados: {
-            id_ficha_inspecao: number,
-            qtde_produzida: number | null,
-            exibe_faixa: string,
-            exibe_resultado: string
-        }
+        fichaDados: Omit<InspectionSpecificationResponse, 'especificacoes'>
     }> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
@@ -278,21 +273,19 @@ class InspecaoService {
                 throw new Error(`Erro HTTP: ${response.status}`);
             }
 
-            const data = await response.json();
-
-            // Novo formato da API
+            const data = await response.json();            // Novo formato da API
             if (data && data.especificacoes) {
+                const response = data as InspectionSpecificationResponse;
                 return {
-                    specifications: data.especificacoes || [],
+                    specifications: response.especificacoes || [],
                     fichaDados: {
-                        id_ficha_inspecao: data.id_ficha_inspecao,
-                        qtde_produzida: data.qtde_produzida,
-                        exibe_faixa: data.exibe_faixa,
-                        exibe_resultado: data.exibe_resultado
+                        id_ficha_inspecao: response.id_ficha_inspecao,
+                        qtde_produzida: response.qtde_produzida,
+                        exibe_faixa: response.exibe_faixa,
+                        exibe_resultado: response.exibe_resultado
                     }
                 };
-            }
-            // Formato antigo da API (compatibilidade)
+            }            // Formato antigo da API (compatibilidade)
             return {
                 specifications: Array.isArray(data) ? data : [],
                 fichaDados: {
@@ -300,7 +293,7 @@ class InspecaoService {
                     qtde_produzida: null,
                     exibe_faixa: 'S',
                     exibe_resultado: 'S'
-                }
+                } as Omit<InspectionSpecificationResponse, 'especificacoes'>
             };
         } catch (error) {
             console.error(`Erro ao buscar especificações da ficha ${id}:`, error);

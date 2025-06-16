@@ -306,13 +306,7 @@ export default function EspecificacoesPage() {
         return <Ruler className="h-5 w-5" />;
     };
 
-    const getLocalInspecaoLabel = (local: string) => {
-        switch (local) {
-            case 'P': return 'Processo';
-            case 'Q': return 'Qualidade';
-            case '*': return 'Ambos'; default: return local;
-        }
-    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: number | null | undefined) => {
+    const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: number | null | undefined) => {
         if (valorEncontrado === null || valorEncontrado === undefined) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
