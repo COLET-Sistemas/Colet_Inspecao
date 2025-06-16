@@ -20,9 +20,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import './especificacoes-styles.css';
-import './layout-styles.css';
-import './minimal-styles.css';
-import './modern-styles.css';
 
 export default function EspecificacoesPage() {
     const router = useRouter();

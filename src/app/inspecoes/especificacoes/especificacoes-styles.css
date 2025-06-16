@@ -1,6 +1,7 @@
-/* Especificações - Estilos Modernos */
+/* Especificações - Estilos Consolidados */
+/* Consolidação de todos os estilos: especificacoes-styles.css, layout-styles.css, minimal-styles.css, modern-styles.css */
 
-/* Animações suaves para os cards */
+/* === ESTILOS BASE E ANIMAÇÕES === */
 @keyframes slideInUp {
     from {
         opacity: 0;
@@ -698,4 +699,616 @@
     .spec-card .space-y-3>*+* {
         margin-top: 0.5rem !important;
     }
+}
+
+/* === LAYOUT STYLES - RESPONSIVIDADE E ESTRUTURA === */
+/* Layout 80% / 20% - Específico para especificações */
+.spec-card .flex.h-full {
+    min-height: 140px;
+}
+
+.spec-card .w-4\/5,
+.spec-card .lg\:w-4\/5 {
+    border-right: 1px solid #e5e7eb;
+    transition: border-color 0.3s ease;
+}
+
+.spec-card:hover .w-4\/5,
+.spec-card:hover .lg\:w-4\/5 {
+    border-right-color: rgba(26, 188, 156, 0.3);
+}
+
+.spec-card .w-1\/5,
+.spec-card .lg\:w-1\/5 {
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    transition: all 0.3s ease;
+}
+
+.spec-card:hover .w-1\/5,
+.spec-card:hover .lg\:w-1\/5 {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1024px) {
+    .spec-card .flex.h-full,
+    .spec-card .lg\:flex-row {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .spec-card .w-4\/5,
+    .spec-card .lg\:w-4\/5,
+    .spec-card .w-full.lg\:w-4\/5 {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        min-height: 180px;
+    }
+
+    .spec-card .w-1\/5,
+    .spec-card .lg\:w-1\/5,
+    .spec-card .w-full.lg\:w-1\/5 {
+        width: 100%;
+        min-height: 90px;
+    }
+}
+
+@media (max-width: 768px) {
+    .spec-card .grid-cols-3,
+    .spec-card .sm\:grid-cols-3 {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .spec-card .w-12.h-12,
+    .spec-card .sm\:w-12.sm\:h-12 {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .spec-card .w-8.h-8,
+    .spec-card .sm\:w-8.sm\:h-8 {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .spec-card .w-10.h-10 {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .spec-card .text-lg {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .spec-card .flex.h-full,
+    .spec-card .lg\:flex-row {
+        min-height: auto;
+    }
+
+    .spec-card .w-full.lg\:w-4\/5 {
+        min-height: 160px;
+        padding: 0.75rem;
+    }
+
+    .spec-card .w-full.lg\:w-1\/5 {
+        min-height: 80px;
+        padding: 0.75rem;
+    }
+
+    .spec-card .gap-3,
+    .spec-card .sm\:gap-3 {
+        gap: 0.5rem;
+    }
+
+    .spec-card .p-3,
+    .spec-card .sm\:p-3 {
+        padding: 0.5rem;
+    }
+
+    /* Header section improvements for mobile */
+    .spec-card .flex.flex-col.sm\:flex-row {
+        gap: 0.75rem;
+    }
+
+    /* Status badge adjustments */
+    .spec-card .hidden.xs\:inline {
+        display: none !important;
+    }
+
+    /* Grid adjustments for very small screens */
+    .spec-card .grid.grid-cols-1.sm\:grid-cols-3 {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .spec-card {
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .spec-card .w-full.lg\:w-4\/5 {
+        padding: 0.75rem;
+        min-height: 140px;
+    }
+
+    .spec-card .w-full.lg\:w-1\/5 {
+        padding: 0.75rem;
+        min-height: 70px;
+    }
+
+    /* Ultra compact icons for very small screens */
+    .spec-card .w-10.h-10 {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .spec-card .w-6.h-6 {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    /* Text size adjustments */
+    .spec-card .text-sm.sm\:text-base {
+        font-size: 0.8125rem;
+    }
+
+    .spec-card .text-xs.sm\:text-sm {
+        font-size: 0.75rem;
+    }
+}
+
+/* Utility classes for responsive text truncation */
+.line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+}
+
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 640px) {
+    .space-y-4.sm\:space-y-5>*+* {
+        margin-top: 1rem;
+    }
+}
+
+/* Focus improvements for mobile */
+@media (max-width: 768px) {
+    .spec-card input:focus,
+    .spec-card textarea:focus {
+        transform: none;
+        box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+    }
+}
+
+/* Animações específicas para campos de entrada */
+.spec-card input:focus,
+.spec-card textarea:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.1);
+}
+
+/* Melhorias para botões compactos */
+.spec-card button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spec-card button:hover {
+    transform: translateY(-1px);
+}
+
+.spec-card button:active {
+    transform: translateY(0);
+}
+
+/* Indicador visual de medição pendente usando classes Tailwind equivalentes */
+.spec-card .w-1\/5 {
+    border-left: 4px solid transparent;
+    transition: border-left-color 0.3s ease;
+}
+
+.spec-card .w-1\/5:has(input[placeholder]:not([value])) {
+    border-left-color: #f59e0b;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        border-left-color: #f59e0b;
+        opacity: 1;
+    }
+    50% {
+        border-left-color: #fbbf24;
+        opacity: 0.8;
+    }
+}
+
+/* Indicador visual de medição concluída */
+.spec-card .w-1\/5:has(.text-green-500) {
+    border-left-color: #10b981;
+}
+
+/* Melhorias para status badges compactos */
+.spec-card .text-xs.font-semibold {
+    letter-spacing: 0.025em;
+}
+
+/* Ajustes para área de edição */
+.spec-card .w-1\/5 .space-y-4>div {
+    transition: all 0.3s ease;
+}
+
+.spec-card .w-1\/5 input:focus+span {
+    color: #1ABC9C;
+    font-weight: 600;
+}
+
+/* Grid responsive para info cards */
+@media (max-width: 640px) {
+    .spec-card .grid-cols-3>div {
+        padding: 0.5rem;
+    }
+
+    .spec-card .grid-cols-3 .text-xs {
+        font-size: 0.6875rem;
+    }
+}
+
+/* Smooth transitions para mudanças de estado */
+.spec-card .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+/* Hover effects para área de valores */
+.spec-card .w-4\/5:hover {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Focus states melhorados */
+.spec-card input:focus-visible,
+.spec-card textarea:focus-visible {
+    outline: 2px solid #1ABC9C;
+    outline-offset: 2px;
+}
+
+/* Estilos para o painel lateral de edição */
+.spec-card .w-1\/5 {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    padding: 1rem;
+}
+
+.spec-card .w-1\/5 input,
+.spec-card .w-1\/5 textarea {
+    width: 100%;
+    font-size: 0.875rem;
+}
+
+.spec-card .w-1\/5 button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Separador visual entre as seções */
+.spec-card .w-4\/5 {
+    position: relative;
+}
+
+.spec-card .w-4\/5::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+}
+
+/* Animação de entrada para os cards */
+.spec-card {
+    animation: slideInFromLeft 0.4s ease-out;
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Estilos para o título da seção de medição */
+.measurement-header {
+    position: relative;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    transition: all 0.3s ease;
+}
+
+.measurement-status-icon {
+    transition: all 0.2s ease;
+}
+
+.measurement-status-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Estilos para diferentes status de medição */
+.status-pending {
+    color: #6b7280;
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.status-compliant {
+    color: #059669;
+    background-color: #d1fae5;
+    border-color: #10b981;
+}
+
+.status-non-compliant {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-color: #ef4444;
+}
+
+/* Animação para mudança de status */
+.measurement-header .flex {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animação para campo de observação expansível */
+.animate-in {
+    animation-fill-mode: both;
+}
+
+.slide-in-from-top-2 {
+    animation-name: slideInFromTop;
+}
+
+.duration-200 {
+    animation-duration: 200ms;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estados específicos para diferentes situações */
+.spec-card.measuring .w-1\/5 {
+    background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+    border-left-color: #f59e0b;
+}
+
+.spec-card.completed .w-1\/5 {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-left-color: #10b981;
+}
+
+.spec-card.non-compliant .w-1\/5 {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border-left-color: #ef4444;
+}
+
+/* === MINIMAL STYLES - ESTILO MINIMALISTA === */
+/* Animações suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos base minimalistas */
+.spec-card {
+    transition: all 0.2s ease;
+}
+
+.spec-card:hover {
+    transform: translateY(-1px);
+}
+
+/* Estilo para cards expandidos */
+.expanded-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Status badges minimalistas */
+.status-badge {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+/* Input focus styles minimalistas */
+input:focus,
+textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+}
+
+/* Botões com hover suave */
+button {
+    transition: all 0.2s ease;
+}
+
+/* Estilizar scrollbar para um look mais minimalista */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f9f9f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+/* Estilo para itens pendentes */
+.pending-item {
+    border-left: 2px solid #f0f0f0;
+}
+
+/* Estilos de animação para interações */
+.animate-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.slide-in {
+    animation: slideUp 0.3s ease forwards;
+}
+
+/* === MODERN STYLES - ESTILO MODERNO === */
+/* Card hover animations and effects */
+.spec-card {
+    transition: all 0.25s ease-in-out;
+}
+
+.spec-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Status indicators with subtle animations */
+.status-badge {
+    transition: all 0.2s ease;
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Info cards hover effects */
+.info-spec-card {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-spec-card:hover {
+    transform: translateY(-1px);
+}
+
+.info-spec-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+}
+
+.info-spec-card:hover::after {
+    opacity: 1;
+}
+
+/* Modern form inputs styling */
+input[type="number"],
+select,
+textarea {
+    transition: all 0.2s ease;
+}
+
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* Button animations */
+button {
+    transition: all 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* Order badge with subtle animation */
+.order-badge {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.spec-card:hover .order-badge {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Edit area status colors */
+.measuring {
+    background-color: rgba(59, 130, 246, 0.04);
+}
+
+.completed {
+    background-color: rgba(34, 197, 94, 0.04);
+}
+
+.non-compliant {
+    background-color: rgba(239, 68, 68, 0.04);
+}
+
+/* Smooth animation for expandable sections */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: slideDown 0.2s ease-out forwards;
 }
