@@ -41,7 +41,10 @@ export default function EspecificacoesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
     const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set());
-    const [isSaving, setIsSaving] = useState(false);    // Nova variável para expandir/retrair cards
+    const [isSaving, setIsSaving] = useState(false);
+    // Nova variável para controlar se a inspeção foi iniciada
+    const [isInspectionStarted, setIsInspectionStarted] = useState(false);
+    // Nova variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
@@ -169,7 +172,24 @@ export default function EspecificacoesPage() {
                 return valorEncontrado >= valorMinimo;
             }
         } return null;
-    }, [isSelectType, isNumericType]);    // Global action handlers
+    }, [isSelectType, isNumericType]);    // Função para iniciar a inspeção
+    const handleStartInspection = useCallback(async () => {
+        if (!id) return;
+
+        try {
+            setIsSaving(true);
+            await inspecaoService.startInspection(parseInt(id));
+            setIsInspectionStarted(true);
+            // Mostrar mensagem de sucesso ou atualizar UI conforme necessário
+        } catch (error) {
+            console.error("Erro ao iniciar inspeção:", error);
+            setError("Erro ao iniciar a inspeção");
+        } finally {
+            setIsSaving(false);
+        }
+    }, [id]);
+
+    // Global action handlers
     const handleSaveAllChanges = useCallback(async () => {
         setIsSaving(true);
         const errors: string[] = [];
@@ -237,49 +257,12 @@ export default function EspecificacoesPage() {
         }
     }, [specifications, editingValues, isSelectType, calculateConforme, handleRefresh]);
 
-    const handleInterruptInspection = useCallback(async () => {
-        if (!id) return;
-
-        try {
-            // TODO: Implement interrupt inspection API call
-            console.log('Interrompendo inspeção ID:', id);
-            // await inspecaoService.interruptInspection(parseInt(id));
-
-            // TODO: Show success notification and redirect
-            router.back();
-        } catch (error) {
-            console.error("Erro ao interromper inspeção:", error);
-            // TODO: Show error notification
+    const handleInterruptInspection = useCallback(() => {
+        if (isInspectionStarted) {
+            // Poderíamos adicionar uma chamada API aqui se necessário
+            setIsInspectionStarted(false);
         }
-    }, [id, router]);
-
-    const handleFinalizeInspection = useCallback(async () => {
-        if (!id) return;
-
-        // Check if all specifications are completed
-        const pendingSpecs = specifications.filter(s =>
-            (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
-            (isSelectType(s.tipo_valor) && s.conforme === null)
-        );
-
-        if (pendingSpecs.length > 0) {
-            // TODO: Show warning notification
-            console.warn(`Ainda existem ${pendingSpecs.length} especificações pendentes`);
-            return;
-        }
-
-        try {
-            // TODO: Implement finalize inspection API call
-            console.log('Finalizando inspeção ID:', id);
-            // await inspecaoService.finalizeInspection(parseInt(id));
-
-            // TODO: Show success notification and redirect
-            router.back();
-        } catch (error) {
-            console.error("Erro ao finalizar inspeção:", error);
-            // TODO: Show error notification
-        }
-    }, [id, specifications, isNumericType, isSelectType, router]);
+    }, [isInspectionStarted]);
 
     const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
@@ -431,25 +414,35 @@ export default function EspecificacoesPage() {
                         </div>
                     </div>
 
-                    {/* Botões de ação no cabeçalho - Design mais técnico */}
-                    {specifications.length > 0 && (
+                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (
                         <div className="flex flex-row items-center space-x-2">
                             <button
-                                onClick={handleFinalizeInspection}
-                                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg"
+                                onClick={handleStartInspection}
+                                disabled={isInspectionStarted || isSaving}
+                                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <CheckSquare className="h-4 w-4" />
-                                Iniciar
+                                {isSaving ? (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        Iniciando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckSquare className="h-4 w-4" />
+                                        {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
+                                    </>
+                                )}
                             </button>
                             <button
                                 onClick={handleForwardToCQ}
-                                className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow"
+                                disabled={!isInspectionStarted}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="h-4 w-4" />
                                 Encaminhar CQ
                             </button>
                         </div>
-                    )}                </div>
+                    )}</div>
             </div>            {specifications.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -628,25 +621,26 @@ export default function EspecificacoesPage() {
                                     <div className="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
                                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
                                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
-                                            <span className="text-xs text-slate-400 font-mono">ID: {spec.id_especificacao}</span>
                                         </div>
                                         {isSelectType(spec.tipo_valor) ? (
                                             <div>
                                                 <p className="text-xs text-slate-600 mb-2 font-medium">Selecione uma opção:</p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {getSelectOptions(spec.tipo_valor).map((option) => (
-                                                        <button
-                                                            key={String(option.value)}
-                                                            onClick={() => handleValueChange(spec.id_especificacao, 'conforme', option.value)}
-                                                            className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
+                                                    {getSelectOptions(spec.tipo_valor).map((option) => (<button
+                                                        key={String(option.value)}
+                                                        onClick={() => handleValueChange(spec.id_especificacao, 'conforme', option.value)}
+                                                        disabled={!isInspectionStarted}
+                                                        className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
+                                                                ${(!isInspectionStarted ? 'opacity-50 cursor-not-allowed ' : '')}
+                                                                ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
                                                                 ? (option.value
                                                                     ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
                                                                     : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
                                                                 : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                                                                }`}
-                                                        >
-                                                            {option.label}
-                                                        </button>
+                                                            }`}
+                                                    >
+                                                        {option.label}
+                                                    </button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -657,41 +651,47 @@ export default function EspecificacoesPage() {
                                                     {spec.unidade_medida && (
                                                         <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
                                                     )}
-                                                </label>
-                                                <input
+                                                </label>                                                <input
                                                     type="number"
                                                     step="0.01"
                                                     value={editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
                                                         ? editingValues[spec.id_especificacao].valor_encontrado
                                                         : spec.valor_encontrado || ''}
                                                     onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono transition-all"
+                                                    disabled={!isInspectionStarted}
+                                                    className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono transition-all
+                                                        ${!isInspectionStarted ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
+                                                    `}
                                                     placeholder="Digite o valor..."
                                                 />
                                             </div>
                                         )}
 
                                         {/* Technical observations button */}
-                                        <div className="mt-4 flex justify-end">
-                                            <button
-                                                onClick={() => toggleObservationField(spec.id_especificacao)}
-                                                className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium"
-                                            >
-                                                <MessageSquare className="h-3.5 w-3.5" />
-                                                {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
-                                            </button>
+                                        <div className="mt-4 flex justify-end">                                            <button
+                                            onClick={() => toggleObservationField(spec.id_especificacao)}
+                                            disabled={!isInspectionStarted}
+                                            className={`text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium
+                                                    ${!isInspectionStarted ? 'opacity-50 cursor-not-allowed' : ''}
+                                                `}
+                                        >
+                                            <MessageSquare className="h-3.5 w-3.5" />
+                                            {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
+                                        </button>
                                         </div>
 
                                         {/* Technical expandable observation field */}
                                         {expandedObservations.has(spec.id_especificacao) && (
-                                            <div className="mt-3 animate-in fade-in duration-200">
-                                                <textarea
-                                                    placeholder="Digite sua observação técnica..."
-                                                    value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
-                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                    className="w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm"
-                                                    rows={2}
-                                                />
+                                            <div className="mt-3 animate-in fade-in duration-200">                                                <textarea
+                                                placeholder="Digite sua observação técnica..."
+                                                value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                                disabled={!isInspectionStarted}
+                                                className={`w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm
+                                                        ${!isInspectionStarted ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
+                                                    `}
+                                                rows={2}
+                                            />
                                             </div>
                                         )}
                                     </div>
@@ -752,28 +752,26 @@ export default function EspecificacoesPage() {
 
                         {/* Technical Action buttons */}
                         <div className="flex items-center gap-3 whitespace-nowrap">
-                            {Object.keys(editingValues).length > 0 && (
-                                <button
-                                    onClick={handleSaveAllChanges}
-                                    disabled={isSaving}
-                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
-                                >
-                                    {isSaving ? (
-                                        <>
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                            Salvando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="h-4 w-4" />
-                                            Salvar alterações
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                            <button
+                            {Object.keys(editingValues).length > 0 && (<button
+                                onClick={handleSaveAllChanges}
+                                disabled={isSaving || !isInspectionStarted}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-4 w-4" />
+                                        Salvar alterações
+                                    </>
+                                )}
+                            </button>
+                            )}                                <button
                                 onClick={handleInterruptInspection}
-                                disabled={isSaving}
+                                disabled={isSaving || !isInspectionStarted}
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
                             >
                                 <StopCircle className="h-4 w-4" />

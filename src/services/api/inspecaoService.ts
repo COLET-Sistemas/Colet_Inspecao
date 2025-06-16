@@ -360,6 +360,37 @@ class InspecaoService {
     }
 
     /**
+     * Inicia uma inspeção
+     * @param idFichaInspecao - ID da ficha de inspeção
+     */
+    async startInspection(idFichaInspecao: number): Promise<void> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id_ficha_inspecao: idFichaInspecao,
+                    acao: "iniciar"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Erro ao iniciar inspeção:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Autentica um colaborador para inspeção
      * @param codigoPessoa - Código do colaborador
      * @param senhaCriptografada - Senha criptografada
