@@ -41,9 +41,10 @@ export default function EspecificacoesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
     const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set());
-    const [isSaving, setIsSaving] = useState(false);
-    // Nova variável para expandir/retrair cards
-    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());    // UseEffect com proteção contra StrictMode e chamadas duplicadas
+    const [isSaving, setIsSaving] = useState(false);    // Nova variável para expandir/retrair cards
+    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+
+    // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
         // Proteção contra múltiplas execuções (React StrictMode)
         if (hasInitialized.current) {
@@ -331,21 +332,19 @@ export default function EspecificacoesPage() {
             text: "Pendente",
             className: "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
         };
-    };
-
-    if (loading) {
+    }; if (loading) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={handleBack}
-                        className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                        className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Voltar
                     </button>                    <div>
-                        <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-gray-500">Ficha #{id}</p>
+                        <h1 className="text-xl font-medium text-slate-800">Especificações da Inspeção</h1>
+                        <p className="text-sm text-slate-500">Ficha #{id}</p>
                     </div>
                 </div>
                 <div className="flex justify-center py-20">
@@ -358,89 +357,112 @@ export default function EspecificacoesPage() {
                 </div>
             </div>
         );
-    }
-
-    if (error) {
+    } if (error) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={handleBack}
-                        className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                        className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Voltar
                     </button>                    <div>
-                        <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-gray-500">Ficha #{id}</p>
+                        <h1 className="text-xl font-medium text-slate-800">Especificações da Inspeção</h1>
+                        <p className="text-sm text-slate-500">Ficha #{id}</p>
                     </div>
                 </div>
                 <div className="flex flex-col items-center justify-center py-20">
-                    <div className="text-center">
-                        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                    <div className="text-center bg-white p-8 rounded-xl border border-red-100 shadow-lg max-w-md">
+                        <div className="relative mx-auto h-16 w-16 flex items-center justify-center">
+                            <div className="absolute inset-0 rounded-full bg-red-100 animate-pulse"></div>
+                            <AlertCircle className="relative z-10 h-10 w-10 text-red-500" />
+                        </div>
+
+                        <h3 className="mt-6 text-lg font-semibold text-slate-900">
                             Erro ao carregar especificações
                         </h3>
-                        <p className="mt-2 text-sm text-gray-500">{error}</p>
-                        <button
-                            onClick={handleRefresh}
-                            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#1ABC9C] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#16A085]"
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                            Tentar novamente
-                        </button>
+                        <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100 font-mono">
+                            {error}
+                        </p>
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                onClick={handleRefresh}
+                                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-5 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                Tentar novamente
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         );
     } return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
-                <div className="flex items-center">
-                    <button
-                        onClick={handleBack}
-                        className="mr-3 rounded-full hover:bg-gray-100 p-2 transition-colors"
-                    >
-                        <ArrowLeft className="h-5 w-5 text-gray-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-medium text-gray-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-gray-500">{specifications.length} item(s) • Ficha #{fichaDados.id_ficha_inspecao}</p>
-                    </div>
-                </div>            {/* Botões de ação no cabeçalho */}
-                {specifications.length > 0 && (
-                    <div className="flex flex-row items-center space-x-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
+                    <div className="flex items-center">
                         <button
-                            onClick={handleFinalizeInspection}
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#1ABC9C] px-4 py-2 text-sm font-medium text-white hover:bg-[#16A085] transition-colors shadow-sm"
+                            onClick={handleBack}
+                            className="mr-3 rounded-full hover:bg-slate-100 p-2 transition-all bg-slate-50 border border-slate-200"
                         >
-                            <CheckSquare className="h-4 w-4" />
-                            Iniciar
+                            <ArrowLeft className="h-5 w-5 text-slate-600" />
                         </button>
-                        <button
-                            onClick={handleForwardToCQ}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                            <Send className="h-4 w-4" />
-                            Encaminhar CQ
-                        </button>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-xl font-semibold text-slate-800">Especificações da Inspeção</h1>
+                                <span className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-md font-medium">
+                                    Ficha #{fichaDados.id_ficha_inspecao}
+                                </span>
+                            </div>
+                            <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+                                <span className="flex items-center gap-1">
+                                    <Ruler className="h-3.5 w-3.5" />
+                                    {specifications.length} especificação(ões)
+                                </span>
+                                {fichaDados.qtde_produzida && (
+                                    <>
+                                        <span className="text-slate-300">•</span>
+                                        <span>Qtde produzida: {fichaDados.qtde_produzida}</span>
+                                    </>
+                                )}
+                            </p>
+                        </div>
                     </div>
-                )}
-            </div>
 
-            {specifications.length === 0 ? (
+                    {/* Botões de ação no cabeçalho - Design mais técnico */}
+                    {specifications.length > 0 && (
+                        <div className="flex flex-row items-center space-x-2">
+                            <button
+                                onClick={handleFinalizeInspection}
+                                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg"
+                            >
+                                <CheckSquare className="h-4 w-4" />
+                                Iniciar
+                            </button>
+                            <button
+                                onClick={handleForwardToCQ}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow"
+                            >
+                                <Send className="h-4 w-4" />
+                                Encaminhar CQ
+                            </button>
+                        </div>
+                    )}                </div>
+            </div>            {specifications.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="py-8 text-center sm:py-12 bg-white rounded-lg border border-dashed border-gray-300 shadow-sm"
+                    className="py-8 text-center sm:py-12 bg-white rounded-lg border border-dashed border-slate-300 shadow-sm"
                 >
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-50">
-                        <Ruler className="h-7 w-7 text-gray-400" />
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50">
+                        <Ruler className="h-7 w-7 text-slate-400" />
                     </div>
-                    <h3 className="mt-4 text-base font-medium text-gray-800">
+                    <h3 className="mt-4 text-base font-medium text-slate-800">
                         Nenhuma especificação encontrada
                     </h3>
-                    <p className="mt-1 px-4 text-sm text-gray-500 max-w-md mx-auto">
+                    <p className="mt-1 px-4 text-sm text-slate-500 max-w-md mx-auto">
                         Não há especificações cadastradas para esta ficha de inspeção.
                     </p>
                 </motion.div>
@@ -455,198 +477,231 @@ export default function EspecificacoesPage() {
                         .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
                         .map((spec, index) => {
                             const statusInfo = getConformeStatus(spec.conforme, spec.valor_encontrado);
-                            const isExpanded = expandedCards.has(spec.id_especificacao);
+                            const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
+                                key={spec.id_especificacao}
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    scale: isExpanded ? 1.01 : 1,
+                                    boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
+                                }}
+                                transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
+                                    ? 'border-slate-300 '
+                                    : statusInfo.text === 'Conforme'
+                                        ? 'border-green-200'
+                                        : statusInfo.text === 'Não Conforme'
+                                            ? 'border-red-200'
+                                            : 'border-slate-200'
+                                    } overflow-hidden hover:shadow-md transition-all duration-200`}
+                                data-expanded={isExpanded}
+                            >
+                                {/* Status Indicator - Thin stripe on top instead of left border */}
+                                <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Conforme' ? 'bg-green-500' :
+                                    statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
+                                        statusInfo.text === 'Não medido' ? 'bg-slate-300' : 'bg-amber-500'
+                                    }`}></div>
 
-                            return (
-                                <motion.div
-                                    key={spec.id_especificacao}
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.03 }}
-                                    className={`spec-card group relative bg-white rounded-lg border ${statusInfo.text === 'Conforme' ? 'border-green-200' :
-                                        statusInfo.text === 'Não Conforme' ? 'border-red-200' :
-                                            'border-gray-200'
-                                        } overflow-hidden hover:shadow-md transition-all duration-200`}
+                                {/* Card Header - Always visible */}                                <div
+                                    className="p-4 cursor-pointer" onClick={() => setExpandedCards(prev => {
+                                        const newSet = new Set<number>();
+                                        // Se o item clicado já estava expandido, apenas feche-o (retornando um conjunto vazio)
+                                        // Se não estava expandido, adicione apenas este item ao conjunto
+                                        if (!prev.has(spec.id_especificacao)) {
+                                            newSet.add(spec.id_especificacao);
+                                        }
+                                        return newSet;
+                                    })}
                                 >
-                                    {/* Status Indicator - Thin stripe on top instead of left border */}
-                                    <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Conforme' ? 'bg-green-500' :
-                                        statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
-                                            statusInfo.text === 'Não medido' ? 'bg-gray-300' : 'bg-amber-500'
-                                        }`}></div>
-
-                                    {/* Card Header - Always visible */}
-                                    <div
-                                        className="p-3 cursor-pointer"
-                                        onClick={() => setExpandedCards(prev => {
-                                            const newSet = new Set(prev);
-                                            if (newSet.has(spec.id_especificacao)) {
-                                                newSet.delete(spec.id_especificacao);
-                                            } else {
-                                                newSet.add(spec.id_especificacao);
-                                            }
-                                            return newSet;
-                                        })}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            {/* Left: Order badge and title */}
-                                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                {/* Simple order number */}
-                                                <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center bg-gray-50 border border-gray-200">
-                                                    <span className="font-medium text-gray-700">{spec.ordem}</span>
-                                                </div>
-
-                                                {/* Title - Keep it simple */}
-                                                <div className="min-w-0">
-                                                    <h3 className="text-base font-medium text-gray-800 truncate">
-                                                        {spec.descricao_cota}
-                                                        {spec.complemento_cota && (
-                                                            <span className="text-gray-400 text-sm ml-1">
-                                                                ({spec.complemento_cota})
-                                                            </span>
-                                                        )}
-                                                    </h3>
-                                                </div>
-
-
-                                            </div>
-
-                                            {/* Right: Status badge and expand/collapse */}
-                                            <div className="flex items-center gap-3">
-                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700' :
-                                                    statusInfo.text === 'Não Conforme' ? 'bg-red-50 text-red-700' :
-                                                        'bg-gray-50 text-gray-600'
-                                                    }`}>
-                                                    <span className="w-3 h-3 flex-shrink-0">
-                                                        {statusInfo.icon}
-                                                    </span>
-                                                    {statusInfo.text}
+                                    <div className="flex items-center justify-between">
+                                        {/* Left: Order badge and title */}
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            {/* Technical order number badge */}
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-50 border border-slate-200 shadow-sm">
+                                                <span className="font-semibold text-slate-700">{spec.ordem}</span>
+                                            </div>                                                {/* Title with technical styling */}
+                                            <div className="min-w-0">                                                    <h3 className="text-base font-semibold text-slate-800 truncate flex items-center">                                                {spec.svg_cota && (
+                                                <span className="inline-flex mr-2.5 flex-shrink-0 text-slate-700 items-center justify-center">
+                                                    <svg
+                                                        viewBox="0 0 100 100"
+                                                        width="28"
+                                                        height="28"
+                                                        className="spec-icon-svg"
+                                                        dangerouslySetInnerHTML={{ __html: spec.svg_cota }}
+                                                        style={{ strokeWidth: "1", minWidth: "28px" }}
+                                                    />
                                                 </span>
-
-                                                {/* Expand/collapse icon */}
-                                                <button className="p-1 rounded-md hover:bg-gray-100">
-                                                    {isExpanded ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                                            <polyline points="18 15 12 9 6 15"></polyline>
-                                                        </svg>
-                                                    ) : (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                                                            <polyline points="6 9 12 15 18 9"></polyline>
-                                                        </svg>
-                                                    )}
-                                                </button>
+                                            )}
+                                                {spec.descricao_cota}
+                                                {spec.complemento_cota && (
+                                                    <span className="text-slate-400 text-sm ml-1">
+                                                        ({spec.complemento_cota})
+                                                    </span>
+                                                )}
+                                            </h3>
                                             </div>
-                                        </div>                                        {/* Short description - always visible with instrument and tolerance */}
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 ml-11">
-                                            {/* Instrument info */}
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-gray-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
-                                                <span className="truncate">{spec.tipo_instrumento || '-'}</span>
-                                            </div>
+                                        </div>
 
-                                            {/* Divider */}
-                                            <span>•</span>                                            {/* Tolerance info */}
-                                            <div className="truncate">
+                                        {/* Right: Status badge and expand/collapse */}
+                                        <div className="flex items-center gap-3">
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme'
+                                                ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                                : statusInfo.text === 'Não Conforme'
+                                                    ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
+                                                    : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
+                                                }`}>
+                                                <span className="w-3 h-3 flex-shrink-0">
+                                                    {statusInfo.icon}
+                                                </span>
+                                                {statusInfo.text}
+                                            </span>
+
+                                            {/* Expand/collapse icon with improved styling */}
+                                            <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
+                                                {isExpanded ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                        <polyline points="18 15 12 9 6 15"></polyline>
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>                                    {/* Short description with technical look */}
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 ml-13">
+                                        {/* Caracteristica SVG badge */}
+                                        {spec.svg_caracteristica && (
+                                            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                                <span className="inline-flex flex-shrink-0 text-slate-400 items-center justify-center">
+                                                    <svg
+                                                        viewBox="0 0 100 100"
+                                                        width="18"
+                                                        height="18"
+                                                        className="spec-icon-svg"
+                                                        dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
+                                                        style={{ strokeWidth: "1", minWidth: "18px" }}
+                                                    />
+                                                </span>
+                                                <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Instrument info */}
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                            <span className="text-slate-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
+                                            <span className="truncate font-medium">{spec.tipo_instrumento || '-'}</span>
+                                        </div>
+
+                                        {/* Technical tolerance display - only shown when exibe_faixa is 'S' */}
+                                        {fichaDados.exibe_faixa === 'S' && (
+                                            <div className="bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
                                                 {isNumericType(spec.tipo_valor) ? (
-                                                    <>
+                                                    <span className="flex items-center gap-1 font-mono">
                                                         {spec.valor_minimo !== null && spec.valor_maximo !== null ? (
-                                                            <>{spec.valor_minimo} - {spec.valor_maximo} {spec.unidade_medida ? spec.unidade_medida : ''}</>
+                                                            <>{spec.valor_minimo} - {spec.valor_maximo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
                                                         ) : spec.valor_minimo !== null ? (
-                                                            <>Min: {spec.valor_minimo} {spec.unidade_medida ? spec.unidade_medida : ''}</>
+                                                            <>Min: {spec.valor_minimo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
                                                         ) : spec.valor_maximo !== null ? (
-                                                            <>Max: {spec.valor_maximo} {spec.unidade_medida ? spec.unidade_medida : ''}</>
+                                                            <>Max: {spec.valor_maximo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
                                                         ) : (
                                                             '-'
                                                         )}
-                                                    </>
-                                                ) : isSelectType(spec.tipo_valor) ? (
-                                                    <>
+                                                    </span>
+                                                ) : isSelectType(spec.tipo_valor) && (
+                                                    <span className="font-medium">
                                                         {getSelectOptions(spec.tipo_valor).map(opt => opt.label).join(' / ')}
-                                                    </>
-                                                ) : (
-                                                    '-'
+                                                    </span>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
-
-                                    {/* Expandable content */}
-                                    {isExpanded && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="border-t border-gray-100 bg-gray-50/50 p-3"
-                                        >                                            {/* Compact info grid - removed Local info */}
-
-                                            {/* Input Field - Simplified */}
-                                            <div className="bg-white rounded-md border border-gray-200 p-3 shadow-sm">
-                                                {isSelectType(spec.tipo_valor) ? (
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 mb-2">Selecione uma opção:</p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {getSelectOptions(spec.tipo_valor).map((option) => (
-                                                                <button
-                                                                    key={String(option.value)}
-                                                                    onClick={() => handleValueChange(spec.id_especificacao, 'conforme', option.value)}
-                                                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
-                                                                        ? (option.value ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200')
-                                                                        : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
-                                                                        }`}
-                                                                >
-                                                                    {option.label}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <label className="block text-xs text-gray-500 mb-2">
-                                                            Valor encontrado:
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
-                                                                ? editingValues[spec.id_especificacao].valor_encontrado
-                                                                : spec.valor_encontrado || ''}
-                                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                                            placeholder="Digite o valor..."
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {/* Compact observations button */}
-                                                <div className="mt-3 flex justify-end">
-                                                    <button
-                                                        onClick={() => toggleObservationField(spec.id_especificacao)}
-                                                        className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
-                                                    >
-                                                        <MessageSquare className="h-3 w-3" />
-                                                        {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
-                                                    </button>
+                                </div>                                    {/* Expandable content */}
+                                {isExpanded && (<motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="border-t border-slate-100 bg-slate-50/60 p-4"
+                                >
+                                    {/* Technical Input Field */}
+                                    <div className="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
+                                            <span className="text-xs text-slate-400 font-mono">ID: {spec.id_especificacao}</span>
+                                        </div>
+                                        {isSelectType(spec.tipo_valor) ? (
+                                            <div>
+                                                <p className="text-xs text-slate-600 mb-2 font-medium">Selecione uma opção:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {getSelectOptions(spec.tipo_valor).map((option) => (
+                                                        <button
+                                                            key={String(option.value)}
+                                                            onClick={() => handleValueChange(spec.id_especificacao, 'conforme', option.value)}
+                                                            className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
+                                                                ? (option.value
+                                                                    ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
+                                                                    : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
+                                                                : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                                                }`}
+                                                        >
+                                                            {option.label}
+                                                        </button>
+                                                    ))}
                                                 </div>
-
-                                                {/* Expandable observation field */}
-                                                {expandedObservations.has(spec.id_especificacao) && (
-                                                    <div className="mt-2 animate-in fade-in duration-200">
-                                                        <textarea
-                                                            placeholder="Digite sua observação..."
-                                                            value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
-                                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                            className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                            rows={2}
-                                                        />
-                                                    </div>
-                                                )}
                                             </div>
-                                        </motion.div>
-                                    )}
+                                        ) : (
+                                            <div>
+                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
+                                                    Valor encontrado:
+                                                    {spec.unidade_medida && (
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
+                                                    )}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
+                                                        ? editingValues[spec.id_especificacao].valor_encontrado
+                                                        : spec.valor_encontrado || ''}
+                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono transition-all"
+                                                    placeholder="Digite o valor..."
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Technical observations button */}
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={() => toggleObservationField(spec.id_especificacao)}
+                                                className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium"
+                                            >
+                                                <MessageSquare className="h-3.5 w-3.5" />
+                                                {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
+                                            </button>
+                                        </div>
+
+                                        {/* Technical expandable observation field */}
+                                        {expandedObservations.has(spec.id_especificacao) && (
+                                            <div className="mt-3 animate-in fade-in duration-200">
+                                                <textarea
+                                                    placeholder="Digite sua observação técnica..."
+                                                    value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                                    className="w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm"
+                                                    rows={2}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </motion.div>
+                                )}
+                            </motion.div>
                             );
                         })}
                 </motion.div>
-            )}        {/* Global Action Buttons - Simplified */}
+            )}            {/* Global Action Buttons - Technical Design */}
             {specifications.length > 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -654,48 +709,63 @@ export default function EspecificacoesPage() {
                     transition={{ delay: 0.2 }}
                     className="sticky bottom-4 z-10 mt-4"
                 >
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-md p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        {/* Status counters */}
-                        <div className="flex items-center gap-3 text-xs text-gray-600 overflow-x-auto pb-1 w-full sm:w-auto">
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                {specifications.filter(s => s.conforme === true).length} Conformes
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                {specifications.filter(s => s.conforme === false).length} Não conformes
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                {specifications.filter(s =>
-                                    (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
-                                    (isSelectType(s.tipo_valor) && s.conforme === null)
-                                ).length} Pendentes
-                            </span>
-                            {Object.keys(editingValues).length > 0 && (
-                                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    {Object.keys(editingValues).length} Alterações
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
+                        {/* Technical Status counters */}
+                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
+                            <div className="counter-item">
+                                <div className="counter-dot bg-green-500"></div>
+                                <span className="counter-label">Conformes:</span>
+                                <span className="counter-value text-green-600 font-mono ml-1">
+                                    {specifications.filter(s => s.conforme === true).length}
                                 </span>
+                            </div>
+
+                            <div className="counter-item">
+                                <div className="counter-dot bg-red-500"></div>
+                                <span className="counter-label">Não conformes:</span>
+                                <span className="counter-value text-red-600 font-mono ml-1">
+                                    {specifications.filter(s => s.conforme === false).length}
+                                </span>
+                            </div>
+
+                            <div className="counter-item">
+                                <div className="counter-dot bg-slate-400"></div>
+                                <span className="counter-label">Pendentes:</span>
+                                <span className="counter-value text-slate-600 font-mono ml-1">
+                                    {specifications.filter(s =>
+                                        (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+                                        (isSelectType(s.tipo_valor) && s.conforme === null)
+                                    ).length}
+                                </span>
+                            </div>
+
+                            {Object.keys(editingValues).length > 0 && (
+                                <div className="counter-item">
+                                    <div className="counter-dot bg-blue-500"></div>
+                                    <span className="counter-label">Alterações:</span>
+                                    <span className="counter-value text-blue-600 font-mono ml-1">
+                                        {Object.keys(editingValues).length}
+                                    </span>
+                                </div>
                             )}
                         </div>
 
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-2 whitespace-nowrap">
+                        {/* Technical Action buttons */}
+                        <div className="flex items-center gap-3 whitespace-nowrap">
                             {Object.keys(editingValues).length > 0 && (
                                 <button
                                     onClick={handleSaveAllChanges}
                                     disabled={isSaving}
-                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#1ABC9C] text-white rounded-md text-sm font-medium hover:bg-[#16A085] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
                                 >
                                     {isSaving ? (
                                         <>
-                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
                                             Salvando...
                                         </>
                                     ) : (
                                         <>
-                                            <Save className="h-3.5 w-3.5" />
+                                            <Save className="h-4 w-4" />
                                             Salvar alterações
                                         </>
                                     )}
@@ -704,9 +774,9 @@ export default function EspecificacoesPage() {
                             <button
                                 onClick={handleInterruptInspection}
                                 disabled={isSaving}
-                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
                             >
-                                <StopCircle className="h-3.5 w-3.5" />
+                                <StopCircle className="h-4 w-4" />
                                 Interromper
                             </button>
                         </div>

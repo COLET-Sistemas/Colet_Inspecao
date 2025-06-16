@@ -1162,6 +1162,14 @@
 /* Estilo para cards expandidos */
 .expanded-card {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 10;
+}
+
+.spec-card[data-expanded="true"] {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
 }
 
 /* Status badges minimalistas */
@@ -1323,4 +1331,31 @@ button:active {
 
 .animate-in {
     animation: slideDown 0.2s ease-out forwards;
+}
+
+/* Estilos adicionais para SVGs em especificacoes */
+.spec-icon-svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spec-icon-svg svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 1;
+}
+
+.spec-icon-svg svg path,
+.spec-icon-svg svg circle,
+.spec-icon-svg svg rect,
+.spec-icon-svg svg line,
+.spec-icon-svg svg polyline,
+.spec-icon-svg svg polygon {
+    fill: inherit;
+    stroke: inherit;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
 }
