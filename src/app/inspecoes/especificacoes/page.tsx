@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import inspecaoService, { InspectionSpecification } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
@@ -40,16 +41,18 @@ export default function EspecificacoesPage() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
-    const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set());
-    const [isSaving, setIsSaving] = useState(false);
-    // Nova variável para controlar se a inspeção foi iniciada
+    const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set()); const [isSaving, setIsSaving] = useState(false);
+    // Variável para controlar se a inspeção foi iniciada
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
-    // Nova variável para expandir/retrair cards
+    // Variável para controlar se está encaminhando para o CQ
+    const [isForwardingToCQ, setIsForwardingToCQ] = useState(false);
+    // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+    // Estado para exibição de mensagens de alerta
+    const [alertMessage, setAlertMessage] = useState<{ message: string; type: "success" | "error" | "warning" | "info" } | null>(null);
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
-        // Proteção contra múltiplas execuções (React StrictMode)
         if (hasInitialized.current) {
             return;
         }
@@ -74,7 +77,7 @@ export default function EspecificacoesPage() {
             } catch (error) {
                 console.error("Erro ao carregar especificações:", error);
                 setError("Erro ao carregar especificações da inspeção");
-                hasInitialized.current = false; // Reset em caso de erro para permitir retry
+                hasInitialized.current = false;
             } finally {
                 setLoading(false);
             }
@@ -178,12 +181,23 @@ export default function EspecificacoesPage() {
 
         try {
             setIsSaving(true);
+            // Certificando que não estamos no modo de encaminhamento para o CQ
+            setIsForwardingToCQ(false);
+
+            // O código da pessoa já está sendo obtido no service
             await inspecaoService.startInspection(parseInt(id));
             setIsInspectionStarted(true);
-            // Mostrar mensagem de sucesso ou atualizar UI conforme necessário
+
+            setAlertMessage({
+                message: "Inspeção iniciada com sucesso",
+                type: "success",
+            });
         } catch (error) {
             console.error("Erro ao iniciar inspeção:", error);
-            setError("Erro ao iniciar a inspeção");
+            setAlertMessage({
+                message: "Erro ao iniciar a inspeção",
+                type: "error",
+            });
         } finally {
             setIsSaving(false);
         }
@@ -262,21 +276,32 @@ export default function EspecificacoesPage() {
             // Poderíamos adicionar uma chamada API aqui se necessário
             setIsInspectionStarted(false);
         }
-    }, [isInspectionStarted]);
-
-    const handleForwardToCQ = useCallback(async () => {
+    }, [isInspectionStarted]); const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
 
         try {
-            // TODO: Implement forward to CQ API call
-            console.log('Encaminhando para CQ, inspeção ID:', id);
-            // await inspecaoService.forwardToCQ(parseInt(id));
+            setIsSaving(true);
+            setIsForwardingToCQ(true);
+            await inspecaoService.forwardToCQ(parseInt(id));
 
-            // TODO: Show success notification and redirect
-            router.back();
+            setAlertMessage({
+                message: "Ficha encaminhada para o CQ com sucesso",
+                type: "success",
+            });
+
+            // Redireciona após um pequeno delay para garantir que o usuário veja a mensagem
+            setTimeout(() => {
+                router.back();
+            }, 1500);
         } catch (error) {
             console.error("Erro ao encaminhar para CQ:", error);
-            // TODO: Show error notification
+            setAlertMessage({
+                message: "Falha ao encaminhar ficha para o CQ",
+                type: "error",
+            });
+        } finally {
+            setIsSaving(false);
+            setIsForwardingToCQ(false);
         }
     }, [id, router]);
 
@@ -285,17 +310,26 @@ export default function EspecificacoesPage() {
             return <Eye className="h-5 w-5" />;
         }
         return <Ruler className="h-5 w-5" />;
-    };
-
-    const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: number | null | undefined) => {
+    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: number | null | undefined) => {
+        // Se não tiver valor encontrado
         if (valorEncontrado === null || valorEncontrado === undefined) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
-                text: "Não medido",
-                className: "bg-gray-100 text-gray-700 border border-gray-200 shadow-sm"
+                text: "Não informado",
+                className: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/50"
             };
         }
 
+        // Se exibe_resultado for 'N', apenas mostra se foi informado ou não
+        if (fichaDados.exibe_resultado === 'N') {
+            return {
+                icon: <CheckCircle className="h-4 w-4" />,
+                text: "Informado",
+                className: "bg-blue-100 text-blue-800 border border-blue-300 shadow-sm"
+            };
+        }
+
+        // Se exibe_resultado for 'S', mostra status de conformidade
         if (conforme === true) {
             return {
                 icon: <CheckCircle className="h-4 w-4" />,
@@ -310,7 +344,9 @@ export default function EspecificacoesPage() {
                 text: "Não Conforme",
                 className: "bg-red-100 text-red-800 border border-red-300 shadow-sm"
             };
-        } return {
+        }
+
+        return {
             icon: <AlertCircle className="h-4 w-4" />,
             text: "Pendente",
             className: "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
@@ -383,6 +419,15 @@ export default function EspecificacoesPage() {
         );
     } return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
+            {alertMessage && (
+                <AlertMessage
+                    message={alertMessage.message}
+                    type={alertMessage.type}
+                    onDismiss={() => setAlertMessage(null)}
+                    autoDismiss={true}
+                    dismissDuration={3000}
+                />
+            )}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
                 <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
                     <div className="flex items-center">
@@ -414,34 +459,41 @@ export default function EspecificacoesPage() {
                         </div>
                     </div>
 
-                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (
-                        <div className="flex flex-row items-center space-x-2">
-                            <button
-                                onClick={handleStartInspection}
-                                disabled={isInspectionStarted || isSaving}
-                                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                        Iniciando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckSquare className="h-4 w-4" />
-                                        {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={handleForwardToCQ}
-                                disabled={!isInspectionStarted}
-                                className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Send className="h-4 w-4" />
-                                Encaminhar CQ
-                            </button>
-                        </div>
+                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">
+                        <button
+                            onClick={handleStartInspection}
+                            disabled={isInspectionStarted || isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving && !isForwardingToCQ ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Iniciando...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckSquare className="h-4 w-4" />
+                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
+                                </>
+                            )}
+                        </button>                            <button
+                            onClick={handleForwardToCQ}
+                            disabled={isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving && isForwardingToCQ ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Encaminhando...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="h-4 w-4" />
+                                    Encaminhar CQ
+                                </>
+                            )}
+                        </button>
+                    </div>
                     )}</div>
             </div>            {specifications.length === 0 ? (
                 <motion.div
@@ -478,21 +530,22 @@ export default function EspecificacoesPage() {
                                     y: 0,
                                     scale: isExpanded ? 1.01 : 1,
                                     boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
-                                }}
-                                transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
-                                    ? 'border-slate-300 '
+                                }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
+                                    ? 'border-slate-300'
                                     : statusInfo.text === 'Conforme'
                                         ? 'border-green-200'
                                         : statusInfo.text === 'Não Conforme'
                                             ? 'border-red-200'
-                                            : 'border-slate-200'
+                                            : statusInfo.text === 'Informado'
+                                                ? 'border-blue-200'
+                                                : 'border-slate-200'
                                     } overflow-hidden hover:shadow-md transition-all duration-200`}
                                 data-expanded={isExpanded}
-                            >
-                                {/* Status Indicator - Thin stripe on top instead of left border */}
+                            >                                {/* Status Indicator - Thin stripe on top instead of left border */}
                                 <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Conforme' ? 'bg-green-500' :
                                     statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
-                                        statusInfo.text === 'Não medido' ? 'bg-slate-300' : 'bg-amber-500'
+                                        statusInfo.text === 'Não informado' ? 'bg-slate-300' :
+                                            statusInfo.text === 'Informado' ? 'bg-blue-500' : 'bg-amber-500'
                                     }`}></div>
 
                                 {/* Card Header - Always visible */}                                <div
@@ -536,18 +589,19 @@ export default function EspecificacoesPage() {
                                         </div>
 
                                         {/* Right: Status badge and expand/collapse */}
-                                        <div className="flex items-center gap-3">
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme'
-                                                ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
-                                                : statusInfo.text === 'Não Conforme'
-                                                    ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
+                                        <div className="flex items-center gap-3">                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme'
+                                            ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                            : statusInfo.text === 'Não Conforme'
+                                                ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
+                                                : statusInfo.text === 'Informado'
+                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
                                                     : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
-                                                }`}>
-                                                <span className="w-3 h-3 flex-shrink-0">
-                                                    {statusInfo.icon}
-                                                </span>
-                                                {statusInfo.text}
+                                            }`}>
+                                            <span className="w-3 h-3 flex-shrink-0">
+                                                {statusInfo.icon}
                                             </span>
+                                            {statusInfo.text}
+                                        </span>
 
                                             {/* Expand/collapse icon with improved styling */}
                                             <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
@@ -585,19 +639,17 @@ export default function EspecificacoesPage() {
                                         <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
                                             <span className="text-slate-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
                                             <span className="truncate font-medium">{spec.tipo_instrumento || '-'}</span>
-                                        </div>
-
-                                        {/* Technical tolerance display - only shown when exibe_faixa is 'S' */}
+                                        </div>                                        {/* Technical tolerance display - only shown when exibe_faixa is 'S' */}
                                         {fichaDados.exibe_faixa === 'S' && (
                                             <div className="bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
                                                 {isNumericType(spec.tipo_valor) ? (
-                                                    <span className="flex items-center gap-1 font-mono">
+                                                    <span className="flex items-center gap-1.5 font-medium">
                                                         {spec.valor_minimo !== null && spec.valor_maximo !== null ? (
-                                                            <>{spec.valor_minimo} - {spec.valor_maximo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
+                                                            <>{spec.valor_minimo} - {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
                                                         ) : spec.valor_minimo !== null ? (
-                                                            <>Min: {spec.valor_minimo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
+                                                            <>Min: {spec.valor_minimo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
                                                         ) : spec.valor_maximo !== null ? (
-                                                            <>Max: {spec.valor_maximo} <span className="text-slate-400">{spec.unidade_medida || ''}</span></>
+                                                            <>Max: {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
                                                         ) : (
                                                             '-'
                                                         )}
@@ -607,6 +659,44 @@ export default function EspecificacoesPage() {
                                                         {getSelectOptions(spec.tipo_valor).map(opt => opt.label).join(' / ')}
                                                     </span>
                                                 )}
+                                            </div>
+                                        )}                                        {/* Measurement result display with status coloring */}
+                                        {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (
+                                            <div className={`
+                                                flex items-center gap-1.5 px-2 py-1 rounded-md border
+                                                ${fichaDados.exibe_resultado === 'S' ?
+                                                    (spec.conforme === true ?
+                                                        'bg-green-50 border-green-200' :
+                                                        spec.conforme === false ?
+                                                            'bg-red-50 border-red-200' :
+                                                            'bg-amber-50 border-amber-200') :
+                                                    'bg-blue-50 border-blue-200'
+                                                }
+                                            `}>
+                                                {fichaDados.exibe_resultado === 'S' ? (
+                                                    <span className="text-xs font-medium">
+                                                        {spec.conforme === true ?
+                                                            <CheckCircle className="h-3.5 w-3.5 text-green-600" /> :
+                                                            spec.conforme === false ?
+                                                                <XCircle className="h-3.5 w-3.5 text-red-600" /> :
+                                                                <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                                                        }
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs font-medium">
+                                                        <CheckCircle className="h-3.5 w-3.5 text-blue-600" />
+                                                    </span>
+                                                )}
+                                                <span className="font-medium">
+                                                    {isNumericType(spec.tipo_valor) ?
+                                                        `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
+                                                        isSelectType(spec.tipo_valor) ?
+                                                            (spec.conforme === true ?
+                                                                getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
+                                                                getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
+                                                            spec.valor_encontrado.toString()
+                                                    }
+                                                </span>
                                             </div>
                                         )}
                                     </div>
@@ -658,8 +748,7 @@ export default function EspecificacoesPage() {
                                                         ? editingValues[spec.id_especificacao].valor_encontrado
                                                         : spec.valor_encontrado || ''}
                                                     onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                    disabled={!isInspectionStarted}
-                                                    className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono transition-all
+                                                    disabled={!isInspectionStarted} className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono
                                                         ${!isInspectionStarted ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
                                                     `}
                                                     placeholder="Digite o valor..."
@@ -678,11 +767,9 @@ export default function EspecificacoesPage() {
                                             <MessageSquare className="h-3.5 w-3.5" />
                                             {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
                                         </button>
-                                        </div>
-
-                                        {/* Technical expandable observation field */}
+                                        </div>                                        {/* Technical expandable observation field */}
                                         {expandedObservations.has(spec.id_especificacao) && (
-                                            <div className="mt-3 animate-in fade-in duration-200">                                                <textarea
+                                            <div className="mt-3">                                                <textarea
                                                 placeholder="Digite sua observação técnica..."
                                                 value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
                                                 onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
@@ -710,27 +797,37 @@ export default function EspecificacoesPage() {
                     className="sticky bottom-4 z-10 mt-4"
                 >
                     <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
-                        {/* Technical Status counters */}
-                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
-                            <div className="counter-item">
-                                <div className="counter-dot bg-green-500"></div>
-                                <span className="counter-label">Conformes:</span>
-                                <span className="counter-value text-green-600 font-mono ml-1">
-                                    {specifications.filter(s => s.conforme === true).length}
-                                </span>
-                            </div>
+                        {/* Technical Status counters */}                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">                            {fichaDados.exibe_resultado === 'S' ? (
+                            <>
+                                <div className="counter-item">
+                                    <div className="counter-dot bg-green-500"></div>
+                                    <span className="counter-label">Conformes:</span>
+                                    <span className="counter-value text-green-600 font-mono ml-1">
+                                        {specifications.filter(s => s.conforme === true).length}
+                                    </span>
+                                </div>
 
-                            <div className="counter-item">
-                                <div className="counter-dot bg-red-500"></div>
-                                <span className="counter-label">Não conformes:</span>
-                                <span className="counter-value text-red-600 font-mono ml-1">
-                                    {specifications.filter(s => s.conforme === false).length}
-                                </span>
-                            </div>
-
-                            <div className="counter-item">
+                                <div className="counter-item">
+                                    <div className="counter-dot bg-red-500"></div>
+                                    <span className="counter-label">Não conformes:</span>
+                                    <span className="counter-value text-red-600 font-mono ml-1">
+                                        {specifications.filter(s => s.conforme === false).length}
+                                    </span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="counter-item">
+                                    <div className="counter-dot bg-blue-500"></div>
+                                    <span className="counter-label">Informados:</span>
+                                    <span className="counter-value text-blue-600 font-mono ml-1">
+                                        {specifications.filter(s => s.valor_encontrado !== null).length}
+                                    </span>
+                                </div>
+                            </>
+                        )}<div className="counter-item">
                                 <div className="counter-dot bg-slate-400"></div>
-                                <span className="counter-label">Pendentes:</span>
+                                <span className="counter-label">{fichaDados.exibe_resultado === 'S' ? 'Pendentes:' : 'Não informados:'}</span>
                                 <span className="counter-value text-slate-600 font-mono ml-1">
                                     {specifications.filter(s =>
                                         (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
@@ -748,28 +845,56 @@ export default function EspecificacoesPage() {
                                     </span>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Technical Action buttons */}
+                        </div>                        {/* Technical Action buttons */}
                         <div className="flex items-center gap-3 whitespace-nowrap">
-                            {Object.keys(editingValues).length > 0 && (<button
-                                onClick={handleSaveAllChanges}
-                                disabled={isSaving || !isInspectionStarted}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                        Salvando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="h-4 w-4" />
-                                        Salvar alterações
-                                    </>
-                                )}
-                            </button>
-                            )}                                <button
+                            {isInspectionStarted && (
+                                <>
+                                    {specifications.filter(s =>
+                                        (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
+                                        (isSelectType(s.tipo_valor) && s.conforme === null)
+                                    ).length === 0 ? (
+                                        // Mostrar "Finalizar Inspeção" quando todos os campos estiverem preenchidos
+                                        <button
+                                            onClick={handleSaveAllChanges}
+                                            disabled={isSaving}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                        >
+                                            {isSaving ? (
+                                                <>
+                                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                                    Salvando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckSquare className="h-4 w-4" />
+                                                    Finalizar Inspeção
+                                                </>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        // Mostrar "Salvar Alterações" quando houver alterações, mas não todos os campos preenchidos
+                                        Object.keys(editingValues).length > 0 && (
+                                            <button
+                                                onClick={handleSaveAllChanges}
+                                                disabled={isSaving}
+                                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                                        Salvando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="h-4 w-4" />
+                                                        Salvar Alterações
+                                                    </>
+                                                )}
+                                            </button>
+                                        )
+                                    )}
+                                </>
+                            )}<button
                                 onClick={handleInterruptInspection}
                                 disabled={isSaving || !isInspectionStarted}
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
