@@ -327,7 +327,6 @@ export default function InspecoesPage() {
     }, []); const fetchTabData = useCallback(async (tabId: string) => {
         const postos = getPostosFromLocalStorage();
 
-        // Só mostrar alerta de postos não encontrados se o usuário não tiver perfil Q
         let hasPerfilQ = false;
         try {
             const userDataStr = localStorage.getItem('userData');
@@ -479,7 +478,7 @@ export default function InspecoesPage() {
         // Se o usuário tem perfil_inspecao "O", sempre abre o modal de login
         if (hasPerfilO) {
             setSelectedInspection(item);
-            setIsNaoConformidadeContext(false); // Contexto normal
+            setIsNaoConformidadeContext(false);
             setIsModalOpen(true);
             return;
         }
@@ -489,10 +488,10 @@ export default function InspecoesPage() {
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
             setSelectedInspection(item);
-            setIsNaoConformidadeContext(false); // Contexto normal
+            setIsNaoConformidadeContext(false);
             setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]);// Função para fechar o modal e resetar estados
+    }, [router, checkColaboradorData]);
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
         setIsNaoConformidadeContext(false);
@@ -1000,9 +999,8 @@ export default function InspecoesPage() {
                             </button>
                         ))}
                     </nav>
-                </div>
-            </div>            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
-                <div className="max-h-[calc(100vh-220px)] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+                </div>            </div>            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
+                <div className="w-full">
                     {renderTabContent()}
                 </div>
             </div>
