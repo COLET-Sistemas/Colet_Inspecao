@@ -8,10 +8,17 @@ import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService"
 import { motion } from "framer-motion";
 import {
     AlertTriangle,
+    Box,
+    Calendar,
     CheckCircle,
+    Clock,
     Cog,
     FileText,
+    Layers,
+    MapPin,
     RefreshCw,
+    Tag,
+    User,
     Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -206,6 +213,7 @@ export default function InspecoesPage() {
             return false;
         }
     }, [activeTab]);
+
     const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
         e.stopPropagation();
 
@@ -239,7 +247,8 @@ export default function InspecoesPage() {
                 hasPerfilO = perfilInspecao.includes('O');
             }
 
-            if (hasPerfilO) {                // If has 'O' in perfil_inspecao, open login modal for verification
+            if (hasPerfilO) {
+                // If has 'O' in perfil_inspecao, open login modal for verification
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
@@ -263,7 +272,9 @@ export default function InspecoesPage() {
                 hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
             } else if (typeof encaminharFicha === 'number') {
                 hasEncaminhar4 = encaminharFicha === 4;
-            } if (hasEncaminhar4) {
+            }
+
+            if (hasEncaminhar4) {
                 // User has direct permission through encaminhar_ficha, proceed with registration
                 // TODO: Implement non-conformity registration logic here
             } else {
@@ -322,7 +333,8 @@ export default function InspecoesPage() {
     const fetchTabData = useCallback(async (tabId: string) => {
         const postos = getPostosFromLocalStorage();
 
-        let hasPerfilQ = false; try {
+        let hasPerfilQ = false;
+        try {
             const userDataStr = localStorage.getItem('userData');
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
@@ -434,7 +446,9 @@ export default function InspecoesPage() {
             encaminhar_ficha: String(data.encaminhar_ficha)
         });
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]); const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
+    }, [router]);
+
+    const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         // Mostrar mensagem de sucesso
         setAlertMessage(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
         setAlertType("success");
@@ -503,6 +517,20 @@ export default function InspecoesPage() {
     // Função para fechar alertas
     const handleAlertDismiss = useCallback(() => {
         setAlertMessage(null);
+    }, []);
+
+    // Função para obter ícone de status da inspeção baseado na situação
+    const getSituacaoIcon = useCallback((situacao: string) => {
+        switch (situacao) {
+            case '1': return <Clock className="h-3.5 w-3.5 text-amber-500" />;
+            case '2': case '3': return <Box className="h-3.5 w-3.5 text-purple-500" />;
+            case '4': return <User className="h-3.5 w-3.5 text-blue-500" />;
+            case '5': case '6': return <Clock className="h-3.5 w-3.5 text-gray-400" />;
+            case '7': return <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />;
+            case '8': return <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />;
+            case '9': return <AlertTriangle className="h-3.5 w-3.5 text-red-500" />;
+            default: return <Clock className="h-3.5 w-3.5 text-gray-400" />;
+        }
     }, []);
 
     useEffect(() => {
@@ -603,7 +631,7 @@ export default function InspecoesPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="py-12 text-center sm:py-16"
                 >
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm sm:h-24 sm:w-24">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm sm:h-24 sm:w-24">
                         <FileText className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
                     </div>
                     <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">
@@ -614,61 +642,174 @@ export default function InspecoesPage() {
                     </p>
                     <button
                         onClick={handleManualRefresh}
-                        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+                        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:text-[#1ABC9C] hover:border-[#1ABC9C]/30 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/20"
                     >
-                        <RefreshCw className="h-4 w-4" />
+                        <RefreshCw className="h-4 w-4 transition-transform duration-300 hover:rotate-180" />
                         Verificar novamente
                     </button>
                 </motion.div>
             );
-        } return (<motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-            className="space-y-3 overflow-hidden"
-        >
-            {currentData.map((item: InspectionItem, index: number) => {
-                let bgColorClass = "border-gray-100 bg-white/60 hover:border-gray-200 hover:bg-white";
-                let dateTextColorClass = "text-gray-600 font-medium";
+        }
 
-                if (item.data_hora_prevista) {
-                    try {
-                        let dataPrevista: Date;
+        return (
+            <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                className="space-y-3 overflow-hidden"
+            >
+                {currentData.map((item: InspectionItem, index: number) => {
+                    let bgColorClass = "border-gray-200 bg-white/60 hover:border-gray-300 hover:bg-white";
+                    let dateTextColorClass = "text-gray-600 font-medium";
 
-                        // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
-                        if (item.data_hora_prevista.includes('/')) {
-                            const parts = item.data_hora_prevista.split(' ');
-                            const dateParts = parts[0].split('/');
-                            const timeParts = parts[1].split(':');
+                    if (item.data_hora_prevista) {
+                        try {
+                            let dataPrevista: Date;
 
-                            dataPrevista = new Date(
-                                parseInt(dateParts[2]),
-                                parseInt(dateParts[1]) - 1,
-                                parseInt(dateParts[0]),
-                                parseInt(timeParts[0]),
-                                parseInt(timeParts[1]),
-                                parseInt(timeParts[2] || '0')
-                            );
-                        } else {
-                            dataPrevista = new Date(item.data_hora_prevista);
-                        } const agora = new Date();
-                        const diffMs = dataPrevista.getTime() - agora.getTime();
-                        const diffMinutes = diffMs / (1000 * 60);
+                            // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
+                            if (item.data_hora_prevista.includes('/')) {
+                                const parts = item.data_hora_prevista.split(' ');
+                                const dateParts = parts[0].split('/');
+                                const timeParts = parts[1].split(':');
 
-                        if (diffMs < 0) {
-                            bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
-                            dateTextColorClass = "text-red-600 font-bold !text-red-600";
+                                dataPrevista = new Date(
+                                    parseInt(dateParts[2]),
+                                    parseInt(dateParts[1]) - 1,
+                                    parseInt(dateParts[0]),
+                                    parseInt(timeParts[0]),
+                                    parseInt(timeParts[1]),
+                                    parseInt(timeParts[2] || '0')
+                                );
+                            } else {
+                                dataPrevista = new Date(item.data_hora_prevista);
+                            }
+
+                            const agora = new Date();
+                            const diffMs = dataPrevista.getTime() - agora.getTime();
+                            const diffMinutes = diffMs / (1000 * 60);
+
+                            if (diffMs < 0) {
+                                bgColorClass = "border-red-200 bg-red-50/80 hover:border-red-300 hover:bg-red-50";
+                                dateTextColorClass = "text-red-600 font-bold !text-red-600";
+                            }
+                            else if (diffMinutes <= 60) {
+                                bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
+                                dateTextColorClass = "text-amber-600 font-bold !text-amber-600";
+                            }
+                        } catch {
+                            // Silent error handling for date processing
                         }
-                        else if (diffMinutes <= 5) {
-                            bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
-                            dateTextColorClass = "text-amber-600 font-bold !text-amber-600";
-                        }
-                    } catch {
-                        // Silent error handling for date processing
                     }
-                } if (isCompactLayout || isPortrait) {
+
+                    if (isCompactLayout || isPortrait) {
+                        return (
+                            <motion.div
+                                key={item.id_ficha_inspecao}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+                                onClick={() => handleInspectionClick(item)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleInspectionClick(item);
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-label={`Abrir inspeção ${item.tipo_inspecao} - OF: ${item.numero_ordem}`}
+                                className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2`}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
+                                            {item.id_ficha_inspecao.toString().padStart(2, '0')}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                                {item.tipo_inspecao}
+                                            </h3>
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-tight">
+                                                <span className="truncate">OF: #{item.numero_ordem}</span>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Status badge - melhorado com ícone */}
+                                    <div className="flex flex-col items-end min-w-fit gap-1">
+                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium
+                                            ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                    : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                        : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                            : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                                                                    : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                                                                        : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                            : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                                : 'bg-gray-50 text-gray-700 border border-gray-200'}
+                            `}>
+                                            {getSituacaoIcon(item.situacao)}
+                                            <span className="whitespace-nowrap">
+                                                {getSituacao(item.situacao)}
+                                                {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
+                                            </span>
+                                        </span>
+
+                                        {/* Data prevista com ícone */}
+                                        <span className={`flex items-center text-xs mt-0.5 ${dateTextColorClass}`}>
+                                            <Calendar className={`h-3 w-3 mr-1 ${dateTextColorClass}`} />
+                                            {item.data_hora_prevista ? (
+                                                <span className={`font-medium ${dateTextColorClass}`}>
+                                                    {formatDateTime(item.data_hora_prevista)}
+                                                </span>
+                                            ) : (
+                                                <span className="font-medium text-gray-400">Não definida</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>                                {/* Linha adicional para informações críticas */}
+                                <div className="flex items-center justify-between mt-3 gap-2">
+                                    <div className="flex flex-wrap gap-2 text-xs flex-1">
+                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                            <Layers className="h-3 w-3 text-gray-500 mr-1" />
+                                            <span className="text-gray-700">{item.processo}-{item.tipo_acao}</span>
+                                        </span>
+                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                            <MapPin className="h-3 w-3 text-gray-500 mr-1" />
+                                            <span className="text-gray-700">{item.codigo_posto}</span>
+                                        </span>
+
+                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                            <Tag className="h-3 w-3 text-gray-500 mr-1" />
+                                            <span className="text-gray-700">{item.origem}</span>
+                                        </span>
+
+
+                                    </div>
+
+                                    {canRegisterNaoConformidade(item) && (
+                                        <div className="flex-shrink-0">
+                                            <button
+                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <AlertTriangle className="h-3 w-3" />
+                                                Registrar NC
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Efeito de hover */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            </motion.div>
+                        );
+                    }
+
                     return (
                         <motion.div
                             key={item.id_ficha_inspecao}
@@ -676,38 +817,36 @@ export default function InspecoesPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                             onClick={() => handleInspectionClick(item)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    handleInspectionClick(item);
-                                }
-                            }}
-                            tabIndex={0}
-                            role="button"
-                            aria-label={`Abrir inspeção ${item.tipo_inspecao} - OF: ${item.numero_ordem}`}
-                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-2 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2`}
+                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-200/50 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-[#1ABC9C]`}
                         >
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-xs font-semibold shadow-sm">
+                            {/* Cabeçalho do Card */}
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
                                         {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                                    </div>                                        <div className="min-w-0">
-                                        <h3 className="text-xs font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
                                             {item.tipo_inspecao}
                                         </h3>
-                                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 leading-tight">
-                                            <span className="truncate">OF: #{item.numero_ordem}</span>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 text-sm text-gray-600">
+                                            <span className="flex items-center font-medium truncate">
+                                                <Tag className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+                                                <span>OF:</span>
+                                                <span className="ml-1 font-semibold">#{item.numero_ordem}</span>
+                                            </span>
+                                            <span className="hidden sm:block text-gray-300">|</span>
                                             <span className="flex items-center">
-                                                <span className="text-gray-400 font-medium mx-1">|</span>
-                                                <span className="text-gray-400 font-medium mr-0.5">Proc:</span>
-                                                {item.processo}-{item.tipo_acao}
+                                                <span className="truncate">{item.referencia}{item.produto && ` - ${item.produto}`}</span>
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                {/* Status e data prevista */}
-                                <div className="flex flex-col items-end min-w-fit gap-0.5">
-                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium
+
+                                {/* Status badges e informações temporais */}
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <span className={`
+                                        flex items-center gap-1.5 rounded-full pl-2.5 pr-3 py-1 text-xs font-medium
                                         ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                             : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
                                                 : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
@@ -718,195 +857,94 @@ export default function InspecoesPage() {
                                                                     : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                                                         : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
                                                                             : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                        `}>
-                                        <div className={`h-1.5 w-1.5 rounded-full mr-1
-                                ${item.situacao === '1' ? 'bg-amber-500'
-                                                : item.situacao === '2' ? 'bg-purple-500'
-                                                    : item.situacao === '3' ? 'bg-purple-500'
-                                                        : item.situacao === '4' ? 'bg-blue-500'
-                                                            : item.situacao === '5' ? 'bg-gray-400'
-                                                                : item.situacao === '6' ? 'bg-gray-400'
-                                                                    : item.situacao === '7' ? 'bg-orange-500'
-                                                                        : item.situacao === '8' ? 'bg-emerald-500'
-                                                                            : item.situacao === '9' ? 'bg-red-500'
-                                                                                : 'bg-gray-400'}
-                            `} />
+                                    `}>
+                                        {getSituacaoIcon(item.situacao)}
                                         <span className="whitespace-nowrap">
                                             {getSituacao(item.situacao)}
                                             {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
                                         </span>
                                     </span>
 
-                                    <span className={`text-[11px] mt-0.5 ${dateTextColorClass}`}>Prevista: {item.data_hora_prevista ? (
-                                        <span className={`font-medium ${dateTextColorClass}`}>
-                                            {formatDateTime(item.data_hora_prevista)}
-                                        </span>
-                                    ) : (
-                                        <span className="font-medium text-gray-400">Não definida</span>
-                                    )}</span>
+                                    {/* Data prevista como badge separada com ícone */}
+                                    <div className={`flex items-center text-xs ${dateTextColorClass} bg-gray-50/80 px-2.5 py-1 rounded-full`}>
+                                        <Calendar className={`h-3.5 w-3.5 mr-1.5 ${dateTextColorClass}`} />
+                                        <span className="text-gray-500 mr-1.5">Prevista:</span>
+                                        {item.data_hora_prevista ? (
+                                            <span className={`font-medium ${dateTextColorClass}`}>
+                                                {formatDateTime(item.data_hora_prevista)}
+                                            </span>
+                                        ) : (
+                                            <span className="font-medium text-gray-400">Não definida</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
+                            {/* Grid de informações detalhadas */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 mt-2 pt-3 border-t border-gray-200">
+                                <div>
+                                    <div className="flex items-center">
+                                        <Layers className="h-4 w-4 text-gray-500 mr-2" />
+                                        <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Proc:</p>
+                                        <p className="text-xs font-semibold text-gray-900">{item.processo}-{item.tipo_acao}</p>
+                                    </div>
                                 </div>
-                            </div>                            {/* Linha adicional para informações críticas */}
-                            <div className="flex items-center justify-between mt-2 gap-2">
-                                <div className="flex items-center flex-wrap gap-2 text-[11px] flex-1">
-                                    <span className="flex items-center text-gray-900">
-                                        <span className="text-gray-400 font-medium mr-1">Posto:</span>
-                                        {item.codigo_posto}
-                                    </span>
-                                    <span className="flex items-center text-gray-900">
-                                        <span className="text-gray-400 font-medium mr-1">Origem:</span>
-                                        {item.origem}
-                                    </span>
+
+                                <div>
+                                    <div className="flex items-center">
+                                        <MapPin className="h-4 w-4 text-gray-500 mr-2" />
+                                        <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Posto:</p>
+                                        <p className="text-xs font-semibold text-gray-900">{item.codigo_posto}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center">
+                                        <Tag className="h-4 w-4 text-gray-500 mr-2" />
+                                        <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Origem:</p>
+                                        <p className="text-xs font-semibold text-gray-900">{item.origem}</p>
+                                    </div>
+                                </div>
+
+                                <div className="col-span-2 sm:col-span-3 flex items-center justify-between mt-1 sm:mt-0">
                                     {item.obs_criacao && (
-                                        <span className="flex items-center text-gray-900">
-                                            <span className="text-gray-400 font-medium mr-1">Obs:</span>
-                                            {item.obs_criacao}
-                                        </span>
+                                        <div className="flex items-center max-w-[85%]">
+                                            <FileText className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
+                                            <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Obs:</p>
+                                            <p className="text-xs font-semibold text-gray-900 line-clamp-1">
+                                                {item.obs_criacao}
+                                            </p>
+                                        </div>
                                     )}
-                                </div>                                {canRegisterNaoConformidade(item) && (<div className="flex-shrink-0">
-                                    <button
-                                        onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                        className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <AlertTriangle className="h-2 w-2" />
-                                        Registrar NC
-                                    </button>
+
+                                    {canRegisterNaoConformidade(item) && (
+                                        <div className="flex justify-end ml-auto">
+                                            <button
+                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer"
+                                            >
+                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                                <span>
+                                                    {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                )}                            </div>
+                            </div>
+
+                            {/* Gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         </motion.div>
                     );
-                } return (<motion.div
-                    key={item.id_ficha_inspecao}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
-                    onClick={() => handleInspectionClick(item)}
-                    className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-200/50 cursor-pointer text-left`}
-                >
-
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1ABC9C] to-[#16A085] text-white text-sm font-semibold shadow-sm">
-                                {item.id_ficha_inspecao.toString().padStart(2, '0')}
-                            </div>
-                            <div className="min-w-0">
-                                <h3 className="text-base font-semibold text-gray-900 group-hover:text-[#1ABC9C] transition-colors truncate">
-                                    {item.tipo_inspecao}
-                                </h3>
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 text-sm text-gray-600">
-                                    <span className="flex items-center font-medium truncate">
-                                        <span className="mr-1">OF:</span>
-                                        #{item.numero_ordem}
-                                    </span>
-                                    <span className="hidden sm:block text-gray-300">|</span>
-                                    <span className="truncate">{item.referencia} - {item.produto}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Status badge melhorado */}
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                            <span className={`
-                                flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1 text-xs font-medium
-                                ${item.situacao === '1' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    : item.situacao === '2' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                        : item.situacao === '3' ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                            : item.situacao === '4' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                : item.situacao === '5' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                    : item.situacao === '6' ? 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                        : item.situacao === '7' ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                                            : item.situacao === '8' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
-                                                                    : 'bg-gray-50 text-gray-700 border border-gray-200'}
-                            `}>
-                                <div className={`
-                                    h-2 w-2 rounded-full
-                                    ${item.situacao === '1' ? 'bg-amber-500'
-                                        : item.situacao === '2' ? 'bg-purple-500'
-                                            : item.situacao === '3' ? 'bg-purple-500'
-                                                : item.situacao === '4' ? 'bg-blue-500'
-                                                    : item.situacao === '5' ? 'bg-gray-400'
-                                                        : item.situacao === '6' ? 'bg-gray-400'
-                                                            : item.situacao === '7' ? 'bg-orange-500'
-                                                                : item.situacao === '8' ? 'bg-emerald-500'
-                                                                    : item.situacao === '9' ? 'bg-red-500'
-                                                                        : 'bg-gray-400'}
-                                `} />
-                                <span className="whitespace-nowrap">
-                                    {getSituacao(item.situacao)}
-                                    {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
-                                </span>
-                            </span>
-
-                            {/* Data prevista como badge separada quando existe */}
-                            <div className="flex items-center text-xs mr-3"> {/* mr-4 para espaço à direita */}
-                                <span className="text-gray-500 mr-1">Prevista:</span>
-                                {item.data_hora_prevista ? (
-                                    <span className={`font-medium ${dateTextColorClass}`}>
-                                        {formatDateTime(item.data_hora_prevista)}
-                                    </span>
-                                ) : (
-                                    <span className="font-medium text-gray-400">Não definida</span>
-                                )}
-                            </div>
-
-                        </div>
-                    </div>
-                    {/* Informações em Grid com borda superior para separar visualmente */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1">
-                        <div>
-                            <div className="flex col-span-2 sm:col-span-3 items-center">
-                                <p className="text-xs font-medium text-gray-500 uppercase mr-1">Proc:</p>
-                                <p className="text-xs font-medium text-gray-900">{item.processo}-{item.tipo_acao}</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center">
-                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">Posto:</p>
-                                <p className="text-xs font-medium text-gray-900">{item.codigo_posto}</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center">
-                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">Origem:</p>
-                                <p className="text-xs font-medium text-gray-900">{item.origem}</p>
-                            </div>
-                        </div>                        <div className="col-span-2 sm:col-span-3 flex items-center justify-between">
-                            <div className="flex items-center">
-                                <p className="text-xs font-medium text-gray-500 uppercase mr-2">
-                                    {item.obs_criacao ? "Observação:" : ""}
-                                </p>
-                                <p className="text-xs font-medium text-gray-900 line-clamp-1">
-                                    {item.obs_criacao || ""}
-                                </p>                            </div>                            {canRegisterNaoConformidade(item) && (
-                                    <div className="flex justify-end">
-                                        <button
-                                            onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
-                                        >
-                                            <AlertTriangle className="h-3 w-3" />
-                                            <span>
-                                                {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
-                                            </span>
-                                        </button>
-                                    </div>
-                                )}
-                        </div>                    </div>
-                    {/* Gradient overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                </motion.div>
-                );
-            })}
-        </motion.div>
+                })}
+            </motion.div>
         );
     };
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* Debug info (hidden) */}
+            {/* Header com título e botões de ação */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
             </div>
@@ -944,7 +982,7 @@ export default function InspecoesPage() {
                 </div>
             </div>
 
-            {/* Colaborador Login Modal */}
+            {/* Modais e alertas */}
             {selectedInspection && (
                 <ColaboradorLoginModal
                     isOpen={isModalOpen}
@@ -957,7 +995,6 @@ export default function InspecoesPage() {
                 />
             )}
 
-            {/* Alert Message Component */}
             <AlertMessage
                 message={alertMessage}
                 type={alertType}
@@ -966,6 +1003,7 @@ export default function InspecoesPage() {
                 dismissDuration={5000}
             />
 
+            {/* Navegação por abas com design aprimorado */}
             <div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
@@ -1009,6 +1047,7 @@ export default function InspecoesPage() {
                 </div>
             </div>
 
+            {/* Container principal da lista */}
             <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
                 <div className="w-full">
                     {renderTabContent()}
