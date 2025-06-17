@@ -147,7 +147,8 @@ function useProvideAuth(): AuthContextType {
                             encaminhar_ficha: data.encaminhar_ficha || "",
                             registrar_ficha: data.registrar_ficha || "",
                         };
-                        if (remember) {
+                        // Sempre salva no localStorage se for o operador, independente do remember
+                        if (remember || username === "operador") {
                             localStorage.setItem("isAuthenticated", "true");
                             localStorage.setItem("authToken", data.token || "");
                             localStorage.setItem("userData", JSON.stringify(userData));

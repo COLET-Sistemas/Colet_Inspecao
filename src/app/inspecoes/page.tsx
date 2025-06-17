@@ -161,18 +161,29 @@ export default function InspecoesPage() {
             console.error('Erro ao verificar dados do colaborador:', error);
             return false;
         }
-    }, []); const canRegisterNaoConformidade = useCallback((): boolean => {
+    }, []); const canRegisterNaoConformidade = useCallback((item?: InspectionItem): boolean => {
         try {
+            // First check if the active tab is "processo" - this check is now moved into the function
+            // and the actual render condition outside should not include activeTab check anymore
+            if (activeTab !== "processo") {
+                return false;
+            }
+
+            // Check if item is provided and has id_tipo_inspecao equal to 4
+            if (!item || item.id_tipo_inspecao !== 4) {
+                return false;
+            }
+
             const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
             if (!userDataStr) {
-                return true;
+                return false;
             }
 
             const userData = JSON.parse(userDataStr);
 
-
+            // Check if userData has perfil_inspecao field
             if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
-                return true;
+                return false;
             }
 
             const perfilInspecao = userData.perfil_inspecao;
@@ -185,33 +196,14 @@ export default function InspecoesPage() {
                 hasPerfilO = perfilInspecao.includes('O');
             }
 
-            if (hasPerfilO) {
-                return true;
-            }
-
-            if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
-                return false;
-            }
-
-            const encaminharFicha = userData.encaminhar_ficha;
-
-
-            let hasEncaminhar4 = false;
-            if (typeof encaminharFicha === 'string') {
-                hasEncaminhar4 = encaminharFicha.includes('4');
-            } else if (Array.isArray(encaminharFicha)) {
-                hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
-            } else if (typeof encaminharFicha === 'number') {
-                hasEncaminhar4 = encaminharFicha === 4;
-            }
-
-            return hasEncaminhar4;
+            // Only return true if user has perfil_inspecao 'O'
+            return hasPerfilO;
 
         } catch (error) {
             console.error('Erro ao verificar permissão de não conformidade:', error);
             return false;
         }
-    }, []);
+    }, [activeTab]);
     const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
         e.stopPropagation();
 
@@ -731,11 +723,7 @@ export default function InspecoesPage() {
                                             {item.obs_criacao}
                                         </span>
                                     )}
-                                </div>
-                                {activeTab === "processo" && (() => {
-                                    const canShow = canRegisterNaoConformidade();
-                                    return canShow;
-                                })() && (<div className="flex-shrink-0">
+                                </div>                                {canRegisterNaoConformidade(item) && (<div className="flex-shrink-0">
                                     <button
                                         onClick={(e) => handleNaoConformidadeClick(e, item)}
                                         className="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer"
@@ -744,7 +732,7 @@ export default function InspecoesPage() {
                                         Registrar NC
                                     </button>
                                 </div>
-                                    )}                            </div>
+                                )}                            </div>
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         </motion.div>
                     );
@@ -853,20 +841,19 @@ export default function InspecoesPage() {
                                 </p>
                                 <p className="text-xs font-medium text-gray-900 line-clamp-1">
                                     {item.obs_criacao || ""}
-                                </p>
-                            </div>                            {activeTab === "processo" && canRegisterNaoConformidade() && (
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>
-                                            {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
-                                        </span>
-                                    </button>
-                                </div>
-                            )}
+                                </p>                            </div>                            {canRegisterNaoConformidade(item) && (
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                            <AlertTriangle className="h-3 w-3" />
+                                            <span>
+                                                {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
                         </div>                    </div>
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />

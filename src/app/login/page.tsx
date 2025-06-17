@@ -78,9 +78,7 @@ export default function LoginPage() {
         if (!rememberMe) {
             localStorage.removeItem('rememberedUsername');
         }
-    };
-
-    const handleOperatorAccess = async (e: React.MouseEvent) => {
+    }; const handleOperatorAccess = async (e: React.MouseEvent) => {
         e.preventDefault();
 
         // Definindo as credenciais do operador
@@ -96,7 +94,7 @@ export default function LoginPage() {
             await login({
                 username: operatorUsername,
                 password: operatorPassword,
-                remember: false
+                remember: true // O login do operador sempre salvará os dados no localStorage
             });
         } catch {
             console.error("Login como operador error");

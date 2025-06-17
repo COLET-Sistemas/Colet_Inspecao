@@ -37,6 +37,7 @@ interface ApiInspectionItem {
     nome_pessoa_conclusao?: string | null;
     id_ficha_origem?: number | null;
     tipo_inspecao: string;
+    id_tipo_inspecao?: number;
     tipo_acao?: string | null;
     produto?: string | null;
 }
@@ -69,6 +70,7 @@ interface InspectionItem {
     nome_pessoa_conclusao?: string | null;
     id_ficha_origem?: number | null;
     tipo_inspecao: string;
+    id_tipo_inspecao?: number;
     tipo_acao?: string | null;
     produto?: string | null;
 }
@@ -249,6 +251,7 @@ class InspecaoService {
             nome_pessoa_conclusao: apiItem.nome_pessoa_conclusao,
             id_ficha_origem: apiItem.id_ficha_origem,
             tipo_inspecao: apiItem.tipo_inspecao || '',
+            id_tipo_inspecao: apiItem.id_tipo_inspecao || 0,
             tipo_acao: apiItem.tipo_acao || null,
             produto: apiItem.produto || null,
         };
@@ -299,10 +302,9 @@ class InspecaoService {
             console.error(`Erro ao buscar especificações da ficha ${id}:`, error);
             throw error;
         }
-    }
-
-    /**
+    }    /**
      * Atualiza uma especificação da inspeção
+     * Pode ser usada sem autenticação
      */    async updateInspectionSpecification(idEspecificacao: number, data: {
         valor_encontrado: number | string;
         conforme: boolean | null;
@@ -357,9 +359,7 @@ class InspecaoService {
             console.error('Erro ao buscar estatísticas:', error);
             throw error;
         }
-    }
-
-    /**
+    }    /**
      * Inicia uma inspeção
      * @param idFichaInspecao - ID da ficha de inspeção
      */
@@ -370,7 +370,7 @@ class InspecaoService {
                 throw new Error("URL da API não está configurada");
             }
 
-            // Primeiro tenta buscar o código da pessoa dentro de userData
+            // Tenta obter o código da pessoa, mas não é mais obrigatório
             let codigo_pessoa = null;
             const userDataStr = localStorage.getItem("userData");
             if (userDataStr) {
@@ -389,7 +389,7 @@ class InspecaoService {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
             }
 
-            // Convertendo o código de pessoa para número
+            // Convertendo o código de pessoa para número (pode ser null)
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
@@ -400,7 +400,7 @@ class InspecaoService {
                 body: JSON.stringify({
                     id_ficha_inspecao: idFichaInspecao,
                     acao: "iniciar",
-                    codigo_pessoa: codigo_pessoa_num
+                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
                 })
             });
 
@@ -446,9 +446,7 @@ class InspecaoService {
             console.error('Erro ao autenticar colaborador:', error);
             throw error;
         }
-    }
-
-    /**
+    }    /**
      * Encaminha uma ficha de inspeção para o CQ (Controle de Qualidade)
      * @param idFichaInspecao - ID da ficha de inspeção
      */
@@ -459,7 +457,7 @@ class InspecaoService {
                 throw new Error("URL da API não está configurada");
             }
 
-            // Primeiro tenta buscar o código da pessoa dentro de userData
+            // Tenta obter o código da pessoa, mas não é mais obrigatório
             let codigo_pessoa = null;
             const userDataStr = localStorage.getItem("userData");
             if (userDataStr) {
@@ -478,7 +476,7 @@ class InspecaoService {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
             }
 
-            // Convertendo o código de pessoa para número
+            // Convertendo o código de pessoa para número (pode ser null)
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
@@ -489,7 +487,7 @@ class InspecaoService {
                 body: JSON.stringify({
                     id_ficha_inspecao: idFichaInspecao,
                     acao: "encaminhar",
-                    codigo_pessoa: codigo_pessoa_num
+                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
                 })
             });
 
