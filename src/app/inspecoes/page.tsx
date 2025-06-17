@@ -163,8 +163,6 @@ export default function InspecoesPage() {
         }
     }, []); const canRegisterNaoConformidade = useCallback((item?: InspectionItem): boolean => {
         try {
-            // First check if the active tab is "processo" - this check is now moved into the function
-            // and the actual render condition outside should not include activeTab check anymore
             if (activeTab !== "processo") {
                 return false;
             }
@@ -195,8 +193,6 @@ export default function InspecoesPage() {
             } else if (Array.isArray(perfilInspecao)) {
                 hasPerfilO = perfilInspecao.includes('O');
             }
-
-            // Only return true if user has perfil_inspecao 'O'
             return hasPerfilO;
 
         } catch (error) {
@@ -209,7 +205,6 @@ export default function InspecoesPage() {
 
         const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         if (!userDataStr) {
-            // No userData, open login modal in non-conformity context
             setSelectedInspection(item);
             setIsNaoConformidadeContext(true);
             setIsModalOpen(true);
@@ -440,12 +435,38 @@ export default function InspecoesPage() {
 
         // Atualizar a lista de inspeções após o registro bem-sucedido
         refreshActiveTab();
-    }, [refreshActiveTab]);
-
-    const handleInspectionClick = useCallback((item: InspectionItem) => {
+    }, [refreshActiveTab]); const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 
+        // Verificar se o usuário tem perfil_inspecao igual a "O"
+        const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+        let hasPerfilO = false;
+
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                if (userData && userData.perfil_inspecao) {
+                    if (typeof userData.perfil_inspecao === 'string') {
+                        hasPerfilO = userData.perfil_inspecao.includes('O');
+                    } else if (Array.isArray(userData.perfil_inspecao)) {
+                        hasPerfilO = userData.perfil_inspecao.includes('O');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar perfil de inspeção:', error);
+            }
+        }
+
+        // Se o usuário tem perfil_inspecao "O", sempre abre o modal de login
+        if (hasPerfilO) {
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(false); // Contexto normal
+            setIsModalOpen(true);
+            return;
+        }
+
+        // Fluxo normal
         if (hasData) {
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
@@ -453,7 +474,7 @@ export default function InspecoesPage() {
             setIsNaoConformidadeContext(false); // Contexto normal
             setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]);    // Função para fechar o modal e resetar estados
+    }, [router, checkColaboradorData]);// Função para fechar o modal e resetar estados
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
         setIsNaoConformidadeContext(false);
