@@ -51,7 +51,8 @@ export default function InspecoesPage() {
     const [inspectionData, setInspectionData] = useState<Record<string, InspectionItem[]>>({});
     const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [lastRefresh, setLastRefresh] = useState(new Date()); const [isModalOpen, setIsModalOpen] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
     const [hasColaboradorData, setHasColaboradorData] = useState(false);
     const [isNaoConformidadeContext, setIsNaoConformidadeContext] = useState(false);
@@ -100,7 +101,9 @@ export default function InspecoesPage() {
 
     // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);    // Atualiza o estado do layout quando a tela for redimensionada
+    const [isPortrait, setIsPortrait] = useState(false);
+
+    // Atualiza o estado do layout quando a tela for redimensionada
     useEffect(() => {
         // Handler para atualizar os estados de layout baseados no tamanho da tela
         const handleResize = () => {
@@ -157,11 +160,12 @@ export default function InspecoesPage() {
             }
 
             return false;
-        } catch (error) {
-            console.error('Erro ao verificar dados do colaborador:', error);
+        } catch {
             return false;
         }
-    }, []); const canRegisterNaoConformidade = useCallback((item?: InspectionItem): boolean => {
+    }, []);
+
+    const canRegisterNaoConformidade = useCallback((item?: InspectionItem): boolean => {
         try {
             if (activeTab !== "processo") {
                 return false;
@@ -197,9 +201,8 @@ export default function InspecoesPage() {
                 hasPerfilO = perfilInspecao.includes('O');
             }
             return hasPerfilO;
-
-        } catch (error) {
-            console.error('Erro ao verificar permissão de não conformidade:', error);
+        } catch {
+            // Silent error handling - returning false if unable to verify permission
             return false;
         }
     }, [activeTab]);
@@ -236,9 +239,7 @@ export default function InspecoesPage() {
                 hasPerfilO = perfilInspecao.includes('O');
             }
 
-            if (hasPerfilO) {
-                // If has 'O' in perfil_inspecao, open login modal for verification
-                console.log("perfil_inspecao has 'O', opening modal for login verification");
+            if (hasPerfilO) {                // If has 'O' in perfil_inspecao, open login modal for verification
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
@@ -247,7 +248,6 @@ export default function InspecoesPage() {
 
             // If perfil_inspecao doesn't have 'O', check encaminhar_ficha for direct access
             if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
-                console.log("No encaminhar_ficha field, opening modal");
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
@@ -263,19 +263,13 @@ export default function InspecoesPage() {
                 hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
             } else if (typeof encaminharFicha === 'number') {
                 hasEncaminhar4 = encaminharFicha === 4;
-            }
-
-            if (hasEncaminhar4) {
+            } if (hasEncaminhar4) {
                 // User has direct permission through encaminhar_ficha, proceed with registration
-                console.log("User has encaminhar_ficha permission, proceeding with registration for item:", item.id_ficha_inspecao);
                 // TODO: Implement non-conformity registration logic here
             } else {
                 // No permission, should not happen as button shouldn't be visible
-                console.log("No permission found, this shouldn't happen");
             }
-
-        } catch (error) {
-            console.error('Erro ao processar userData:', error);
+        } catch {
             // In case of error parsing userData, open login modal in non-conformity context
             setSelectedInspection(item);
             setIsNaoConformidadeContext(true);
@@ -285,7 +279,6 @@ export default function InspecoesPage() {
 
     const formatDateTime = useCallback((dateString: string) => {
         if (!dateString) return 'N/A';
-
 
         if (dateString.includes('/')) {
             return dateString;
@@ -320,15 +313,16 @@ export default function InspecoesPage() {
                 return parsedData.selectedPostos;
             }
             return [];
-        } catch (error) {
-            console.error("Erro ao obter postos do localStorage:", error);
+        } catch {
+            // Silent error handling - returning empty array if unable to access postos
             return [];
         }
-    }, []); const fetchTabData = useCallback(async (tabId: string) => {
+    }, []);
+
+    const fetchTabData = useCallback(async (tabId: string) => {
         const postos = getPostosFromLocalStorage();
 
-        let hasPerfilQ = false;
-        try {
+        let hasPerfilQ = false; try {
             const userDataStr = localStorage.getItem('userData');
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
@@ -340,8 +334,8 @@ export default function InspecoesPage() {
                     }
                 }
             }
-        } catch (error) {
-            console.error('Erro ao verificar perfil de inspeção:', error);
+        } catch {
+            // Silent error handling for profile verification
         }
 
         if (postos.length === 0 && !hasPerfilQ) {
@@ -375,8 +369,8 @@ export default function InspecoesPage() {
         try {
             await fetchTabData(activeTab);
             setLastRefresh(new Date());
-        } catch (error) {
-            console.error("Erro ao atualizar dados:", error);
+        } catch {
+            // Silent error handling for data refresh
         } finally {
             setIsRefreshing(false);
         }
@@ -403,7 +397,9 @@ export default function InspecoesPage() {
             };
             startAutoRefresh();
         }, IDLE_TIME);
-    }, [refreshActiveTab]); const handleManualRefresh = useCallback(() => {
+    }, [refreshActiveTab]);
+
+    const handleManualRefresh = useCallback(() => {
         refreshActiveTab();
         resetIdleTimer();
     }, [refreshActiveTab, resetIdleTimer]);
@@ -438,10 +434,7 @@ export default function InspecoesPage() {
             encaminhar_ficha: String(data.encaminhar_ficha)
         });
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]);
-    const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
-        console.log(`Registrando ${quantidade} não conformidade(s) para inspeção ${inspection.id_ficha_inspecao}`);
-
+    }, [router]); const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         // Mostrar mensagem de sucesso
         setAlertMessage(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
         setAlertType("success");
@@ -452,7 +445,9 @@ export default function InspecoesPage() {
 
         // Atualizar a lista de inspeções após o registro bem-sucedido
         refreshActiveTab();
-    }, [refreshActiveTab]); const handleInspectionClick = useCallback((item: InspectionItem) => {
+    }, [refreshActiveTab]);
+
+    const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 
@@ -470,8 +465,8 @@ export default function InspecoesPage() {
                         hasPerfilO = userData.perfil_inspecao.includes('O');
                     }
                 }
-            } catch (error) {
-                console.error('Erro ao verificar perfil de inspeção:', error);
+            } catch {
+                // Silent error handling for profile verification
             }
         }
 
@@ -492,6 +487,7 @@ export default function InspecoesPage() {
             setIsModalOpen(true);
         }
     }, [router, checkColaboradorData]);
+
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
         setIsNaoConformidadeContext(false);
@@ -507,7 +503,9 @@ export default function InspecoesPage() {
     // Função para fechar alertas
     const handleAlertDismiss = useCallback(() => {
         setAlertMessage(null);
-    }, []); useEffect(() => {
+    }, []);
+
+    useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
@@ -519,7 +517,9 @@ export default function InspecoesPage() {
             }
         };
         loadInitialData();
-    }, [fetchTabData, checkColaboradorData]); useEffect(() => {
+    }, [fetchTabData, checkColaboradorData]);
+
+    useEffect(() => {
         const handleActivity = () => {
             resetIdleTimer();
         };
@@ -543,7 +543,9 @@ export default function InspecoesPage() {
                 clearTimeout(autoRefreshTimerRef.current);
             }
         };
-    }, [resetIdleTimer]); const tabs: TabData[] = [
+    }, [resetIdleTimer]);
+
+    const tabs: TabData[] = [
         {
             id: "processo",
             label: "Inspeções de Processo",
@@ -663,8 +665,8 @@ export default function InspecoesPage() {
                             bgColorClass = "border-amber-200 bg-amber-50/80 hover:border-amber-300 hover:bg-amber-50";
                             dateTextColorClass = "text-amber-600 font-bold !text-amber-600";
                         }
-                    } catch (error) {
-                        console.error("Erro ao processar data prevista:", error);
+                    } catch {
+                        // Silent error handling for date processing
                     }
                 } if (isCompactLayout || isPortrait) {
                     return (
@@ -908,6 +910,7 @@ export default function InspecoesPage() {
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
             </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
                 <PageHeader
                     title="Inspeções"
@@ -939,7 +942,9 @@ export default function InspecoesPage() {
                         </span>
                     </button>
                 </div>
-            </div>            {/* Colaborador Login Modal */}
+            </div>
+
+            {/* Colaborador Login Modal */}
             {selectedInspection && (
                 <ColaboradorLoginModal
                     isOpen={isModalOpen}
@@ -959,7 +964,9 @@ export default function InspecoesPage() {
                 onDismiss={handleAlertDismiss}
                 autoDismiss={true}
                 dismissDuration={5000}
-            /><div className="mt-1 sm:mt-2">
+            />
+
+            <div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
                         {tabs.map((tab) => (
@@ -999,7 +1006,10 @@ export default function InspecoesPage() {
                             </button>
                         ))}
                     </nav>
-                </div>            </div>            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
+                </div>
+            </div>
+
+            <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
                 <div className="w-full">
                     {renderTabContent()}
                 </div>
