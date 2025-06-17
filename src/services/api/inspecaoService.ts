@@ -202,10 +202,35 @@ class InspecaoService {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 throw new Error("URL da API não está configurada");
-            }            // Se for array, junta com vírgula; se já for string, usa diretamente
-            const postosParam = Array.isArray(codigosPostos)
-                ? codigosPostos.join(',')
-                : codigosPostos;
+            }
+            // Verificar se o usuário tem a letra Q no perfil_inspecao
+            let hasPerfilQ = false;
+            try {
+                const userDataStr = localStorage.getItem("userData");
+                if (userDataStr) {
+                    const userData = JSON.parse(userDataStr);
+                    if (userData && userData.perfil_inspecao) {
+                        if (typeof userData.perfil_inspecao === 'string') {
+                            hasPerfilQ = userData.perfil_inspecao.includes('Q');
+                        } else if (Array.isArray(userData.perfil_inspecao)) {
+                            hasPerfilQ = userData.perfil_inspecao.some((p: string) => p.includes('Q'));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar perfil de inspeção:', error);
+            }            // Se o usuário tem perfil Q, usar apenas o posto CQ, caso contrário usar os postos originais
+            let postos: string[];
+            if (hasPerfilQ) {
+                // Se tem perfil Q, usar apenas o posto CQ (ignorando os postos vinculados)
+                postos = ['CQ'];
+            } else {
+                // Se não tem perfil Q, usar os postos originais
+                postos = Array.isArray(codigosPostos) ? codigosPostos : codigosPostos.split(',').map(p => p.trim());
+            }
+
+            // Junta os postos com vírgula
+            const postosParam = postos.join(',');
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao?codigo_posto=${postosParam}&aba=${aba}`, {
                 method: 'GET'

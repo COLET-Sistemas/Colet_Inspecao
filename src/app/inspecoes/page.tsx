@@ -167,12 +167,15 @@ export default function InspecoesPage() {
                 return false;
             }
 
-            // Check if item is provided and has id_tipo_inspecao equal to 4
             if (!item || item.id_tipo_inspecao !== 4) {
                 return false;
             }
 
-            const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+            if (!item || item.origem == "Não Conformidade") {
+                return false;
+            }
+
+            const userDataStr = localStorage.getItem('userData');
             if (!userDataStr) {
                 return false;
             }
@@ -321,11 +324,30 @@ export default function InspecoesPage() {
             console.error("Erro ao obter postos do localStorage:", error);
             return [];
         }
-    }, []);
+    }, []); const fetchTabData = useCallback(async (tabId: string) => {
+        const postos = getPostosFromLocalStorage();
 
-    const fetchTabData = useCallback(async (tabId: string) => {
-        const postos = getPostosFromLocalStorage(); if (postos.length === 0) {
-            console.warn("Nenhum posto encontrado no localStorage");
+        // Só mostrar alerta de postos não encontrados se o usuário não tiver perfil Q
+        let hasPerfilQ = false;
+        try {
+            const userDataStr = localStorage.getItem('userData');
+            if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                if (userData && userData.perfil_inspecao) {
+                    if (typeof userData.perfil_inspecao === 'string') {
+                        hasPerfilQ = userData.perfil_inspecao.includes('Q');
+                    } else if (Array.isArray(userData.perfil_inspecao)) {
+                        hasPerfilQ = userData.perfil_inspecao.includes('Q');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao verificar perfil de inspeção:', error);
+        }
+
+        if (postos.length === 0 && !hasPerfilQ) {
+            setAlertMessage("Nenhum posto de trabalho encontrado. Por favor, selecione pelo menos um posto.");
+            setAlertType("info");
             return [];
         }
 
@@ -415,15 +437,11 @@ export default function InspecoesPage() {
             funcao: data.funcao,
             registrar_ficha: String(data.registrar_ficha),
             encaminhar_ficha: String(data.encaminhar_ficha)
-        });        // Redirect to inspection details page with all required data
+        });
         router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
-    }, [router]);    // Handler para sucesso de não conformidade
+    }, [router]);
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         console.log(`Registrando ${quantidade} não conformidade(s) para inspeção ${inspection.id_ficha_inspecao}`);
-
-        // A lógica de envio do post foi movida para o QuantidadeInputModal
-        // que já recebe os dados necessários da inspeção (numero_ordem, referencia, etc.)
-        // e realiza o POST para /inspecao/fichas_inspecao
 
         // Mostrar mensagem de sucesso
         setAlertMessage(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
