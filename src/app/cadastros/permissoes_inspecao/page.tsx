@@ -415,14 +415,14 @@ export default function PermissoesInspecaoPage() {
     const parseInspecaoIds = useCallback(
         (inspecoesStr: string | number) => {
             if (inspecoesStr === null || inspecoesStr === undefined || !tiposInspecao.length) return [];
-            
+
             // Converter para string e depois para array de caracteres individuais
             const inspecoesString = String(inspecoesStr);
             const idsArray = Array.from(inspecoesString);
-            
+
             return idsArray.map((id) => {                // Garantir que a comparação funcione independentemente de string ou número
                 const tipoInspecao = tiposInspecao.find((tipo) => String(tipo.id) === String(id));
-                
+
                 return {
                     id,
                     descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`,
@@ -638,7 +638,7 @@ export default function PermissoesInspecaoPage() {
                         onClose={() => {
                             setIsEditModalOpen(false);
                             setCurrentPermissao(null);
-                        }}                        permissaoInspecao={{
+                        }} permissaoInspecao={{
                             operador: String(currentPermissao.operador),
                             nome_operador: currentPermissao.nome_operador,
                             situacao: currentPermissao.situacao as "A" | "I",
