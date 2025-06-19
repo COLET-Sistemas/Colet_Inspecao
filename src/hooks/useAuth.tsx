@@ -31,26 +31,8 @@ interface LoginCredentials {
 }
 
 interface AuthError {
-    message: string;
-    field?: string;
+    message: string; field?: string;
 }
-
-// Função para codificar senha usando cifra XOR
-const encodePassword = (password: string) => {
-    const key = Math.floor(Math.random() * 255);
-    const hexResult = [];
-    let result = "";
-    hexResult.push((key >> 4).toString(16).toUpperCase());
-    hexResult.push((key & 0xf).toString(16).toUpperCase());
-    result += hexResult.join("");
-    for (let i = 0; i < password.length; i++) {
-        const converted = password.charCodeAt(i) ^ key;
-        hexResult[0] = (converted >> 4).toString(16).toUpperCase();
-        hexResult[1] = (converted & 0xf).toString(16).toUpperCase();
-        result += hexResult.join("");
-    }
-    return result;
-};
 
 interface AuthContextType {
     user: User | null;
@@ -59,7 +41,7 @@ interface AuthContextType {
     error: AuthError | null;
     login: (credentials: LoginCredentials) => Promise<boolean>;
     logout: () => Promise<void>;
-    checkAuth: () => boolean;
+    checkAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,142 +64,153 @@ function useProvideAuth(): AuthContextType {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [error, setError] = useState<AuthError | null>(null);
     const [user, setUser] = useState<User | null>(null);
-    const router = useRouter();
+    const router = useRouter(); const checkAuth = useCallback(async (): Promise<boolean> => {
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                credentials: 'include'
+            });
 
-    const checkAuth = useCallback((): boolean => {
-        return (
-            localStorage.getItem("isAuthenticated") === "true" ||
-            sessionStorage.getItem("isAuthenticated") === "true"
-        );
-    }, []);
+            if (response.ok) {
+                const data = await response.json();
+                return data.isAuthenticated;
+            }
 
-    const getUserData = useCallback((): User | null => {
-        const userDataStr = localStorage.getItem("userData") || sessionStorage.getItem("userData");
-        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-        if (userDataStr) {
-            try {
-                return JSON.parse(userDataStr);
-            } catch {
-                return null;
-            }
-        } else if (userStr) {
-            try {
-                return JSON.parse(userStr);
-            } catch {
-                return null;
-            }
+            return false;
+        } catch {
+            return false;
         }
-        return null;
-    }, []);
+    }, []); const getUserData = useCallback(async (): Promise<User | null> => {
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                credentials: 'include'
+            });
 
-    // Listener para atualizar o contexto quando o localStorage mudar
+            if (response.ok) {
+                const data = await response.json();
+                return data.isAuthenticated ? data.user : null;
+            }
+
+            return null;
+        } catch {
+            return null;
+        }
+    }, []);    // Listener para atualizar o contexto quando necessário
     useEffect(() => {
-        const handleStorageChange = () => {
-            const authStatus = checkAuth();
+        const initAuth = async () => {
+            const authStatus = await checkAuth();
             setIsAuthenticated(authStatus);
             if (authStatus) {
-                setUser(getUserData());
+                // Tenta obter os dados atualizados do usuário da API
+                const userData = await getUserData();
+                if (userData) {
+                    setUser(userData);
+                    // Atualiza o localStorage com os dados mais recentes
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                } else {
+                    // Se não conseguir obter da API, tenta usar dados do localStorage
+                    const storedUserData = localStorage.getItem('userData');
+                    if (storedUserData) {
+                        try {
+                            const parsedUserData = JSON.parse(storedUserData);
+                            setUser(parsedUserData);
+                        } catch (e) {
+                            console.error('Erro ao analisar dados do usuário do localStorage:', e);
+                            localStorage.removeItem('userData');
+                        }
+                    }
+                }
+            } else {
+                // Se não estiver autenticado, certifica-se de que os dados de usuário sejam removidos
+                localStorage.removeItem('userData');
+                setUser(null);
             }
+            setIsLoading(false);
         };
 
-        // Adiciona listener para mudanças no localStorage
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [checkAuth, getUserData]);
-
-    useEffect(() => {
-        const authStatus = checkAuth();
-        setIsAuthenticated(authStatus);
-        if (authStatus) {
-            setUser(getUserData());
-        }
-        setIsLoading(false);
-    }, [checkAuth, getUserData]);
-
-    const login = useCallback(
+        initAuth();
+    }, [checkAuth, getUserData]); const login = useCallback(
         async ({ username, password, remember }: LoginCredentials): Promise<boolean> => {
             if (isLoading) return false;
             setIsLoading(true);
             setError(null);
+
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 setError({ message: "API não configurada. Configure o endereço da API primeiro." });
                 setIsLoading(false);
                 return false;
             }
+
             try {
-                const senha_cripto = encodePassword(password);
-                const response = await fetch(`${apiUrl}/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario: username, senha_cripto }),
-                }); const data = await response.json(); if (response.status === 200) {
-                    if (data.success === undefined || data.success) {
-                        const userData: User = {
-                            username: username,
-                            name: data.nome || data.usuario || username,
-                            permissao: data.permissao || "",
-                            perfil_inspecao: data.perfil_inspecao || "",
-                            codigo_pessoa: data.codigo_pessoa || "",
-                            encaminhar_ficha: data.encaminhar_ficha || "",
-                            registrar_ficha: data.registrar_ficha || "",
-                        };
-                        // Sempre salva no localStorage se for o operador, independente do remember
-                        if (remember || username === "operador") {
-                            localStorage.setItem("isAuthenticated", "true");
-                            localStorage.setItem("authToken", data.token || "");
-                            localStorage.setItem("userData", JSON.stringify(userData));
-                        } else {
-                            sessionStorage.setItem("isAuthenticated", "true");
-                            sessionStorage.setItem("authToken", data.token || "");
-                            sessionStorage.setItem("userData", JSON.stringify(userData));
-                        }
-                        setIsAuthenticated(true);
-                        setUser(userData);
-                        setIsLoading(false);
-                        router.push("/dashboard");
-                        return true;
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-url': apiUrl
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        remember
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    setIsAuthenticated(true);
+                    setUser(data.user);
+                    setIsLoading(false);
+
+                    // Salva username se remember for true
+                    if (remember) {
+                        localStorage.setItem('rememberedUsername', username);
                     } else {
-                        setError({
-                            message:
-                                data.message || "Credenciais inválidas. Por favor, verifique seu usuário e senha.",
-                        });
+                        localStorage.removeItem('rememberedUsername');
                     }
+
+                    // Salva os dados do usuário no localStorage
+                    if (data.user) {
+                        localStorage.setItem('userData', JSON.stringify(data.user));
+                    }
+
+                    router.push("/dashboard");
+                    return true;
                 } else {
-                    if (response.status === 401) {
-                        setError({ message: "Usuário ou senha incorretos", field: "password" });
-                    } else {
-                        setError({
-                            message:
-                                data.mensagem ||
-                                `Falha na autenticação (${response.status}). Por favor, tente novamente.`,
-                        });
-                    }
+                    setError({
+                        message: data.message || "Credenciais inválidas. Por favor, verifique seu usuário e senha.",
+                        field: response.status === 401 ? "password" : undefined
+                    });
                 }
-            } catch {
+            } catch (error) {
+                console.error('Erro no login:', error);
                 setError({ message: "Erro ao conectar ao servidor. Verifique sua conexão e tente novamente." });
             }
+
             setIsLoading(false);
             return false;
         },
         [router, isLoading]
-    );
-
-    const logout = useCallback(async (): Promise<void> => {
+    ); const logout = useCallback(async (): Promise<void> => {
         setIsLoading(true);
-        localStorage.removeItem("isAuthenticated");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userName");
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userData");
-        sessionStorage.removeItem("isAuthenticated");
-        sessionStorage.removeItem("user");
-        sessionStorage.removeItem("userName");
-        sessionStorage.removeItem("authToken");
-        sessionStorage.removeItem("userData");
+
+        try {
+            // Chama a API de logout para limpar cookies HttpOnly
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Erro ao fazer logout:', error);
+        }
+
+        // Limpa dados locais (não-HttpOnly)
+        localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('userData'); // Remover os dados do usuário do localStorage
+
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);

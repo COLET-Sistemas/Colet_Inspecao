@@ -3,15 +3,23 @@
 // Função para tratar respostas da API e verificar erro 401
 export const handleApiResponse = async (response: Response): Promise<Response> => {
     if (response.status === 401) {
-        // Limpa dados de autenticação
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
+        // Faz logout via API para limpar cookies HttpOnly
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Erro ao fazer logout:', error);
+        }
 
         // Armazena mensagem de sessão expirada para exibir na tela de login
-        sessionStorage.setItem(
-            'authError',
-            'Sua sessão expirou. Faça login novamente para continuar.'
-        );
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(
+                'authError',
+                'Sua sessão expirou. Faça login novamente para continuar.'
+            );
+        }
 
         // Redireciona para a página de login
         window.location.href = '/login';
@@ -23,27 +31,31 @@ export const handleApiResponse = async (response: Response): Promise<Response> =
     return response;
 };
 
-// Função utilitária para requisições fetch com tratamento de 401 e token automático
+// Função utilitária para requisições fetch com tratamento de 401 e cookies automático
 export const fetchWithAuth = async (
     url: string,
     options: RequestInit = {}
 ): Promise<Response> => {
-    // Obtém o token de autenticação
-    const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    const apiUrl = localStorage.getItem("apiUrl");
 
+    if (!apiUrl) {
+        throw new Error('API URL não configurada');
+    }
 
-    // Prepara os headers com o token de autenticação
+    // Prepara os headers para o proxy
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        ...options.headers,
-        ...(authToken && { 'Token': authToken })
+        'x-api-url': apiUrl,
+        'x-target-path': url.replace(apiUrl, ''), // Remove a base URL para obter apenas o path
+        ...options.headers
     };
 
     try {
-        // Faz a requisição com os headers atualizados
-        const response = await fetch(url, {
+        // Faz a requisição através do proxy
+        const response = await fetch('/api/proxy', {
             ...options,
-            headers
+            headers,
+            credentials: 'include' // Inclui cookies HttpOnly automaticamente
         });
 
         return handleApiResponse(response);
