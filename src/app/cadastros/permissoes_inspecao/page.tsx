@@ -12,7 +12,7 @@ import { Tooltip } from "@/components/ui/cadastros/Tooltip";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { getPermissoesInspecao } from "@/services/api/permissaoInspecaoService";
 import { getTiposInspecao } from "@/services/api/tipoInspecaoService";
-import { PermissaoInspecao as ApiPermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
+import { PermissaoInspecao } from "@/types/cadastros/permissaoInspecao";
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { motion } from "framer-motion";
 import { IterationCcw, Pencil, SlidersHorizontal } from "lucide-react";
@@ -23,8 +23,21 @@ interface AlertState {
     type: "success" | "error" | "warning" | "info";
 }
 
-interface PermissaoInspecaoExtended extends ApiPermissaoInspecao {
+// Definindo interface para API
+interface ApiPermissaoInspecao {
+    operador: string | number;
+    nome_operador: string;
+    situacao: string;
+    inspecoes: string | number;
+}
+
+// Interface para uso interno na página, com conversões dos tipos
+interface PermissaoInspecaoExtended {
     id: string;
+    operador: string;
+    nome_operador: string;
+    situacao: string;
+    inspecoes: string;
 }
 
 // Interface para filtro de permissão
@@ -206,16 +219,14 @@ export default function PermissoesInspecaoPage() {
                         String(item.operador).toLowerCase().includes(search.toLowerCase()) ||
                         String(item.nome_operador).toLowerCase().includes(search.toLowerCase())
                 );
-            }
-
-            // Filtrar por permissão
+            }            // Filtrar por permissão
             if (permissionFilter) {
                 if (permissionFilter === "com_permissao") {
-                    filtered = filtered.filter((item) => item.inspecoes.length > 0);
+                    filtered = filtered.filter((item) => String(item.inspecoes).length > 0 && item.inspecoes !== '0');
                 } else if (permissionFilter === "sem_permissao") {
-                    filtered = filtered.filter((item) => item.inspecoes.length === 0);
+                    filtered = filtered.filter((item) => String(item.inspecoes).length === 0 || item.inspecoes === '0');
                 } else {
-                    filtered = filtered.filter((item) => item.inspecoes.includes(permissionFilter));
+                    filtered = filtered.filter((item) => String(item.inspecoes).includes(permissionFilter));
                 }
             }
 
@@ -252,12 +263,13 @@ export default function PermissoesInspecaoPage() {
                     setIsLoading(false);
                     setIsRefreshing(false);
                     return;
-                }
-
-                // Mapear dados adicionando ID
+                }                // Mapear dados convertendo tipos para os formatos esperados
                 const mappedData: PermissaoInspecaoExtended[] = apiData.map((item) => ({
-                    ...item,
-                    id: item.operador,
+                    id: String(item.operador),
+                    operador: String(item.operador),
+                    nome_operador: item.nome_operador,
+                    situacao: item.situacao,
+                    inspecoes: String(item.inspecoes),
                 }));
 
                 setAllData(mappedData);
@@ -331,13 +343,13 @@ export default function PermissoesInspecaoPage() {
                     throw new Error(`Permissão com ID ${id} não foi encontrada`);
                 }
 
-                // Criar um novo objeto para evitar referências mutáveis
+                // Criar um novo objeto para evitar referências mutáveis e converter para a API
                 setCurrentPermissao({
                     operador: permissao.operador,
                     nome_operador: permissao.nome_operador,
                     situacao: permissao.situacao,
                     inspecoes: permissao.inspecoes,
-                });
+                } as unknown as PermissaoInspecao);
 
                 setIsEditModalOpen(true);
                 setNotification(`Iniciando edição da permissão para ${permissao.nome_operador}.`);
@@ -401,11 +413,16 @@ export default function PermissoesInspecaoPage() {
 
     // Função para encontrar os nomes dos tipos de inspeção a partir dos IDs
     const parseInspecaoIds = useCallback(
-        (inspecoesStr: string) => {
-            if (!inspecoesStr || !tiposInspecao.length) return [];
-            const idsArray = Array.from(inspecoesStr);
-            return idsArray.map((id) => {
-                const tipoInspecao = tiposInspecao.find((tipo) => tipo.id === id);
+        (inspecoesStr: string | number) => {
+            if (inspecoesStr === null || inspecoesStr === undefined || !tiposInspecao.length) return [];
+            
+            // Converter para string e depois para array de caracteres individuais
+            const inspecoesString = String(inspecoesStr);
+            const idsArray = Array.from(inspecoesString);
+            
+            return idsArray.map((id) => {                // Garantir que a comparação funcione independentemente de string ou número
+                const tipoInspecao = tiposInspecao.find((tipo) => String(tipo.id) === String(id));
+                
                 return {
                     id,
                     descricao: tipoInspecao?.descricao_tipo_inspecao || `Tipo ${id}`,
@@ -457,11 +474,9 @@ export default function PermissoesInspecaoPage() {
                 value: "sem_permissao",
                 label: "Usuários sem permissões",
             },
-        ];
-
-        // Mapear os tipos de inspeção para opções de filtro
+        ];        // Mapear os tipos de inspeção para opções de filtro
         const permissionOptions: PermissaoFilterOption[] = tiposInspecao.map((tipo) => ({
-            value: tipo.id,
+            value: String(tipo.id),
             label: tipo.descricao_tipo_inspecao,
         }));
 
@@ -503,7 +518,7 @@ export default function PermissoesInspecaoPage() {
                 permissionLabel = "Usuários sem permissões";
                 color = "bg-orange-100 text-orange-800";
             } else {
-                permissionLabel = tiposInspecao.find((tipo) => tipo.id === selectedPermissionFilter)?.descricao_tipo_inspecao;
+                permissionLabel = tiposInspecao.find((tipo) => String(tipo.id) === selectedPermissionFilter)?.descricao_tipo_inspecao;
             }
 
             filters.push({
@@ -623,8 +638,12 @@ export default function PermissoesInspecaoPage() {
                         onClose={() => {
                             setIsEditModalOpen(false);
                             setCurrentPermissao(null);
+                        }}                        permissaoInspecao={{
+                            operador: String(currentPermissao.operador),
+                            nome_operador: currentPermissao.nome_operador,
+                            situacao: currentPermissao.situacao as "A" | "I",
+                            inspecoes: String(currentPermissao.inspecoes),
                         }}
-                        permissaoInspecao={currentPermissao}
                         tiposInspecao={tiposInspecao}
                         onSuccess={handleEditSuccess}
                         onError={handleEditError}
