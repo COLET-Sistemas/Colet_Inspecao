@@ -114,13 +114,6 @@ export default function EspecificacoesPage() {
         loadSpecifications();
     }, [id]); // Só depende do ID
 
-    // Efeito para verificar mudanças no contexto de autenticação
-    useEffect(() => {
-        console.log('== Auth Context atualizado ==');
-        console.log('User data:', auth.user);
-        console.log('Código da pessoa:', auth.user?.codigo_pessoa);
-        console.log('=========================');
-    }, [auth.user]);
 
     // Função para refresh manual
     const handleRefresh = useCallback(async () => {
@@ -146,29 +139,6 @@ export default function EspecificacoesPage() {
         }
     }, [id]);
     const handleBack = useCallback(() => {
-        // Get userData from localStorage
-        const userDataStr = localStorage.getItem('userData');
-
-        if (userDataStr) {
-            try {
-                const userData = JSON.parse(userDataStr);
-
-                // Remove specific properties from userData
-                delete userData.codigo_pessoa;
-                delete userData.nome;
-                delete userData.encaminhar_ficha;
-                delete userData.registrar_ficha;
-                delete userData.funcao;
-                delete userData.setor;
-
-                // Save the modified userData back to localStorage
-                localStorage.setItem('userData', JSON.stringify(userData));
-            } catch (e) {
-                console.error('Error modifying userData in localStorage:', e);
-            }
-        }
-
-        // Go back to previous page
         router.back();
     }, [router]);
     const toggleObservationField = useCallback((specId: number) => {
@@ -228,21 +198,29 @@ export default function EspecificacoesPage() {
             const perfilInspecao = userData.perfil_inspecao || '';
 
             // Se local_inspecao for "*", todos os usuários podem editar
-            if (localInspecao === '*') return true;
+            if (localInspecao === "*") return true;
 
-            // Se local_inspecao for "Q", apenas usuários com "Q" no perfil podem editar
-            if (localInspecao === 'Q') return perfilInspecao.includes('Q');
-
-            // Se local_inspecao for "P", apenas usuários com "O" no perfil podem editar
-            if (localInspecao === 'P') return perfilInspecao.includes('O');
-
-            // Para qualquer outro caso, não tem permissão
-            return false;
+            // Verifica se o perfil do usuário corresponde ao local_inspecao
+            return localInspecao === perfilInspecao;
         } catch (error) {
-            console.error('Erro ao verificar permissão de edição:', error);
+            console.error('Erro ao verificar permissão:', error);
             return false;
         }
-    }, []);    // Função para obter mensagem de permissão baseada no local_inspecao
+    }, []);    // Função para atualizar valores em edição
+    const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | number | boolean) => {
+        setEditingValues((prev) => {
+            const currentSpec = prev[specId] || { valor_encontrado: '', observacao: '', conforme: null };
+            return {
+                ...prev,
+                [specId]: {
+                    ...currentSpec,
+                    [field]: value
+                }
+            };
+        });
+    }, []);
+
+    // Função para obter mensagem de permissão baseada no local_inspecao
     const getPermissionMessage = useCallback((localInspecao: string) => {
         if (localInspecao === 'Q') return "Requer perfil de Qualidade (Q) para editar";
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
@@ -647,24 +625,23 @@ export default function EspecificacoesPage() {
                         </div>
                     </div>
 
-                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">
-                        <button
-                            onClick={handleStartInspection}
-                            disabled={isInspectionStarted || isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving && !isForwardingToCQ ? (
-                                <>
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                    Iniciando...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckSquare className="h-4 w-4" />
-                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
-                                </>
-                            )}
-                        </button>
+                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">                        <button
+                        onClick={handleStartInspection}
+                        disabled={isInspectionStarted || isSaving}
+                        className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSaving && !isForwardingToCQ && !isConfirmingReceipt ? (
+                            <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Iniciando...
+                            </>
+                        ) : (
+                            <>
+                                <CheckSquare className="h-4 w-4" />
+                                {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
+                            </>
+                        )}
+                    </button>
 
                         {/* Botão de Encaminhar CQ - exibido com base em condições */}
                         {(() => {                            // Verificar se deve mostrar o botão de encaminhar CQ usando a mesma lógica do getCurrentUserProfile
