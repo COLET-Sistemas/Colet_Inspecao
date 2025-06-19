@@ -31,15 +31,29 @@ export default function EspecificacoesPage() {
     const auth = useAuth();
     const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
 
-    // Console log para verificar o uso do context API
-    console.log('=== Auth Context API na tela de Especificações ===');
-    console.log('Usuário está autenticado:', auth.isAuthenticated);
-    console.log('Dados do usuário:', auth.user);
-    console.log('Código da pessoa:', auth.user?.codigo_pessoa);
-    console.log('Perfil de inspeção:', auth.user?.perfil_inspecao);
-    console.log('Encaminhar ficha:', auth.user?.encaminhar_ficha);
-    console.log('Registrar ficha:', auth.user?.registrar_ficha);
-    console.log('======================================');
+    // Enhanced validation for codigo_pessoa in localStorage
+    useEffect(() => {
+        // Check userData in localStorage
+        const userDataStr = localStorage.getItem('userData');
+        let localStorageHasCodigoPessoa = false;
+
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                localStorageHasCodigoPessoa = !!userData?.codigo_pessoa;
+            } catch (e) {
+                console.error('Error parsing userData from localStorage:', e);
+            }
+        }
+
+        // If neither auth context nor localStorage has codigo_pessoa, redirect
+        if (!auth.user?.codigo_pessoa && !localStorageHasCodigoPessoa) {
+            console.log('Código de pessoa não encontrado no userData do localStorage, redirecionando...');
+            router.push('/inspecoes');
+            return;
+        }
+    }, [auth.user, router]);
+
     const [fichaDados, setFichaDados] = useState<{
         id_ficha_inspecao: number,
         qtde_produzida: number | null,
@@ -130,17 +144,34 @@ export default function EspecificacoesPage() {
         } finally {
             setLoading(false);
         }
-    }, [id]); const handleBack = useCallback(() => {
-        router.back();
-    }, [router]); const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | boolean | null) => {
-        setEditingValues(prev => ({
-            ...prev,
-            [specId]: {
-                ...prev[specId],
-                [field]: value
+    }, [id]);
+    const handleBack = useCallback(() => {
+        // Get userData from localStorage
+        const userDataStr = localStorage.getItem('userData');
+
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+
+                // Remove specific properties from userData
+                delete userData.codigo_pessoa;
+                delete userData.nome;
+                delete userData.encaminhar_ficha;
+                delete userData.registrar_ficha;
+                delete userData.funcao;
+                delete userData.setor;
+
+                // Save the modified userData back to localStorage
+                localStorage.setItem('userData', JSON.stringify(userData));
+            } catch (e) {
+                console.error('Error modifying userData in localStorage:', e);
             }
-        }));
-    }, []); const toggleObservationField = useCallback((specId: number) => {
+        }
+
+        // Go back to previous page
+        router.back();
+    }, [router]);
+    const toggleObservationField = useCallback((specId: number) => {
         // Verificação já é feita através do disabled no botão e é redundante aqui
         // pois o botão não será clicável se o usuário não tiver permissão
         setExpandedObservations(prev => {
