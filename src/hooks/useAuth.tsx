@@ -96,7 +96,7 @@ function useProvideAuth(): AuthContextType {
         } catch {
             return null;
         }
-    }, []);    // Listener para atualizar o contexto quando necessário
+    }, []);   
     useEffect(() => {
         const initAuth = async () => {
             const authStatus = await checkAuth();
@@ -195,9 +195,7 @@ function useProvideAuth(): AuthContextType {
         },
         [router, isLoading]
     ); const logout = useCallback(async (): Promise<void> => {
-        setIsLoading(true);
-
-        try {
+        setIsLoading(true); try {
             // Chama a API de logout para limpar cookies HttpOnly
             await fetch('/api/auth/logout', {
                 method: 'POST',
@@ -206,11 +204,8 @@ function useProvideAuth(): AuthContextType {
         } catch (error) {
             console.error('Erro ao fazer logout:', error);
         }
-
-        // Limpa dados locais (não-HttpOnly)
-        localStorage.removeItem('rememberedUsername');
-        localStorage.removeItem('userData'); // Remover os dados do usuário do localStorage
-
+      
+        localStorage.removeItem('userData'); 
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
