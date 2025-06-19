@@ -71,6 +71,10 @@ export default function InspecoesPage() {
     const lastActivityRef = useRef(Date.now());
     const initialLoadRef = useRef(false);
 
+    // State to store if user has Q permission
+    const [hasPerfilQ, setHasPerfilQ] = useState(false);
+    const [postosText, setPostosText] = useState<string>("");
+
     // Helper functions to compute display values
     const getSituacao = useCallback((situacao: string) => {
         switch (situacao) {
@@ -108,11 +112,8 @@ export default function InspecoesPage() {
 
     // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);
-
-    // Atualiza o estado do layout quando a tela for redimensionada
-    useEffect(() => {
-        // Handler para atualizar os estados de layout baseados no tamanho da tela
+    const [isPortrait, setIsPortrait] = useState(false);    // Atualiza o estado do layout quando a tela for redimensionada
+    useEffect(() => {        // Handler para atualizar os estados de layout baseados no tamanho da tela
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
             setIsPortrait(isInPortraitMode());
@@ -131,9 +132,7 @@ export default function InspecoesPage() {
             orientationHintTimer = setTimeout(() => {
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
-        }
-
-        // Cleanup
+        }        // Cleanup
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
@@ -142,9 +141,7 @@ export default function InspecoesPage() {
                 clearTimeout(orientationHintTimer);
             }
         };
-    }, [shouldUseCompactLayout, isInPortraitMode]);
-
-    const checkColaboradorData = useCallback((): boolean => {
+    }, [shouldUseCompactLayout, isInPortraitMode]); const checkColaboradorData = useCallback((): boolean => {
         try {
             // Check for codigo_pessoa in colaborador or userData
             const colaboradorData = localStorage.getItem('colaborador');
@@ -328,7 +325,40 @@ export default function InspecoesPage() {
             // Silent error handling - returning empty array if unable to access postos
             return [];
         }
-    }, []);
+    }, []);    // Function to determine subtitle based on user permissions and selected postos
+    const formatPostosSubtitle = useCallback((): string => {
+        try {
+            const userDataStr = localStorage.getItem('userData');
+            const userData = userDataStr ? JSON.parse(userDataStr) : null;
+            const perfil = userData?.perfil_inspecao;
+
+            const hasQ =
+                (typeof perfil === 'string' && perfil.includes('Q')) ||
+                (Array.isArray(perfil) && perfil.includes('Q'));
+
+            if (hasQ) {
+                setHasPerfilQ(true);
+                return "Todos os postos CQ";
+            }
+
+            const postos = getPostosFromLocalStorage();
+
+            if (postos.length === 0) {
+                return "Postos: Nenhum posto selecionado";
+            }
+
+            const limite = 8;
+            const exibidos = postos.slice(0, limite);
+            const restante = postos.length - limite;
+
+            const label = `Postos: ${exibidos.join(', ')}`;
+            return restante > 0 ? `${label} +${restante}` : label;
+
+        } catch {
+            return "Postos: -";
+        }
+    }, [getPostosFromLocalStorage]);
+
 
     const fetchTabData = useCallback(async (tabId: string) => {
         const postos = getPostosFromLocalStorage();
@@ -376,17 +406,40 @@ export default function InspecoesPage() {
         }
     }, [getPostosFromLocalStorage]);
 
+    // Initial data loading effect
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if (!initialLoadRef.current) {
+                initialLoadRef.current = true;
+                const initialTab = "processo";
+                await fetchTabData(initialTab);
+
+                const hasData = checkColaboradorData();
+                setHasColaboradorData(hasData);
+
+                // Set the postos text for the header
+                const subtitleText = formatPostosSubtitle();
+                setPostosText(subtitleText);
+            }
+        };
+        loadInitialData();
+    }, [fetchTabData, checkColaboradorData, formatPostosSubtitle]);
+
     const refreshActiveTab = useCallback(async () => {
         setIsRefreshing(true);
         try {
             await fetchTabData(activeTab);
             setLastRefresh(new Date());
+
+            // Update postos subtitle text when refreshing
+            const subtitleText = formatPostosSubtitle();
+            setPostosText(subtitleText);
         } catch {
             // Silent error handling for data refresh
         } finally {
             setIsRefreshing(false);
         }
-    }, [activeTab, fetchTabData]);
+    }, [activeTab, fetchTabData, formatPostosSubtitle]);
 
     const resetIdleTimer = useCallback(() => {
         lastActivityRef.current = Date.now();
@@ -523,21 +576,7 @@ export default function InspecoesPage() {
             case '9': return <AlertTriangle className="h-3.5 w-3.5 text-red-500" />;
             default: return <Clock className="h-3.5 w-3.5 text-gray-400" />;
         }
-    }, []);
-
-    useEffect(() => {
-        const loadInitialData = async () => {
-            if (!initialLoadRef.current) {
-                initialLoadRef.current = true;
-                const initialTab = "processo";
-                await fetchTabData(initialTab);
-
-                const hasData = checkColaboradorData();
-                setHasColaboradorData(hasData);
-            }
-        };
-        loadInitialData();
-    }, [fetchTabData, checkColaboradorData]);
+    }, []);    // Initial loading effect moved after formatPostosSubtitle definition
 
     useEffect(() => {
         const handleActivity = () => {
@@ -939,12 +978,10 @@ export default function InspecoesPage() {
             {/* Header com título e botões de ação */}
             <div className="hidden">
                 Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
+            </div>            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
                 <PageHeader
-                    title="Inspeções"
-                    subtitle="Gerencie todas as inspeções do sistema"
+                    title="Listas de Inspeções"
+                    subtitle={postosText}
                     showButton={false}
                 />
                 <div className="flex items-center gap-3">
@@ -952,25 +989,27 @@ export default function InspecoesPage() {
                         <span className="mr-1.5">Última atualização:</span>
                         <span className="font-medium text-gray-700">{lastRefresh.toLocaleTimeString('pt-BR')}</span>
                     </div>
+                    {/** Botão visível apenas em telas sm para cima */}
                     <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
                         className={`
-                            relative flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 shadow-sm
-                            ${isRefreshing
+        hidden sm:flex relative items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 shadow-sm
+        ${isRefreshing
                                 ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
                                 : "border-gray-200 bg-white text-gray-700 hover:border-[#1ABC9C] hover:bg-[#1ABC9C] hover:text-white hover:shadow-md"
                             }
-                        `}
+    `}
                         title="Atualizar dados"
                     >
                         <RefreshCw
                             className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                         />
-                        <span className="hidden sm:inline">
+                        <span>
                             {isRefreshing ? "Atualizando..." : "Atualizar"}
                         </span>
                     </button>
+
                 </div>
             </div>
 
