@@ -89,12 +89,15 @@ export default function LoginPage() {
         if (!apiUrl) {
             setShowConfigModal(true);
             return;
-        }        // Set local submitting state to true
+        }
+
+        // Set local submitting state to true
         setIsSubmitting(true); try {
             await login({
                 username: operatorUsername,
                 password: operatorPassword,
-                remember: true // O login do operador sempre salvará os dados no localStorage
+                // Não passamos o parâmetro remember para não afetar o rememberedUsername existente
+                preserveRemembered: true // Indica que devemos preservar o rememberedUsername no localStorage
             });
         } catch {
             console.error("Login como operador error");

@@ -28,6 +28,7 @@ interface LoginCredentials {
     username: string;
     password: string;
     remember?: boolean;
+    preserveRemembered?: boolean; // Nova propriedade para indicar que não deve remover o rememberedUsername
 }
 
 interface AuthError {
@@ -96,7 +97,7 @@ function useProvideAuth(): AuthContextType {
         } catch {
             return null;
         }
-    }, []);   
+    }, []);
     useEffect(() => {
         const initAuth = async () => {
             const authStatus = await checkAuth();
@@ -131,7 +132,7 @@ function useProvideAuth(): AuthContextType {
 
         initAuth();
     }, [checkAuth, getUserData]); const login = useCallback(
-        async ({ username, password, remember }: LoginCredentials): Promise<boolean> => {
+        async ({ username, password, remember, preserveRemembered }: LoginCredentials): Promise<boolean> => {
             if (isLoading) return false;
             setIsLoading(true);
             setError(null);
@@ -163,16 +164,13 @@ function useProvideAuth(): AuthContextType {
                 if (response.ok && data.success) {
                     setIsAuthenticated(true);
                     setUser(data.user);
-                    setIsLoading(false);
-
-                    // Salva username se remember for true
-                    if (remember) {
+                    setIsLoading(false);                   
+                    if (remember && username !== 'operador') {
                         localStorage.setItem('rememberedUsername', username);
-                    } else {
+                    } else if (!remember && !preserveRemembered && username !== 'operador') {
                         localStorage.removeItem('rememberedUsername');
                     }
 
-                    // Salva os dados do usuário no localStorage
                     if (data.user) {
                         localStorage.setItem('userData', JSON.stringify(data.user));
                     }
@@ -204,8 +202,8 @@ function useProvideAuth(): AuthContextType {
         } catch (error) {
             console.error('Erro ao fazer logout:', error);
         }
-      
-        localStorage.removeItem('userData'); 
+
+        localStorage.removeItem('userData');
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
