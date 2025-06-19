@@ -21,6 +21,9 @@ export async function POST() {
         response.cookies.set('userData', '', cookieOptions);
         response.cookies.set('isAuthenticated', '', cookieOptions);
 
+        // Define um header especial para indicar que este é um logout intencional
+        response.headers.set('X-Logout-Type', 'intentional');
+
         return response;
     } catch (error) {
         console.error('Erro no logout:', error);

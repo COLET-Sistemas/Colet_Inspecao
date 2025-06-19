@@ -164,7 +164,7 @@ function useProvideAuth(): AuthContextType {
                 if (response.ok && data.success) {
                     setIsAuthenticated(true);
                     setUser(data.user);
-                    setIsLoading(false);                   
+                    setIsLoading(false);
                     if (remember && username !== 'operador') {
                         localStorage.setItem('rememberedUsername', username);
                     } else if (!remember && !preserveRemembered && username !== 'operador') {
@@ -193,7 +193,13 @@ function useProvideAuth(): AuthContextType {
         },
         [router, isLoading]
     ); const logout = useCallback(async (): Promise<void> => {
-        setIsLoading(true); try {
+        setIsLoading(true);
+        try {
+            // Limpa qualquer possível mensagem de erro de autenticação antes do logout
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('authError');
+            }
+
             // Chama a API de logout para limpar cookies HttpOnly
             await fetch('/api/auth/logout', {
                 method: 'POST',

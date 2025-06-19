@@ -15,10 +15,14 @@ export const handleApiResponse = async (response: Response): Promise<Response> =
 
         // Armazena mensagem de sessão expirada para exibir na tela de login
         if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem(
-                'authError',
-                'Sua sessão expirou. Faça login novamente para continuar.'
-            );
+            // Armazena a mensagem apenas se o logout não foi intencional
+            // Verifica se a URL atual não é a página de login, o que sugere sessão expirada
+            if (!window.location.pathname.includes('/login')) {
+                sessionStorage.setItem(
+                    'authError',
+                    'Sua sessão expirou. Faça login novamente para continuar.'
+                );
+            }
         }
 
         // Redireciona para a página de login
