@@ -664,23 +664,77 @@ export default function EspecificacoesPage() {
                                     {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
                                 </>
                             )}
-                        </button>                            <button
-                            onClick={handleForwardToCQ}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving && isForwardingToCQ ? (
-                                <>
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                    Encaminhando...
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="h-4 w-4" />
-                                    Encaminhar CQ
-                                </>
-                            )}
                         </button>
+
+                        {/* Botão de Encaminhar CQ - exibido com base em condições */}
+                        {(() => {                            // Verificar se deve mostrar o botão de encaminhar CQ usando a mesma lógica do getCurrentUserProfile
+                            const userDataStr = localStorage.getItem('userData');
+                            let canForwardCQ = false;
+                            let userProfile = '';
+
+                            if (userDataStr) {
+                                try {
+                                    const userData = JSON.parse(userDataStr);
+                                    // Verificar se o valor de encaminhar_ficha é 4
+                                    canForwardCQ = userData?.encaminhar_ficha === 4;
+                                    userProfile = userData?.perfil_inspecao || '';
+                                    console.log('[Debug] encaminhar_ficha value:', userData?.encaminhar_ficha);
+                                    console.log('[Debug] userProfile:', userProfile);
+                                } catch (e) {
+                                    console.error('Error parsing userData:', e);
+                                }
+                            }
+                            // Obter ID do tipo de inspeção da ficha
+                            // Usamos a primeira especificação porque todas pertencem à mesma ficha de inspeção
+                            // e o id_tipo_inspecao é uma propriedade da ficha, não da especificação
+                            const fichaData = specifications.length > 0 ? fichaDados : null;
+                            const inspectionType = specifications.length > 0 ? (() => {
+                                // Verificar se há dados adicionais no localStorage sobre a ficha
+                                try {
+                                    const fichaStr = localStorage.getItem('currentInspectionSheet');
+                                    if (fichaStr) {
+                                        const ficha = JSON.parse(fichaStr);
+                                        return ficha?.id_tipo_inspecao || null;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing ficha data from localStorage:', e);
+                                }
+
+                                // Caso não encontre no localStorage, usar o ID da ficha para identificar
+                                return fichaData?.id_ficha_inspecao === 4 ? 4 : null;
+                            })() : null;
+
+                            console.log('[Debug] id_tipo_inspecao:', inspectionType);
+
+                            // Exibe botão apenas se o tipo de inspeção for 4 e o usuário tem permissão
+                            const showForwardButton = inspectionType === 4 && canForwardCQ;
+                            console.log('[Debug] showForwardButton:', showForwardButton, '(inspecao tipo 4:', inspectionType === 4, ', permissão encaminhar_ficha=4:', canForwardCQ, ')');
+
+                            if (showForwardButton) {
+                                return (
+                                    <button
+                                        onClick={handleForwardToCQ}
+                                        disabled={isSaving}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSaving && isForwardingToCQ ? (
+                                            <>
+                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                Encaminhando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="h-4 w-4" />
+                                                Encaminhar CQ
+                                            </>
+                                        )}
+                                    </button>
+                                );
+                            }
+
+                            return null;
+                        })()}
+
                         <button
                             onClick={handleConfirmReceipt}
                             disabled={isSaving}
