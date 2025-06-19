@@ -93,6 +93,8 @@ interface InspectionFilters {
 
 interface InspectionSpecificationResponse {
     id_ficha_inspecao: number;
+    id_tipo_inspecao: number | null;
+    situacao: string | null;
     qtde_produzida: number | null;
     exibe_faixa: string;
     exibe_resultado: string;
@@ -305,9 +307,10 @@ class InspecaoService {
             if (data && data.especificacoes) {
                 const response = data as InspectionSpecificationResponse;
                 return {
-                    specifications: response.especificacoes || [],
-                    fichaDados: {
+                    specifications: response.especificacoes || [], fichaDados: {
                         id_ficha_inspecao: response.id_ficha_inspecao,
+                        id_tipo_inspecao: response.id_tipo_inspecao,
+                        situacao: response.situacao,
                         qtde_produzida: response.qtde_produzida,
                         exibe_faixa: response.exibe_faixa,
                         exibe_resultado: response.exibe_resultado
@@ -315,9 +318,10 @@ class InspecaoService {
                 };
             }            // Formato antigo da API (compatibilidade)
             return {
-                specifications: Array.isArray(data) ? data : [],
-                fichaDados: {
+                specifications: Array.isArray(data) ? data : [], fichaDados: {
                     id_ficha_inspecao: id,
+                    id_tipo_inspecao: null,
+                    situacao: null,
                     qtde_produzida: null,
                     exibe_faixa: 'S',
                     exibe_resultado: 'S'

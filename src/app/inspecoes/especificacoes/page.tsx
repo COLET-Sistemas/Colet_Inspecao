@@ -52,15 +52,17 @@ export default function EspecificacoesPage() {
             router.push('/inspecoes');
             return;
         }
-    }, [auth.user, router]);
-
-    const [fichaDados, setFichaDados] = useState<{
+    }, [auth.user, router]); const [fichaDados, setFichaDados] = useState<{
         id_ficha_inspecao: number,
+        id_tipo_inspecao: number | null,
+        situacao: string | null,
         qtde_produzida: number | null,
         exibe_faixa: string,
         exibe_resultado: string
     }>({
         id_ficha_inspecao: 0,
+        id_tipo_inspecao: null,
+        situacao: null,
         qtde_produzida: null,
         exibe_faixa: 'S',
         exibe_resultado: 'S'
@@ -91,9 +93,7 @@ export default function EspecificacoesPage() {
             return;
         }
 
-        hasInitialized.current = true;
-
-        const loadSpecifications = async () => {
+        hasInitialized.current = true; const loadSpecifications = async () => {
             console.log(`[SINGLE CALL] Carregando especificações para ID: ${id}`);
             setLoading(true);
             setError(null);
@@ -101,7 +101,14 @@ export default function EspecificacoesPage() {
             try {
                 const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
                 setSpecifications(response.specifications);
-                setFichaDados(response.fichaDados);
+                setFichaDados({
+                    id_ficha_inspecao: response.fichaDados.id_ficha_inspecao,
+                    id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
+                    situacao: response.fichaDados.situacao || null,
+                    qtde_produzida: response.fichaDados.qtde_produzida,
+                    exibe_faixa: response.fichaDados.exibe_faixa,
+                    exibe_resultado: response.fichaDados.exibe_resultado
+                });
             } catch (error) {
                 console.error("Erro ao carregar especificações:", error);
                 setError("Erro ao carregar especificações da inspeção");
@@ -125,12 +132,17 @@ export default function EspecificacoesPage() {
 
         console.log(`[REFRESH] Recarregando especificações para ID: ${id}`);
         setLoading(true);
-        setError(null);
-
-        try {
+        setError(null); try {
             const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
             setSpecifications(response.specifications);
-            setFichaDados(response.fichaDados);
+            setFichaDados({
+                id_ficha_inspecao: response.fichaDados.id_ficha_inspecao,
+                id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
+                situacao: response.fichaDados.situacao || null,
+                qtde_produzida: response.fichaDados.qtde_produzida,
+                exibe_faixa: response.fichaDados.exibe_faixa,
+                exibe_resultado: response.fichaDados.exibe_resultado
+            });
         } catch (error) {
             console.error("Erro ao carregar especificações:", error);
             setError("Erro ao carregar especificações da inspeção");
@@ -218,27 +230,11 @@ export default function EspecificacoesPage() {
                 }
             };
         });
-    }, []);
-
-    // Função para obter mensagem de permissão baseada no local_inspecao
+    }, []);    // Função para obter mensagem de permissão baseada no local_inspecao
     const getPermissionMessage = useCallback((localInspecao: string) => {
         if (localInspecao === 'Q') return "Requer perfil de Qualidade (Q) para editar";
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
         return "";
-    }, []);
-
-    // Função para obter o perfil atual do usuário
-    const getCurrentUserProfile = useCallback(() => {
-        try {
-            const userDataStr = localStorage.getItem('userData');
-            if (!userDataStr) return '';
-
-            const userData = JSON.parse(userDataStr);
-            return userData.perfil_inspecao || '';
-        } catch (error) {
-            console.error('Erro ao obter perfil do usuário:', error);
-            return '';
-        }
     }, []);
 
     const calculateConforme = useCallback((valorEncontrado: number, valorMinimo: number | null, valorMaximo: number | null, tipoValor: string, conformeValue?: boolean | null): boolean | null => {
@@ -710,25 +706,56 @@ export default function EspecificacoesPage() {
                             }
 
                             return null;
-                        })()}
+                        })()}                        {/* Botão de confirmar recebimento - exibido com base em condições */}
+                        {(() => {
+                            // Verificar se deve mostrar o botão de confirmar recebimento
+                            const userDataStr = localStorage.getItem('userData');
+                            let userHasQProfile = false;
 
-                        <button
-                            onClick={handleConfirmReceipt}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving && isConfirmingReceipt ? (
-                                <>
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                    Confirmando...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle className="h-4 w-4" />
-                                    Confirmar Recebimento
-                                </>
-                            )}
-                        </button>
+                            if (userDataStr) {
+                                try {
+                                    const userData = JSON.parse(userDataStr);
+                                    // Verificar se o perfil de inspeção contém a letra Q
+                                    const perfilInspecao = userData?.perfil_inspecao || '';
+                                    userHasQProfile = perfilInspecao.includes('Q');
+                                } catch (e) {
+                                    console.error('Erro ao verificar perfil do usuário:', e);
+                                }
+                            }
+
+                            // Mostra o botão apenas se atender aos critérios
+                            const showConfirmButton =
+                                fichaDados.id_ficha_inspecao === 5 &&
+                                fichaDados.situacao === "4" &&
+                                userHasQProfile;
+
+                            console.log('[Debug] showConfirmButton:', showConfirmButton, '(ficha:', fichaDados.id_ficha_inspecao,
+                                ', situacao:', fichaDados.situacao, ', perfil Q:', userHasQProfile, ')');
+
+                            if (showConfirmButton) {
+                                return (
+                                    <button
+                                        onClick={handleConfirmReceipt}
+                                        disabled={isSaving}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSaving && isConfirmingReceipt ? (
+                                            <>
+                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                Confirmando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="h-4 w-4" />
+                                                Confirmar Recebimento
+                                            </>
+                                        )}
+                                    </button>
+                                );
+                            }
+
+                            return null;
+                        })()}
                     </div>
                     )}</div>
             </div>
