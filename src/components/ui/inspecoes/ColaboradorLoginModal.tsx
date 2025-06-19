@@ -50,6 +50,8 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     onNaoConformidadeSuccess,
     onShowAlert,
 }) => {
+    // useAuth não é necessário explicitamente - vamos atualizar o localStorage
+    // e o useAuth detectará as mudanças automaticamente
     const [codigo, setCodigo] = useState('');
     const [senha, setSenha] = useState('');
     const [error, setError] = useState('');
@@ -147,9 +149,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         setSenha('');
         setError('');
         onClose();
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    }; const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!codigo || !senha) {
@@ -162,34 +162,32 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
             const senhaCriptografada = encodePassword(senha);
             const response = await inspecaoService.authColaborador(codigo, senhaCriptografada);
 
-            // Salvar o código digitado diretamente como codigo_pessoa
-            localStorage.setItem('codigo_pessoa', codigo);
-
-            // Salvar dados do colaborador no localStorage em ambos os formatos (colaborador e userData)
-            const colaboradorData = {
-                codigo_pessoa: codigo,
-                nome: response.nome,
-                setor: response.setor,
-                funcao: response.funcao,
-                registrar_ficha: response.registrar_ficha,
-                encaminhar_ficha: response.encaminhar_ficha
-            };
-
-            // Salva no formato 'colaborador'
-            localStorage.setItem('colaborador', JSON.stringify(colaboradorData));
-
-            // Também salva no formato 'userData' para compatibilidade com o resto do sistema
-            // Mantém os campos existentes em userData, se houver
+            // Salvar apenas no formato 'userData' para compatibilidade com o resto do sistema
             try {
                 const existingUserData = localStorage.getItem('userData') ?
-                    JSON.parse(localStorage.getItem('userData') || '{}') : {}; localStorage.setItem('userData', JSON.stringify({
-                        ...existingUserData,
-                        codigo_pessoa: codigo,
-                        nome: response.nome,
-                    }));
+                    JSON.parse(localStorage.getItem('userData') || '{}') : {};
+
+                // Atualiza o objeto userData com as novas informações
+                const updatedUserData = {
+                    ...existingUserData,
+                    codigo_pessoa: codigo,
+                    nome: response.nome,
+                    setor: response.setor,
+                    funcao: response.funcao,
+                    registrar_ficha: response.registrar_ficha,
+                    encaminhar_ficha: response.encaminhar_ficha,
+                    perfil_inspecao: 'O' // Sempre salva o perfil como 'O'
+                };
+
+                // Salvar no localStorage apenas userData
+                localStorage.setItem('userData', JSON.stringify(updatedUserData));
+                localStorage.setItem('isAuthenticated', 'true');
+
+                // O contexto de autenticação será atualizado automaticamente em useAuth
+                // pois ele observa mudanças no localStorage
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
-            }            // Callback de sucesso com os dados do usuário e a inspeção selecionada
+            }// Callback de sucesso com os dados do usuário e a inspeção selecionada
             // Se estamos no contexto de não conformidade, verificar permissão
             if (isNaoConformidadeContext && onNaoConformidadeSuccess) {
                 const hasPermission = hasNaoConformidadePermission(response.registrar_ficha);

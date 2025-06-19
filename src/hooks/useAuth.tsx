@@ -110,6 +110,24 @@ function useProvideAuth(): AuthContextType {
         return null;
     }, []);
 
+    // Listener para atualizar o contexto quando o localStorage mudar
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const authStatus = checkAuth();
+            setIsAuthenticated(authStatus);
+            if (authStatus) {
+                setUser(getUserData());
+            }
+        };
+
+        // Adiciona listener para mudanças no localStorage
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [checkAuth, getUserData]);
+
     useEffect(() => {
         const authStatus = checkAuth();
         setIsAuthenticated(authStatus);

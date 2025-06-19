@@ -436,16 +436,8 @@ export default function InspecoesPage() {
         setIsModalOpen(false);
         setHasColaboradorData(true);
 
-        // Construct URL with all necessary parameters
-        const queryParams = new URLSearchParams({
-            id: String(data.inspection.id_ficha_inspecao),
-            nome: data.nome,
-            setor: data.setor,
-            funcao: data.funcao,
-            registrar_ficha: String(data.registrar_ficha),
-            encaminhar_ficha: String(data.encaminhar_ficha)
-        });
-        router.push(`/inspecoes/especificacoes?${queryParams.toString()}`);
+        // Construct URL with all necessary parameters        // Navegando apenas com o ID, já que os dados do usuário estão disponíveis no context API
+        router.push(`/inspecoes/especificacoes?id=${data.inspection.id_ficha_inspecao}`);
     }, [router]);
 
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {

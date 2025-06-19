@@ -2,6 +2,7 @@
 
 import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
+import { useAuth } from "@/hooks/useAuth";
 import inspecaoService, { InspectionSpecification } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
 import {
@@ -27,7 +28,18 @@ export default function EspecificacoesPage() {
     const searchParams = useSearchParams();
     const id = searchParams?.get('id');
     const hasInitialized = useRef(false);
+    const auth = useAuth();
     const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
+
+    // Console log para verificar o uso do context API
+    console.log('=== Auth Context API na tela de Especificações ===');
+    console.log('Usuário está autenticado:', auth.isAuthenticated);
+    console.log('Dados do usuário:', auth.user);
+    console.log('Código da pessoa:', auth.user?.codigo_pessoa);
+    console.log('Perfil de inspeção:', auth.user?.perfil_inspecao);
+    console.log('Encaminhar ficha:', auth.user?.encaminhar_ficha);
+    console.log('Registrar ficha:', auth.user?.registrar_ficha);
+    console.log('======================================');
     const [fichaDados, setFichaDados] = useState<{
         id_ficha_inspecao: number,
         qtde_produzida: number | null,
@@ -86,7 +98,17 @@ export default function EspecificacoesPage() {
         };
 
         loadSpecifications();
-    }, [id]); // Só depende do ID    // Função para refresh manual
+    }, [id]); // Só depende do ID
+
+    // Efeito para verificar mudanças no contexto de autenticação
+    useEffect(() => {
+        console.log('== Auth Context atualizado ==');
+        console.log('User data:', auth.user);
+        console.log('Código da pessoa:', auth.user?.codigo_pessoa);
+        console.log('=========================');
+    }, [auth.user]);
+
+    // Função para refresh manual
     const handleRefresh = useCallback(async () => {
         if (!id) {
             setError("ID da ficha de inspeção não fornecido");
@@ -273,6 +295,61 @@ export default function EspecificacoesPage() {
         }
     }, [specifications, editingValues, isSelectType, calculateConforme, handleRefresh]);
 
+    // Efeito para verificar os dados do localStorage
+    useEffect(() => {
+        // Função para checar os dados armazenados no localStorage
+        const checkLocalStorageData = () => {
+            try {
+                console.log('=== Verificando dados no localStorage ===');
+
+                // Verificar dados do colaborador
+                const colaboradorData = localStorage.getItem('colaborador');
+                if (colaboradorData) {
+                    const parsed = JSON.parse(colaboradorData);
+                    console.log('Dados do colaborador:', parsed);
+                } else {
+                    console.log('Nenhum dado de colaborador encontrado no localStorage');
+                }
+
+                // Verificar userData
+                const userDataStr = localStorage.getItem('userData');
+                if (userDataStr) {
+                    const userData = JSON.parse(userDataStr);
+                    console.log('UserData:', userData);
+                    console.log('Código da pessoa (userData):', userData.codigo_pessoa);
+                    console.log('Perfil de inspeção (userData):', userData.perfil_inspecao);
+                } else {
+                    console.log('Nenhum userData encontrado no localStorage');
+                }
+
+                // Verificar código da pessoa direto
+                const codigoPessoa = localStorage.getItem('codigo_pessoa');
+                console.log('Código da pessoa (direto):', codigoPessoa);
+
+                console.log('======================================');
+            } catch (error) {
+                console.error('Erro ao ler dados do localStorage:', error);
+            }
+        };
+
+        // Executar a verificação na montagem do componente
+        checkLocalStorageData();
+
+        // Opcionalmente, você pode adicionar um listener para mudanças no localStorage
+        // Mas isso só funciona para mudanças feitas em outras abas/janelas
+        const handleStorageChange = () => {
+            console.log('🔄 localStorage foi modificado em outra aba');
+            checkLocalStorageData();
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    // Função para interromper a inspeção
     const handleInterruptInspection = useCallback(() => {
         if (isInspectionStarted) {
             // Poderíamos adicionar uma chamada API aqui se necessário
