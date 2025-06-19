@@ -326,25 +326,6 @@
     }
 }
 
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #1ABC9C;
-    border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #16A085;
-}
-
 /* Icon Container Styles - Quadrados com bordas para SVGs */
 .icon-container {
     position: relative;
@@ -1188,25 +1169,6 @@ textarea:focus {
 /* Botões com hover suave */
 button {
     transition: all 0.2s ease;
-}
-
-/* Estilizar scrollbar para um look mais minimalista */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f9f9f9;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #ddd;
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #ccc;
 }
 
 /* Estilo para itens pendentes */

@@ -46,6 +46,8 @@ export default function EspecificacoesPage() {
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
     // Variável para controlar se está encaminhando para o CQ
     const [isForwardingToCQ, setIsForwardingToCQ] = useState(false);
+    // Variável para controlar se está confirmando recebimento
+    const [isConfirmingReceipt, setIsConfirmingReceipt] = useState(false);
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para exibição de mensagens de alerta
@@ -305,6 +307,36 @@ export default function EspecificacoesPage() {
         }
     }, [id, router]);
 
+    /**
+     * Confirma o recebimento de uma ficha de inspeção
+     */
+    const handleConfirmReceipt = useCallback(async () => {
+        if (!id) return;
+
+        try {
+            setIsSaving(true);
+            setIsConfirmingReceipt(true);
+            await inspecaoService.confirmReceipt(parseInt(id));
+
+            setAlertMessage({
+                message: "Recebimento confirmado com sucesso",
+                type: "success",
+            });
+
+            // Recarregar dados após confirmar recebimento
+            await handleRefresh();
+        } catch (error) {
+            console.error("Erro ao confirmar recebimento:", error);
+            setAlertMessage({
+                message: "Falha ao confirmar recebimento",
+                type: "error",
+            });
+        } finally {
+            setIsSaving(false);
+            setIsConfirmingReceipt(false);
+        }
+    }, [id, handleRefresh]);
+
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {
             return <Eye className="h-5 w-5" />;
@@ -493,6 +525,23 @@ export default function EspecificacoesPage() {
                                 </>
                             )}
                         </button>
+                        <button
+                            onClick={handleConfirmReceipt}
+                            disabled={isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving && isConfirmingReceipt ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Confirmando...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="h-4 w-4" />
+                                    Confirmar Recebimento
+                                </>
+                            )}
+                        </button>
                     </div>
                     )}</div>
             </div>            {specifications.length === 0 ? (
@@ -671,8 +720,7 @@ export default function EspecificacoesPage() {
                                                             'bg-red-50 border-red-200' :
                                                             'bg-amber-50 border-amber-200') :
                                                     'bg-blue-50 border-blue-200'
-                                                }
-                                            `}>
+                                                }`}>
                                                 {fichaDados.exibe_resultado === 'S' ? (
                                                     <span className="text-xs font-medium">
                                                         {spec.conforme === true ?

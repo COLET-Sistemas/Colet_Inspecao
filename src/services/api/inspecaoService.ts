@@ -524,6 +524,60 @@ class InspecaoService {
             throw error;
         }
     }
+
+    /**
+     * Confirma o recebimento de uma ficha de inspeção
+     * @param idFichaInspecao - ID da ficha de inspeção
+     */
+    async confirmReceipt(idFichaInspecao: number): Promise<void> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            // Tenta obter o código da pessoa, mas não é mais obrigatório
+            let codigo_pessoa = null;
+            const userDataStr = localStorage.getItem("userData");
+            if (userDataStr) {
+                try {
+                    const userData = JSON.parse(userDataStr);
+                    if (userData && userData.codigo_pessoa) {
+                        codigo_pessoa = userData.codigo_pessoa;
+                    }
+                } catch (e) {
+                    console.error("Erro ao parsear userData do localStorage:", e);
+                }
+            }
+
+            // Se não encontrou no userData, busca diretamente no localStorage
+            if (!codigo_pessoa) {
+                codigo_pessoa = localStorage.getItem("codigo_pessoa");
+            }
+
+            // Convertendo o código de pessoa para número (pode ser null)
+            const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id_ficha_inspecao: idFichaInspecao,
+                    acao: "receber",
+                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Erro ao confirmar recebimento da inspeção:', error);
+            throw error;
+        }
+    }
 }
 
 // Instância singleton do serviço
