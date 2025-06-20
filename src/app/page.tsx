@@ -24,6 +24,5 @@ export default function HomePage() {
     checkAuthentication();
   }, [router, checkAuth]);
 
-  // Return a loading state with our new component
   return <LoadingSpinner fullScreen size="medium" />;
 }

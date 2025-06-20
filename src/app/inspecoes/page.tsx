@@ -108,8 +108,8 @@ export default function InspecoesPage() {
 
     // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);    // Atualiza o estado do layout quando a tela for redimensionada
-    useEffect(() => {        // Handler para atualizar os estados de layout baseados no tamanho da tela
+    const [isPortrait, setIsPortrait] = useState(false);    
+    useEffect(() => {    
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
             setIsPortrait(isInPortraitMode());
@@ -193,7 +193,6 @@ export default function InspecoesPage() {
 
             const perfilInspecao = userData.perfil_inspecao;
 
-            // Check if perfil_inspecao contains letter 'O'
             let hasPerfilO = false;
             if (typeof perfilInspecao === 'string') {
                 hasPerfilO = perfilInspecao.includes('O');
@@ -202,7 +201,6 @@ export default function InspecoesPage() {
             }
             return hasPerfilO;
         } catch {
-            // Silent error handling - returning false if unable to verify permission
             return false;
         }
     }, [activeTab]);
@@ -268,13 +266,11 @@ export default function InspecoesPage() {
             }
 
             if (hasEncaminhar4) {
-                // User has direct permission through encaminhar_ficha, proceed with registration
-                // TODO: Implement non-conformity registration logic here
+          
             } else {
-                // No permission, should not happen as button shouldn't be visible
+             
             }
         } catch {
-            // In case of error parsing userData, open login modal in non-conformity context
             setSelectedInspection(item);
             setIsNaoConformidadeContext(true);
             setIsModalOpen(true);
@@ -321,7 +317,7 @@ export default function InspecoesPage() {
             // Silent error handling - returning empty array if unable to access postos
             return [];
         }
-    }, []);    // Function to determine subtitle based on user permissions and selected postos
+    }, []); 
     const formatPostosSubtitle = useCallback((): string => {
         try {
             const userDataStr = localStorage.getItem('userData');
