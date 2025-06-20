@@ -402,20 +402,27 @@ export default function EspecificacoesPage() {
             // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications.map(spec => {
                 // Verificar se há valores em edição para esta especificação
-                const editingValue = editingValues[spec.id_especificacao];
-
-                // Determinar o valor encontrado 
+                const editingValue = editingValues[spec.id_especificacao];                // Determinar o valor encontrado 
                 let valorEncontrado: string | number | null = null;
                 if (editingValue?.valor_encontrado !== undefined) {
+                    // Para campos de tipo select (A, C, S, L), já deve estar como "S" ou "N"
                     valorEncontrado = editingValue.valor_encontrado;
                 } else if (spec.valor_encontrado !== undefined) {
-                    valorEncontrado = spec.valor_encontrado;
-                }
+                    // Para campos do tipo select que já estão no spec, verificar se precisa converter
+                    if (isSelectType(spec.tipo_valor) && typeof spec.valor_encontrado === 'boolean') {
+                        valorEncontrado = spec.valor_encontrado ? 'S' : 'N';
+                    } else {
+                        valorEncontrado = spec.valor_encontrado;
+                    }
+                }                // Determinar o valor de conformidade
+                // Para campos de select, o valor de conforme deve ser null, pois já é representado em valor_encontrado
+                let conforme: boolean | null = null;
 
-                // Determinar o valor de conformidade
-                const conforme: boolean | null = editingValue?.conforme !== undefined
-                    ? editingValue.conforme
-                    : (spec.conforme !== undefined ? spec.conforme : null);
+                if (!isSelectType(spec.tipo_valor)) {
+                    conforme = editingValue?.conforme !== undefined
+                        ? editingValue.conforme
+                        : (spec.conforme !== undefined ? spec.conforme : null);
+                }
 
                 // Determinar a observação
                 const observacao: string | null = editingValue?.observacao !== undefined
@@ -452,7 +459,7 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh]);
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, isSelectType]);
 
     const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
@@ -1076,10 +1083,14 @@ export default function EspecificacoesPage() {
                                                             {getPermissionMessage(spec.local_inspecao)}
                                                         </span>
                                                     )}
-                                                </p>
-                                                <div className="flex flex-wrap gap-2">
+                                                </p>                                                <div className="flex flex-wrap gap-2">
                                                     {getSelectOptions(spec.tipo_valor).map((option) => (<button key={String(option.value)}
-                                                        onClick={() => handleValueChange(spec.id_especificacao, 'conforme', option.value)}
+                                                        onClick={() => {
+                                                            // Atualizar valor_encontrado com S para true e N para false
+                                                            handleValueChange(spec.id_especificacao, 'valor_encontrado', option.value ? 'S' : 'N');
+                                                            // Também definir conforme com o mesmo valor para manter consistência na interface
+                                                            handleValueChange(spec.id_especificacao, 'conforme', option.value);
+                                                        }}
                                                         disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
                                                         className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
                                                                 ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed ' : '')}
