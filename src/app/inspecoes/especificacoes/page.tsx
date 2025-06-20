@@ -10,6 +10,7 @@ import {
     ArrowLeft,
     CheckCircle,
     CheckSquare,
+    Clipboard,
     Eye,
     MessageSquare, RefreshCw,
     Ruler,
@@ -80,7 +81,38 @@ export default function EspecificacoesPage() {
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para exibição de mensagens de alerta
     const [alertMessage, setAlertMessage] = useState<{ message: string; type: "success" | "error" | "warning" | "info" } | null>(null);    // Referências para os inputs de cada especificação
-    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});    // Função auxiliar para converter um valor para o tipo adequado
+    const convertToValidValue = useCallback((value: unknown): string | number | boolean => {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        // Garante que o valor retornado é sempre um dos tipos permitidos
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            return value;
+        }
+
+        // Se não for um dos tipos permitidos, converte para string
+        return String(value);
+    }, []);    // Função para processar os valores vindos da API e garantir que são tratados corretamente
+    const processSpecValue = useCallback((spec: { valor_encontrado?: string | number | null | undefined; observacao?: string | null; conforme?: boolean | null }) => {
+        return {
+            valor_encontrado: spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ?
+                // Preservar números zero como 0
+                (spec.valor_encontrado === 0 ? 0 : convertToValidValue(spec.valor_encontrado)) :
+                '',
+            observacao: spec.observacao || '',
+            conforme: spec.conforme !== undefined ? spec.conforme : null
+        };
+    }, [convertToValidValue]);
+
+    // Função auxiliar para verificar se um valor está realmente preenchido
+    const isValueFilled = useCallback((value: string | number | boolean | null | undefined) => {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string' && value.trim() === '') return false;
+        // Zero é considerado preenchido
+        return true;
+    }, []);
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
@@ -96,11 +128,20 @@ export default function EspecificacoesPage() {
 
         hasInitialized.current = true; const loadSpecifications = async () => {
             setLoading(true);
-            setError(null);
-
-            try {
+            setError(null); try {
                 const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
                 setSpecifications(response.specifications);
+
+                // Inicializa os estados de edição com os valores carregados
+                const initialEditingValues: { [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } } = {};                // Prepara os valores iniciais para o estado editingValues
+                response.specifications.forEach(spec => {
+                    // Inicializa valores para todas as especificações, garantindo tratamento correto para valores como 0
+                    initialEditingValues[spec.id_especificacao] = processSpecValue(spec);
+                });
+
+                // Atualiza o estado com os valores iniciais
+                setEditingValues(initialEditingValues);
+
                 setFichaDados({
                     id_ficha_inspecao: response.fichaDados.id_ficha_inspecao,
                     id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
@@ -119,7 +160,7 @@ export default function EspecificacoesPage() {
         };
 
         loadSpecifications();
-    }, [id]); // Só depende do ID
+    }, [id, convertToValidValue, processSpecValue]); // Depende do ID e das funções de processamento
 
 
     // Função para refresh manual
@@ -133,6 +174,17 @@ export default function EspecificacoesPage() {
         setError(null); try {
             const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
             setSpecifications(response.specifications);
+
+            // Inicializa os estados de edição com os valores atualizados
+            const initialEditingValues: { [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } } = {};            // Prepara os valores iniciais para o estado editingValues
+            response.specifications.forEach(spec => {
+                // Inicializa valores para todas as especificações, garantindo tratamento correto para valores como 0
+                initialEditingValues[spec.id_especificacao] = processSpecValue(spec);
+            });
+
+            // Atualiza o estado com os valores atualizados
+            setEditingValues(initialEditingValues);
+
             setFichaDados({
                 id_ficha_inspecao: response.fichaDados.id_ficha_inspecao,
                 id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
@@ -147,7 +199,7 @@ export default function EspecificacoesPage() {
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, processSpecValue]);
     const handleBack = useCallback(() => {
         router.back();
     }, [router]);
@@ -562,15 +614,13 @@ export default function EspecificacoesPage() {
             return <Eye className="h-5 w-5" />;
         }
         return <Ruler className="h-5 w-5" />;
-    };
-
-    const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined) => {
+    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined) => {
         // Caso 1: Se não tiver valor encontrado (vazio ou null) - Badge cinza "Não informado"
-        if (valorEncontrado === null || valorEncontrado === undefined || valorEncontrado === '') {
+        if (!isValueFilled(valorEncontrado)) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
                 text: "Não informado",
-                className: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/50"
+                className: "badge-nao-informado valor-informado-badge badge-needs-attention"
             };
         }
 
@@ -581,7 +631,7 @@ export default function EspecificacoesPage() {
             return {
                 icon: <CheckCircle className="h-4 w-4" />,
                 text: "Informado",
-                className: "bg-blue-100 text-blue-800 border border-blue-300 shadow-sm"
+                className: "badge-informado valor-informado-badge"
             };
         }
 
@@ -590,7 +640,7 @@ export default function EspecificacoesPage() {
             return {
                 icon: <CheckCircle className="h-4 w-4" />,
                 text: "Conforme",
-                className: "bg-green-100 text-green-800 border border-green-300 shadow-sm"
+                className: "badge-conforme valor-informado-badge"
             };
         }
 
@@ -598,7 +648,7 @@ export default function EspecificacoesPage() {
             return {
                 icon: <XCircle className="h-4 w-4" />,
                 text: "Não Conforme",
-                className: "bg-red-100 text-red-800 border border-red-300 shadow-sm"
+                className: "badge-nao-conforme valor-informado-badge"
             };
         }
 
@@ -606,7 +656,7 @@ export default function EspecificacoesPage() {
         return {
             icon: <AlertCircle className="h-4 w-4" />,
             text: "Não informado",
-            className: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/50"
+            className: "badge-nao-informado valor-informado-badge badge-needs-attention"
         };
     };
 
@@ -989,20 +1039,31 @@ export default function EspecificacoesPage() {
                                                 </span>)}
                                         </h3>
                                         </div>
+                                    </div>                                    {/* Right: Status badge and expand/collapse */}                                        <div className="flex items-center gap-2">                                        {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (<div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium shadow-sm valor-informado-badge bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                                        <Clipboard className="h-3.5 w-3.5 text-slate-500 mr-0.5" />
+                                        <span className="font-medium">
+                                            Valor já preenchido: {isNumericType(spec.tipo_valor) ?
+                                                `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
+                                                isSelectType(spec.tipo_valor) ?
+                                                    (spec.conforme === true ?
+                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
+                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
+                                                    spec.valor_encontrado.toString()
+                                            }
+                                        </span>
                                     </div>
-
-                                    {/* Right: Status badge and expand/collapse */}                                        <div className="flex items-center gap-3">                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                    )}                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
                                         : statusInfo.text === 'Não Conforme'
                                             ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
                                             : statusInfo.text === 'Informado'
                                                 ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
                                                 : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
                                         }`}>
-                                        <span className="w-3 h-3 flex-shrink-0">
-                                            {statusInfo.icon}
+                                            <span className="w-3 h-3 flex-shrink-0">
+                                                {statusInfo.icon}
+                                            </span>
+                                            {statusInfo.text}
                                         </span>
-                                        {statusInfo.text}
-                                    </span>
 
                                         {/* Expand/collapse icon with improved styling */}
                                         <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
@@ -1079,48 +1140,7 @@ export default function EspecificacoesPage() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-
-                            {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (
-                                <div className="mt-2 ml-13">
-                                    <div className={`
-                                            inline-flex items-center gap-1.5 px-2 py-1 rounded-md border
-                                            ${fichaDados.exibe_resultado === 'S' ?
-                                            (spec.conforme === true ?
-                                                'bg-green-50 border-green-200' :
-                                                spec.conforme === false ?
-                                                    'bg-red-50 border-red-200' :
-                                                    'bg-amber-50 border-amber-200') :
-                                            'bg-blue-50 border-blue-200'
-                                        }`}>
-                                        {fichaDados.exibe_resultado === 'S' ? (
-                                            <span className="text-xs font-medium">
-                                                {spec.conforme === true ?
-                                                    <CheckCircle className="h-3.5 w-3.5 text-green-600" /> :
-                                                    spec.conforme === false ?
-                                                        <XCircle className="h-3.5 w-3.5 text-red-600" /> :
-                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
-                                                }
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs font-medium">
-                                                <CheckCircle className="h-3.5 w-3.5 text-blue-600" />
-                                            </span>
-                                        )}
-                                        <span className="font-medium">
-                                            {isNumericType(spec.tipo_valor) ?
-                                                `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
-                                                isSelectType(spec.tipo_valor) ?
-                                                    (spec.conforme === true ?
-                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
-                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
-                                                    spec.valor_encontrado.toString()
-                                            }
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
+                                </div>                            </div>
                             {/* Expandable content */}
                             {isExpanded && (<motion.div
                                 initial={{ opacity: 0, height: 0 }}

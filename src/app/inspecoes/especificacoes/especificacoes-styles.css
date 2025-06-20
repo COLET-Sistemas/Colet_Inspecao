@@ -1321,3 +1321,100 @@ button:active {
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
 }
+
+/* Estilos para o badge de valor informado */
+.valor-informado-badge {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    font-size: 0.75rem;
+}
+
+.valor-informado-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.valor-informado-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+}
+
+.valor-informado-badge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.4s ease;
+}
+
+.valor-informado-badge:hover::after {
+    left: 100%;
+}
+
+/* Estilos específicos para cada tipo de badge de status */
+.badge-nao-informado {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.badge-informado {
+    background-color: #cfe2ff;
+    color: #0a58ca;
+    border: 1px solid #9ec5fe;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(10, 88, 202, 0.1);
+}
+
+.badge-conforme {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #a3cfbb;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.1);
+}
+
+.badge-nao-conforme {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(132, 32, 41, 0.1);
+}
+
+/* Efeito de pulsação para badges não informados */
+@keyframes pulseAttention {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.badge-needs-attention {
+    animation: pulseAttention 2s infinite;
+}
+
+/* Estilo específico para o badge de status (Informado, Conforme, Não Conforme) */
+.status-badge-indicator {
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+
+.status-badge-indicator:hover {
+    transform: translateY(-1px);
+}
