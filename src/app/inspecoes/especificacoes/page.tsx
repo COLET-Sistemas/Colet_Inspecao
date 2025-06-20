@@ -511,10 +511,39 @@ export default function EspecificacoesPage() {
 
         return {
             icon: <AlertCircle className="h-4 w-4" />,
-            text: "Pendente",
-            className: "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
+            text: "Pendente", className: "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
         };
-    }; if (loading) {
+    };
+
+    // Função para verificar se os botões de ação devem ser exibidos
+    const shouldShowActionButtons = useCallback(() => {
+        // Se id_tipo_inspecao for 1, 2, 3 ou 4 e situação de 1 a 9
+        if (
+            (fichaDados.id_tipo_inspecao === 1 ||
+                fichaDados.id_tipo_inspecao === 2 ||
+                fichaDados.id_tipo_inspecao === 3 ||
+                fichaDados.id_tipo_inspecao === 4) &&
+            (fichaDados.situacao !== null &&
+                parseInt(fichaDados.situacao) >= 1 &&
+                parseInt(fichaDados.situacao) <= 9)
+        ) {
+            return true;
+        }
+
+        // Se id_tipo_inspecao for 5 e situação de 2 a 7
+        if (
+            fichaDados.id_tipo_inspecao === 5 &&
+            (fichaDados.situacao !== null &&
+                parseInt(fichaDados.situacao) >= 2 &&
+                parseInt(fichaDados.situacao) <= 7)
+        ) {
+            return true;
+        }
+
+        return false;
+    }, [fichaDados.id_tipo_inspecao, fichaDados.situacao]);
+
+    if (loading) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
                 <div className="flex items-center gap-4">
@@ -580,7 +609,9 @@ export default function EspecificacoesPage() {
                 </div>
             </div>
         );
-    } return (
+    }
+
+    return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
             {alertMessage && (
                 <AlertMessage
@@ -619,25 +650,25 @@ export default function EspecificacoesPage() {
                                 )}
                             </p>
                         </div>
-                    </div>
-
-                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">                        <button
-                        onClick={handleStartInspection}
-                        disabled={isInspectionStarted || isSaving}
-                        className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving && !isForwardingToCQ && !isConfirmingReceipt ? (
-                            <>
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                Iniciando...
-                            </>
-                        ) : (
-                            <>
-                                <CheckSquare className="h-4 w-4" />
-                                {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
-                            </>
-                        )}
-                    </button>
+                    </div>                    {/* Botões de ação no cabeçalho - Design mais técnico */}                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">                        {shouldShowActionButtons() && (
+                        <button
+                            onClick={handleStartInspection}
+                            disabled={isInspectionStarted || isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving && !isForwardingToCQ && !isConfirmingReceipt ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Iniciando...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckSquare className="h-4 w-4" />
+                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
+                                </>
+                            )}
+                        </button>
+                    )}
 
                         {/* Botão de Encaminhar CQ - exibido com base em condições */}
                         {(() => {                            // Verificar se deve mostrar o botão de encaminhar CQ usando a mesma lógica do getCurrentUserProfile
@@ -1143,7 +1174,7 @@ export default function EspecificacoesPage() {
                             )}
                         </div>                        {/* Technical Action buttons */}
                         <div className="flex items-center gap-3 whitespace-nowrap">
-                            {isInspectionStarted && (
+                            {shouldShowActionButtons() && isInspectionStarted && (
                                 <>
                                     {specifications.filter(s =>
                                         (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
@@ -1190,14 +1221,17 @@ export default function EspecificacoesPage() {
                                         )
                                     )}
                                 </>
-                            )}<button
-                                onClick={handleInterruptInspection}
-                                disabled={isSaving || !isInspectionStarted}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
-                            >
-                                <StopCircle className="h-4 w-4" />
-                                Interromper
-                            </button>
+                            )}
+                            {shouldShowActionButtons() && (
+                                <button
+                                    onClick={handleInterruptInspection}
+                                    disabled={isSaving || !isInspectionStarted}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
+                                >
+                                    <StopCircle className="h-4 w-4" />
+                                    Interromper
+                                </button>
+                            )}
                         </div>
                     </div>
                 </motion.div>

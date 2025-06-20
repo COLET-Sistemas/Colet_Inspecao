@@ -12,11 +12,16 @@ export default function HomePage() {
 
   useEffect(() => {
     // Check if user is already authenticated
-    if (checkAuth()) {
-      router.push("/dashboard");
-    } else {
-      router.push("/login");
-    }
+    const checkAuthentication = async () => {
+      const isAuthenticated = await checkAuth();
+      if (isAuthenticated) {
+        router.push("/dashboard");
+      } else {
+        router.push("/login");
+      }
+    };
+
+    checkAuthentication();
   }, [router, checkAuth]);
 
   // Return a loading state with our new component

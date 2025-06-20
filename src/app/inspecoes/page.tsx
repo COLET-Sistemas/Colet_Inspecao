@@ -69,11 +69,7 @@ export default function InspecoesPage() {
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastActivityRef = useRef(Date.now());
-    const initialLoadRef = useRef(false);
-
-    // State to store if user has Q permission
-    const [hasPerfilQ, setHasPerfilQ] = useState(false);
-    const [postosText, setPostosText] = useState<string>("");
+    const initialLoadRef = useRef(false); const [postosText, setPostosText] = useState<string>("");
 
     // Helper functions to compute display values
     const getSituacao = useCallback((situacao: string) => {
@@ -334,12 +330,9 @@ export default function InspecoesPage() {
 
             const hasQ =
                 (typeof perfil === 'string' && perfil.includes('Q')) ||
-                (Array.isArray(perfil) && perfil.includes('Q'));
-
-            if (hasQ) {
-                setHasPerfilQ(true);
-                return "Todos os postos CQ";
-            }
+                (Array.isArray(perfil) && perfil.includes('Q')); if (hasQ) {
+                    return "Todos os postos CQ";
+                }
 
             const postos = getPostosFromLocalStorage();
 
