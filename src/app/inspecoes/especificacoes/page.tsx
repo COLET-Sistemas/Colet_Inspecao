@@ -47,7 +47,7 @@ export default function EspecificacoesPage() {
 
         // If neither auth context nor localStorage has codigo_pessoa, redirect
         if (!auth.user?.codigo_pessoa && !localStorageHasCodigoPessoa) {
-            console.log('Código de pessoa não encontrado no userData do localStorage, redirecionando...');
+
             router.push('/inspecoes');
             return;
         }
@@ -93,7 +93,6 @@ export default function EspecificacoesPage() {
         }
 
         hasInitialized.current = true; const loadSpecifications = async () => {
-            console.log(`[SINGLE CALL] Carregando especificações para ID: ${id}`);
             setLoading(true);
             setError(null);
 
@@ -128,8 +127,6 @@ export default function EspecificacoesPage() {
             setLoading(false);
             return;
         }
-
-        console.log(`[REFRESH] Recarregando especificações para ID: ${id}`);
         setLoading(true);
         setError(null); try {
             const response = await inspecaoService.getInspectionSpecifications(parseInt(id));
@@ -210,6 +207,9 @@ export default function EspecificacoesPage() {
 
             // Se local_inspecao for "*", todos os usuários podem editar
             if (localInspecao === "*") return true;
+
+            // Se local_inspecao for "P" e perfil_inspecao for "O", permite edição
+            if (localInspecao === "P" && perfilInspecao === "O") return true;
 
             // Verifica se o perfil do usuário corresponde ao local_inspecao
             return localInspecao === perfilInspecao;
@@ -333,8 +333,7 @@ export default function EspecificacoesPage() {
                 await handleRefresh();
                 // Clear all editing values
                 setEditingValues({});
-                // TODO: Show success notification
-                console.log('Todas as alterações foram salvas com sucesso!');
+
             } else {
                 // TODO: Show partial success notification with errors
                 console.error('Algumas especificações não puderam ser salvas:', errors);
@@ -353,8 +352,6 @@ export default function EspecificacoesPage() {
         // Função para checar os dados armazenados no localStorage
         const checkLocalStorageData = () => {
             try {
-                console.log('=== Verificando dados no localStorage ===');
-
                 // Verificar dados do colaborador
                 const colaboradorData = localStorage.getItem('colaborador');
                 if (colaboradorData) {
@@ -385,13 +382,9 @@ export default function EspecificacoesPage() {
             }
         };
 
-        // Executar a verificação na montagem do componente
         checkLocalStorageData();
 
-        // Opcionalmente, você pode adicionar um listener para mudanças no localStorage
-        // Mas isso só funciona para mudanças feitas em outras abas/janelas
         const handleStorageChange = () => {
-            console.log('🔄 localStorage foi modificado em outra aba');
             checkLocalStorageData();
         };
 
@@ -734,7 +727,7 @@ export default function EspecificacoesPage() {
                                     // Verificar se o valor de encaminhar_ficha é 4
                                     canForwardCQ = userData?.encaminhar_ficha === 4;
                                     userProfile = userData?.perfil_inspecao || '';
-                                    console.log('[Debug] encaminhar_ficha value:', userData?.encaminhar_ficha);
+
                                     console.log('[Debug] userProfile:', userProfile);
                                 } catch (e) {
                                     console.error('Error parsing userData:', e);
@@ -758,11 +751,9 @@ export default function EspecificacoesPage() {
                                 return fichaData?.id_ficha_inspecao === 4 ? 4 : null;
                             })() : null;
 
-                            console.log('[Debug] id_tipo_inspecao:', inspectionType);
 
                             // Exibe botão apenas se o tipo de inspeção for 4 e o usuário tem permissão
                             const showForwardButton = inspectionType === 4 && canForwardCQ;
-                            console.log('[Debug] showForwardButton:', showForwardButton, '(inspecao tipo 4:', inspectionType === 4, ', permissão encaminhar_ficha=4:', canForwardCQ, ')');
 
                             if (showForwardButton) {
                                 return (
@@ -810,8 +801,6 @@ export default function EspecificacoesPage() {
                                 fichaDados.situacao === "4" &&
                                 userHasQProfile;
 
-                            console.log('[Debug] showConfirmButton:', showConfirmButton, '(ficha:', fichaDados.id_ficha_inspecao,
-                                ', situacao:', fichaDados.situacao, ', perfil Q:', userHasQProfile, ')');
 
                             if (showConfirmButton) {
                                 return (
