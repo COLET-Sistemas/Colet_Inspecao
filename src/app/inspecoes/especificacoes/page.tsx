@@ -66,7 +66,7 @@ export default function EspecificacoesPage() {
         exibe_resultado: 'S'
     });
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string; observacao: string; conforme?: boolean | null } }>({});
+    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } }>({});
     const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set()); const [isSaving, setIsSaving] = useState(false);
     // Variável para controlar se a inspeção foi iniciada
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
@@ -219,10 +219,53 @@ export default function EspecificacoesPage() {
             console.error('Erro ao verificar permissão:', error);
             return false;
         }
-    }, []);    // Função para atualizar valores em edição
+    }, []);
+
+    // Função para atualizar valores em edição    
     const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | number | boolean) => {
         setEditingValues((prev) => {
             const currentSpec = prev[specId] || { valor_encontrado: '', observacao: '', conforme: null };
+
+            // Se estiver atualizando o valor_encontrado, calcular automaticamente se está conforme
+            if (field === 'valor_encontrado' && fichaDados.exibe_resultado === 'S') {
+                // Encontrar a especificação atual
+                const spec = specifications.find(s => s.id_especificacao === specId);
+
+                if (spec && (spec.tipo_valor === 'F' || spec.tipo_valor === 'U')) {
+                    // Para valores numéricos, verificar se está dentro da faixa
+                    const numValue = parseFloat(value as string);
+
+                    // Se o valor não for um número válido, não definir conforme
+                    if (!isNaN(numValue)) {
+                        // Verificar se está dentro da tolerância
+                        const minValue = spec.valor_minimo;
+                        const maxValue = spec.valor_maximo;
+
+                        // Verificar se está dentro dos limites
+                        let isWithinLimits = true;
+
+                        if (minValue !== null && numValue < minValue) {
+                            isWithinLimits = false;
+                        }
+
+                        if (maxValue !== null && numValue > maxValue) {
+                            isWithinLimits = false;
+                        }
+
+                        // Atualizar conformidade automaticamente
+                        return {
+                            ...prev,
+                            [specId]: {
+                                ...currentSpec,
+                                [field]: value,
+                                conforme: isWithinLimits
+                            }
+                        };
+                    }
+                }
+            }
+
+            // Para outros casos ou se não for possível calcular conforme
             return {
                 ...prev,
                 [specId]: {
@@ -231,7 +274,9 @@ export default function EspecificacoesPage() {
                 }
             };
         });
-    }, []);    // Função para obter mensagem de permissão baseada no local_inspecao
+    }, [specifications, fichaDados.exibe_resultado]);
+
+    // Função para obter mensagem de permissão baseada no local_inspecao
     const getPermissionMessage = useCallback((localInspecao: string) => {
         if (localInspecao === 'Q') return "Requer perfil de Qualidade (Q) para editar";
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
@@ -317,13 +362,16 @@ export default function EspecificacoesPage() {
         try {
             setIsSaving(true);
             // Preparar os apontamentos para enviar ao servidor
-            const apontamentos = specifications.map(spec => {
-                // Verificar se há valores em edição para esta especificação
+            const apontamentos = specifications.map(spec => {                // Verificar se há valores em edição para esta especificação
                 const editingValue = editingValues[spec.id_especificacao];                // Determinar o valor encontrado 
                 let valorEncontrado: string | number | null = null;
                 if (editingValue?.valor_encontrado !== undefined) {
                     // Para campos de tipo select (A, C, S, L), já deve estar como "S" ou "N"
-                    valorEncontrado = editingValue.valor_encontrado;
+                    if (typeof editingValue.valor_encontrado === 'boolean') {
+                        valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
+                    } else {
+                        valorEncontrado = editingValue.valor_encontrado;
+                    }
                 } else if (spec.valor_encontrado !== undefined) {
                     // Para campos do tipo select que já estão no spec, verificar se precisa converter
                     if (isSelectType(spec.tipo_valor) && typeof spec.valor_encontrado === 'boolean') {
@@ -450,12 +498,14 @@ export default function EspecificacoesPage() {
             // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications.map(spec => {
                 // Verificar se há valores em edição para esta especificação
-                const editingValue = editingValues[spec.id_especificacao];
-
-                // Determinar o valor encontrado 
+                const editingValue = editingValues[spec.id_especificacao];                // Determinar o valor encontrado 
                 let valorEncontrado: string | number | null = null;
                 if (editingValue?.valor_encontrado !== undefined) {
-                    valorEncontrado = editingValue.valor_encontrado;
+                    if (typeof editingValue.valor_encontrado === 'boolean') {
+                        valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
+                    } else {
+                        valorEncontrado = editingValue.valor_encontrado;
+                    }
                 } else if (spec.valor_encontrado !== undefined) {
                     valorEncontrado = spec.valor_encontrado;
                 }
@@ -512,9 +562,11 @@ export default function EspecificacoesPage() {
             return <Eye className="h-5 w-5" />;
         }
         return <Ruler className="h-5 w-5" />;
-    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: number | null | undefined) => {
-        // Se não tiver valor encontrado
-        if (valorEncontrado === null || valorEncontrado === undefined) {
+    };
+
+    const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined) => {
+        // Caso 1: Se não tiver valor encontrado (vazio ou null) - Badge cinza "Não informado"
+        if (valorEncontrado === null || valorEncontrado === undefined || valorEncontrado === '') {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
                 text: "Não informado",
@@ -522,7 +574,9 @@ export default function EspecificacoesPage() {
             };
         }
 
-        // Se exibe_resultado for 'N', apenas mostra se foi informado ou não
+        // A partir daqui, o valor foi informado
+
+        // Caso 2: Se exibe_resultado for 'N' - Badge azul "Informado"
         if (fichaDados.exibe_resultado === 'N') {
             return {
                 icon: <CheckCircle className="h-4 w-4" />,
@@ -531,7 +585,7 @@ export default function EspecificacoesPage() {
             };
         }
 
-        // Se exibe_resultado for 'S', mostra status de conformidade
+        // Caso 3: Se exibe_resultado for 'S' - Mostra status de conformidade (verde ou vermelho)
         if (conforme === true) {
             return {
                 icon: <CheckCircle className="h-4 w-4" />,
@@ -548,9 +602,11 @@ export default function EspecificacoesPage() {
             };
         }
 
+        // Caso 4: Se exibe_resultado for 'S', valor foi informado, mas conforme não está definido
         return {
             icon: <AlertCircle className="h-4 w-4" />,
-            text: "Pendente", className: "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
+            text: "Não informado",
+            className: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/50"
         };
     };
 
@@ -847,320 +903,337 @@ export default function EspecificacoesPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
                     className="space-y-2"
-                >
-                    {specifications
-                        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-                        .map((spec, index) => {
-                            const statusInfo = getConformeStatus(spec.conforme, spec.valor_encontrado);
-                            const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
-                                key={spec.id_especificacao}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                    scale: isExpanded ? 1.01 : 1,
-                                    boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
-                                }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
-                                    ? 'border-slate-300'
-                                    : statusInfo.text === 'Conforme'
-                                        ? 'border-green-200'
-                                        : statusInfo.text === 'Não Conforme'
-                                            ? 'border-red-200'
-                                            : statusInfo.text === 'Informado'
-                                                ? 'border-blue-200'
-                                                : 'border-slate-200'
-                                    } overflow-hidden hover:shadow-md transition-all duration-200                                    `}
-                                data-expanded={isExpanded}
-                            >                                {/* Status Indicator - Thin stripe on top instead of left border */}
-                                <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Conforme' ? 'bg-green-500' :
-                                    statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
-                                        statusInfo.text === 'Não informado' ? 'bg-slate-300' :
-                                            statusInfo.text === 'Informado' ? 'bg-blue-500' : 'bg-amber-500'
-                                    }`}></div>
-                                {/* Removed permission indicator from corner */}
+                >                    {specifications
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+                    .map((spec, index) => {
+                        // Usar os valores em edição se existirem, caso contrário usar os valores originais
+                        const valorAtual = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined ?
+                            editingValues[spec.id_especificacao].valor_encontrado :
+                            spec.valor_encontrado;
 
-                                {/* Card Header - Always visible */}                                <div
-                                    className="p-4 cursor-pointer" onClick={() => {
-                                        setExpandedCards(prev => {
-                                            const newSet = new Set<number>();
-                                            // Se o item clicado já estava expandido, apenas feche-o (retornando um conjunto vazio)
-                                            // Se não estava expandido, adicione apenas este item ao conjunto
-                                            if (!prev.has(spec.id_especificacao)) {
-                                                newSet.add(spec.id_especificacao);
-                                                // Definir um timeout curto para garantir que o componente seja renderizado
-                                                // antes de tentar dar foco ao input
-                                                setTimeout(() => {
-                                                    // Dar foco ao input quando o card é expandido
-                                                    if (inputRefs.current[spec.id_especificacao]) {
-                                                        inputRefs.current[spec.id_especificacao]?.focus();
-                                                    }
-                                                }, 100);
-                                            }
-                                            return newSet;
-                                        });
-                                    }}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        {/* Left: Order badge and title */}
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            {/* Technical order number badge */}
-                                            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-50 border border-slate-200 shadow-sm">
-                                                <span className="font-semibold text-slate-700">{spec.ordem}</span>
-                                            </div>                                                {/* Title with technical styling */}                                            <div className="min-w-0">                                                    <h3 className="text-base font-semibold text-slate-800 truncate flex items-center">                                                {spec.svg_cota && (
-                                                <span className="inline-flex mr-2.5 flex-shrink-0 text-slate-700 items-center justify-center">
+                        const conformeAtual = editingValues[spec.id_especificacao]?.conforme !== undefined ?
+                            editingValues[spec.id_especificacao].conforme :
+                            spec.conforme;
+
+                        const statusInfo = getConformeStatus(conformeAtual, valorAtual);
+                        const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
+                            key={spec.id_especificacao}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: isExpanded ? 1.01 : 1,
+                                boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
+                            }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
+                                ? 'border-slate-300'
+                                : statusInfo.text === 'Conforme'
+                                    ? 'border-green-200'
+                                    : statusInfo.text === 'Não Conforme'
+                                        ? 'border-red-200'
+                                        : statusInfo.text === 'Informado'
+                                            ? 'border-blue-200'
+                                            : 'border-slate-200'
+                                } overflow-hidden hover:shadow-md transition-all duration-200                                    `}
+                            data-expanded={isExpanded}                            >                                {/* Status Indicator - Thin stripe on top instead of left border */}
+                            <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
+                                statusInfo.text === 'Conforme' ? 'bg-green-500' :
+                                    statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
+                                        statusInfo.text === 'Informado' ? 'bg-blue-500' :
+                                            'bg-slate-300'
+                                }`}></div>
+                            {/* Removed permission indicator from corner */}
+
+                            {/* Card Header - Always visible */}                                <div
+                                className="p-4 cursor-pointer" onClick={() => {
+                                    setExpandedCards(prev => {
+                                        const newSet = new Set<number>();
+                                        // Se o item clicado já estava expandido, apenas feche-o (retornando um conjunto vazio)
+                                        // Se não estava expandido, adicione apenas este item ao conjunto
+                                        if (!prev.has(spec.id_especificacao)) {
+                                            newSet.add(spec.id_especificacao);
+                                            // Definir um timeout curto para garantir que o componente seja renderizado
+                                            // antes de tentar dar foco ao input
+                                            setTimeout(() => {
+                                                // Dar foco ao input quando o card é expandido
+                                                if (inputRefs.current[spec.id_especificacao]) {
+                                                    inputRefs.current[spec.id_especificacao]?.focus();
+                                                }
+                                            }, 100);
+                                        }
+                                        return newSet;
+                                    });
+                                }}
+                            >
+                                <div className="flex items-center justify-between">
+                                    {/* Left: Order badge and title */}
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        {/* Technical order number badge */}
+                                        <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-50 border border-slate-200 shadow-sm">
+                                            <span className="font-semibold text-slate-700">{spec.ordem}</span>
+                                        </div>                                                {/* Title with technical styling */}                                            <div className="min-w-0">                                                    <h3 className="text-base font-semibold text-slate-800 truncate flex items-center">                                                {spec.svg_cota && (
+                                            <span className="inline-flex mr-2.5 flex-shrink-0 text-slate-700 items-center justify-center">
+                                                <svg
+                                                    viewBox="0 0 100 100"
+                                                    width="28"
+                                                    height="28"
+                                                    className="spec-icon-svg"
+                                                    dangerouslySetInnerHTML={{ __html: spec.svg_cota }}
+                                                    style={{ strokeWidth: "1", minWidth: "28px" }}
+                                                />
+                                            </span>
+                                        )}
+                                            {spec.descricao_cota}
+                                            {spec.complemento_cota && (
+                                                <span className="text-slate-400 text-sm ml-1">
+                                                    ({spec.complemento_cota})
+                                                </span>)}
+                                        </h3>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Status badge and expand/collapse */}                                        <div className="flex items-center gap-3">                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                        : statusInfo.text === 'Não Conforme'
+                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
+                                            : statusInfo.text === 'Informado'
+                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
+                                                : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
+                                        }`}>
+                                        <span className="w-3 h-3 flex-shrink-0">
+                                            {statusInfo.icon}
+                                        </span>
+                                        {statusInfo.text}
+                                    </span>
+
+                                        {/* Expand/collapse icon with improved styling */}
+                                        <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
+                                            {isExpanded ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                                </svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>                                    {/* Short description with technical look */}                                    <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2 ml-13">
+                                    {/* Left side with specification details */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {/* Caracteristica SVG badge */}
+                                        {spec.svg_caracteristica && (
+                                            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                                <span className="inline-flex flex-shrink-0 text-slate-400 items-center justify-center">
                                                     <svg
                                                         viewBox="0 0 100 100"
-                                                        width="28"
-                                                        height="28"
+                                                        width="18"
+                                                        height="18"
                                                         className="spec-icon-svg"
-                                                        dangerouslySetInnerHTML={{ __html: spec.svg_cota }}
-                                                        style={{ strokeWidth: "1", minWidth: "28px" }}
+                                                        dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
+                                                        style={{ strokeWidth: "1", minWidth: "18px" }}
                                                     />
                                                 </span>
-                                            )}
-                                                {spec.descricao_cota}
-                                                {spec.complemento_cota && (
-                                                    <span className="text-slate-400 text-sm ml-1">
-                                                        ({spec.complemento_cota})
-                                                    </span>)}
-                                            </h3>
+                                                <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
                                             </div>
+                                        )}
+
+                                        {/* Instrument info */}
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                            <span className="text-slate-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
+                                            <span className="truncate font-medium">{spec.tipo_instrumento || '-'}</span>
                                         </div>
 
-                                        {/* Right: Status badge and expand/collapse */}
-                                        <div className="flex items-center gap-3">                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.text === 'Conforme'
-                                            ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
-                                            : statusInfo.text === 'Não Conforme'
-                                                ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
-                                                : statusInfo.text === 'Informado'
-                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
-                                                    : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
-                                            }`}>
-                                            <span className="w-3 h-3 flex-shrink-0">
-                                                {statusInfo.icon}
-                                            </span>
-                                            {statusInfo.text}
-                                        </span>
-
-                                            {/* Expand/collapse icon with improved styling */}
-                                            <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
-                                                {isExpanded ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                                                        <polyline points="18 15 12 9 6 15"></polyline>
-                                                    </svg>
-                                                ) : (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                                    </svg>
+                                        {/* Technical tolerance display - only shown when exibe_faixa is 'S' */}
+                                        {fichaDados.exibe_faixa === 'S' && (
+                                            <div className="bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                                {isNumericType(spec.tipo_valor) ? (
+                                                    <span className="flex items-center gap-1.5 font-medium">
+                                                        {spec.valor_minimo !== null && spec.valor_maximo !== null ? (
+                                                            <>{spec.valor_minimo} - {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
+                                                        ) : spec.valor_minimo !== null ? (
+                                                            <>Min: {spec.valor_minimo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
+                                                        ) : spec.valor_maximo !== null ? (
+                                                            <>Max: {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
+                                                        ) : (
+                                                            '-'
+                                                        )}
+                                                    </span>
+                                                ) : isSelectType(spec.tipo_valor) && (
+                                                    <span className="font-medium">
+                                                        {getSelectOptions(spec.tipo_valor).map(opt => opt.label).join(' / ')}
+                                                    </span>
                                                 )}
-                                            </button>
-                                        </div>
-                                    </div>                                    {/* Short description with technical look */}                                    <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2 ml-13">
-                                        {/* Left side with specification details */}
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            {/* Caracteristica SVG badge */}
-                                            {spec.svg_caracteristica && (
-                                                <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-                                                    <span className="inline-flex flex-shrink-0 text-slate-400 items-center justify-center">
-                                                        <svg
-                                                            viewBox="0 0 100 100"
-                                                            width="18"
-                                                            height="18"
-                                                            className="spec-icon-svg"
-                                                            dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
-                                                            style={{ strokeWidth: "1", minWidth: "18px" }}
-                                                        />
-                                                    </span>
-                                                    <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Instrument info */}
-                                            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-                                                <span className="text-slate-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
-                                                <span className="truncate font-medium">{spec.tipo_instrumento || '-'}</span>
                                             </div>
-
-                                            {/* Technical tolerance display - only shown when exibe_faixa is 'S' */}
-                                            {fichaDados.exibe_faixa === 'S' && (
-                                                <div className="bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-                                                    {isNumericType(spec.tipo_valor) ? (
-                                                        <span className="flex items-center gap-1.5 font-medium">
-                                                            {spec.valor_minimo !== null && spec.valor_maximo !== null ? (
-                                                                <>{spec.valor_minimo} - {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
-                                                            ) : spec.valor_minimo !== null ? (
-                                                                <>Min: {spec.valor_minimo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
-                                                            ) : spec.valor_maximo !== null ? (
-                                                                <>Max: {spec.valor_maximo} <span className="text-slate-500">{spec.unidade_medida || ''}</span></>
-                                                            ) : (
-                                                                '-'
-                                                            )}
-                                                        </span>
-                                                    ) : isSelectType(spec.tipo_valor) && (
-                                                        <span className="font-medium">
-                                                            {getSelectOptions(spec.tipo_valor).map(opt => opt.label).join(' / ')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2 ml-auto">
-                                            {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
-                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-amber-50 border-amber-200 text-amber-700">
-                                                    <span className="flex items-center gap-1 font-medium">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                                        </svg>
-                                                        Perfil sem permissão
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-auto">
+                                        {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
+                                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-amber-50 border-amber-200 text-amber-700">
+                                                <span className="flex items-center gap-1 font-medium">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                    </svg>
+                                                    Perfil sem permissão
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
+                            </div>
 
-                                {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (
-                                    <div className="mt-2 ml-13">
-                                        <div className={`
+                            {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (
+                                <div className="mt-2 ml-13">
+                                    <div className={`
                                             inline-flex items-center gap-1.5 px-2 py-1 rounded-md border
                                             ${fichaDados.exibe_resultado === 'S' ?
-                                                (spec.conforme === true ?
-                                                    'bg-green-50 border-green-200' :
+                                            (spec.conforme === true ?
+                                                'bg-green-50 border-green-200' :
+                                                spec.conforme === false ?
+                                                    'bg-red-50 border-red-200' :
+                                                    'bg-amber-50 border-amber-200') :
+                                            'bg-blue-50 border-blue-200'
+                                        }`}>
+                                        {fichaDados.exibe_resultado === 'S' ? (
+                                            <span className="text-xs font-medium">
+                                                {spec.conforme === true ?
+                                                    <CheckCircle className="h-3.5 w-3.5 text-green-600" /> :
                                                     spec.conforme === false ?
-                                                        'bg-red-50 border-red-200' :
-                                                        'bg-amber-50 border-amber-200') :
-                                                'bg-blue-50 border-blue-200'
-                                            }`}>
-                                            {fichaDados.exibe_resultado === 'S' ? (
-                                                <span className="text-xs font-medium">
-                                                    {spec.conforme === true ?
-                                                        <CheckCircle className="h-3.5 w-3.5 text-green-600" /> :
-                                                        spec.conforme === false ?
-                                                            <XCircle className="h-3.5 w-3.5 text-red-600" /> :
-                                                            <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
-                                                    }
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs font-medium">
-                                                    <CheckCircle className="h-3.5 w-3.5 text-blue-600" />
-                                                </span>
-                                            )}
-                                            <span className="font-medium">
-                                                {isNumericType(spec.tipo_valor) ?
-                                                    `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
-                                                    isSelectType(spec.tipo_valor) ?
-                                                        (spec.conforme === true ?
-                                                            getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
-                                                            getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
-                                                        spec.valor_encontrado.toString()
+                                                        <XCircle className="h-3.5 w-3.5 text-red-600" /> :
+                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
                                                 }
                                             </span>
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Expandable content */}
-                                {isExpanded && (<motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="border-t border-slate-100 bg-slate-50/60 p-4"
-                                >
-                                    {/* Technical Input Field */}
-                                    <div className="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
-                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
-                                        </div>
-                                        {isSelectType(spec.tipo_valor) ? (
-                                            <div>
-                                                <p className="text-xs text-slate-600 mb-2 font-medium flex items-center gap-2">
-                                                    Selecione uma opção:
-                                                    {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
-                                                        <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
-                                                            {getPermissionMessage(spec.local_inspecao)}
-                                                        </span>
-                                                    )}
-                                                </p>                                                <div className="flex flex-wrap gap-2">
-                                                    {getSelectOptions(spec.tipo_valor).map((option) => (<button key={String(option.value)}
-                                                        onClick={() => {
-                                                            // Atualizar valor_encontrado com S para true e N para false
-                                                            handleValueChange(spec.id_especificacao, 'valor_encontrado', option.value ? 'S' : 'N');
-                                                            // Também definir conforme com o mesmo valor para manter consistência na interface
-                                                            handleValueChange(spec.id_especificacao, 'conforme', option.value);
-                                                        }}
-                                                        disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                        className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
-                                                                ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed ' : '')}
-                                                                ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
-                                                                ? (option.value
-                                                                    ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
-                                                                    : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
-                                                                : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                                                            }`}
-                                                    >
-                                                        {option.label}
-                                                    </button>
-                                                    ))}
-                                                </div>
-                                            </div>
                                         ) : (
-                                            <div>                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
-                                                Valor encontrado:
-                                                {spec.unidade_medida && (
-                                                    <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
-                                                )}
+                                            <span className="text-xs font-medium">
+                                                <CheckCircle className="h-3.5 w-3.5 text-blue-600" />
+                                            </span>
+                                        )}
+                                        <span className="font-medium">
+                                            {isNumericType(spec.tipo_valor) ?
+                                                `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
+                                                isSelectType(spec.tipo_valor) ?
+                                                    (spec.conforme === true ?
+                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
+                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
+                                                    spec.valor_encontrado.toString()
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Expandable content */}
+                            {isExpanded && (<motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="border-t border-slate-100 bg-slate-50/60 p-4"
+                            >
+                                {/* Technical Input Field */}
+                                <div className="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
+                                    </div>
+                                    {isSelectType(spec.tipo_valor) ? (
+                                        <div>
+                                            <p className="text-xs text-slate-600 mb-2 font-medium flex items-center gap-2">
+                                                Selecione uma opção:
                                                 {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
                                                     <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
                                                         {getPermissionMessage(spec.local_inspecao)}
                                                     </span>
-                                                )}                                            </label><input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
-                                                        ? editingValues[spec.id_especificacao].valor_encontrado
-                                                        : spec.valor_encontrado || ''}
-                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                )}
+                                            </p>                                                <div className="flex flex-wrap gap-2">
+                                                {getSelectOptions(spec.tipo_valor).map((option) => (<button key={String(option.value)}
+                                                    onClick={() => {
+                                                        // Atualizar valor_encontrado com S para true e N para false
+                                                        handleValueChange(spec.id_especificacao, 'valor_encontrado', option.value ? 'S' : 'N');
+                                                        // Também definir conforme com o mesmo valor para manter consistência na interface
+                                                        handleValueChange(spec.id_especificacao, 'conforme', option.value);
+                                                    }}
                                                     disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                    className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono
+                                                    className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
+                                                                ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed ' : '')}
+                                                                ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
+                                                            ? (option.value
+                                                                ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
+                                                                : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
+                                                            : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                                        }`}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
+                                            Valor encontrado:
+                                            {spec.unidade_medida && (
+                                                <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
+                                            )}
+                                            {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
+                                                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
+                                                    {getPermissionMessage(spec.local_inspecao)}
+                                                </span>
+                                            )}                                            </label><input
+                                                type="number"
+                                                step="0.01"
+                                                value={(() => {
+                                                    // Convert value to string or number before assignment
+                                                    const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
+                                                        ? editingValues[spec.id_especificacao].valor_encontrado
+                                                        : spec.valor_encontrado || '';
+
+                                                    // If it's a boolean, convert to string
+                                                    if (typeof value === 'boolean') {
+                                                        return value ? 'S' : 'N';
+                                                    }
+
+                                                    // Otherwise return as is
+                                                    return value;
+                                                })()}
+                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono
                                                         ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
                                                     `}
-                                                    placeholder="Digite o valor..."
-                                                    ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
-                                                />
-                                            </div>
-                                        )}
+                                                placeholder="Digite o valor..."
+                                                ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
+                                            />
+                                        </div>
+                                    )}
 
-                                        {/* Technical observations button */}
-                                        <div className="mt-4 flex justify-end">                                            <button
-                                            onClick={() => toggleObservationField(spec.id_especificacao)}
-                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                            className={`text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium
+                                    {/* Technical observations button */}
+                                    <div className="mt-4 flex justify-end">                                            <button
+                                        onClick={() => toggleObservationField(spec.id_especificacao)}
+                                        disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                        className={`text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium
                                                     ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed' : ''}
                                                 `}
-                                        >
-                                            <MessageSquare className="h-3.5 w-3.5" />
-                                            {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
-                                        </button>
-                                        </div>                                        {/* Technical expandable observation field */}
-                                        {expandedObservations.has(spec.id_especificacao) && (
-                                            <div className="mt-3">                                                <textarea
-                                                placeholder="Digite sua observação técnica..."
-                                                value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
-                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                className={`w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm
+                                    >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                        {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
+                                    </button>
+                                    </div>                                        {/* Technical expandable observation field */}
+                                    {expandedObservations.has(spec.id_especificacao) && (
+                                        <div className="mt-3">                                                <textarea
+                                            placeholder="Digite sua observação técnica..."
+                                            value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                            className={`w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm
                                                         ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
                                                     `}
-                                                rows={2}
-                                            />
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                                )}
+                                            rows={2}
+                                        />
+                                        </div>
+                                    )}
+                                </div>
                             </motion.div>
-                            );
-                        })}
+                            )}
+                        </motion.div>
+                        );
+                    })}
                 </motion.div>)}            {/* Global Action Buttons - Technical Design */}
             {specifications.length > 0 && isInspectionStarted && (
                 <motion.div
@@ -1169,43 +1242,70 @@ export default function EspecificacoesPage() {
                     transition={{ delay: 0.2 }}
                     className="sticky bottom-4 z-10 mt-4"
                 >
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
-                        {/* Technical Status counters */}                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">                            {fichaDados.exibe_resultado === 'S' ? (
-                            <>
-                                <div className="counter-item">
-                                    <div className="counter-dot bg-green-500"></div>
-                                    <span className="counter-label">Conformes:</span>
-                                    <span className="counter-value text-green-600 font-mono ml-1">
-                                        {specifications.filter(s => s.conforme === true).length}
-                                    </span>
-                                </div>
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">                    {/* Technical Status counters */}
+                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
+                            {fichaDados.exibe_resultado === 'S' ? (
+                                <>
+                                    <div className="counter-item">
+                                        <div className="counter-dot bg-green-500"></div>
+                                        <span className="counter-label">Conformes:</span>
+                                        <span className="counter-value text-green-600 font-mono ml-1">
+                                            {specifications.filter(s => {
+                                                const editingValue = editingValues[s.id_especificacao];
+                                                return (editingValue?.conforme !== undefined) ?
+                                                    editingValue.conforme === true :
+                                                    s.conforme === true;
+                                            }).length}
+                                        </span>
+                                    </div>
 
-                                <div className="counter-item">
-                                    <div className="counter-dot bg-red-500"></div>
-                                    <span className="counter-label">Não conformes:</span>
-                                    <span className="counter-value text-red-600 font-mono ml-1">
-                                        {specifications.filter(s => s.conforme === false).length}
-                                    </span>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="counter-item">
-                                    <div className="counter-dot bg-blue-500"></div>
-                                    <span className="counter-label">Informados:</span>
-                                    <span className="counter-value text-blue-600 font-mono ml-1">
-                                        {specifications.filter(s => s.valor_encontrado !== null).length}
-                                    </span>
-                                </div>
-                            </>
-                        )}<div className="counter-item">
+                                    <div className="counter-item">
+                                        <div className="counter-dot bg-red-500"></div>
+                                        <span className="counter-label">Não conformes:</span>
+                                        <span className="counter-value text-red-600 font-mono ml-1">
+                                            {specifications.filter(s => {
+                                                const editingValue = editingValues[s.id_especificacao];
+                                                return (editingValue?.conforme !== undefined) ?
+                                                    editingValue.conforme === false :
+                                                    s.conforme === false;
+                                            }).length}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="counter-item">
+                                        <div className="counter-dot bg-blue-500"></div>
+                                        <span className="counter-label">Informados:</span>                                    <span className="counter-value text-blue-600 font-mono ml-1">
+                                            {specifications.filter(s => {
+                                                const editingValue = editingValues[s.id_especificacao];
+                                                return (editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '') ?
+                                                    true :
+                                                    (s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0);
+                                            }).length}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                            <div className="counter-item">
                                 <div className="counter-dot bg-slate-400"></div>
                                 <span className="counter-label">{fichaDados.exibe_resultado === 'S' ? 'Pendentes:' : 'Não informados:'}</span>
                                 <span className="counter-value text-slate-600 font-mono ml-1">
-                                    {specifications.filter(s =>
-                                        (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
-                                        (isSelectType(s.tipo_valor) && s.conforme === null)
-                                    ).length}
+                                    {specifications.filter(s => {
+                                        const editingValue = editingValues[s.id_especificacao]; if (isNumericType(s.tipo_valor)) {
+                                            return (editingValue?.valor_encontrado !== undefined) ?
+                                                !editingValue.valor_encontrado :
+                                                (s.valor_encontrado === null || s.valor_encontrado === undefined);
+                                        }
+
+                                        if (isSelectType(s.tipo_valor)) {
+                                            return (editingValue?.conforme !== undefined) ?
+                                                editingValue.conforme === null :
+                                                s.conforme === null;
+                                        }
+
+                                        return false;
+                                    }).length}
                                 </span>
                             </div>
 
@@ -1259,8 +1359,7 @@ export default function EspecificacoesPage() {
                                     )}
                                 </button>
                             )}
-                        </div>
-                    </div>
+                        </div>                </div>
                 </motion.div>
             )}
         </div>
