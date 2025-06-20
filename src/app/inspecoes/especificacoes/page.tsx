@@ -79,7 +79,8 @@ export default function EspecificacoesPage() {
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para exibição de mensagens de alerta
-    const [alertMessage, setAlertMessage] = useState<{ message: string; type: "success" | "error" | "warning" | "info" } | null>(null);
+    const [alertMessage, setAlertMessage] = useState<{ message: string; type: "success" | "error" | "warning" | "info" } | null>(null);    // Referências para os inputs de cada especificação
+    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
     // UseEffect com proteção contra StrictMode e chamadas duplicadas
     useEffect(() => {
@@ -879,15 +880,25 @@ export default function EspecificacoesPage() {
                                 {/* Removed permission indicator from corner */}
 
                                 {/* Card Header - Always visible */}                                <div
-                                    className="p-4 cursor-pointer" onClick={() => setExpandedCards(prev => {
-                                        const newSet = new Set<number>();
-                                        // Se o item clicado já estava expandido, apenas feche-o (retornando um conjunto vazio)
-                                        // Se não estava expandido, adicione apenas este item ao conjunto
-                                        if (!prev.has(spec.id_especificacao)) {
-                                            newSet.add(spec.id_especificacao);
-                                        }
-                                        return newSet;
-                                    })}
+                                    className="p-4 cursor-pointer" onClick={() => {
+                                        setExpandedCards(prev => {
+                                            const newSet = new Set<number>();
+                                            // Se o item clicado já estava expandido, apenas feche-o (retornando um conjunto vazio)
+                                            // Se não estava expandido, adicione apenas este item ao conjunto
+                                            if (!prev.has(spec.id_especificacao)) {
+                                                newSet.add(spec.id_especificacao);
+                                                // Definir um timeout curto para garantir que o componente seja renderizado
+                                                // antes de tentar dar foco ao input
+                                                setTimeout(() => {
+                                                    // Dar foco ao input quando o card é expandido
+                                                    if (inputRefs.current[spec.id_especificacao]) {
+                                                        inputRefs.current[spec.id_especificacao]?.focus();
+                                                    }
+                                                }, 100);
+                                            }
+                                            return newSet;
+                                        });
+                                    }}
                                 >
                                     <div className="flex items-center justify-between">
                                         {/* Left: Order badge and title */}
@@ -1102,8 +1113,7 @@ export default function EspecificacoesPage() {
                                                     <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
                                                         {getPermissionMessage(spec.local_inspecao)}
                                                     </span>
-                                                )}
-                                            </label><input
+                                                )}                                            </label><input
                                                     type="number"
                                                     step="0.01"
                                                     value={editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
@@ -1115,6 +1125,7 @@ export default function EspecificacoesPage() {
                                                         ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
                                                     `}
                                                     placeholder="Digite o valor..."
+                                                    ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
                                                 />
                                             </div>
                                         )}
