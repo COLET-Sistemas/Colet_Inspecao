@@ -11,8 +11,7 @@ import {
     CheckCircle,
     CheckSquare,
     Eye,
-    MessageSquare,
-    RefreshCw,
+    MessageSquare, RefreshCw,
     Ruler,
     Send,
     StopCircle,
@@ -75,6 +74,8 @@ export default function EspecificacoesPage() {
     const [isForwardingToCQ, setIsForwardingToCQ] = useState(false);
     // Variável para controlar se está confirmando recebimento
     const [isConfirmingReceipt, setIsConfirmingReceipt] = useState(false);
+    // Variável para controlar se está finalizando a inspeção
+    const [isFinalizing, setIsFinalizing] = useState(false);
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para exibição de mensagens de alerta
@@ -234,25 +235,7 @@ export default function EspecificacoesPage() {
         if (localInspecao === 'Q') return "Requer perfil de Qualidade (Q) para editar";
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
         return "";
-    }, []);
-
-    const calculateConforme = useCallback((valorEncontrado: number, valorMinimo: number | null, valorMaximo: number | null, tipoValor: string, conformeValue?: boolean | null): boolean | null => {
-        // Para tipos de select (A, C, S, L), retorna o valor de conforme diretamente
-        if (isSelectType(tipoValor)) {
-            return conformeValue !== undefined ? conformeValue : null;
-        }
-
-        // Para tipos numéricos (F, U), calcula baseado nos limites
-        if (isNumericType(tipoValor)) {
-            if (valorMinimo !== null && valorMaximo !== null) {
-                return valorEncontrado >= valorMinimo && valorEncontrado <= valorMaximo;
-            } else if (valorMaximo !== null) {
-                return valorEncontrado <= valorMaximo;
-            } else if (valorMinimo !== null) {
-                return valorEncontrado >= valorMinimo;
-            }
-        } return null;
-    }, [isSelectType, isNumericType]);    // Função para iniciar a inspeção
+    }, []);    // Function removed as it's no longer used// Função para iniciar a inspeção
     const handleStartInspection = useCallback(async () => {
         if (!id) return;
 
@@ -278,74 +261,7 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id]);
-
-    // Global action handlers
-    const handleSaveAllChanges = useCallback(async () => {
-        setIsSaving(true);
-        const errors: string[] = [];
-
-        try {
-            // Get all specifications that have pending changes
-            const specsToSave = specifications.filter(spec =>
-                editingValues[spec.id_especificacao] !== undefined
-            );
-
-            for (const spec of specsToSave) {
-                try {
-                    const editingData = editingValues[spec.id_especificacao];
-
-                    if (isSelectType(spec.tipo_valor)) {
-                        // Para tipos de select, salvamos apenas o valor conforme
-                        if (editingData.conforme === undefined || editingData.conforme === null) continue;
-
-                        const updateData = {
-                            valor_encontrado: editingData.conforme === true ? 1 : 0,
-                            conforme: editingData.conforme,
-                            observacao: editingData.observacao || null
-                        };
-
-                        await inspecaoService.updateInspectionSpecification(spec.id_especificacao, updateData);
-
-                    } else {
-                        // Para tipos numéricos
-                        const valorEncontrado = parseFloat(editingData.valor_encontrado);
-                        if (isNaN(valorEncontrado)) continue;
-
-                        const conforme = calculateConforme(valorEncontrado, spec.valor_minimo, spec.valor_maximo, spec.tipo_valor);
-
-                        const updateData = {
-                            valor_encontrado: valorEncontrado,
-                            conforme: conforme,
-                            observacao: editingData.observacao || null
-                        };
-
-                        await inspecaoService.updateInspectionSpecification(spec.id_especificacao, updateData);
-                    }
-                } catch (error) {
-                    console.error(`Erro ao salvar especificação ${spec.id_especificacao}:`, error);
-                    errors.push(`Especificação ${spec.ordem}: ${error}`);
-                }
-            }
-
-            if (errors.length === 0) {
-                // Reload specifications to get updated data
-                await handleRefresh();
-                // Clear all editing values
-                setEditingValues({});
-
-            } else {
-                // TODO: Show partial success notification with errors
-                console.error('Algumas especificações não puderam ser salvas:', errors);
-            }
-
-        } catch (error) {
-            console.error("Erro geral ao salvar alterações:", error);
-            // TODO: Show error notification
-        } finally {
-            setIsSaving(false);
-        }
-    }, [specifications, editingValues, isSelectType, calculateConforme, handleRefresh]);
+    }, [id]);    // Global action handlers
 
     // Efeito para verificar os dados do localStorage
     useEffect(() => {
@@ -519,6 +435,76 @@ export default function EspecificacoesPage() {
             setIsConfirmingReceipt(false);
         }
     }, [id, handleRefresh]);
+
+    /**
+     * Finaliza uma ficha de inspeção
+     */
+    const handleFinalizeInspection = useCallback(async () => {
+        if (!isInspectionStarted || !id) return;
+
+        try {
+            setIsSaving(true);
+            setIsFinalizing(true);
+
+            // Preparar os apontamentos para enviar ao servidor
+            const apontamentos = specifications.map(spec => {
+                // Verificar se há valores em edição para esta especificação
+                const editingValue = editingValues[spec.id_especificacao];
+
+                // Determinar o valor encontrado 
+                let valorEncontrado: string | number | null = null;
+                if (editingValue?.valor_encontrado !== undefined) {
+                    valorEncontrado = editingValue.valor_encontrado;
+                } else if (spec.valor_encontrado !== undefined) {
+                    valorEncontrado = spec.valor_encontrado;
+                }
+
+                // Para campos de select, o valor de conforme deve ser null, pois já é representado em valor_encontrado
+                let conforme: boolean | null = null;
+
+                if (!isSelectType(spec.tipo_valor)) {
+                    conforme = editingValue?.conforme !== undefined
+                        ? editingValue.conforme
+                        : (spec.conforme !== undefined ? spec.conforme : null);
+                }
+
+                // Determinar a observação
+                const observacao: string | null = editingValue?.observacao !== undefined
+                    ? editingValue.observacao
+                    : (spec.observacao || null);
+
+                return {
+                    id_especificacao: spec.id_especificacao,
+                    valor_encontrado: valorEncontrado,
+                    conforme: conforme,
+                    observacao: observacao
+                };
+            });
+
+            await inspecaoService.finalizeInspection(parseInt(id), apontamentos);
+
+            setIsInspectionStarted(false);
+            setEditingValues({}); // Limpar valores em edição
+
+            setAlertMessage({
+                message: "Inspeção finalizada com sucesso",
+                type: "success",
+            });
+
+            // Recarregar os dados atualizados
+            await handleRefresh();
+
+        } catch (error) {
+            console.error("Erro ao finalizar inspeção:", error);
+            setAlertMessage({
+                message: "Erro ao finalizar a inspeção",
+                type: "error",
+            });
+        } finally {
+            setIsSaving(false);
+            setIsFinalizing(false);
+        }
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, isSelectType]);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {
@@ -1240,53 +1226,27 @@ export default function EspecificacoesPage() {
                                     </>
                                 )}
                             </button>
-                        )}
-                            {shouldShowActionButtons() && isInspectionStarted && (
-                                <>
-                                    {specifications.filter(s =>
-                                        (isNumericType(s.tipo_valor) && s.valor_encontrado === null) ||
-                                        (isSelectType(s.tipo_valor) && s.conforme === null)
-                                    ).length === 0 ? (
-                                        // Mostrar "Finalizar Inspeção" quando todos os campos estiverem preenchidos
-                                        <button
-                                            onClick={handleSaveAllChanges}
-                                            disabled={isSaving}
-                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    Salvando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    Finalizar Inspeção
-                                                </>
-                                            )}
-                                        </button>
+                        )}                            {shouldShowActionButtons() && isInspectionStarted &&
+                            // Verificar se pelo menos um campo foi preenchido
+                            (Object.keys(editingValues).length > 0 ||
+                                specifications.some(s => s.valor_encontrado !== null && s.valor_encontrado !== undefined)) && (
+                                <button
+                                    onClick={handleFinalizeInspection}
+                                    disabled={isSaving || isFinalizing}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                >
+                                    {isFinalizing ? (
+                                        <>
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                            Finalizando...
+                                        </>
                                     ) : (
-                                        // Mostrar "Salvar Alterações" quando houver alterações, mas não todos os campos preenchidos
-                                        Object.keys(editingValues).length > 0 && (
-                                            <button
-                                                onClick={handleSaveAllChanges}
-                                                disabled={isSaving}
-                                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
-                                            >                                                {isSaving ? (
-                                                <>
-                                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    Salvando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    Finalizar Inspeção
-                                                </>
-                                            )}
-                                            </button>
-                                        )
+                                        <>
+                                            <CheckCircle className="h-4 w-4" />
+                                            Finalizar Inspeção
+                                        </>
                                     )}
-                                </>
+                                </button>
                             )}
                         </div>
                     </div>
