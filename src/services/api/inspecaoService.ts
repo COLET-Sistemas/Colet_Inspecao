@@ -582,6 +582,74 @@ class InspecaoService {
             throw error;
         }
     }
+
+    /**
+     * Interrompe uma inspeção em andamento
+     * @param idFichaInspecao - ID da ficha de inspeção
+     * @param apontamentos - Array de apontamentos com valores encontrados e observações
+     */
+    async interruptInspection(
+        idFichaInspecao: number,
+        apontamentos: Array<{
+            id_especificacao: number;
+            valor_encontrado: string | number | null;
+            conforme: boolean | null;
+            observacao: string | null;
+        }>): Promise<void> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            // Tenta obter o código da pessoa do localStorage
+            let codigo_pessoa = null;
+            const userDataStr = localStorage.getItem("userData");
+            if (userDataStr) {
+                try {
+                    const userData = JSON.parse(userDataStr);
+                    if (userData && userData.codigo_pessoa) {
+                        codigo_pessoa = userData.codigo_pessoa;
+                    }
+                } catch (e) {
+                    console.error("Erro ao parsear userData do localStorage:", e);
+                }
+            }
+
+            // Se não encontrou no userData, busca diretamente no localStorage
+            if (!codigo_pessoa) {
+                codigo_pessoa = localStorage.getItem("codigo_pessoa");
+            }
+
+            // Convertendo o código de pessoa para número (pode ser null)
+            const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
+
+            // Filtrar apenas apontamentos que possuem valores preenchidos
+            const apontamentosPreenchidos = apontamentos.filter(
+                item => item.valor_encontrado !== null || item.observacao
+            );
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id_ficha_inspecao: idFichaInspecao,
+                    apontamentos: apontamentosPreenchidos,
+                    acao: "interromper",
+                    codigo_pessoa: codigo_pessoa_num
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Erro ao interromper inspeção:', error);
+            throw error;
+        }
+    }
 }
 
 // Instância singleton do serviço

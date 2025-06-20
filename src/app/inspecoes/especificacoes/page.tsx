@@ -14,7 +14,6 @@ import {
     MessageSquare,
     RefreshCw,
     Ruler,
-    Save,
     Send,
     StopCircle,
     XCircle
@@ -401,15 +400,68 @@ export default function EspecificacoesPage() {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, []);
+    }, []);    // Função para interromper a inspeção
+    const handleInterruptInspection = useCallback(async () => {
+        if (!isInspectionStarted || !id) return;
 
-    // Função para interromper a inspeção
-    const handleInterruptInspection = useCallback(() => {
-        if (isInspectionStarted) {
-            // Poderíamos adicionar uma chamada API aqui se necessário
+        try {
+            setIsSaving(true);
+            // Preparar os apontamentos para enviar ao servidor
+            const apontamentos = specifications.map(spec => {
+                // Verificar se há valores em edição para esta especificação
+                const editingValue = editingValues[spec.id_especificacao];
+
+                // Determinar o valor encontrado 
+                let valorEncontrado: string | number | null = null;
+                if (editingValue?.valor_encontrado !== undefined) {
+                    valorEncontrado = editingValue.valor_encontrado;
+                } else if (spec.valor_encontrado !== undefined) {
+                    valorEncontrado = spec.valor_encontrado;
+                }
+
+                // Determinar o valor de conformidade
+                const conforme: boolean | null = editingValue?.conforme !== undefined
+                    ? editingValue.conforme
+                    : (spec.conforme !== undefined ? spec.conforme : null);
+
+                // Determinar a observação
+                const observacao: string | null = editingValue?.observacao !== undefined
+                    ? editingValue.observacao
+                    : (spec.observacao || null);
+
+                return {
+                    id_especificacao: spec.id_especificacao,
+                    valor_encontrado: valorEncontrado,
+                    conforme: conforme,
+                    observacao: observacao
+                };
+            });
+
+            await inspecaoService.interruptInspection(parseInt(id), apontamentos);
+
             setIsInspectionStarted(false);
+            setEditingValues({}); // Limpar valores em edição
+
+            setAlertMessage({
+                message: "Inspeção interrompida com sucesso",
+                type: "info",
+            });
+
+            // Recarregar os dados atualizados
+            await handleRefresh();
+
+        } catch (error) {
+            console.error("Erro ao interromper inspeção:", error);
+            setAlertMessage({
+                message: "Erro ao interromper a inspeção",
+                type: "error",
+            });
+        } finally {
+            setIsSaving(false);
         }
-    }, [isInspectionStarted]); const handleForwardToCQ = useCallback(async () => {
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh]);
+
+    const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
 
         try {
@@ -578,7 +630,8 @@ export default function EspecificacoesPage() {
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Voltar
-                    </button>                    <div>
+                    </button>
+                    <div>
                         <h1 className="text-xl font-medium text-slate-800">Especificações da Inspeção</h1>
                         <p className="text-sm text-slate-500">Ficha #{id}</p>
                     </div>
@@ -664,14 +717,13 @@ export default function EspecificacoesPage() {
                             ) : (
                                 <>
                                     <CheckSquare className="h-4 w-4" />
-                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar"}
+                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar Inspeção"}
                                 </>
                             )}
                         </button>
                     )}
 
-                        {/* Botão de Encaminhar CQ - exibido com base em condições */}
-                        {(() => {                            // Verificar se deve mostrar o botão de encaminhar CQ usando a mesma lógica do getCurrentUserProfile
+                        {(() => {
                             const userDataStr = localStorage.getItem('userData');
                             let canForwardCQ = false;
                             let userProfile = '';
@@ -688,9 +740,7 @@ export default function EspecificacoesPage() {
                                     console.error('Error parsing userData:', e);
                                 }
                             }
-                            // Obter ID do tipo de inspeção da ficha
-                            // Usamos a primeira especificação porque todas pertencem à mesma ficha de inspeção
-                            // e o id_tipo_inspecao é uma propriedade da ficha, não da especificação
+
                             const fichaData = specifications.length > 0 ? fichaDados : null;
                             const inspectionType = specifications.length > 0 ? (() => {
                                 // Verificar se há dados adicionais no localStorage sobre a ficha
@@ -737,7 +787,7 @@ export default function EspecificacoesPage() {
                             }
 
                             return null;
-                        })()}                        {/* Botão de confirmar recebimento - exibido com base em condições */}
+                        })()}
                         {(() => {
                             // Verificar se deve mostrar o botão de confirmar recebimento
                             const userDataStr = localStorage.getItem('userData');
@@ -1114,9 +1164,8 @@ export default function EspecificacoesPage() {
                             </motion.div>
                             );
                         })}
-                </motion.div>
-            )}            {/* Global Action Buttons - Technical Design */}
-            {specifications.length > 0 && (
+                </motion.div>)}            {/* Global Action Buttons - Technical Design */}
+            {specifications.length > 0 && isInspectionStarted && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1173,7 +1222,25 @@ export default function EspecificacoesPage() {
                                 </div>
                             )}
                         </div>                        {/* Technical Action buttons */}
-                        <div className="flex items-center gap-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3 whitespace-nowrap">                            {shouldShowActionButtons() && (
+                            <button
+                                onClick={handleInterruptInspection}
+                                disabled={isSaving || !isInspectionStarted}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        Interrompendo...
+                                    </>
+                                ) : (
+                                    <>
+                                        <StopCircle className="h-4 w-4" />
+                                        Interromper Inspeção
+                                    </>
+                                )}
+                            </button>
+                        )}
                             {shouldShowActionButtons() && isInspectionStarted && (
                                 <>
                                     {specifications.filter(s =>
@@ -1193,7 +1260,7 @@ export default function EspecificacoesPage() {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <CheckSquare className="h-4 w-4" />
+                                                    <CheckCircle className="h-4 w-4" />
                                                     Finalizar Inspeção
                                                 </>
                                             )}
@@ -1205,32 +1272,21 @@ export default function EspecificacoesPage() {
                                                 onClick={handleSaveAllChanges}
                                                 disabled={isSaving}
                                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
-                                            >
-                                                {isSaving ? (
-                                                    <>
-                                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                                        Salvando...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Save className="h-4 w-4" />
-                                                        Salvar Alterações
-                                                    </>
-                                                )}
+                                            >                                                {isSaving ? (
+                                                <>
+                                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                                    Salvando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="h-4 w-4" />
+                                                    Finalizar Inspeção
+                                                </>
+                                            )}
                                             </button>
                                         )
                                     )}
                                 </>
-                            )}
-                            {shouldShowActionButtons() && (
-                                <button
-                                    onClick={handleInterruptInspection}
-                                    disabled={isSaving || !isInspectionStarted}
-                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
-                                >
-                                    <StopCircle className="h-4 w-4" />
-                                    Interromper
-                                </button>
                             )}
                         </div>
                     </div>
