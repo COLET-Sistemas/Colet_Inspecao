@@ -765,6 +765,51 @@ export default function EspecificacoesPage() {
 
     // Função para verificar se os botões de ação devem ser exibidos
     const shouldShowActionButtons = useCallback(() => {
+        // Primeiro, verifica se o usuário tem permissão baseada em registrar_ficha no localStorage
+        let userCanRegister = false;
+        const userDataStr = localStorage.getItem('userData');
+
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                const registrarFicha = userData?.registrar_ficha;
+                const idTipoInspecao = fichaDados?.id_tipo_inspecao;
+
+                // Verifica se registrarFicha existe e contém o id_tipo_inspecao atual
+                if (registrarFicha !== undefined && idTipoInspecao !== null) {
+                    if (typeof registrarFicha === 'string') {
+                        // Se for uma string, verificar se contém o número do tipo de inspeção
+                        if (registrarFicha.includes(',')) {
+                            // Se for uma string separada por vírgulas
+                            const allowedTypes = registrarFicha.split(',').map(type => parseInt(type.trim()));
+                            userCanRegister = allowedTypes.includes(idTipoInspecao);
+                        } else {
+                            // Se for uma string simples
+                            userCanRegister = registrarFicha.includes(idTipoInspecao.toString());
+                        }
+                    } else if (Array.isArray(registrarFicha)) {
+                        // Se for um array, verificar se contém o id_tipo_inspecao
+                        userCanRegister = registrarFicha.includes(idTipoInspecao) ||
+                            registrarFicha.includes(idTipoInspecao.toString());
+                    } else if (typeof registrarFicha === 'number') {
+                        // Se for um número único
+                        userCanRegister = registrarFicha === idTipoInspecao;
+                    } else if (typeof registrarFicha === 'boolean') {
+                        // Se for booleano, assumimos que true significa que pode registrar qualquer tipo
+                        userCanRegister = registrarFicha;
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao verificar permissões de registro:', e);
+                userCanRegister = false;
+            }
+        }
+
+        // Se o usuário não tem permissão para registrar, retorna false imediatamente
+        if (!userCanRegister) {
+            return false;
+        }
+
         // Se id_tipo_inspecao for 1, 2, 3 ou 4 e situação de 1 a 9
         if (
             (fichaDados.id_tipo_inspecao === 1 ||
