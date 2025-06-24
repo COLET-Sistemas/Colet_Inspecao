@@ -338,19 +338,43 @@ class InspecaoService {
         valor_encontrado: number | string;
         conforme: boolean | null;
         observacao?: string | null;
+        tipo_valor?: string;
     }): Promise<InspectionSpecification> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 throw new Error("URL da API não está configurada");
+            }            // Clone os dados para não modificar o objeto original
+            const processedData: {
+                valor_encontrado: number | string | null;
+                conforme: boolean | string | null;
+                observacao?: string | null;
+                tipo_valor?: string;
+            } = { ...data };
+
+            // Para os tipos A, C, S, L (Aprovado/Reprovado, Conforme/Não Conforme, etc)
+            if (data.tipo_valor && ['A', 'C', 'S', 'L'].includes(data.tipo_valor)) {
+                // Converter boolean para S/N
+                if (data.conforme === true) {
+                    processedData.conforme = 'S';
+                } else if (data.conforme === false) {
+                    processedData.conforme = 'N';
+                } else {
+                    processedData.conforme = null;
+                }
+                // Para esses tipos, o valor_encontrado deve ser sempre null
+                processedData.valor_encontrado = null;
             }
+
+            // Remover o campo tipo_valor antes de enviar para a API
+            delete processedData.tipo_valor;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes/${idEspecificacao}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(processedData)
             });
 
             if (!response.ok) {
@@ -616,13 +640,27 @@ class InspecaoService {
 
             if (!codigo_pessoa) {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
-            }
+            } const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;            // Processar os apontamentos antes de enviá-los
+            const apontamentosProcessados = apontamentos.map(item => {
+                // Não temos acesso direto às especificações, mas podemos verificar 
+                // se conforme é boolean e converter para S/N
+                if (item.conforme === true || item.conforme === false) {
+                    return {
+                        id_especificacao: item.id_especificacao,
+                        valor_encontrado: null, // Nesse caso, o valor_encontrado deve ser null
+                        conforme: item.conforme === true ? 'S' : 'N', // Convertendo boolean para S/N
+                        observacao: item.observacao
+                    };
+                }
+                return item;
+            });
 
-            const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
+            // Filtrar apenas apontamentos que possuem valores preenchidos
+            const apontamentosPreenchidos = apontamentosProcessados.filter(
+                item => item.valor_encontrado !== null || item.observacao || item.conforme !== null
+            );
 
-            const apontamentosPreenchidos = apontamentos.filter(
-                item => item.valor_encontrado !== null || item.observacao
-            ); const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -680,14 +718,27 @@ class InspecaoService {
             // Se não encontrou no userData, busca diretamente no localStorage
             if (!codigo_pessoa) {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
-            }
-
-            // Convertendo o código de pessoa para número (pode ser null)
+            }            // Convertendo o código de pessoa para número (pode ser null)
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
+            // Processar os apontamentos antes de enviá-los
+            const apontamentosProcessados = apontamentos.map(item => {
+                // Não temos acesso direto às especificações, mas podemos verificar 
+                // se conforme é boolean e converter para S/N
+                if (item.conforme === true || item.conforme === false) {
+                    return {
+                        id_especificacao: item.id_especificacao,
+                        valor_encontrado: null, // Nesse caso, o valor_encontrado deve ser null
+                        conforme: item.conforme === true ? 'S' : 'N', // Convertendo boolean para S/N
+                        observacao: item.observacao
+                    };
+                }
+                return item;
+            });
+
             // Filtrar apenas apontamentos que possuem valores preenchidos
-            const apontamentosPreenchidos = apontamentos.filter(
-                item => item.valor_encontrado !== null || item.observacao
+            const apontamentosPreenchidos = apontamentosProcessados.filter(
+                item => item.valor_encontrado !== null || item.observacao || item.conforme !== null
             ); const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
                 headers: {

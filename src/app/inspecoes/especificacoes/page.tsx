@@ -67,7 +67,7 @@ export default function EspecificacoesPage() {
         exibe_resultado: 'S'
     });
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } }>({});
+    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean | null; observacao: string; conforme?: boolean | null } }>({});
     const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set()); const [isSaving, setIsSaving] = useState(false);
     // Variável para controlar se a inspeção foi iniciada
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
@@ -312,13 +312,17 @@ export default function EspecificacoesPage() {
                 }
                 // Para campos de seleção (A, C, S, L)
                 else if (['A', 'C', 'S', 'L'].includes(tipoValor)) {
-                    // Para campos de seleção, armazenamos o valor encontrado como está
-                    // e usamos o campo 'conforme' para armazenar S ou N
-                    updatedValues.valor_encontrado = value;
+                    // Para campos de seleção, deixamos valor_encontrado como null
+                    // e usamos apenas o campo 'conforme' para armazenar true/false
+                    updatedValues.valor_encontrado = null;
 
-                    // Se o valor for booleano, converter para S ou N no campo conforme
+                    // Se o valor for booleano ou string 'S'/'N', converter para o campo conforme
                     if (typeof value === 'boolean') {
                         updatedValues.conforme = value; // true = S (conforme), false = N (não conforme)
+                    } else if (value === 'S') {
+                        updatedValues.conforme = true;
+                    } else if (value === 'N') {
+                        updatedValues.conforme = false;
                     }
                 }
                 // Para outros tipos de campos
@@ -330,7 +334,26 @@ export default function EspecificacoesPage() {
             } else if (field === 'observacao') {
                 updatedValues.observacao = String(value);
             } else if (field === 'conforme') {
-                updatedValues.conforme = typeof value === 'boolean' ? value : null;
+                // Para campos de seleção, ao definir conforme, devemos deixar valor_encontrado como null
+                if (specification && ['A', 'C', 'S', 'L'].includes(specification.tipo_valor)) {
+                    updatedValues.valor_encontrado = null;
+
+                    // Tratar string 'S'/'N' ou booleanos
+                    if (value === 'S') {
+                        updatedValues.conforme = true;
+                    } else if (value === 'N') {
+                        updatedValues.conforme = false;
+                    } else if (typeof value === 'boolean') {
+                        updatedValues.conforme = value;
+                    } else {
+                        updatedValues.conforme = null;
+                    }
+
+                    // Não modificar o campo observação
+                    // updatedValues.observacao permanece inalterado
+                } else {
+                    updatedValues.conforme = typeof value === 'boolean' ? value : null;
+                }
             }
 
             return {
@@ -420,7 +443,7 @@ export default function EspecificacoesPage() {
     }, []);
 
     // Helper function to process inspection values consistently
-    const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean; observacao?: string; conforme?: boolean | null }) => {
+    const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean | null; observacao?: string; conforme?: boolean | null }) => {
         // Result object
         const result = {
             valorEncontrado: null as string | number | null,
@@ -445,20 +468,16 @@ export default function EspecificacoesPage() {
         }
         // For selection fields (A, C, S, L)
         else if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
-            if (editingValue?.valor_encontrado !== undefined) {
-                // Convert boolean to S/N string
-                if (typeof editingValue.valor_encontrado === 'boolean') {
-                    result.valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
-                } else {
-                    result.valorEncontrado = String(editingValue.valor_encontrado);
-                }
-            } else if (spec.valor_encontrado !== undefined) {
-                result.valorEncontrado = spec.valor_encontrado;
-            }
-
-            // Only for selection fields, pass the conforme value if it was explicitly set
+            // For selection fields, always set valorEncontrado to null
+            result.valorEncontrado = null;            // Only for selection fields, pass the conforme value based on S/N
             if (editingValue?.conforme !== undefined) {
-                result.conforme = editingValue.conforme;
+                if (editingValue.conforme === true) {
+                    result.conforme = true;  // Corresponde a 'S' no backend
+                } else if (editingValue.conforme === false) {
+                    result.conforme = false; // Corresponde a 'N' no backend
+                } else {
+                    result.conforme = null;
+                }
             } else if (spec.conforme !== undefined) {
                 result.conforme = spec.conforme;
             }
@@ -693,8 +712,15 @@ export default function EspecificacoesPage() {
         }
         return <Ruler className="h-5 w-5" />;
     }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined) => {
-        // Caso 1: Se não tiver valor encontrado (vazio ou null) - Badge cinza "Não informado"
-        if (!isValueFilled(valorEncontrado)) {
+        // Para os tipos de seleção (A, C, S, L), consideramos apenas o campo conforme
+        // Para os outros tipos, verificamos o valor_encontrado
+
+        // Caso 1: Se conforme está definido, usamos ele independentemente do valor_encontrado
+        if (conforme !== null && conforme !== undefined) {
+            // Já temos o status de conformidade, portanto podemos pular a verificação do valor_encontrado
+        }
+        // Caso 2: Se conforme não está definido, verificamos se o valor_encontrado está preenchido
+        else if (!isValueFilled(valorEncontrado)) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
                 text: "Não informado",
@@ -1032,8 +1058,7 @@ export default function EspecificacoesPage() {
                     transition={{ duration: 0.2 }}
                     className="space-y-2"
                 >                    {specifications
-                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-                    .map((spec, index) => {
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((spec, index) => {
                         // Usar os valores em edição se existirem, caso contrário usar os valores originais
                         const valorAtual = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined ?
                             editingValues[spec.id_especificacao].valor_encontrado :
@@ -1043,7 +1068,11 @@ export default function EspecificacoesPage() {
                             editingValues[spec.id_especificacao].conforme :
                             spec.conforme;
 
-                        const statusInfo = getConformeStatus(conformeAtual, valorAtual);
+                        // Para os campos de seleção (A, C, S, L), ignoramos o valor_encontrado
+                        // e verificamos apenas o campo conforme
+                        const statusInfo = isSelectType(spec.tipo_valor) ?
+                            getConformeStatus(conformeAtual, conformeAtual !== null ? 'S' : null) :
+                            getConformeStatus(conformeAtual, valorAtual);
                         const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
                             key={spec.id_especificacao}
                             initial={{ opacity: 0, y: 5 }}
@@ -1240,27 +1269,24 @@ export default function EspecificacoesPage() {
                                                         {getPermissionMessage(spec.local_inspecao)}
                                                     </span>
                                                 )}
-                                            </p>                                                <div className="flex flex-wrap gap-2">
-                                                {getSelectOptions(spec.tipo_valor).map((option) => (<button key={String(option.value)}
-                                                    onClick={() => {
-                                                        // Atualizar valor_encontrado com S para true e N para false
-                                                        handleValueChange(spec.id_especificacao, 'valor_encontrado', option.value ? 'S' : 'N');
-                                                        // Também definir conforme com o mesmo valor para manter consistência na interface
-                                                        handleValueChange(spec.id_especificacao, 'conforme', option.value);
-                                                    }}
-                                                    disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                    className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
+                                            </p>                                                <div className="flex flex-wrap gap-2">                                                {getSelectOptions(spec.tipo_valor).map((option) => (<button key={String(option.value)} onClick={() => {
+                                                // Apenas definir conforme, valor_encontrado será null para campos de seleção
+                                                // Usar 'S' para true e 'N' para false
+                                                handleValueChange(spec.id_especificacao, 'conforme', option.value ? 'S' : 'N');
+                                            }}
+                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
                                                                 ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed ' : '')}
                                                                 ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
-                                                            ? (option.value
-                                                                ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
-                                                                : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
-                                                            : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                                                        }`}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                                ))}
+                                                        ? (option.value
+                                                            ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
+                                                            : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
+                                                        : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                            ))}
                                             </div>
                                         </div>
                                     ) : (
@@ -1275,12 +1301,16 @@ export default function EspecificacoesPage() {
                                                 </span>
                                             )}                                            </label><input
                                                 type="number"
-                                                step="0.01"
-                                                value={(() => {
+                                                step="0.01" value={(() => {
                                                     // Convert value to string or number before assignment
                                                     const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
                                                         ? editingValues[spec.id_especificacao].valor_encontrado
                                                         : spec.valor_encontrado || '';
+
+                                                    // If it's null, return empty string
+                                                    if (value === null) {
+                                                        return '';
+                                                    }
 
                                                     // If it's a boolean, convert to string
                                                     if (typeof value === 'boolean') {
@@ -1373,10 +1403,16 @@ export default function EspecificacoesPage() {
                             ) : (
                                 <>
                                     <div className="counter-item">
-                                        <div className="counter-dot bg-blue-500"></div>
-                                        <span className="counter-label">Informados:</span>                                    <span className="counter-value text-blue-600 font-mono ml-1">
+                                        <div className="counter-dot bg-blue-500"></div>                                        <span className="counter-label">Informados:</span>                                    <span className="counter-value text-blue-600 font-mono ml-1">
                                             {specifications.filter(s => {
                                                 const editingValue = editingValues[s.id_especificacao];
+                                                // Para campos de seleção, verificar se conforme foi definido
+                                                if (['A', 'C', 'S', 'L'].includes(s.tipo_valor)) {
+                                                    return (editingValue?.conforme !== undefined && editingValue.conforme !== null) ?
+                                                        true :
+                                                        (s.conforme !== null && s.conforme !== undefined);
+                                                }
+                                                // Para outros campos, verificar valor_encontrado
                                                 return (editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '') ?
                                                     true :
                                                     (s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0);
@@ -1394,9 +1430,8 @@ export default function EspecificacoesPage() {
                                             return (editingValue?.valor_encontrado !== undefined) ?
                                                 !editingValue.valor_encontrado :
                                                 (s.valor_encontrado === null || s.valor_encontrado === undefined);
-                                        }
-
-                                        if (isSelectType(s.tipo_valor)) {
+                                        } if (isSelectType(s.tipo_valor)) {
+                                            // Para campos de seleção (A, C, S, L), verificamos se o campo conforme está definido
                                             return (editingValue?.conforme !== undefined) ?
                                                 editingValue.conforme === null :
                                                 s.conforme === null;
