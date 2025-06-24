@@ -98,7 +98,6 @@ export default function EspecificacoesPage() {
     const processSpecValue = useCallback((spec: { valor_encontrado?: string | number | null | undefined; observacao?: string | null; conforme?: boolean | null }) => {
         return {
             valor_encontrado: spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ?
-                // Preservar números zero como 0
                 (spec.valor_encontrado === 0 ? 0 : convertToValidValue(spec.valor_encontrado)) :
                 '',
             observacao: spec.observacao || '',
@@ -278,52 +277,81 @@ export default function EspecificacoesPage() {
         setEditingValues((prev) => {
             const currentSpec = prev[specId] || { valor_encontrado: '', observacao: '', conforme: null };
 
-            // Se estiver atualizando o valor_encontrado, calcular automaticamente se está conforme
-            if (field === 'valor_encontrado' && fichaDados.exibe_resultado === 'S') {
-                // Encontrar a especificação atual
-                const spec = specifications.find(s => s.id_especificacao === specId);
-
-                if (spec && (spec.tipo_valor === 'F' || spec.tipo_valor === 'U')) {
-                    // Para valores numéricos, verificar se está dentro da faixa
-                    const numValue = parseFloat(value as string);
-
-                    // Se o valor não for um número válido, não definir conforme
-                    if (!isNaN(numValue)) {
-                        // Verificar se está dentro da tolerância
-                        const minValue = spec.valor_minimo;
-                        const maxValue = spec.valor_maximo;
-
-                        // Verificar se está dentro dos limites
-                        let isWithinLimits = true;
-
-                        if (minValue !== null && numValue < minValue) {
-                            isWithinLimits = false;
-                        }
-
-                        if (maxValue !== null && numValue > maxValue) {
-                            isWithinLimits = false;
-                        }
-
-                        // Atualizar conformidade automaticamente
-                        return {
-                            ...prev,
-                            [specId]: {
-                                ...currentSpec,
-                                [field]: value,
-                                conforme: isWithinLimits
-                            }
-                        };
+            // Encontrar a especificação atual para verificar o tipo_valor
+            const specification = specifications.find(spec => spec.id_especificacao === specId);
+            if (!specification) {
+                return {
+                    ...prev,
+                    [specId]: {
+                        ...currentSpec,
+                        [field]: value
                     }
+                };
+            }
+
+            const updatedValues: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } = { ...currentSpec };
+
+            // Se o campo é valor_encontrado, validar baseado no tipo_valor
+            if (field === 'valor_encontrado') {
+                const tipoValor = specification.tipo_valor;
+
+                // Para campos numéricos (F ou U)
+                if (['F', 'U'].includes(tipoValor)) {
+                    // Garantir que o valor é um número válido ou string vazia
+                    if (value === '') {
+                        updatedValues.valor_encontrado = '';
+                        updatedValues.conforme = null;
+                    } else {
+                        // Converter para string e permitir apenas números e ponto decimal
+                        let numericValue = String(value).replace(/[^0-9.]/g, '');
+
+                        // Garantir apenas um ponto decimal
+                        const parts = numericValue.split('.');
+                        if (parts.length > 2) {
+                            numericValue = `${parts[0]}.${parts.slice(1).join('')}`;
+                        }
+
+                        updatedValues.valor_encontrado = numericValue;
+
+                        // Verificar automaticamente se está conforme, se exibe_resultado for 'S'
+                        if (fichaDados.exibe_resultado === 'S') {
+                            const numValue = parseFloat(numericValue);
+                            const min = specification.valor_minimo;
+                            const max = specification.valor_maximo;
+
+                            if (!isNaN(numValue) && min !== null && max !== null) {
+                                updatedValues.conforme = numValue >= min && numValue <= max;
+                            }
+                        }
+                    }
+                }
+                // Para campos de seleção (A, C, S, L)
+                else if (['A', 'C', 'S', 'L'].includes(tipoValor)) {
+                    // Para campos de seleção, armazenamos o valor encontrado como está
+                    // e usamos o campo 'conforme' para armazenar S ou N
+                    updatedValues.valor_encontrado = value;
+
+                    // Se o valor for booleano, converter para S ou N no campo conforme
+                    if (typeof value === 'boolean') {
+                        updatedValues.conforme = value; // true = S (conforme), false = N (não conforme)
+                    }
+                }
+                // Para outros tipos de campos
+                else {
+                    updatedValues.valor_encontrado = value;
+                }
+            } else {
+                // Para outros campos (observacao ou conforme), apenas atualiza o valor
+                if (field === 'observacao') {
+                    updatedValues.observacao = value.toString();
+                } else if (field === 'conforme') {
+                    updatedValues.conforme = value as boolean;
                 }
             }
 
-            // Para outros casos ou se não for possível calcular conforme
             return {
                 ...prev,
-                [specId]: {
-                    ...currentSpec,
-                    [field]: value
-                }
+                [specId]: updatedValues
             };
         });
     }, [specifications, fichaDados.exibe_resultado]);
@@ -402,59 +430,125 @@ export default function EspecificacoesPage() {
             checkLocalStorageData();
         };
 
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
+        window.addEventListener('storage', handleStorageChange); return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
+    }, []);
+
+    // Helper function to process inspection values consistently
+    const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean; observacao?: string; conforme?: boolean | null }) => {
+        // Result object
+        const result = {
+            valorEncontrado: null as string | number | null,
+            conforme: null as boolean | null,
+            observacao: null as string | null
+        };
+
+        // Process valor_encontrado based on tipo_valor
+        if (['F', 'U'].includes(spec.tipo_valor)) {
+            // Numeric fields - always process as numbers
+            if (editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '') {
+                const numValue = parseFloat(String(editingValue.valor_encontrado));
+                result.valorEncontrado = isNaN(numValue) ? null : numValue;
+            } else if (spec.valor_encontrado !== undefined && spec.valor_encontrado !== null) {
+                const numValue = parseFloat(String(spec.valor_encontrado));
+                result.valorEncontrado = isNaN(numValue) ? null : numValue;
+            }
+        }
+        // For selection fields (A, C, S, L)
+        else if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
+            if (editingValue?.valor_encontrado !== undefined) {
+                // Convert boolean to S/N string
+                if (typeof editingValue.valor_encontrado === 'boolean') {
+                    result.valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
+                } else {
+                    result.valorEncontrado = String(editingValue.valor_encontrado);
+                }
+            } else if (spec.valor_encontrado !== undefined) {
+                result.valorEncontrado = spec.valor_encontrado;
+            }
+        }
+        // Other types
+        else {
+            if (editingValue?.valor_encontrado !== undefined) {
+                if (typeof editingValue.valor_encontrado === 'boolean') {
+                    result.valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
+                } else {
+                    result.valorEncontrado = editingValue.valor_encontrado;
+                }
+            } else if (spec.valor_encontrado !== undefined) {
+                result.valorEncontrado = spec.valor_encontrado;
+            }
+        }
+
+        // Process conforme value
+        if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
+            if (editingValue?.conforme !== undefined) {
+                result.conforme = editingValue.conforme;
+            } else if (spec.conforme !== undefined) {
+                result.conforme = spec.conforme;
+            }
+        } else {
+            if (editingValue?.conforme !== undefined) {
+                result.conforme = editingValue.conforme;
+            } else if (spec.conforme !== undefined) {
+                result.conforme = spec.conforme;
+            }
+        }
+
+        // Process observacao
+        result.observacao = editingValue?.observacao !== undefined
+            ? editingValue.observacao
+            : (spec.observacao || null);
+
+        return result;
     }, []);    // Função para interromper a inspeção
     const handleInterruptInspection = useCallback(async () => {
         if (!isInspectionStarted || !id) return;
 
         try {
             setIsSaving(true);
-            // Preparar os apontamentos para enviar ao servidor
-            const apontamentos = specifications.map(spec => {                // Verificar se há valores em edição para esta especificação
-                const editingValue = editingValues[spec.id_especificacao];                // Determinar o valor encontrado 
-                let valorEncontrado: string | number | null = null;
-                if (editingValue?.valor_encontrado !== undefined) {
-                    // Para campos de tipo select (A, C, S, L), já deve estar como "S" ou "N"
-                    if (typeof editingValue.valor_encontrado === 'boolean') {
-                        valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
-                    } else {
-                        valorEncontrado = editingValue.valor_encontrado;
-                    }
-                } else if (spec.valor_encontrado !== undefined) {
-                    // Para campos do tipo select que já estão no spec, verificar se precisa converter
-                    if (isSelectType(spec.tipo_valor) && typeof spec.valor_encontrado === 'boolean') {
-                        valorEncontrado = spec.valor_encontrado ? 'S' : 'N';
-                    } else {
-                        valorEncontrado = spec.valor_encontrado;
-                    }
-                }                // Determinar o valor de conformidade
-                // Para campos de select, o valor de conforme deve ser null, pois já é representado em valor_encontrado
-                let conforme: boolean | null = null;
+            // Preparar os apontamentos para enviar ao servidor - apenas os que foram alterados
+            const apontamentos = specifications
+                .map(spec => {
+                    // Verificar se há valores em edição para esta especificação
+                    const editingValue = editingValues[spec.id_especificacao];
 
-                if (!isSelectType(spec.tipo_valor)) {
-                    conforme = editingValue?.conforme !== undefined
-                        ? editingValue.conforme
-                        : (spec.conforme !== undefined ? spec.conforme : null);
-                }
+                    // Se não houver valores em edição, não incluir esta especificação
+                    if (!editingValue) return null;
 
-                // Determinar a observação
-                const observacao: string | null = editingValue?.observacao !== undefined
-                    ? editingValue.observacao
-                    : (spec.observacao || null);
+                    // Verificar se houve alguma alteração nos valores
+                    const valorAlterado = editingValue.valor_encontrado !== undefined &&
+                        editingValue.valor_encontrado !== '' &&
+                        editingValue.valor_encontrado !== spec.valor_encontrado;
 
-                return {
-                    id_especificacao: spec.id_especificacao,
-                    valor_encontrado: valorEncontrado,
-                    conforme: conforme,
-                    observacao: observacao
-                };
-            });
+                    const conformeAlterado = editingValue.conforme !== undefined &&
+                        editingValue.conforme !== spec.conforme;
 
-            await inspecaoService.interruptInspection(parseInt(id), apontamentos);
+                    const observacaoAlterada = editingValue.observacao !== undefined &&
+                        editingValue.observacao !== spec.observacao &&
+                        editingValue.observacao !== '';
+
+                    // Se nenhum valor foi alterado, não incluir esta especificação
+                    if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+
+                    // Process values using our helper function
+                    const processedValues = processInspectionValue(spec, editingValue);
+
+                    return {
+                        id_especificacao: spec.id_especificacao,
+                        valor_encontrado: processedValues.valorEncontrado,
+                        conforme: processedValues.conforme,
+                        observacao: processedValues.observacao
+                    };
+                })
+                .filter(item => item !== null); // Remover itens nulos (especificações não alteradas)
+
+            await inspecaoService.interruptInspection(
+                parseInt(id),
+                apontamentos,
+                fichaDados.qtde_produzida // Adicionando a quantidade produzida
+            );
 
             setIsInspectionStarted(false);
             setEditingValues({}); // Limpar valores em edição
@@ -476,7 +570,7 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, isSelectType]);
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
 
     const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
@@ -535,9 +629,7 @@ export default function EspecificacoesPage() {
             setIsSaving(false);
             setIsConfirmingReceipt(false);
         }
-    }, [id, handleRefresh]);
-
-    /**
+    }, [id, handleRefresh]);    /**
      * Finaliza uma ficha de inspeção
      */
     const handleFinalizeInspection = useCallback(async () => {
@@ -547,44 +639,47 @@ export default function EspecificacoesPage() {
             setIsSaving(true);
             setIsFinalizing(true);
 
-            // Preparar os apontamentos para enviar ao servidor
-            const apontamentos = specifications.map(spec => {
-                // Verificar se há valores em edição para esta especificação
-                const editingValue = editingValues[spec.id_especificacao];                // Determinar o valor encontrado 
-                let valorEncontrado: string | number | null = null;
-                if (editingValue?.valor_encontrado !== undefined) {
-                    if (typeof editingValue.valor_encontrado === 'boolean') {
-                        valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
-                    } else {
-                        valorEncontrado = editingValue.valor_encontrado;
-                    }
-                } else if (spec.valor_encontrado !== undefined) {
-                    valorEncontrado = spec.valor_encontrado;
-                }
+            // Preparar os apontamentos para enviar ao servidor - apenas os que foram alterados
+            const apontamentos = specifications
+                .map(spec => {
+                    // Verificar se há valores em edição para esta especificação
+                    const editingValue = editingValues[spec.id_especificacao];
 
-                // Para campos de select, o valor de conforme deve ser null, pois já é representado em valor_encontrado
-                let conforme: boolean | null = null;
+                    // Se não houver valores em edição, não incluir esta especificação
+                    if (!editingValue) return null;
 
-                if (!isSelectType(spec.tipo_valor)) {
-                    conforme = editingValue?.conforme !== undefined
-                        ? editingValue.conforme
-                        : (spec.conforme !== undefined ? spec.conforme : null);
-                }
+                    // Verificar se houve alguma alteração nos valores
+                    const valorAlterado = editingValue.valor_encontrado !== undefined &&
+                        editingValue.valor_encontrado !== '' &&
+                        editingValue.valor_encontrado !== spec.valor_encontrado;
 
-                // Determinar a observação
-                const observacao: string | null = editingValue?.observacao !== undefined
-                    ? editingValue.observacao
-                    : (spec.observacao || null);
+                    const conformeAlterado = editingValue.conforme !== undefined &&
+                        editingValue.conforme !== spec.conforme;
 
-                return {
-                    id_especificacao: spec.id_especificacao,
-                    valor_encontrado: valorEncontrado,
-                    conforme: conforme,
-                    observacao: observacao
-                };
-            });
+                    const observacaoAlterada = editingValue.observacao !== undefined &&
+                        editingValue.observacao !== spec.observacao &&
+                        editingValue.observacao !== '';
 
-            await inspecaoService.finalizeInspection(parseInt(id), apontamentos);
+                    // Se nenhum valor foi alterado, não incluir esta especificação
+                    if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+
+                    // Process values using our helper function
+                    const processedValues = processInspectionValue(spec, editingValue);
+
+                    return {
+                        id_especificacao: spec.id_especificacao,
+                        valor_encontrado: processedValues.valorEncontrado,
+                        conforme: processedValues.conforme,
+                        observacao: processedValues.observacao
+                    };
+                })
+                .filter(item => item !== null); // Remover itens nulos (especificações não alteradas)
+
+            await inspecaoService.finalizeInspection(
+                parseInt(id),
+                apontamentos,
+                fichaDados.qtde_produzida // Adicionando a quantidade produzida
+            );
 
             setIsInspectionStarted(false);
             setEditingValues({}); // Limpar valores em edição
@@ -607,7 +702,7 @@ export default function EspecificacoesPage() {
             setIsSaving(false);
             setIsFinalizing(false);
         }
-    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, isSelectType]);
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {

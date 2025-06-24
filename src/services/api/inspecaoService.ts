@@ -581,12 +581,11 @@ class InspecaoService {
             console.error('Erro ao confirmar recebimento da inspeção:', error);
             throw error;
         }
-    }
-
-    /**
+    }    /**
      * Interrompe uma inspeção em andamento
      * @param idFichaInspecao - ID da ficha de inspeção
      * @param apontamentos - Array de apontamentos com valores encontrados e observações
+     * @param qtdeProduzida - Quantidade produzida
      */
     async interruptInspection(
         idFichaInspecao: number,
@@ -595,14 +594,13 @@ class InspecaoService {
             valor_encontrado: string | number | null;
             conforme: boolean | null;
             observacao: string | null;
-        }>): Promise<void> {
+        }>,
+        qtdeProduzida: number | null = null): Promise<void> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 throw new Error("URL da API não está configurada");
             }
-
-            // Tenta obter o código da pessoa do localStorage
             let codigo_pessoa = null;
             const userDataStr = localStorage.getItem("userData");
             if (userDataStr) {
@@ -616,20 +614,15 @@ class InspecaoService {
                 }
             }
 
-            // Se não encontrou no userData, busca diretamente no localStorage
             if (!codigo_pessoa) {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
             }
 
-            // Convertendo o código de pessoa para número (pode ser null)
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
-            // Filtrar apenas apontamentos que possuem valores preenchidos
             const apontamentosPreenchidos = apontamentos.filter(
                 item => item.valor_encontrado !== null || item.observacao
-            );
-
-            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+            ); const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -638,7 +631,8 @@ class InspecaoService {
                     id_ficha_inspecao: idFichaInspecao,
                     apontamentos: apontamentosPreenchidos,
                     acao: "interromper",
-                    codigo_pessoa: codigo_pessoa_num
+                    codigo_pessoa: codigo_pessoa_num,
+                    qtde_produzida: qtdeProduzida
                 })
             });
 
@@ -651,10 +645,10 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Finaliza uma inspeção em andamento
+    /**     * Finaliza uma inspeção em andamento
      * @param idFichaInspecao - ID da ficha de inspeção
      * @param apontamentos - Array de apontamentos com valores encontrados e observações
+     * @param qtdeProduzida - Quantidade produzida
      */
     async finalizeInspection(
         idFichaInspecao: number,
@@ -663,7 +657,8 @@ class InspecaoService {
             valor_encontrado: string | number | null;
             conforme: boolean | null;
             observacao: string | null;
-        }>): Promise<void> {
+        }>,
+        qtdeProduzida: number | null = null): Promise<void> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -693,9 +688,7 @@ class InspecaoService {
             // Filtrar apenas apontamentos que possuem valores preenchidos
             const apontamentosPreenchidos = apontamentos.filter(
                 item => item.valor_encontrado !== null || item.observacao
-            );
-
-            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+            ); const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -704,7 +697,8 @@ class InspecaoService {
                     id_ficha_inspecao: idFichaInspecao,
                     apontamentos: apontamentosPreenchidos,
                     acao: "finalizar",
-                    codigo_pessoa: codigo_pessoa_num
+                    codigo_pessoa: codigo_pessoa_num,
+                    qtde_produzida: qtdeProduzida
                 })
             });
 
