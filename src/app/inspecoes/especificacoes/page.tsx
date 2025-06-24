@@ -717,10 +717,35 @@ export default function EspecificacoesPage() {
 
         // Caso 1: Se conforme está definido, usamos ele independentemente do valor_encontrado
         if (conforme !== null && conforme !== undefined) {
-            // Já temos o status de conformidade, portanto podemos pular a verificação do valor_encontrado
+            // Se exibe_resultado for 'N', mostramos apenas que está informado, independente do valor
+            if (fichaDados.exibe_resultado === 'N') {
+                return {
+                    icon: <CheckCircle className="h-4 w-4" />,
+                    text: "Informado",
+                    className: "badge-informado valor-informado-badge"
+                };
+            }
+
+            // Se exibe_resultado for 'S', mostramos o status de conformidade
+            if (conforme === true) {
+                return {
+                    icon: <CheckCircle className="h-4 w-4" />,
+                    text: "Conforme",
+                    className: "badge-conforme valor-informado-badge"
+                };
+            }
+
+            if (conforme === false) {
+                return {
+                    icon: <XCircle className="h-4 w-4" />,
+                    text: "Não Conforme",
+                    className: "badge-nao-conforme valor-informado-badge"
+                };
+            }
         }
+
         // Caso 2: Se conforme não está definido, verificamos se o valor_encontrado está preenchido
-        else if (!isValueFilled(valorEncontrado)) {
+        if (!isValueFilled(valorEncontrado)) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
                 text: "Não informado",
@@ -728,39 +753,12 @@ export default function EspecificacoesPage() {
             };
         }
 
-        // A partir daqui, o valor foi informado
-
-        // Caso 2: Se exibe_resultado for 'N' - Badge azul "Informado"
-        if (fichaDados.exibe_resultado === 'N') {
-            return {
-                icon: <CheckCircle className="h-4 w-4" />,
-                text: "Informado",
-                className: "badge-informado valor-informado-badge"
-            };
-        }
-
-        // Caso 3: Se exibe_resultado for 'S' - Mostra status de conformidade (verde ou vermelho)
-        if (conforme === true) {
-            return {
-                icon: <CheckCircle className="h-4 w-4" />,
-                text: "Conforme",
-                className: "badge-conforme valor-informado-badge"
-            };
-        }
-
-        if (conforme === false) {
-            return {
-                icon: <XCircle className="h-4 w-4" />,
-                text: "Não Conforme",
-                className: "badge-nao-conforme valor-informado-badge"
-            };
-        }
-
-        // Caso 4: Se exibe_resultado for 'S', valor foi informado, mas conforme não está definido
+        // A partir daqui, valor_encontrado foi preenchido mas conforme não está definido
+        // Sempre mostramos como "Informado" com badge azul
         return {
-            icon: <AlertCircle className="h-4 w-4" />,
-            text: "Não informado",
-            className: "badge-nao-informado valor-informado-badge badge-needs-attention"
+            icon: <CheckCircle className="h-4 w-4" />,
+            text: "Informado",
+            className: "badge-informado valor-informado-badge"
         };
     };
 
