@@ -279,23 +279,15 @@ export default function EspecificacoesPage() {
 
             // Encontrar a especificação atual para verificar o tipo_valor
             const specification = specifications.find(spec => spec.id_especificacao === specId);
-            if (!specification) {
-                return {
-                    ...prev,
-                    [specId]: {
-                        ...currentSpec,
-                        [field]: value
-                    }
-                };
-            }
+            if (!specification) return prev;
 
-            const updatedValues: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } = { ...currentSpec };
+            // Copia o valor atual para não modificá-lo diretamente
+            const updatedValues = { ...currentSpec };
 
-            // Se o campo é valor_encontrado, validar baseado no tipo_valor
             if (field === 'valor_encontrado') {
                 const tipoValor = specification.tipo_valor;
 
-                // Para campos numéricos (F ou U)
+                // Para campos numéricos (F, U)
                 if (['F', 'U'].includes(tipoValor)) {
                     // Garantir que o valor é um número válido ou string vazia
                     if (value === '') {
@@ -313,16 +305,9 @@ export default function EspecificacoesPage() {
 
                         updatedValues.valor_encontrado = numericValue;
 
-                        // Verificar automaticamente se está conforme, se exibe_resultado for 'S'
-                        if (fichaDados.exibe_resultado === 'S') {
-                            const numValue = parseFloat(numericValue);
-                            const min = specification.valor_minimo;
-                            const max = specification.valor_maximo;
-
-                            if (!isNaN(numValue) && min !== null && max !== null) {
-                                updatedValues.conforme = numValue >= min && numValue <= max;
-                            }
-                        }
+                        // Para campos numéricos, o conforme deve ser sempre null
+                        // A conformidade será determinada pelo backend com base nos valores mín/máx
+                        updatedValues.conforme = null;
                     }
                 }
                 // Para campos de seleção (A, C, S, L)
@@ -339,14 +324,13 @@ export default function EspecificacoesPage() {
                 // Para outros tipos de campos
                 else {
                     updatedValues.valor_encontrado = value;
+                    // Para outros tipos, o conforme também deve ser null
+                    updatedValues.conforme = null;
                 }
-            } else {
-                // Para outros campos (observacao ou conforme), apenas atualiza o valor
-                if (field === 'observacao') {
-                    updatedValues.observacao = value.toString();
-                } else if (field === 'conforme') {
-                    updatedValues.conforme = value as boolean;
-                }
+            } else if (field === 'observacao') {
+                updatedValues.observacao = String(value);
+            } else if (field === 'conforme') {
+                updatedValues.conforme = typeof value === 'boolean' ? value : null;
             }
 
             return {
@@ -354,7 +338,7 @@ export default function EspecificacoesPage() {
                 [specId]: updatedValues
             };
         });
-    }, [specifications, fichaDados.exibe_resultado]);
+    }, [specifications]);
 
     // Função para obter mensagem de permissão baseada no local_inspecao
     const getPermissionMessage = useCallback((localInspecao: string) => {
@@ -454,6 +438,10 @@ export default function EspecificacoesPage() {
                 const numValue = parseFloat(String(spec.valor_encontrado));
                 result.valorEncontrado = isNaN(numValue) ? null : numValue;
             }
+
+            // For numeric fields, conforme should always be null
+            // The backend will determine conformity based on min/max values
+            result.conforme = null;
         }
         // For selection fields (A, C, S, L)
         else if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
@@ -467,6 +455,13 @@ export default function EspecificacoesPage() {
             } else if (spec.valor_encontrado !== undefined) {
                 result.valorEncontrado = spec.valor_encontrado;
             }
+
+            // Only for selection fields, pass the conforme value if it was explicitly set
+            if (editingValue?.conforme !== undefined) {
+                result.conforme = editingValue.conforme;
+            } else if (spec.conforme !== undefined) {
+                result.conforme = spec.conforme;
+            }
         }
         // Other types
         else {
@@ -479,21 +474,9 @@ export default function EspecificacoesPage() {
             } else if (spec.valor_encontrado !== undefined) {
                 result.valorEncontrado = spec.valor_encontrado;
             }
-        }
 
-        // Process conforme value
-        if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
-            if (editingValue?.conforme !== undefined) {
-                result.conforme = editingValue.conforme;
-            } else if (spec.conforme !== undefined) {
-                result.conforme = spec.conforme;
-            }
-        } else {
-            if (editingValue?.conforme !== undefined) {
-                result.conforme = editingValue.conforme;
-            } else if (spec.conforme !== undefined) {
-                result.conforme = spec.conforme;
-            }
+            // For other types, also set conforme to null
+            result.conforme = null;
         }
 
         // Process observacao
