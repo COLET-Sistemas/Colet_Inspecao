@@ -920,43 +920,50 @@ export default function EspecificacoesPage() {
                     )}
 
                         {(() => {
-                            const userDataStr = localStorage.getItem('userData');
-                            let canForwardCQ = false;
+                            const userDataStr = localStorage.getItem('userData'); let canForwardCQ = false;
                             let userProfile = '';
 
                             if (userDataStr) {
                                 try {
-                                    const userData = JSON.parse(userDataStr);
-                                    // Verificar se o valor de encaminhar_ficha é 4
-                                    canForwardCQ = userData?.encaminhar_ficha === 4;
-                                    userProfile = userData?.perfil_inspecao || '';
+                                    const userData = JSON.parse(userDataStr);                                    // Verificar se o valor de id_tipo_inspecao está contido em encaminhar_ficha
+                                    const encaminharFicha = userData?.encaminhar_ficha;
+                                    const idTipoInspecao = fichaDados?.id_tipo_inspecao;
 
-                                    console.log('[Debug] userProfile:', userProfile);
+                                    // Verificar se encaminhar_ficha existe e se id_tipo_inspecao está contido nele
+                                    if (encaminharFicha !== undefined && idTipoInspecao !== null) {
+                                        if (typeof encaminharFicha === 'string') {
+                                            // Se for uma string, verificar se contém o número do tipo de inspeção
+                                            if (encaminharFicha.includes(',')) {
+                                                // Se for uma string separada por vírgulas
+                                                const allowedTypes = encaminharFicha.split(',').map(type => parseInt(type.trim()));
+                                                canForwardCQ = allowedTypes.includes(idTipoInspecao);
+                                            } else {
+                                                // Se for uma string simples (pode conter múltiplos caracteres)
+                                                canForwardCQ = encaminharFicha.includes(idTipoInspecao.toString());
+                                            }
+                                        } else if (Array.isArray(encaminharFicha)) {
+                                            // Se for um array, verificar se contém o id_tipo_inspecao como número ou string
+                                            canForwardCQ = encaminharFicha.includes(idTipoInspecao) ||
+                                                encaminharFicha.includes(idTipoInspecao.toString());
+                                        } else if (typeof encaminharFicha === 'number') {
+                                            // Se for um número único
+                                            canForwardCQ = encaminharFicha === idTipoInspecao;
+                                        } else if (typeof encaminharFicha === 'boolean') {
+                                            // Se for booleano, assumimos que true significa que pode encaminhar qualquer tipo
+                                            canForwardCQ = encaminharFicha;
+                                        }
+                                    }
+                                    userProfile = userData?.perfil_inspecao || '';
+                                    console.log('[Debug] userProfile:', userProfile, 'canForwardCQ:', canForwardCQ,
+                                        'encaminharFicha:', encaminharFicha,
+                                        'idTipoInspecao:', idTipoInspecao,
+                                        'tipo encaminharFicha:', typeof encaminharFicha);
                                 } catch (e) {
                                     console.error('Error parsing userData:', e);
                                 }
-                            }
-
-                            const fichaData = specifications.length > 0 ? fichaDados : null;
-                            const inspectionType = specifications.length > 0 ? (() => {
-                                // Verificar se há dados adicionais no localStorage sobre a ficha
-                                try {
-                                    const fichaStr = localStorage.getItem('currentInspectionSheet');
-                                    if (fichaStr) {
-                                        const ficha = JSON.parse(fichaStr);
-                                        return ficha?.id_tipo_inspecao || null;
-                                    }
-                                } catch (e) {
-                                    console.error('Error parsing ficha data from localStorage:', e);
-                                }
-
-                                // Caso não encontre no localStorage, usar o ID da ficha para identificar
-                                return fichaData?.id_ficha_inspecao === 4 ? 4 : null;
-                            })() : null;
-
-
-                            // Exibe botão apenas se o tipo de inspeção for 4 e o usuário tem permissão
-                            const showForwardButton = inspectionType === 4 && canForwardCQ;
+                            }                            // Exibe botão apenas se o usuário tem permissão para encaminhar este tipo de inspeção
+                            // A permissão já foi determinada pelo valor em canForwardCQ
+                            const showForwardButton = canForwardCQ;
 
                             if (showForwardButton) {
                                 return (
