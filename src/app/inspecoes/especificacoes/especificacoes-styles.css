@@ -30,6 +30,8 @@
 .spec-card {
     animation: slideInUp 0.3s ease-out;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-top: none !important;
+    /* Garantir que não há borda superior */
 }
 
 .spec-card:hover {
@@ -372,13 +374,8 @@
 }
 
 .header-section::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+    content: none;
+    /* Removendo este elemento que pode causar bordas indesejadas */
 }
 
 /* Enhanced Status Badge */
@@ -415,10 +412,11 @@
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, transparent, #93c5fd, transparent);
+    /* Tom de azul médio - blue-300 */
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -437,9 +435,14 @@
 .info-card-compact::before {
     content: '';
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1));
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 3px;
+    border-top: none !important;
+    border-radius: 0 inherit inherit 0;
+    background: linear-gradient(180deg, transparent, #93c5fd, transparent);
+    /* Tom de azul médio - blue-300 */
     opacity: 0;
     transition: opacity 0.2s ease;
 }
@@ -690,13 +693,17 @@
 
 .spec-card .w-4\/5,
 .spec-card .lg\:w-4\/5 {
-    border-right: 1px solid #e5e7eb;
+    border-right: 3px solid #dbeafe;
+    /* Tom de azul mais fraco - blue-100 */
+    border-top: none !important;
+    /* Garantir que não há borda superior */
     transition: border-color 0.3s ease;
 }
 
 .spec-card:hover .w-4\/5,
 .spec-card:hover .lg\:w-4\/5 {
-    border-right-color: rgba(26, 188, 156, 0.3);
+    border-right-color: #93c5fd;
+    /* Tom de azul médio ao passar o mouse - blue-300 */
 }
 
 .spec-card .w-1\/5,
@@ -723,9 +730,18 @@
     .spec-card .lg\:w-4\/5,
     .spec-card .w-full.lg\:w-4\/5 {
         width: 100%;
+        border-top: none !important;
         border-right: none;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 3px solid #dbeafe;
+        /* Tom de azul mais fraco - blue-100 */
         min-height: 180px;
+    }
+
+    .spec-card:hover .w-4\/5,
+    .spec-card:hover .lg\:w-4\/5,
+    .spec-card:hover .w-full.lg\:w-4\/5 {
+        border-bottom-color: #93c5fd;
+        /* Tom de azul médio ao passar o mouse - blue-300 */
     }
 
     .spec-card .w-1\/5,
@@ -1001,13 +1017,8 @@
 }
 
 .spec-card .w-4\/5::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 1px;
-    height: 100%;
-    background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+    content: none;
+    /* Removendo esta borda, pois já temos a borda à direita */
 }
 
 /* Animação de entrada para os cards */
@@ -1107,314 +1118,38 @@
     border-left-color: #ef4444;
 }
 
-/* === MINIMAL STYLES - ESTILO MINIMALISTA === */
-/* Animações suaves */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+/* === CORREÇÃO PARA BORDAS - APENAS NA DIREITA === */
+.spec-card,
+.spec-card *::before,
+.spec-card *::after {
+    border-top: none !important;
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(10px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Estilos base minimalistas */
-.spec-card {
-    transition: all 0.2s ease;
-}
-
-.spec-card:hover {
-    transform: translateY(-1px);
-}
-
-/* Estilo para cards expandidos */
-.expanded-card {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.spec-card .w-4\/5,
+.spec-card .lg\:w-4\/5,
+.spec-card .w-full.lg\:w-4\/5 {
     position: relative;
-    z-index: 10;
+    border-top: none !important;
 }
 
-.spec-card[data-expanded="true"] {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-    border-color: #d1d5db;
+/* Garantir que qualquer pseudo-elemento não adicione borda no topo */
+.spec-card .w-4\/5::before,
+.spec-card .lg\:w-4\/5::before,
+.spec-card .w-full.lg\:w-4\/5::before,
+.info-card::before,
+.info-card-compact::before,
+.header-section::before,
+.header-section::after {
+    border-top: none !important;
+    top: auto !important;
 }
 
-/* Status badges minimalistas */
-.status-badge {
-    font-weight: 500;
-    letter-spacing: 0.01em;
-}
+/* Sobrescrever qualquer possível regra responsiva que possa estar causando bordas superiores */
+@media (max-width: 1024px) {
 
-/* Input focus styles minimalistas */
-input:focus,
-textarea:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
-}
-
-/* Botões com hover suave */
-button {
-    transition: all 0.2s ease;
-}
-
-/* Estilo para itens pendentes */
-.pending-item {
-    border-left: 2px solid #f0f0f0;
-}
-
-/* Estilos de animação para interações */
-.animate-in {
-    animation: fadeIn 0.3s ease forwards;
-}
-
-.slide-in {
-    animation: slideUp 0.3s ease forwards;
-}
-
-/* === MODERN STYLES - ESTILO MODERNO === */
-/* Card hover animations and effects */
-.spec-card {
-    transition: all 0.25s ease-in-out;
-}
-
-.spec-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-/* Status indicators with subtle animations */
-.status-badge {
-    transition: all 0.2s ease;
-}
-
-.status-badge:hover {
-    transform: scale(1.05);
-}
-
-/* Info cards hover effects */
-.info-spec-card {
-    transition: all 0.2s ease-in-out;
-    position: relative;
-    overflow: hidden;
-}
-
-.info-spec-card:hover {
-    transform: translateY(-1px);
-}
-
-.info-spec-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-    pointer-events: none;
-}
-
-.info-spec-card:hover::after {
-    opacity: 1;
-}
-
-/* Modern form inputs styling */
-input[type="number"],
-select,
-textarea {
-    transition: all 0.2s ease;
-}
-
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-
-/* Button animations */
-button {
-    transition: all 0.2s ease;
-}
-
-button:active {
-    transform: scale(0.97);
-}
-
-/* Order badge with subtle animation */
-.order-badge {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.spec-card:hover .order-badge {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-}
-
-/* Edit area status colors */
-.measuring {
-    background-color: rgba(59, 130, 246, 0.04);
-}
-
-.completed {
-    background-color: rgba(34, 197, 94, 0.04);
-}
-
-.non-compliant {
-    background-color: rgba(239, 68, 68, 0.04);
-}
-
-/* Smooth animation for expandable sections */
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
+    .spec-card .w-4\/5,
+    .spec-card .lg\:w-4\/5,
+    .spec-card .w-full.lg\:w-4\/5 {
+        border-top: none !important;
     }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-in {
-    animation: slideDown 0.2s ease-out forwards;
-}
-
-/* Estilos adicionais para SVGs em especificacoes */
-.spec-icon-svg {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.spec-icon-svg svg {
-    width: 100%;
-    height: 100%;
-    fill: currentColor;
-    stroke: currentColor;
-    stroke-width: 1;
-}
-
-.spec-icon-svg svg path,
-.spec-icon-svg svg circle,
-.spec-icon-svg svg rect,
-.spec-icon-svg svg line,
-.spec-icon-svg svg polyline,
-.spec-icon-svg svg polygon {
-    fill: inherit;
-    stroke: inherit;
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
-}
-
-/* Estilos para o badge de valor informado */
-.valor-informado-badge {
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s ease;
-    font-size: 0.75rem;
-}
-
-.valor-informado-badge:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.valor-informado-badge::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-    pointer-events: none;
-}
-
-.valor-informado-badge::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.4s ease;
-}
-
-.valor-informado-badge:hover::after {
-    left: 100%;
-}
-
-/* Estilos específicos para cada tipo de badge de status */
-.badge-nao-informado {
-    background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-}
-
-.badge-informado {
-    background-color: #cfe2ff;
-    color: #0a58ca;
-    border: 1px solid #9ec5fe;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(10, 88, 202, 0.1);
-}
-
-.badge-conforme {
-    background-color: #d1e7dd;
-    color: #0f5132;
-    border: 1px solid #a3cfbb;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(15, 81, 50, 0.1);
-}
-
-.badge-nao-conforme {
-    background-color: #f8d7da;
-    color: #842029;
-    border: 1px solid #f5c2c7;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(132, 32, 41, 0.1);
-}
-
-/* Efeito de pulsação para badges não informados */
-@keyframes pulseAttention {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.7;
-    }
-}
-
-.badge-needs-attention {
-    animation: pulseAttention 2s infinite;
-}
-
-/* Estilo específico para o badge de status (Informado, Conforme, Não Conforme) */
-.status-badge-indicator {
-    display: inline-flex;
-    align-items: center;
-    transition: all 0.2s ease;
-    font-weight: 600;
-}
-
-.status-badge-indicator:hover {
-    transform: translateY(-1px);
 }

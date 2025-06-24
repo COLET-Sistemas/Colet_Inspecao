@@ -10,7 +10,6 @@ import {
     ArrowLeft,
     CheckCircle,
     CheckSquare,
-    Clipboard,
     Eye,
     MessageSquare, RefreshCw,
     Ruler,
@@ -711,7 +710,7 @@ export default function EspecificacoesPage() {
             return <Eye className="h-5 w-5" />;
         }
         return <Ruler className="h-5 w-5" />;
-    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined) => {
+    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined, unidadeMedida?: string) => {
         // Para os tipos de seleção (A, C, S, L), consideramos apenas o campo conforme
         // Para os outros tipos, verificamos o valor_encontrado
 
@@ -751,13 +750,15 @@ export default function EspecificacoesPage() {
                 text: "Não informado",
                 className: "badge-nao-informado valor-informado-badge badge-needs-attention"
             };
-        }
+        }        // A partir daqui, valor_encontrado foi preenchido mas conforme não está definido
+        // Mostramos como "Informado: [valor]" ou "Informado: Conforme" com badge azul
+        const displayValue = typeof valorEncontrado === 'boolean' ?
+            (valorEncontrado ? 'Conforme' : 'Não Conforme') :
+            `${valorEncontrado}${unidadeMedida ? ' ' + unidadeMedida : ''}`;
 
-        // A partir daqui, valor_encontrado foi preenchido mas conforme não está definido
-        // Sempre mostramos como "Informado" com badge azul
         return {
             icon: <CheckCircle className="h-4 w-4" />,
-            text: "Informado",
+            text: `Informado: ${displayValue}`,
             className: "badge-informado valor-informado-badge"
         };
     };
@@ -1064,13 +1065,11 @@ export default function EspecificacoesPage() {
 
                         const conformeAtual = editingValues[spec.id_especificacao]?.conforme !== undefined ?
                             editingValues[spec.id_especificacao].conforme :
-                            spec.conforme;
-
-                        // Para os campos de seleção (A, C, S, L), ignoramos o valor_encontrado
+                            spec.conforme;                        // Para os campos de seleção (A, C, S, L), ignoramos o valor_encontrado
                         // e verificamos apenas o campo conforme
                         const statusInfo = isSelectType(spec.tipo_valor) ?
-                            getConformeStatus(conformeAtual, conformeAtual !== null ? 'S' : null) :
-                            getConformeStatus(conformeAtual, valorAtual);
+                            getConformeStatus(conformeAtual, conformeAtual !== null ? 'S' : null, undefined) :
+                            getConformeStatus(conformeAtual, valorAtual, spec.unidade_medida);
                         const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
                             key={spec.id_especificacao}
                             initial={{ opacity: 0, y: 5 }}
@@ -1081,21 +1080,19 @@ export default function EspecificacoesPage() {
                                 boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
                             }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
                                 ? 'border-slate-300'
-                                : statusInfo.text === 'Conforme'
-                                    ? 'border-green-200'
+                                : statusInfo.text === 'Conforme' ? 'border-green-200'
                                     : statusInfo.text === 'Não Conforme'
                                         ? 'border-red-200'
-                                        : statusInfo.text === 'Informado'
+                                        : statusInfo.text.startsWith('Informado')
                                             ? 'border-blue-200'
                                             : 'border-slate-200'
                                 } overflow-hidden hover:shadow-md transition-all duration-200                                    `}
-                            data-expanded={isExpanded}                            >                                {/* Status Indicator - Thin stripe on top instead of left border */}
-                            <div className={`absolute top-0 left-0 right-0 h-1 ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
+                            data-expanded={isExpanded}                            >                                {/* Status Indicator - Thick stripe on right side */}                            <div className={`absolute top-0 right-0 bottom-0 w-3 shadow-md ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
                                 statusInfo.text === 'Conforme' ? 'bg-green-500' :
                                     statusInfo.text === 'Não Conforme' ? 'bg-red-500' :
-                                        statusInfo.text === 'Informado' ? 'bg-blue-500' :
+                                        statusInfo.text.startsWith('Informado') ? 'bg-blue-300' : /* Tom de azul mais fraco */
                                             'bg-slate-300'
-                                }`}></div>
+                                }`} style={{ zIndex: 10 }}></div>
                             {/* Removed permission indicator from corner */}
 
                             {/* Card Header - Always visible */}                                <div
@@ -1143,27 +1140,12 @@ export default function EspecificacoesPage() {
                                                     ({spec.complemento_cota})
                                                 </span>)}
                                         </h3>
-                                        </div>
-                                    </div>                                    {/* Right: Status badge and expand/collapse */}                                        <div className="flex items-center gap-2">                                        {spec.valor_encontrado !== null && spec.valor_encontrado !== undefined && (<div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium shadow-sm valor-informado-badge bg-slate-100 text-slate-700 ring-1 ring-slate-200">
-                                        <Clipboard className="h-3.5 w-3.5 text-slate-500 mr-0.5" />
-                                        <span className="font-medium">
-                                            Valor já preenchido: {isNumericType(spec.tipo_valor) ?
-                                                `${spec.valor_encontrado} ${spec.unidade_medida || ''}` :
-                                                isSelectType(spec.tipo_valor) ?
-                                                    (spec.conforme === true ?
-                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === true)?.label :
-                                                        getSelectOptions(spec.tipo_valor).find(opt => opt.value === false)?.label) :
-                                                    spec.valor_encontrado.toString()
-                                            }
-                                        </span>
-                                    </div>
-                                    )}                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
-                                        : statusInfo.text === 'Não Conforme'
-                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50'
-                                            : statusInfo.text === 'Informado'
-                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
-                                                : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
-                                        }`}>
+                                        </div>                                    </div>                                    {/* Right: Status badge and expand/collapse */}                                        <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text === 'Conforme' ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                            : statusInfo.text === 'Não Conforme'
+                                                ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50' : statusInfo.text.startsWith('Informado')
+                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
+                                                    : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
+                                            }`}>
                                             <span className="w-3 h-3 flex-shrink-0">
                                                 {statusInfo.icon}
                                             </span>
