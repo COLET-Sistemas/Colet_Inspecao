@@ -710,12 +710,22 @@ export default function EspecificacoesPage() {
             return <Eye className="h-5 w-5" />;
         }
         return <Ruler className="h-5 w-5" />;
-    }; const getConformeStatus = (conforme: boolean | null | undefined, valorEncontrado: string | number | boolean | null | undefined, unidadeMedida?: string) => {
+    }; const getConformeStatus = (conforme: boolean | null | undefined | string, valorEncontrado: string | number | boolean | null | undefined, unidadeMedida?: string, tipoValor?: string) => {
         // Para os tipos de seleção (A, C, S, L), consideramos apenas o campo conforme
-        // Para os outros tipos, verificamos o valor_encontrado
+        // Para os outros tipos, verificamos o valor_encontrado        // Normalizar valores de conforme: 'S'/true para true, 'N'/false para false
+        let conformeBoolean: boolean | null | undefined = null;
+        if (typeof conforme === 'boolean') {
+            conformeBoolean = conforme;
+        } else if (conforme === 'S') {
+            conformeBoolean = true;
+        } else if (conforme === 'N') {
+            conformeBoolean = false;
+        } else {
+            conformeBoolean = conforme as (boolean | null | undefined);
+        }
 
         // Caso 1: Se conforme está definido, usamos ele independentemente do valor_encontrado
-        if (conforme !== null && conforme !== undefined) {
+        if (conformeBoolean !== null && conformeBoolean !== undefined) {
             // Se exibe_resultado for 'N', mostramos apenas que está informado, independente do valor
             if (fichaDados.exibe_resultado === 'N') {
                 return {
@@ -725,40 +735,113 @@ export default function EspecificacoesPage() {
                 };
             }
 
-            // Se exibe_resultado for 'S', mostramos o status de conformidade
-            if (conforme === true) {
+            // Se exibe_resultado for 'S', mostramos o status de conformidade com texto específico por tipo
+            if (conformeBoolean === true) {
+                // Usar texto específico baseado no tipo_valor
+                let text = "Conforme";
+
+                if (tipoValor) {
+                    switch (tipoValor) {
+                        case 'A': text = "Informado: Aprovado"; break;
+                        case 'C': text = "Conforme"; break;
+                        case 'S': text = "Sim"; break;
+                        case 'L': text = "Liberdade"; break;
+                    }
+                }
+
                 return {
                     icon: <CheckCircle className="h-4 w-4" />,
-                    text: "Conforme",
+                    text: text,
                     className: "badge-conforme valor-informado-badge"
                 };
             }
 
-            if (conforme === false) {
+            if (conformeBoolean === false) {
+                // Usar texto específico baseado no tipo_valor
+                let text = "Não Conforme";
+
+                if (tipoValor) {
+                    switch (tipoValor) {
+                        case 'A': text = "Informado: Reprovado"; break;
+                        case 'C': text = "Informado: Não Conforme"; break;
+                        case 'S': text = "Informado: Não"; break;
+                        case 'L': text = "Informado: Retido"; break;
+                    }
+                }
+
                 return {
                     icon: <XCircle className="h-4 w-4" />,
-                    text: "Não Conforme",
+                    text: text,
                     className: "badge-nao-conforme valor-informado-badge"
                 };
             }
-        }
-
-        // Caso 2: Se conforme não está definido, verificamos se o valor_encontrado está preenchido
+        }        // Caso 2: Se conforme não está definido, verificamos se o valor_encontrado está preenchido
         if (!isValueFilled(valorEncontrado)) {
             return {
                 icon: <AlertCircle className="h-4 w-4" />,
                 text: "Não informado",
                 className: "badge-nao-informado valor-informado-badge badge-needs-attention"
             };
-        }        // A partir daqui, valor_encontrado foi preenchido mas conforme não está definido
-        // Mostramos como "Informado: [valor]" ou "Informado: Conforme" com badge azul
-        const displayValue = typeof valorEncontrado === 'boolean' ?
-            (valorEncontrado ? 'Conforme' : 'Não Conforme') :
-            `${valorEncontrado}${unidadeMedida ? ' ' + unidadeMedida : ''}`;
+        }
+
+        // A partir daqui, valor_encontrado foi preenchido mas conforme não está definido
+        // Mostramos como "Informado: [valor]" ou texto específico baseado no tipo_valor
+        let displayValue;
+
+        if (typeof valorEncontrado === 'boolean') {
+            // Para valores booleanos, usar texto específico baseado no tipo_valor
+            if (tipoValor) {
+                switch (tipoValor) {
+                    case 'A':
+                        displayValue = valorEncontrado ? 'Aprovado' : 'Reprovado';
+                        break;
+                    case 'C':
+                        displayValue = valorEncontrado ? 'Conforme' : 'Não Conforme';
+                        break;
+                    case 'S':
+                        displayValue = valorEncontrado ? 'Sim' : 'Não';
+                        break;
+                    case 'L':
+                        displayValue = valorEncontrado ? 'Liberdade' : 'Retido';
+                        break;
+                    default:
+                        displayValue = valorEncontrado ? 'Conforme' : 'Não Conforme';
+                }
+            } else {
+                displayValue = valorEncontrado ? 'Conforme' : 'Não Conforme';
+            }
+        } else if (valorEncontrado === 'S' || valorEncontrado === 'N') {
+            // Para valores S/N, também usar texto específico baseado no tipo_valor
+            const valorBooleano = valorEncontrado === 'S';
+            if (tipoValor) {
+                switch (tipoValor) {
+                    case 'A':
+                        displayValue = valorBooleano ? 'Aprovado' : 'Reprovado';
+                        break;
+                    case 'C':
+                        displayValue = valorBooleano ? 'Conforme' : 'Não Conforme';
+                        break;
+                    case 'S':
+                        displayValue = valorBooleano ? 'Sim' : 'Não';
+                        break;
+                    case 'L':
+                        displayValue = valorBooleano ? 'Liberdade' : 'Retido';
+                        break;
+                    default:
+                        displayValue = valorBooleano ? 'Conforme' : 'Não Conforme';
+                }
+            } else {
+                displayValue = valorBooleano ? 'Conforme' : 'Não Conforme';
+            }
+        } else {
+            // Para outros tipos de valores
+            displayValue = `${valorEncontrado}${unidadeMedida ? ' ' + unidadeMedida : ''}`;
+        }        // Para campos do tipo 'A' (Aprovado/Reprovado), sempre usar "Informado: " como prefixo
+        const prefix = tipoValor === 'A' ? 'Informado: ' : '';
 
         return {
             icon: <CheckCircle className="h-4 w-4" />,
-            text: `Informado: ${displayValue}`,
+            text: `${prefix}${displayValue}`,
             className: "badge-informado valor-informado-badge"
         };
     };
@@ -1120,8 +1203,8 @@ export default function EspecificacoesPage() {
                             spec.conforme;                        // Para os campos de seleção (A, C, S, L), ignoramos o valor_encontrado
                         // e verificamos apenas o campo conforme
                         const statusInfo = isSelectType(spec.tipo_valor) ?
-                            getConformeStatus(conformeAtual, conformeAtual !== null ? 'S' : null, undefined) :
-                            getConformeStatus(conformeAtual, valorAtual, spec.unidade_medida);
+                            getConformeStatus(conformeAtual, null, undefined, spec.tipo_valor) :
+                            getConformeStatus(conformeAtual, valorAtual, spec.unidade_medida, spec.tipo_valor);
                         const isExpanded = expandedCards.has(spec.id_especificacao); return (<motion.div
                             key={spec.id_especificacao}
                             initial={{ opacity: 0, y: 5 }}
