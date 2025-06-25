@@ -1464,7 +1464,7 @@ export default function EspecificacoesPage() {
                                                     <>
                                                         {/* Campo de valor encontrado - exibido apenas se for numérico */}
                                                         {isNumericType(spec.tipo_valor) && (
-                                                            <div className={`${containerClass} w-full sm:w-1/2`}>  
+                                                            <div className={`${containerClass} w-full sm:w-1/2`}>
                                                                 <div className="flex items-center h-full">
                                                                     <div className="w-full">
                                                                         <label className={labelClass}>
