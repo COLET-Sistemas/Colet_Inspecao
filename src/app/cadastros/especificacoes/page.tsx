@@ -398,11 +398,18 @@ export default function Especificacoes() {
         try {
             if (!apiUrl) {
                 throw new Error("URL da API não configurada");
-            } const response = await fetch(
-                `${apiUrl}/inspecao/processos_ft?referencia=${encodeURIComponent(codigoReferencia.trim())}`,
+            }
+
+            // Usar o proxy route para evitar problemas de CORS
+            const response = await fetch(
+                `/api/proxy`,
                 {
                     method: 'GET',
-                    headers: getAuthHeaders()
+                    headers: {
+                        ...getAuthHeaders(),
+                        'x-api-url': apiUrl,
+                        'x-target-path': `/inspecao/processos_ft?referencia=${encodeURIComponent(codigoReferencia.trim())}`
+                    }
                 }
             );
 

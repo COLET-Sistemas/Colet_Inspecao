@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
     const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout'];
 
     // Lista de rotas da API que precisam de autenticação
-    const protectedApiRoutes = ['/api/auth/me'];
+    const protectedApiRoutes = ['/api/auth/me', '/api/proxy'];
 
     // Verifica se é uma rota pública
     if (publicRoutes.includes(pathname)) {
