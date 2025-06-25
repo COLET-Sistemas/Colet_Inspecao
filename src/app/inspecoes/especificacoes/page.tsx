@@ -67,7 +67,7 @@ export default function EspecificacoesPage() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean | null; observacao: string; conforme?: boolean | null } }>({});
-    const [expandedObservations, setExpandedObservations] = useState<Set<number>>(new Set()); const [isSaving, setIsSaving] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     // Variável para controlar se a inspeção foi iniciada
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
     // Variável para controlar se está encaminhando para o CQ
@@ -203,19 +203,7 @@ export default function EspecificacoesPage() {
     const handleBack = useCallback(() => {
         router.back();
     }, [router]);
-    const toggleObservationField = useCallback((specId: number) => {
-        // Verificação já é feita através do disabled no botão e é redundante aqui
-        // pois o botão não será clicável se o usuário não tiver permissão
-        setExpandedObservations(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(specId)) {
-                newSet.delete(specId);
-            } else {
-                newSet.add(specId);
-            }
-            return newSet;
-        });
-    }, []);
+    // Função removida: toggleObservationField
 
     // Função para obter as opções de select baseadas no tipo_valor
     const getSelectOptions = useCallback((tipoValor: string) => {
@@ -1425,7 +1413,7 @@ export default function EspecificacoesPage() {
                                 className="border-t border-slate-100 bg-slate-50/60 p-4"
                             >
                                 <div className="bg-white rounded-md border border-slate-200 p-4 shadow-sm">
-                                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
                                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
                                     </div>
                                     {isSelectType(spec.tipo_valor) ? (
@@ -1458,77 +1446,106 @@ export default function EspecificacoesPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="relative">                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
-                                            Valor encontrado:
-                                            {spec.unidade_medida && (
-                                                <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
-                                            )}
-                                            {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
-                                                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
-                                                    {getPermissionMessage(spec.local_inspecao)}
-                                                </span>
-                                            )}                                            </label>                                                <div className="relative input-focus-container">
-                                                {focusedInputId === spec.id_especificacao && (
-                                                    <div className="absolute -inset-1 bg-primary-50/20 rounded-lg transition-all duration-300 ease-in-out animate-pulse"></div>
-                                                )}
-                                                <input
-                                                    type="number"
-                                                    step="0.01" value={(() => {
-                                                        const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
-                                                            ? editingValues[spec.id_especificacao].valor_encontrado
-                                                            : spec.valor_encontrado || '';
-
-                                                        if (value === null) {
-                                                            return '';
-                                                        }
-
-                                                        if (typeof value === 'boolean') {
-                                                            return value ? 'S' : 'N';
-                                                        }
-
-                                                        return value;
-                                                    })()}
-                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                    onFocus={() => setFocusedInputId(spec.id_especificacao)}
-                                                    onBlur={() => setFocusedInputId(null)}
-                                                    disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                    className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm font-mono relative z-10
-                                                                ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:shadow-md'}
-                                                            `}
-                                                    placeholder="Digite o valor..."
-                                                    ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
-                                                />
-                                                <div className="input-focus-glow"></div>
-                                            </div>
+                                        <div className="relative">
+                                            {/* Espaço removido completamente */}
                                         </div>
                                     )}
 
-                                    <div className="mt-4 flex justify-end">
-                                        <button
-                                            onClick={() => toggleObservationField(spec.id_especificacao)}
-                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                            className={`text-xs bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1.5 font-medium
-                                                    ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed' : ''}
-                                                `}
-                                        >
-                                            <MessageSquare className="h-3.5 w-3.5" />
-                                            {expandedObservations.has(spec.id_especificacao) ? 'Ocultar observação' : 'Adicionar observação'}
-                                        </button>
+                                    <div className="mt-1">  {/* Reduzido espaçamento vertical */}
+                                        <div className="flex flex-col sm:flex-row gap-2 w-full">  {/* Responsivo: coluna em mobile, linha em desktop */}
+                                            {/* Definição de classes comuns para ambos os inputs para garantir consistência */}
+                                            {(() => {
+                                                // Classes comuns para labels e inputs para garantir consistência visual
+                                                const labelClass = "block text-xs text-slate-600 font-medium mb-0.5 flex items-center gap-1.5"; {/* Reduzido espaço entre label e input */ }
+                                                const inputClass = "w-full h-[38px] px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm relative z-10";
+                                                const containerClass = "relative flex-1";
+
+                                                return (
+                                                    <>
+                                                        {/* Campo de valor encontrado - exibido apenas se for numérico */}
+                                                        {isNumericType(spec.tipo_valor) && (
+                                                            <div className={`${containerClass} w-full sm:w-1/2`}>  
+                                                                <div className="flex items-center h-full">
+                                                                    <div className="w-full">
+                                                                        <label className={labelClass}>
+                                                                            Valor encontrado:
+                                                                            {spec.unidade_medida && (
+                                                                                <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
+                                                                            )}
+                                                                        </label>
+                                                                        <div className="relative input-focus-container">
+                                                                            {focusedInputId === spec.id_especificacao && (
+                                                                                <div className="absolute -inset-1 bg-primary-50/20 rounded-lg transition-all duration-300 ease-in-out animate-pulse"></div>
+                                                                            )}
+                                                                            <input
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                value={(() => {
+                                                                                    const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
+                                                                                        ? editingValues[spec.id_especificacao].valor_encontrado
+                                                                                        : spec.valor_encontrado || '';
+
+                                                                                    if (value === null) {
+                                                                                        return '';
+                                                                                    }
+
+                                                                                    if (typeof value === 'boolean') {
+                                                                                        return value ? 'S' : 'N';
+                                                                                    }
+
+                                                                                    return value;
+                                                                                })()}
+                                                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                                                onFocus={() => setFocusedInputId(spec.id_especificacao)}
+                                                                                onBlur={() => setFocusedInputId(null)}
+                                                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:shadow-md'}`}
+                                                                                placeholder="Digite o valor..."
+                                                                                ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Campo de observação - sempre visível */}
+                                                        <div className={`${containerClass} ${isNumericType(spec.tipo_valor) ? 'w-full sm:w-1/2' : 'w-full'}`}>
+                                                            <div className="flex items-center h-full">
+                                                                <div className="w-full">
+                                                                    <label className={labelClass}>
+                                                                        <MessageSquare className="h-3.5 w-3.5" />
+                                                                        Observação:
+                                                                        {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
+                                                                            <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 ml-auto">
+                                                                                {getPermissionMessage(spec.local_inspecao)}
+                                                                            </span>
+                                                                        )}
+                                                                    </label>
+                                                                    <div className="relative input-focus-container">
+                                                                        {focusedInputId === -spec.id_especificacao && (
+                                                                            <div className="absolute -inset-1 bg-primary-50/20 rounded-lg transition-all duration-300 ease-in-out animate-pulse"></div>
+                                                                        )}
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Digite sua observação técnica..."
+                                                                            value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
+                                                                            onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
+                                                                            onFocus={() => setFocusedInputId(-spec.id_especificacao)}
+                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:shadow-md'}`}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+
+                                        </div>
                                     </div>
-                                    {expandedObservations.has(spec.id_especificacao) && (
-                                        <div className="mt-3">
-                                            <textarea
-                                                placeholder="Digite sua observação técnica..."
-                                                value={editingValues[spec.id_especificacao]?.observacao || spec.observacao || ''}
-                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'observacao', e.target.value)}
-                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                className={`w-full p-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm
-                                                        ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
-                                                    `}
-                                                rows={2}
-                                            />
-                                        </div>
-                                    )}
                                 </div>
                             </motion.div>
                             )}
