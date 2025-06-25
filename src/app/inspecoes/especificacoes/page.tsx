@@ -247,6 +247,10 @@ export default function EspecificacoesPage() {
             const userData = JSON.parse(userDataStr);
             const perfilInspecao = userData.perfil_inspecao || '';
 
+            // Exceção: Se id_tipo_inspecao for 5 e o usuário tiver perfil "Q",
+            // ele pode editar qualquer especificação independente do local_inspecao
+            if (fichaDados.id_tipo_inspecao === 5 && perfilInspecao.includes("Q")) return true;
+
             // Se local_inspecao for "*", todos os usuários podem editar
             if (localInspecao === "*") return true;
 
@@ -259,7 +263,7 @@ export default function EspecificacoesPage() {
             console.error('Erro ao verificar permissão:', error);
             return false;
         }
-    }, []);
+    }, [fichaDados.id_tipo_inspecao]);
 
     // Função para atualizar valores em edição    
     const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | number | boolean) => {
