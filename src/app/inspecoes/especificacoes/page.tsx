@@ -78,6 +78,8 @@ export default function EspecificacoesPage() {
     const [isFinalizing, setIsFinalizing] = useState(false);
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+    // Estado para rastrear qual input está em foco
+    const [focusedInputId, setFocusedInputId] = useState<number | null>(null);
     // Estado para exibição de mensagens de alerta
     const [alertMessage, setAlertMessage] = useState<{ message: string; type: "success" | "error" | "warning" | "info" } | null>(null);    // Referências para os inputs de cada especificação
     const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});    // Função auxiliar para converter um valor para o tipo adequado
@@ -1456,7 +1458,7 @@ export default function EspecificacoesPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div>                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
+                                        <div className="relative">                                                <label className="block text-xs text-slate-600 font-medium mb-2 flex items-center gap-2">
                                             Valor encontrado:
                                             {spec.unidade_medida && (
                                                 <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">{spec.unidade_medida}</span>
@@ -1465,31 +1467,39 @@ export default function EspecificacoesPage() {
                                                 <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
                                                     {getPermissionMessage(spec.local_inspecao)}
                                                 </span>
-                                            )}                                            </label><input
-                                                type="number"
-                                                step="0.01" value={(() => {
-                                                    const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
-                                                        ? editingValues[spec.id_especificacao].valor_encontrado
-                                                        : spec.valor_encontrado || '';
+                                            )}                                            </label>                                                <div className="relative input-focus-container">
+                                                {focusedInputId === spec.id_especificacao && (
+                                                    <div className="absolute -inset-1 bg-primary-50/20 rounded-lg transition-all duration-300 ease-in-out animate-pulse"></div>
+                                                )}
+                                                <input
+                                                    type="number"
+                                                    step="0.01" value={(() => {
+                                                        const value = editingValues[spec.id_especificacao]?.valor_encontrado !== undefined
+                                                            ? editingValues[spec.id_especificacao].valor_encontrado
+                                                            : spec.valor_encontrado || '';
 
-                                                    if (value === null) {
-                                                        return '';
-                                                    }
+                                                        if (value === null) {
+                                                            return '';
+                                                        }
 
-                                                    if (typeof value === 'boolean') {
-                                                        return value ? 'S' : 'N';
-                                                    }
+                                                        if (typeof value === 'boolean') {
+                                                            return value ? 'S' : 'N';
+                                                        }
 
-                                                    return value;
-                                                })()}
-                                                onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
-                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-mono
-                                                        ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}
-                                                    `}
-                                                placeholder="Digite o valor..."
-                                                ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
-                                            />
+                                                        return value;
+                                                    })()}
+                                                    onChange={(e) => handleValueChange(spec.id_especificacao, 'valor_encontrado', e.target.value)}
+                                                    onFocus={() => setFocusedInputId(spec.id_especificacao)}
+                                                    onBlur={() => setFocusedInputId(null)}
+                                                    disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                    className={`w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm font-mono relative z-10
+                                                                ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:shadow-md'}
+                                                            `}
+                                                    placeholder="Digite o valor..."
+                                                    ref={(el) => { inputRefs.current[spec.id_especificacao] = el; }}
+                                                />
+                                                <div className="input-focus-glow"></div>
+                                            </div>
                                         </div>
                                     )}
 

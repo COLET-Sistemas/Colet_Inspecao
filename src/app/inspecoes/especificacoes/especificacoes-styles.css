@@ -64,15 +64,16 @@
     left: 100%;
 }
 
-/* Input focus animations */
+/* Input focus animations - Versão minimalista */
 .modern-input {
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease;
     position: relative;
 }
 
 .modern-input:focus {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.1);
+    transform: none;
+    box-shadow: none;
+    outline: none;
 }
 
 /* Button pulse animation */
@@ -610,15 +611,41 @@
     border-color: #d1d5db;
 }
 
-/* Ajustes para campos de entrada mais compactos */
+/* Ajustes para campos de entrada mais compactos - Versão minimalista */
 .compact-input {
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s ease;
+    box-shadow: none;
 }
 
 .compact-input:focus {
-    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
-    transform: scale(1.01);
+    box-shadow: none;
+    transform: none;
+    border-color: #9ca3af;
+    /* tom de cinza médio */
+}
+
+/* Estilos específicos para input de valor encontrado - Versão minimalista */
+input[type="number"].modern-input.compact-input {
+    transition: border-color 0.2s ease;
+    border-radius: 0.375rem;
+    /* rounded-md */
+    position: relative;
+    overflow: hidden;
+}
+
+input[type="number"].modern-input.compact-input:focus {
+    box-shadow: none;
+    border-color: #9ca3af;
+    /* cor cinza */
+    transform: none;
+}
+
+input[type="number"].modern-input.compact-input::after {
+    content: none;
+}
+
+input[type="number"].modern-input.compact-input:focus::after {
+    opacity: 0;
 }
 
 /* Melhorias para botões compactos */
@@ -894,21 +921,22 @@
     }
 }
 
-/* Focus improvements for mobile */
+/* Focus improvements for mobile - Versão minimalista */
 @media (max-width: 768px) {
 
     .spec-card input:focus,
     .spec-card textarea:focus {
         transform: none;
-        box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+        box-shadow: none;
     }
 }
 
-/* Animações específicas para campos de entrada */
+/* Animações específicas para campos de entrada - Versão minimalista */
 .spec-card input:focus,
 .spec-card textarea:focus {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.1);
+    transform: none;
+    box-shadow: none;
+    border-color: #9ca3af;
 }
 
 /* Melhorias para botões compactos */
@@ -991,11 +1019,11 @@
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
 
-/* Focus states melhorados */
+/* Focus states melhorados - Versão minimalista */
 .spec-card input:focus-visible,
 .spec-card textarea:focus-visible {
-    outline: 2px solid #1ABC9C;
-    outline-offset: 2px;
+    outline: none;
+    border-color: #9ca3af;
 }
 
 /* Estilos para o painel lateral de edição */
@@ -1142,3 +1170,22 @@
 .header-section::after {
     top: auto !important;
 }
+
+/* Estilos minimalistas para o input quando está em foco */
+.modern-input:focus-within {
+    border-color: #9ca3af;
+    /* tom de cinza médio */
+    z-index: 1;
+}
+
+/* Container simplificado para o input */
+.input-focus-container {
+    position: relative;
+}
+
+/* Removidos efeitos de glow */
+.input-focus-glow {
+    display: none;
+}
+
+/* Melhorias para botões compactos */
