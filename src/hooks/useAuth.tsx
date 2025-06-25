@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { setLogoutInProgress } from "../services/api/authInterceptor";
 
 interface User {
     username: string;
@@ -99,38 +100,66 @@ function useProvideAuth(): AuthContextType {
         }
     }, []);
     useEffect(() => {
+        let isMounted = true;
+
         const initAuth = async () => {
-            const authStatus = await checkAuth();
-            setIsAuthenticated(authStatus);
-            if (authStatus) {
-                // Tenta obter os dados atualizados do usuário da API
-                const userData = await getUserData();
-                if (userData) {
-                    setUser(userData);
-                    // Atualiza o localStorage com os dados mais recentes
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                } else {
-                    // Se não conseguir obter da API, tenta usar dados do localStorage
-                    const storedUserData = localStorage.getItem('userData');
-                    if (storedUserData) {
-                        try {
-                            const parsedUserData = JSON.parse(storedUserData);
-                            setUser(parsedUserData);
-                        } catch (e) {
-                            console.error('Erro ao analisar dados do usuário do localStorage:', e);
-                            localStorage.removeItem('userData');
+            try {
+                // Evitar inicialização se logout estiver em progresso
+                if (document.location.pathname === '/login') {
+                    setIsLoading(false);
+                    return;
+                }
+
+                const authStatus = await checkAuth();
+
+                // Verifica se o componente ainda está montado antes de atualizar o estado
+                if (!isMounted) return;
+
+                setIsAuthenticated(authStatus);
+                if (authStatus) {
+                    // Tenta obter os dados atualizados do usuário da API
+                    const userData = await getUserData();
+
+                    // Verifica novamente se o componente está montado
+                    if (!isMounted) return;
+
+                    if (userData) {
+                        setUser(userData);
+                        // Atualiza o localStorage com os dados mais recentes
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                    } else {
+                        // Se não conseguir obter da API, tenta usar dados do localStorage
+                        const storedUserData = localStorage.getItem('userData');
+                        if (storedUserData) {
+                            try {
+                                const parsedUserData = JSON.parse(storedUserData);
+                                setUser(parsedUserData);
+                            } catch (e) {
+                                console.error('Erro ao analisar dados do usuário do localStorage:', e);
+                                localStorage.removeItem('userData');
+                            }
                         }
                     }
+                } else {
+                    // Se não estiver autenticado, certifica-se de que os dados de usuário sejam removidos
+                    localStorage.removeItem('userData');
+                    setUser(null);
                 }
-            } else {
-                // Se não estiver autenticado, certifica-se de que os dados de usuário sejam removidos
-                localStorage.removeItem('userData');
-                setUser(null);
+            } catch (error) {
+                console.error('Erro ao inicializar autenticação:', error);
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
-            setIsLoading(false);
         };
 
         initAuth();
+
+        // Cleanup function to handle component unmounting
+        return () => {
+            isMounted = false;
+        };
     }, [checkAuth, getUserData]); const login = useCallback(
         async ({ username, password, remember, preserveRemembered }: LoginCredentials): Promise<boolean> => {
             if (isLoading) return false;
@@ -193,27 +222,48 @@ function useProvideAuth(): AuthContextType {
         },
         [router, isLoading]
     ); const logout = useCallback(async (): Promise<void> => {
+        // Define a flag de logout para evitar chamadas à API durante o processo
+        setLogoutInProgress(true);
         setIsLoading(true);
-        try {
-            // Limpa qualquer possível mensagem de erro de autenticação antes do logout
-            if (typeof sessionStorage !== 'undefined') {
-                sessionStorage.removeItem('authError');
-            }
 
-            // Chama a API de logout para limpar cookies HttpOnly
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-        } catch (error) {
-            console.error('Erro ao fazer logout:', error);
+        // Limpa qualquer possível mensagem de erro de autenticação antes do logout
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('authError');
         }
 
-        localStorage.removeItem('userData');
+        // Primeiro desautentica o usuário no front-end para uma experiência mais responsiva
         setIsAuthenticated(false);
         setUser(null);
-        setIsLoading(false);
+
+        // Redirecionamento imediato para a tela de login
         router.push("/login");
+
+        // Em seguida, limpamos os cookies e localStorage em segundo plano
+        setTimeout(async () => {
+            try {
+                // Chama a API de logout para limpar cookies HttpOnly
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+            } finally {
+                // Limpeza completa dos dados do localStorage
+                localStorage.removeItem('userData');
+                localStorage.removeItem('colaborador');
+                localStorage.removeItem('codigo_pessoa');
+                localStorage.removeItem('perfil_inspecao');
+
+                // Finalizando o processo de logout
+                setIsLoading(false);
+
+                // Resetando a flag após o logout completo
+                setTimeout(() => {
+                    setLogoutInProgress(false);
+                }, 200);
+            }
+        }, 100); // Pequeno delay para garantir que o redirecionamento inicie primeiro
     }, [router]);
 
     return {

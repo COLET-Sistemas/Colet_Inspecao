@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Check if user has the required permission
@@ -52,7 +52,6 @@ export default function Navbar() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const { user, logout } = useAuth();
-    const router = useRouter();
     const pathname = usePathname();
 
     // Track scroll position to add shadow effect when scrolling
@@ -97,12 +96,21 @@ export default function Navbar() {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
+
+            // Limpar sessionStorage para evitar mensagens de erro indesejadas
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('authError');
+            }
+
             await logout();
-            router.push("/login");
+
+            // A navegação para login já é feita dentro da função logout
+            // Não precisamos chamar router.push aqui novamente
         } catch (error) {
             console.error("Logout failed:", error);
         } finally {
             setIsLoggingOut(false);
+            setShowLogoutModal(false); // Fechar o modal após o logout, independente do resultado
         }
     };
 

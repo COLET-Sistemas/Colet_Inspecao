@@ -15,8 +15,10 @@ export async function POST() {
             sameSite: 'strict' as const,
             path: '/',
             maxAge: 0, // Remove o cookie
+            expires: new Date(0) // Define expiração no passado para garantir remoção
         };
 
+        // Limpar todos os cookies relacionados à autenticação
         response.cookies.set('authToken', '', cookieOptions);
         response.cookies.set('userData', '', cookieOptions);
         response.cookies.set('isAuthenticated', '', cookieOptions);

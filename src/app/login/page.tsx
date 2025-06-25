@@ -2,6 +2,7 @@
 
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { useAuth } from "@/hooks/useAuth";
+import { getIsLogoutInProgress } from "@/services/api/authInterceptor";
 import { CheckCircle, Eye, EyeOff, Loader, Lock, Settings, User, X, XCircle } from "lucide-react";
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
@@ -33,6 +34,7 @@ export default function LoginPage() {
     const [tempApiUrl, setTempApiUrl] = useState('');
     const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
     const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+    const [logoutInProgress, setLogoutInProgress] = useState<boolean>(false);
 
     // Add a state to detect orientation
     const [isLandscape, setIsLandscape] = useState(false);
@@ -61,13 +63,62 @@ export default function LoginPage() {
         }
 
         // Check for session expiration message
-        const authError = sessionStorage.getItem('authError');
-        if (authError) {
-            setSessionExpiredMessage(authError);
-            // Remove the message after retrieving it
-            sessionStorage.removeItem('authError');
+        if (typeof sessionStorage !== 'undefined') {
+            const authError = sessionStorage.getItem('authError');
+            if (authError) {
+                setSessionExpiredMessage(authError);
+                // Remove the message after retrieving it
+                sessionStorage.removeItem('authError');
+
+                // Add a small delay to clear the message after it's been displayed
+                setTimeout(() => {
+                    setSessionExpiredMessage(null);
+                }, 5000); // 5 seconds
+            }
         }
     }, [apiUrl]);
+
+    // Check for logout in progress
+    useEffect(() => {
+        const checkLogoutStatus = () => {
+            const isLogoutActive = getIsLogoutInProgress();
+            setLogoutInProgress(isLogoutActive);
+
+            // If logout is in progress, show a temporary message
+            if (isLogoutActive) {
+                setSessionExpiredMessage("Finalizando sessão...");
+
+                // Clear message after logout completes
+                const interval = setInterval(() => {
+                    if (!getIsLogoutInProgress()) {
+                        setLogoutInProgress(false);
+                        setSessionExpiredMessage("Sessão finalizada com sucesso.");
+
+                        // Auto-clear the message after a few seconds
+                        setTimeout(() => {
+                            setSessionExpiredMessage(null);
+                        }, 3000);
+
+                        clearInterval(interval);
+                    }
+                }, 200);
+
+                // Safety cleanup after 5 seconds
+                setTimeout(() => {
+                    clearInterval(interval);
+                }, 5000);
+            }
+        };
+
+        checkLogoutStatus();
+
+        // Check status periodically in case it changes
+        const statusCheck = setInterval(checkLogoutStatus, 500);
+
+        return () => {
+            clearInterval(statusCheck);
+        };
+    }, []);
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -109,6 +160,11 @@ export default function LoginPage() {
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setFormSubmitted(true);
+
+        // Don't proceed if logout is in progress
+        if (logoutInProgress) {
+            return;
+        }
 
         // Validate form
         if (!username || !password) {
@@ -313,25 +369,55 @@ export default function LoginPage() {
                             <p className="text-gray-500">Acesse sua conta para continuar</p>
                         </div>
 
-                        {/* Session Expired Message */}
+                        {/* Session Messages */}
                         {sessionExpiredMessage && (
-                            <div className="mb-6 rounded-lg bg-red-50 p-4" role="alert">
+                            <div className={`mb-6 rounded-lg p-4 ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
+                                    ? "bg-red-50"
+                                    : sessionExpiredMessage.includes("Finalizando")
+                                        ? "bg-blue-50"
+                                        : sessionExpiredMessage.includes("sucesso")
+                                            ? "bg-green-50"
+                                            : "bg-red-50"
+                                }`} role="alert">
                                 <div className="flex items-center">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="mr-3 h-5 w-5 text-red-500"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                    <div className="text-sm font-medium text-red-700">{sessionExpiredMessage}</div>
+                                    {sessionExpiredMessage.includes("Finalizando") ? (
+                                        <svg
+                                            className="animate-spin mr-3 h-5 w-5 text-blue-500"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    ) : sessionExpiredMessage.includes("sucesso") ? (
+                                        <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
+                                    ) : (
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="mr-3 h-5 w-5 text-red-500"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="8" x2="12" y2="12" />
+                                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                                        </svg>
+                                    )}
+                                    <div className={`text-sm font-medium ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
+                                            ? "text-red-700"
+                                            : sessionExpiredMessage.includes("Finalizando")
+                                                ? "text-blue-700"
+                                                : sessionExpiredMessage.includes("sucesso")
+                                                    ? "text-green-700"
+                                                    : "text-red-700"
+                                        }`}>
+                                        {sessionExpiredMessage}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -451,7 +537,7 @@ export default function LoginPage() {
                             <div>
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || logoutInProgress}
                                     className="flex w-full justify-center rounded-lg bg-gradient-to-r from-[#09A08D] to-[#3C787A] px-4 py-2.5 sm:py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#09A08D] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {isSubmitting ? (
@@ -461,6 +547,14 @@ export default function LoginPage() {
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                             <span>Entrando...</span>
+                                        </span>
+                                    ) : logoutInProgress ? (
+                                        <span className="flex items-center">
+                                            <svg className="mr-2 h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Finalizando sessão...</span>
                                         </span>
                                     ) : (
                                         <span>Entrar</span>
