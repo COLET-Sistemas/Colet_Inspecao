@@ -1402,7 +1402,7 @@ export default function EspecificacoesPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2 ml-auto">
+                                    <div className="flex items-center gap-2 ml-auto md:mr-9">
                                         {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
                                             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-amber-50 border-amber-200 text-amber-700">
                                                 <span className="flex items-center gap-1 font-medium">
