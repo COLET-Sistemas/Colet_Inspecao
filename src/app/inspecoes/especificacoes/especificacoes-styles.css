@@ -30,13 +30,17 @@
 .spec-card {
     animation: slideInUp 0.3s ease-out;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-top: none !important;
-    /* Garantir que não há borda superior */
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    border-left: 1px solid #e5e7eb;
+    border-right: none;
 }
 
 .spec-card:hover {
     transform: translateY(-4px) scale(1.01);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+    /* Tom de cinza um pouco mais escuro no hover */
 }
 
 /* Status bar animations */
@@ -326,6 +330,16 @@
         background: rgba(17, 24, 39, 0.8);
         border: 1px solid rgba(75, 85, 99, 0.3);
     }
+
+    .spec-card,
+    .spec-card-compact {
+        border-color: rgba(75, 85, 99, 0.3);
+    }
+
+    .spec-card:hover,
+    .spec-card-compact:hover {
+        border-color: rgba(107, 114, 128, 0.5);
+    }
 }
 
 /* Icon Container Styles - Quadrados com bordas para SVGs */
@@ -439,7 +453,6 @@
     right: 0;
     bottom: 0;
     width: 3px;
-    border-top: none !important;
     border-radius: 0 inherit inherit 0;
     background: linear-gradient(180deg, transparent, #93c5fd, transparent);
     /* Tom de azul médio - blue-300 */
@@ -585,6 +598,8 @@
 .spec-card-compact {
     border-radius: 1rem;
     overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-right: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -592,6 +607,7 @@
 .spec-card-compact:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
+    border-color: #d1d5db;
 }
 
 /* Ajustes para campos de entrada mais compactos */
@@ -695,8 +711,6 @@
 .spec-card .lg\:w-4\/5 {
     border-right: 3px solid #dbeafe;
     /* Tom de azul mais fraco - blue-100 */
-    border-top: none !important;
-    /* Garantir que não há borda superior */
     transition: border-color 0.3s ease;
 }
 
@@ -730,19 +744,12 @@
     .spec-card .lg\:w-4\/5,
     .spec-card .w-full.lg\:w-4\/5 {
         width: 100%;
-        border-top: none !important;
         border-right: none;
-        border-bottom: 3px solid #dbeafe;
-        /* Tom de azul mais fraco - blue-100 */
+        border-bottom: 1px solid #e5e7eb;
         min-height: 180px;
     }
 
-    .spec-card:hover .w-4\/5,
-    .spec-card:hover .lg\:w-4\/5,
-    .spec-card:hover .w-full.lg\:w-4\/5 {
-        border-bottom-color: #93c5fd;
-        /* Tom de azul médio ao passar o mouse - blue-300 */
-    }
+    /* Removida a mudança de cor da borda inferior no hover */
 
     .spec-card .w-1\/5,
     .spec-card .lg\:w-1\/5,
@@ -827,6 +834,7 @@
 
 @media (max-width: 480px) {
     .spec-card {
+        border: 1px solid #e5e7eb;
         border-radius: 1rem;
         margin-bottom: 1rem;
     }
@@ -916,34 +924,33 @@
     transform: translateY(0);
 }
 
-/* Indicador visual de medição pendente usando classes Tailwind equivalentes */
+/* Indicador visual de medição pendente usando classes Tailwind equivalentes - sem bordas */
 .spec-card .w-1\/5 {
-    border-left: 4px solid transparent;
-    transition: border-left-color 0.3s ease;
+    transition: background 0.3s ease;
 }
 
 .spec-card .w-1\/5:has(input[placeholder]:not([value])) {
-    border-left-color: #f59e0b;
-    animation: pulse-warning 2s infinite;
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.4);
+    animation: pulse-warning-bg 2s infinite;
 }
 
-@keyframes pulse-warning {
+@keyframes pulse-warning-bg {
 
     0%,
     100% {
-        border-left-color: #f59e0b;
+        box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.4);
         opacity: 1;
     }
 
     50% {
-        border-left-color: #fbbf24;
-        opacity: 0.8;
+        box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.3);
+        opacity: 0.9;
     }
 }
 
-/* Indicador visual de medição concluída */
+/* Indicador visual de medição concluída - sem bordas */
 .spec-card .w-1\/5:has(.text-green-500) {
-    border-left-color: #10b981;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.4);
 }
 
 /* Melhorias para status badges compactos */
@@ -1102,37 +1109,30 @@
     }
 }
 
-/* Estados específicos para diferentes situações */
+/* Estados específicos para diferentes situações - sem bordas */
 .spec-card.measuring .w-1\/5 {
     background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
-    border-left-color: #f59e0b;
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.4);
 }
 
 .spec-card.completed .w-1\/5 {
     background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    border-left-color: #10b981;
+    box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.4);
 }
 
 .spec-card.non-compliant .w-1\/5 {
     background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-    border-left-color: #ef4444;
+    box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.4);
 }
 
 /* === CORREÇÃO PARA BORDAS - APENAS NA DIREITA === */
-.spec-card,
-.spec-card *::before,
-.spec-card *::after {
-    border-top: none !important;
-}
-
 .spec-card .w-4\/5,
 .spec-card .lg\:w-4\/5,
 .spec-card .w-full.lg\:w-4\/5 {
     position: relative;
-    border-top: none !important;
 }
 
-/* Garantir que qualquer pseudo-elemento não adicione borda no topo */
+/* Garantir que pseudo-elementos não interfiram com a borda superior */
 .spec-card .w-4\/5::before,
 .spec-card .lg\:w-4\/5::before,
 .spec-card .w-full.lg\:w-4\/5::before,
@@ -1140,16 +1140,5 @@
 .info-card-compact::before,
 .header-section::before,
 .header-section::after {
-    border-top: none !important;
     top: auto !important;
-}
-
-/* Sobrescrever qualquer possível regra responsiva que possa estar causando bordas superiores */
-@media (max-width: 1024px) {
-
-    .spec-card .w-4\/5,
-    .spec-card .lg\:w-4\/5,
-    .spec-card .w-full.lg\:w-4\/5 {
-        border-top: none !important;
-    }
 }
