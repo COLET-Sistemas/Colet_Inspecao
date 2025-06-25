@@ -1274,17 +1274,17 @@ export default function EspecificacoesPage() {
                                 boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
                             }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
                                 ? 'border-slate-300'
-                                : statusInfo.text.startsWith('Conforme:') ? 'border-green-200'
+                                : statusInfo.text.startsWith('Conforme:') ? 'border-green-100'
                                     : statusInfo.text.startsWith('Não Conforme:')
-                                        ? 'border-red-200'
+                                        ? 'border-red-100'
                                         : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
                                             ? 'border-blue-200'
                                             : 'border-slate-200'
                                 } overflow-hidden hover:shadow-md transition-all duration-200                                    `}
                             data-expanded={isExpanded}                            >
                             <div className={`absolute top-0 right-0 bottom-0 w-3 shadow-md ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
-                                statusInfo.text.startsWith('Conforme:') ? 'bg-green-500' :
-                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-red-500' :
+                                statusInfo.text.startsWith('Conforme:') ? 'bg-green-400/70' :
+                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-red-400/70' :
                                         statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado' ? 'bg-blue-300' :
                                             'bg-slate-300'
                                 }`} style={{ zIndex: 10 }}></div>
@@ -1331,9 +1331,9 @@ export default function EspecificacoesPage() {
                                             </h3>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text.startsWith('Conforme:') ? 'bg-green-50 text-green-700 ring-1 ring-green-200/50'
+                                    <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text.startsWith('Conforme:') ? 'bg-green-100 text-green-700 ring-1 ring-green-200/50'
                                         : statusInfo.text.startsWith('Não Conforme:')
-                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200/50' : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
+                                            ? 'bg-red-100 text-red-700 ring-1 ring-red-200/50' : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
                                                 ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
                                                 : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
                                         }`}>
@@ -1445,8 +1445,8 @@ export default function EspecificacoesPage() {
                                                                 ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao) ? 'opacity-50 cursor-not-allowed ' : '')}
                                                                 ${(editingValues[spec.id_especificacao]?.conforme === option.value || (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
                                                         ? (option.value
-                                                            ? 'bg-green-100 text-green-800 border border-green-200 shadow-inner'
-                                                            : 'bg-red-100 text-red-800 border border-red-200 shadow-inner')
+                                                            ? 'bg-green-100/80 text-green-700 border border-green-100 shadow-inner'
+                                                            : 'bg-red-100/80 text-red-700 border border-red-100 shadow-inner')
                                                         : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
                                                     }`}
                                             >
