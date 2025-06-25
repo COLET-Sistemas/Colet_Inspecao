@@ -729,7 +729,7 @@ export default function EspecificacoesPage() {
             // Se exibe_resultado for 'N', mostramos apenas que está informado, independente do valor
             if (fichaDados.exibe_resultado === 'N') {
                 return {
-                    icon: <CheckCircle className="h-4 w-4" />,
+                    icon: <CheckCircle className="h-4 w-4 inline-flex align-middle mr-1" />,
                     text: "Informado",
                     className: "badge-informado valor-informado-badge"
                 };
@@ -738,47 +738,39 @@ export default function EspecificacoesPage() {
             // Se exibe_resultado for 'S', mostramos o status de conformidade com texto específico por tipo
             if (conformeBoolean === true) {
                 // Usar texto específico baseado no tipo_valor
-                let text = "Conforme";
-
-                if (tipoValor) {
+                let text = "Conforme"; if (tipoValor) {
                     switch (tipoValor) {
-                        case 'A': text = "Informado: Aprovado"; break;
+                        case 'A': text = "Aprovado"; break;
                         case 'C': text = "Conforme"; break;
                         case 'S': text = "Sim"; break;
                         case 'L': text = "Liberdade"; break;
                     }
-                }
-
-                return {
-                    icon: <CheckCircle className="h-4 w-4" />,
-                    text: text,
+                } return {
+                    icon: <CheckCircle className="h-4 w-4 inline-flex align-middle mr-1" />,
+                    text: `Informado: ${text}`,
                     className: "badge-conforme valor-informado-badge"
                 };
             }
 
             if (conformeBoolean === false) {
                 // Usar texto específico baseado no tipo_valor
-                let text = "Não Conforme";
-
-                if (tipoValor) {
+                let text = "Não Conforme"; if (tipoValor) {
                     switch (tipoValor) {
-                        case 'A': text = "Informado: Reprovado"; break;
-                        case 'C': text = "Informado: Não Conforme"; break;
-                        case 'S': text = "Informado: Não"; break;
-                        case 'L': text = "Informado: Retido"; break;
+                        case 'A': text = "Reprovado"; break;
+                        case 'C': text = "Não Conforme"; break;
+                        case 'S': text = "Não"; break;
+                        case 'L': text = "Retido"; break;
                     }
-                }
-
-                return {
-                    icon: <XCircle className="h-4 w-4" />,
-                    text: text,
+                } return {
+                    icon: <XCircle className="h-4 w-4 inline-flex align-middle mr-1" />,
+                    text: `Informado: ${text}`,
                     className: "badge-nao-conforme valor-informado-badge"
                 };
             }
         }        // Caso 2: Se conforme não está definido, verificamos se o valor_encontrado está preenchido
         if (!isValueFilled(valorEncontrado)) {
             return {
-                icon: <AlertCircle className="h-4 w-4" />,
+                icon: <AlertCircle className="h-4 w-4 inline-flex align-middle mr-1" />,
                 text: "Não informado",
                 className: "badge-nao-informado valor-informado-badge badge-needs-attention"
             };
@@ -836,12 +828,10 @@ export default function EspecificacoesPage() {
         } else {
             // Para outros tipos de valores
             displayValue = `${valorEncontrado}${unidadeMedida ? ' ' + unidadeMedida : ''}`;
-        }        // Para campos do tipo 'A' (Aprovado/Reprovado), sempre usar "Informado: " como prefixo
-        const prefix = tipoValor === 'A' ? 'Informado: ' : '';
-
+        }        // Adicionando prefixo "Informado: " para todos os casos com valor encontrado
         return {
-            icon: <CheckCircle className="h-4 w-4" />,
-            text: `${prefix}${displayValue}`,
+            icon: <CheckCircle className="h-4 w-4 inline-flex align-middle mr-1" />,
+            text: `Informado: ${displayValue}`,
             className: "badge-informado valor-informado-badge"
         };
     };
