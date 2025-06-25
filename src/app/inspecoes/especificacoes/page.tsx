@@ -1545,65 +1545,45 @@ export default function EspecificacoesPage() {
                 >
                     <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
                         <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
-                            {fichaDados.exibe_resultado === 'S' ? (
-                                <>
-                                    <div className="counter-item">
-                                        <div className="counter-dot bg-green-500"></div>
-                                        <span className="counter-label">Conformes:</span>
-                                        <span className="counter-value text-green-600 font-mono ml-1">
-                                            {specifications.filter(s => {
-                                                const editingValue = editingValues[s.id_especificacao];
-                                                return (editingValue?.conforme !== undefined) ?
-                                                    editingValue.conforme === true :
-                                                    s.conforme === true;
-                                            }).length}
-                                        </span>
-                                    </div>
+                            <div className="counter-item">
+                                <div className="counter-dot bg-blue-500"></div>
+                                <span className="counter-label">Especificações:</span>
+                                <span className="counter-value text-blue-600 font-mono ml-1">
+                                    {specifications.length}
+                                </span>
+                            </div>
 
-                                    <div className="counter-item">
-                                        <div className="counter-dot bg-red-500"></div>
-                                        <span className="counter-label">Não conformes:</span>
-                                        <span className="counter-value text-red-600 font-mono ml-1">
-                                            {specifications.filter(s => {
-                                                const editingValue = editingValues[s.id_especificacao];
-                                                return (editingValue?.conforme !== undefined) ?
-                                                    editingValue.conforme === false :
-                                                    s.conforme === false;
-                                            }).length}
-                                        </span>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="counter-item">
-                                        <div className="counter-dot bg-blue-500"></div>                                        <span className="counter-label">Informados:</span>                                    <span className="counter-value text-blue-600 font-mono ml-1">
-                                            {specifications.filter(s => {
-                                                const editingValue = editingValues[s.id_especificacao];
-                                                // Para campos de seleção, verificar se conforme foi definido
-                                                if (['A', 'C', 'S', 'L'].includes(s.tipo_valor)) {
-                                                    return (editingValue?.conforme !== undefined && editingValue.conforme !== null) ?
-                                                        true :
-                                                        (s.conforme !== null && s.conforme !== undefined);
-                                                }
-                                                // Para outros campos, verificar valor_encontrado
-                                                return (editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '') ?
-                                                    true :
-                                                    (s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0);
-                                            }).length}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
+                            <div className="counter-item">
+                                <div className="counter-dot bg-amber-500"></div>
+                                <span className="counter-label">Informados:</span>
+                                <span className="counter-value text-amber-600 font-mono ml-1">
+                                    {specifications.filter(s => {
+                                        const editingValue = editingValues[s.id_especificacao];
+                                        // Para campos de seleção, verificar se conforme foi definido
+                                        if (isSelectType(s.tipo_valor)) {
+                                            return (editingValue?.conforme !== undefined && editingValue.conforme !== null) ||
+                                                (s.conforme !== null && s.conforme !== undefined);
+                                        }
+                                        // Para outros campos, verificar valor_encontrado
+                                        const hasEditingValue = editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '';
+                                        const hasOriginalValue = s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0;
+                                        return hasEditingValue || hasOriginalValue;
+                                    }).length}
+                                </span>
+                            </div>
+
                             <div className="counter-item">
                                 <div className="counter-dot bg-slate-400"></div>
                                 <span className="counter-label">{fichaDados.exibe_resultado === 'S' ? 'Pendentes:' : 'Não informados:'}</span>
                                 <span className="counter-value text-slate-600 font-mono ml-1">
                                     {specifications.filter(s => {
-                                        const editingValue = editingValues[s.id_especificacao]; if (isNumericType(s.tipo_valor)) {
+                                        const editingValue = editingValues[s.id_especificacao];
+                                        if (isNumericType(s.tipo_valor)) {
                                             return (editingValue?.valor_encontrado !== undefined) ?
                                                 !editingValue.valor_encontrado :
                                                 (s.valor_encontrado === null || s.valor_encontrado === undefined);
-                                        } if (isSelectType(s.tipo_valor)) {
+                                        }
+                                        if (isSelectType(s.tipo_valor)) {
                                             // Para campos de seleção (A, C, S, L), verificamos se o campo conforme está definido
                                             return (editingValue?.conforme !== undefined) ?
                                                 editingValue.conforme === null :
@@ -1614,57 +1594,48 @@ export default function EspecificacoesPage() {
                                     }).length}
                                 </span>
                             </div>
-
-                            {Object.keys(editingValues).length > 0 && (
-                                <div className="counter-item">
-                                    <div className="counter-dot bg-blue-500"></div>
-                                    <span className="counter-label">Alterações:</span>
-                                    <span className="counter-value text-blue-600 font-mono ml-1">
-                                        {Object.keys(editingValues).length}
-                                    </span>
-                                </div>
-                            )}
                         </div>
-                        <div className="flex items-center gap-3 whitespace-nowrap">                            {shouldShowActionButtons() && (
-                            <button
-                                onClick={handleInterruptInspection}
-                                disabled={isSaving || !isInspectionStarted}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                        Interrompendo...
-                                    </>
-                                ) : (
-                                    <>
-                                        <StopCircle className="h-4 w-4" />
-                                        Interromper Inspeção
-                                    </>
-                                )}
-                            </button>
-                        )}                            {shouldShowActionButtons() && isInspectionStarted &&
-                            // Verificar se pelo menos um campo foi preenchido
-                            (Object.keys(editingValues).length > 0 ||
-                                specifications.some(s => s.valor_encontrado !== null && s.valor_encontrado !== undefined)) && (
+                        <div className="flex items-center gap-3 whitespace-nowrap">
+                            {shouldShowActionButtons() && (
                                 <button
-                                    onClick={handleFinalizeInspection}
-                                    disabled={isSaving || isFinalizing}
-                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                    onClick={handleInterruptInspection}
+                                    disabled={isSaving || !isInspectionStarted}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
                                 >
-                                    {isFinalizing ? (
+                                    {isSaving ? (
                                         <>
                                             <RefreshCw className="h-4 w-4 animate-spin" />
-                                            Finalizando...
+                                            Interrompendo...
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle className="h-4 w-4" />
-                                            Finalizar Inspeção
+                                            <StopCircle className="h-4 w-4" />
+                                            Interromper Inspeção
                                         </>
                                     )}
                                 </button>
-                            )}
+                            )}                            {shouldShowActionButtons() && isInspectionStarted &&
+                                // Verificar se pelo menos um campo foi preenchido
+                                (Object.keys(editingValues).length > 0 ||
+                                    specifications.some(s => s.valor_encontrado !== null && s.valor_encontrado !== undefined)) && (
+                                    <button
+                                        onClick={handleFinalizeInspection}
+                                        disabled={isSaving || isFinalizing}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1ABC9C] to-[#16A085] text-white rounded-md text-sm font-medium hover:from-[#16A085] hover:to-[#0E8C7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                    >
+                                        {isFinalizing ? (
+                                            <>
+                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                Finalizando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="h-4 w-4" />
+                                                Finalizar Inspeção
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                         </div>
                     </div>
                 </motion.div>
