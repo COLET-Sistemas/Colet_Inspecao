@@ -1086,7 +1086,7 @@ export default function EspecificacoesPage() {
                     </button>
                     <PageHeader
                         title="Especificações da Inspeção"
-                        subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} especificação(ões)${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
+                        subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} ${specifications.length === 1 ? 'especificação' : 'especificações'}${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
                             }`}
                         showButton={false}
                     />
@@ -1603,7 +1603,7 @@ export default function EspecificacoesPage() {
                         <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
                             <div className="counter-item">
                                 <div className="counter-dot bg-blue-500"></div>
-                                <span className="counter-label">Especificações:</span>
+                                <span className="counter-label">{specifications.length === 1 ? 'Especificação:' : 'Especificações:'}</span>
                                 <span className="counter-value text-blue-600 font-mono ml-1">
                                     {specifications.length}
                                 </span>
