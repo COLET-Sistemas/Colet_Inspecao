@@ -97,13 +97,25 @@ export default function EspecificacoesPage() {
         // Se não for um dos tipos permitidos, converte para string
         return String(value);
     }, []);    // Função para processar os valores vindos da API e garantir que são tratados corretamente
-    const processSpecValue = useCallback((spec: { valor_encontrado?: string | number | null | undefined; observacao?: string | null; conforme?: boolean | null }) => {
+    const processSpecValue = useCallback((spec: { valor_encontrado?: string | number | null | undefined; observacao?: string | null; conforme?: boolean | string | null }) => {
+        // Processa o valor 'conforme', convertendo strings 'S'/'N' para boolean
+        let conformeValue: boolean | null = null;
+        if (spec.conforme !== undefined && spec.conforme !== null) {
+            if (typeof spec.conforme === 'boolean') {
+                conformeValue = spec.conforme;
+            } else if (spec.conforme === 'S') {
+                conformeValue = true;
+            } else if (spec.conforme === 'N') {
+                conformeValue = false;
+            }
+        }
+
         return {
             valor_encontrado: spec.valor_encontrado !== null && spec.valor_encontrado !== undefined ?
                 (spec.valor_encontrado === 0 ? 0 : convertToValidValue(spec.valor_encontrado)) :
                 '',
             observacao: spec.observacao || '',
-            conforme: spec.conforme !== undefined ? spec.conforme : null
+            conforme: conformeValue
         };
     }, [convertToValidValue]);
 
@@ -1420,7 +1432,7 @@ export default function EspecificacoesPage() {
                                                     <button
                                                         key={String(option.value)}
                                                         onClick={() =>
-                                                            handleValueChange(spec.id_especificacao, 'conforme', option.value ? 'S' : 'N')
+                                                            handleValueChange(spec.id_especificacao, 'conforme', option.value)
                                                         }
                                                         disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
                                                         className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
@@ -1428,12 +1440,37 @@ export default function EspecificacoesPage() {
                                                                 ? 'opacity-50 cursor-not-allowed'
                                                                 : ''
                                                             }
-                        ${(editingValues[spec.id_especificacao]?.conforme === option.value ||
-                                                                (!editingValues[spec.id_especificacao] && spec.conforme === option.value))
-                                                                ? option.value
-                                                                    ? 'bg-green-100/80 text-green-700 border border-green-100 shadow-inner'
-                                                                    : 'bg-red-100/80 text-red-700 border border-red-100 shadow-inner'
-                                                                : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                        ${(() => {
+                                                                // Função auxiliar para normalizar o valor conforme
+                                                                const isConformeMatch = (conformeValue: boolean | string | null | undefined, optionValue: boolean) => {
+                                                                    // Se for booleano, comparação direta
+                                                                    if (typeof conformeValue === 'boolean') {
+                                                                        return conformeValue === optionValue;
+                                                                    }
+                                                                    // Se for string 'S'/'N', converter para boolean
+                                                                    else if (typeof conformeValue === 'string') {
+                                                                        return (conformeValue === 'S' && optionValue === true) ||
+                                                                            (conformeValue === 'N' && optionValue === false);
+                                                                    }
+                                                                    return false;
+                                                                };
+
+                                                                // Verificar em editingValues
+                                                                const editingValueMatch = editingValues[spec.id_especificacao]?.conforme !== undefined &&
+                                                                    isConformeMatch(editingValues[spec.id_especificacao].conforme, option.value);
+
+                                                                // Verificar no valor original da spec
+                                                                const specValueMatch = !editingValues[spec.id_especificacao] &&
+                                                                    spec.conforme !== undefined &&
+                                                                    spec.conforme !== null &&
+                                                                    isConformeMatch(spec.conforme, option.value);
+
+                                                                return (editingValueMatch || specValueMatch)
+                                                                    ? option.value
+                                                                        ? 'bg-green-100/80 text-green-700 border border-green-100 shadow-inner'
+                                                                        : 'bg-red-100/80 text-red-700 border border-red-100 shadow-inner'
+                                                                    : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100';
+                                                            })()
                                                             }`}
                                                     >
                                                         {option.label}
