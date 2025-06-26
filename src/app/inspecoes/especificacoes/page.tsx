@@ -1319,7 +1319,7 @@ export default function EspecificacoesPage() {
                                             )}
                                                 {spec.descricao_cota}
                                                 {spec.complemento_cota && (
-                                                    <span className="text-slate-400 text-sm ml-1">
+                                                    <span className="text-slate-500 text-sm ml-2">
                                                         ({spec.complemento_cota})
                                                     </span>)}
                                             </h3>
