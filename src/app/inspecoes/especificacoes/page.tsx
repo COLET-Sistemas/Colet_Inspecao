@@ -2,6 +2,7 @@
 
 import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
+import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import inspecaoService, { InspectionSpecification } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
@@ -975,17 +976,22 @@ export default function EspecificacoesPage() {
     if (loading) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={handleBack}
-                        className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Voltar
-                    </button>                    <div>
-                        <h1 className="text-xl font-medium text-slate-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-slate-500">Ficha #{id}</p>
+                {/* Cabeçalho da página */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div className="flex items-center">
+                        <button
+                            onClick={handleBack}
+                            className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <ArrowLeft className="h-5 w-5 text-gray-500" />
+                        </button>
+                        <PageHeader
+                            title="Especificações da Inspeção"
+                            subtitle={`Ficha #${id}`}
+                            showButton={false}
+                        />
                     </div>
+                    {/* Espaço para botões que aparecerão quando carregado */}
                 </div>
                 <div className="flex justify-center py-20">
                     <LoadingSpinner
@@ -1000,18 +1006,22 @@ export default function EspecificacoesPage() {
     } if (error) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={handleBack}
-                        className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Voltar
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-medium text-slate-800">Especificações da Inspeção</h1>
-                        <p className="text-sm text-slate-500">Ficha #{id}</p>
+                {/* Cabeçalho da página */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div className="flex items-center">
+                        <button
+                            onClick={handleBack}
+                            className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <ArrowLeft className="h-5 w-5 text-gray-500" />
+                        </button>
+                        <PageHeader
+                            title="Especificações da Inspeção"
+                            subtitle={`Ficha #${id}`}
+                            showButton={false}
+                        />
                     </div>
+                    {/* Espaço para botões que aparecerão quando carregado */}
                 </div>
                 <div className="flex flex-col items-center justify-center py-20">
                     <div className="text-center bg-white p-8 rounded-xl border border-red-100 shadow-lg max-w-md">
@@ -1052,36 +1062,27 @@ export default function EspecificacoesPage() {
                     dismissDuration={3000}
                 />
             )}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-                <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
-                    <div className="flex items-center">
-                        <button
-                            onClick={handleBack}
-                            className="mr-3 rounded-full hover:bg-slate-100 p-2 transition-all bg-slate-50 border border-slate-200"
-                        >
-                            <ArrowLeft className="h-5 w-5 text-slate-600" />
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-semibold text-slate-800">Especificações da Inspeção</h1>
-                                <span className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-md font-medium">
-                                    Ficha #{fichaDados.id_ficha_inspecao}
-                                </span>
-                            </div>                            <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-                                <span className="flex items-center gap-1">
-                                    <Ruler className="h-3.5 w-3.5" />
-                                    {specifications.length} especificação(ões)
-                                </span>
-                                {fichaDados.qtde_produzida && (
-                                    <>
-                                        <span className="text-slate-300">•</span>
-                                        <span>Qtde produzida: {fichaDados.qtde_produzida}</span>
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                    {specifications.length > 0 && (<div className="flex flex-row items-center space-x-2">                        {shouldShowActionButtons() && (
+
+            {/* Cabeçalho da página */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div className="flex items-center">
+                    <button
+                        onClick={handleBack}
+                        className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <ArrowLeft className="h-5 w-5 text-gray-500" />
+                    </button>
+                    <PageHeader
+                        title="Especificações da Inspeção"
+                        subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} especificação(ões)${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
+                            }`}
+                        showButton={false}
+                    />
+                </div>
+
+                {/* Botões de ação à direita do título */}
+                {specifications.length > 0 && shouldShowActionButtons() && (
+                    <div className="flex flex-row items-center space-x-2">
                         <button
                             onClick={handleStartInspection}
                             disabled={isInspectionStarted || isSaving}
@@ -1099,55 +1100,41 @@ export default function EspecificacoesPage() {
                                 </>
                             )}
                         </button>
-                    )}
 
+                        {/* Botão de encaminhar para CQ */}
                         {(() => {
-                            const userDataStr = localStorage.getItem('userData'); let canForwardCQ = false;
-                            let userProfile = '';
+                            const userDataStr = localStorage.getItem('userData');
+                            let canForwardCQ = false;
 
                             if (userDataStr) {
                                 try {
-                                    const userData = JSON.parse(userDataStr);                                    // Verificar se o valor de id_tipo_inspecao está contido em encaminhar_ficha
+                                    const userData = JSON.parse(userDataStr);
                                     const encaminharFicha = userData?.encaminhar_ficha;
                                     const idTipoInspecao = fichaDados?.id_tipo_inspecao;
 
-                                    // Verificar se encaminhar_ficha existe e se id_tipo_inspecao está contido nele
                                     if (encaminharFicha !== undefined && idTipoInspecao !== null) {
                                         if (typeof encaminharFicha === 'string') {
-                                            // Se for uma string, verificar se contém o número do tipo de inspeção
                                             if (encaminharFicha.includes(',')) {
-                                                // Se for uma string separada por vírgulas
                                                 const allowedTypes = encaminharFicha.split(',').map(type => parseInt(type.trim()));
                                                 canForwardCQ = allowedTypes.includes(idTipoInspecao);
                                             } else {
-                                                // Se for uma string simples (pode conter múltiplos caracteres)
                                                 canForwardCQ = encaminharFicha.includes(idTipoInspecao.toString());
                                             }
                                         } else if (Array.isArray(encaminharFicha)) {
-                                            // Se for um array, verificar se contém o id_tipo_inspecao como número ou string
                                             canForwardCQ = encaminharFicha.includes(idTipoInspecao) ||
                                                 encaminharFicha.includes(idTipoInspecao.toString());
                                         } else if (typeof encaminharFicha === 'number') {
-                                            // Se for um número único
                                             canForwardCQ = encaminharFicha === idTipoInspecao;
                                         } else if (typeof encaminharFicha === 'boolean') {
-                                            // Se for booleano, assumimos que true significa que pode encaminhar qualquer tipo
                                             canForwardCQ = encaminharFicha;
                                         }
                                     }
-                                    userProfile = userData?.perfil_inspecao || '';
-                                    console.log('[Debug] userProfile:', userProfile, 'canForwardCQ:', canForwardCQ,
-                                        'encaminharFicha:', encaminharFicha,
-                                        'idTipoInspecao:', idTipoInspecao,
-                                        'tipo encaminharFicha:', typeof encaminharFicha);
                                 } catch (e) {
                                     console.error('Error parsing userData:', e);
                                 }
-                            }                            // Exibe botão apenas se o usuário tem permissão para encaminhar este tipo de inspeção
-                            // A permissão já foi determinada pelo valor em canForwardCQ
-                            const showForwardButton = canForwardCQ;
+                            }
 
-                            if (showForwardButton) {
+                            if (canForwardCQ) {
                                 return (
                                     <button
                                         onClick={handleForwardToCQ}
@@ -1168,18 +1155,17 @@ export default function EspecificacoesPage() {
                                     </button>
                                 );
                             }
-
                             return null;
                         })()}
+
+                        {/* Botão de confirmar recebimento */}
                         {(() => {
-                            // Verificar se deve mostrar o botão de confirmar recebimento
                             const userDataStr = localStorage.getItem('userData');
                             let userHasQProfile = false;
 
                             if (userDataStr) {
                                 try {
                                     const userData = JSON.parse(userDataStr);
-                                    // Verificar se o perfil de inspeção contém a letra Q
                                     const perfilInspecao = userData?.perfil_inspecao || '';
                                     userHasQProfile = perfilInspecao.includes('Q');
                                 } catch (e) {
@@ -1187,12 +1173,10 @@ export default function EspecificacoesPage() {
                                 }
                             }
 
-                            // Mostra o botão apenas se atender aos critérios
                             const showConfirmButton =
-                                fichaDados.id_ficha_inspecao === 5 &&
+                                fichaDados.id_tipo_inspecao === 5 &&
                                 fichaDados.situacao === "4" &&
                                 userHasQProfile;
-
 
                             if (showConfirmButton) {
                                 return (
@@ -1215,12 +1199,13 @@ export default function EspecificacoesPage() {
                                     </button>
                                 );
                             }
-
                             return null;
                         })()}
                     </div>
-                    )}</div>
+                )}
             </div>
+
+
 
 
             {specifications.length === 0 ? (
@@ -1635,7 +1620,8 @@ export default function EspecificacoesPage() {
                                         </>
                                     )}
                                 </button>
-                            )}                            {shouldShowActionButtons() && isInspectionStarted &&
+                            )}
+                            {shouldShowActionButtons() && isInspectionStarted &&
                                 // Verificar se pelo menos um campo foi preenchido
                                 (Object.keys(editingValues).length > 0 ||
                                     specifications.some(s => s.valor_encontrado !== null && s.valor_encontrado !== undefined)) && (

@@ -30,17 +30,17 @@
 .spec-card {
     animation: slideInUp 0.3s ease-out;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-top: 1px solid #e5e7eb;
-    border-bottom: 1px solid #e5e7eb;
-    border-left: 1px solid #e5e7eb;
+    border-top: 1px solid #f0f1f4;
+    border-bottom: 1px solid #f0f1f4;
+    border-left: 1px solid #f0f1f4;
     border-right: none;
 }
 
 .spec-card:hover {
     transform: translateY(-4px) scale(1.01);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    border-color: #d1d5db;
-    /* Tom de cinza um pouco mais escuro no hover */
+    border-color: #e5e7eb;
+    /* Tom de cinza médio no hover */
 }
 
 /* Status bar animations */
@@ -303,7 +303,7 @@
         padding: 0.5rem;
         background: #f9fafb;
         border-radius: 0.5rem;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #f0f1f4;
     }
 
     .counter-item {
@@ -599,7 +599,7 @@
 .spec-card-compact {
     border-radius: 1rem;
     overflow: hidden;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #f0f1f4;
     border-right: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -608,7 +608,7 @@
 .spec-card-compact:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
-    border-color: #d1d5db;
+    border-color: #e5e7eb;
 }
 
 /* Ajustes para campos de entrada mais compactos - Versão minimalista */
@@ -861,7 +861,7 @@ input[type="number"].modern-input.compact-input:focus::after {
 
 @media (max-width: 480px) {
     .spec-card {
-        border: 1px solid #e5e7eb;
+        border: 1px solid #f0f1f4;
         border-radius: 1rem;
         margin-bottom: 1rem;
     }
