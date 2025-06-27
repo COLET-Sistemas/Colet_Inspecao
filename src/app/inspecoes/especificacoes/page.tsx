@@ -1306,8 +1306,8 @@ export default function EspecificacoesPage() {
                                                 <span className="inline-flex mr-2.5 flex-shrink-0 text-slate-700 items-center justify-center">
                                                     <svg
                                                         viewBox="0 0 100 100"
-                                                        width="28"
-                                                        height="28"
+                                                        width="32"
+                                                        height="32"
                                                         className="spec-icon-svg"
                                                         dangerouslySetInnerHTML={{ __html: spec.svg_cota }}
                                                         style={{ strokeWidth: "1", minWidth: "28px" }}
