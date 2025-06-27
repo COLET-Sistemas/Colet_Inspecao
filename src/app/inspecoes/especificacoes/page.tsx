@@ -1263,20 +1263,20 @@ export default function EspecificacoesPage() {
                                 y: 0,
                                 scale: isExpanded ? 1.01 : 1,
                                 boxShadow: isExpanded ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "0 0 0 rgba(0, 0, 0, 0)"
-                            }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-lg border ${isExpanded
-                                ? 'border-slate-300'
+                            }} transition={{ delay: index * 0.03 }} className={`spec-card group relative bg-white rounded-xl border ${isExpanded
+                                ? 'border-slate-300 shadow-lg'
                                 : statusInfo.text.startsWith('Conforme:') ? 'border-green-100'
                                     : statusInfo.text.startsWith('Não Conforme:')
                                         ? 'border-red-100'
                                         : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
                                             ? 'border-blue-200'
                                             : 'border-slate-200'
-                                } overflow-hidden hover:shadow-md transition-all duration-200                                    `}
+                                } overflow-hidden hover:shadow-lg transition-all duration-200`}
                             data-expanded={isExpanded}                            >
-                            <div className={`absolute top-0 right-0 bottom-0 w-3 shadow-md ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
-                                statusInfo.text.startsWith('Conforme:') ? 'bg-green-400/70' :
-                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-red-400/70' :
-                                        statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado' ? 'bg-blue-300' :
+                            <div className={`absolute top-0 right-0 bottom-0 w-2 ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
+                                statusInfo.text.startsWith('Conforme:') ? 'bg-gradient-to-b from-green-300 to-green-500' :
+                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-gradient-to-b from-red-300 to-red-500' :
+                                        statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado' ? 'bg-gradient-to-b from-blue-300 to-blue-500' :
                                             'bg-slate-300'
                                 }`} style={{ zIndex: 10 }}></div>
 
@@ -1298,7 +1298,7 @@ export default function EspecificacoesPage() {
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-50 border border-slate-200 shadow-sm">
+                                        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm">
                                             <span className="font-semibold text-slate-700">{spec.ordem}</span>
                                         </div>
                                         <div className="min-w-0">
@@ -1322,11 +1322,11 @@ export default function EspecificacoesPage() {
                                             </h3>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium status-badge-indicator ${statusInfo.text.startsWith('Conforme:') ? 'bg-green-100 text-green-700 ring-1 ring-green-200/50'
+                                    <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 h-8 text-xs font-medium status-badge-modern ${statusInfo.text.startsWith('Conforme:') ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
                                         : statusInfo.text.startsWith('Não Conforme:')
-                                            ? 'bg-red-100 text-red-700 ring-1 ring-red-200/50' : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
-                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/50'
-                                                : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200/50'
+                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
+                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                                                : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'
                                         }`}>
                                         <span className="w-3 h-3 flex-shrink-0">
                                             {statusInfo.icon}
@@ -1335,44 +1335,44 @@ export default function EspecificacoesPage() {
                                     </span>
 
 
-                                        <button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
+                                        <button className="p-1.5 rounded-full hover:bg-slate-100 transition-all duration-200 border border-transparent hover:border-slate-200 hover:shadow-sm">
                                             {isExpanded ? (
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 transition-transform">
                                                     <polyline points="18 15 12 9 6 15"></polyline>
                                                 </svg>
                                             ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 transition-transform">
                                                     <polyline points="6 9 12 15 18 9"></polyline>
                                                 </svg>
                                             )}
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2 ml-13">
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2 ml-0 md:ml-13">
+                                    <div className="flex items-center gap-2.5 flex-wrap">
 
                                         {spec.svg_caracteristica && (
-                                            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-                                                <span className="inline-flex flex-shrink-0 text-slate-400 items-center justify-center">
+                                            <div className="flex items-center gap-1.5 bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
+                                                <span className="inline-flex flex-shrink-0 text-slate-500 items-center justify-center">
                                                     <svg
                                                         viewBox="0 0 100 100"
-                                                        width="18"
-                                                        height="18"
+                                                        width="20"
+                                                        height="20"
                                                         className="spec-icon-svg"
                                                         dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
-                                                        style={{ strokeWidth: "1", minWidth: "18px" }}
+                                                        style={{ strokeWidth: "1", minWidth: "16px" }}
                                                     />
                                                 </span>
                                                 <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
                                             </div>
                                         )}
 
-                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-                                            <span className="text-slate-400">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
+                                        <div className="flex items-center gap-1.5 bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
+                                            <span className="text-slate-500">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
                                             <span className="truncate font-medium">{spec.tipo_instrumento || '-'}</span>
                                         </div>
                                         {fichaDados.exibe_faixa === 'S' && (
-                                            <div className="bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                                            <div className="flex items-center bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
                                                 {isNumericType(spec.tipo_valor) ? (
                                                     <span className="flex items-center gap-1.5 font-medium">
                                                         {spec.valor_minimo !== null && spec.valor_maximo !== null ? (
@@ -1395,7 +1395,7 @@ export default function EspecificacoesPage() {
                                     </div>
                                     <div className="flex items-center gap-2 ml-auto md:mr-9">
                                         {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
-                                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-amber-50 border-amber-200 text-amber-700">
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 h-8 rounded-full border bg-amber-50 border-amber-200 text-amber-700 shadow-sm">
                                                 <span className="flex items-center gap-1 font-medium">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -1411,9 +1411,9 @@ export default function EspecificacoesPage() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="border-t border-slate-100 bg-slate-50/60 p-4"
+                                className="border-t border-slate-100 bg-gradient-to-b from-slate-50/80 to-white p-4"
                             >
-                                <div className="bg-white rounded-md border border-slate-200 p-3 shadow-sm">
+                                <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-md backdrop-blur-sm">
                                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
                                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inserir Medição</span>
                                     </div>
@@ -1435,10 +1435,10 @@ export default function EspecificacoesPage() {
                                                             handleValueChange(spec.id_especificacao, 'conforme', option.value)
                                                         }
                                                         disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                        className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all 
+                                                        className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all border shadow-sm
                         ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao))
                                                                 ? 'opacity-50 cursor-not-allowed'
-                                                                : ''
+                                                                : 'hover:shadow'
                                                             }
                         ${(() => {
                                                                 // Função auxiliar para normalizar o valor conforme
@@ -1484,9 +1484,9 @@ export default function EspecificacoesPage() {
                                         <div className="flex flex-col sm:flex-row items-start gap-3 w-full">
                                             {(() => {
                                                 const labelClass =
-                                                    "block text-xs leading-tight text-slate-600 font-medium mb-0.5 flex items-center gap-1.5"; // reduzido o espaçamento vertical
+                                                    "block text-xs leading-tight text-slate-600 font-medium mb-1 flex items-center gap-1.5";
                                                 const inputClass =
-                                                    "w-full h-[32px] px-2 py-1.5 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm relative z-10";
+                                                    "w-full h-[36px] px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm relative z-10";
                                                 const containerClass = "relative flex-1";
 
                                                 return (

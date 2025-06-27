@@ -38,9 +38,9 @@
 
 .spec-card:hover {
     transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
     border-color: #e5e7eb;
-    /* Tom de cinza médio no hover */
+    background: linear-gradient(to bottom right, #ffffff, #f9fafb);
 }
 
 /* Status bar animations */
@@ -72,8 +72,9 @@
 
 .modern-input:focus {
     transform: none;
-    box-shadow: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     outline: none;
+    border-color: #3b82f6;
 }
 
 /* Button pulse animation */
@@ -1188,4 +1189,34 @@ input[type="number"].modern-input.compact-input:focus::after {
     display: none;
 }
 
-/* Melhorias para botões compactos */
+/* === BADGE CONSISTENCY === */
+.badge-consistent {
+    height: 2rem;
+    /* 32px */
+    display: flex;
+    align-items: center;
+    padding: 0 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.badge-consistent:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.badge-consistent svg {
+    flex-shrink: 0;
+}
+
+/* Status Badge Modern improvements */
+.status-badge-modern {
+    display: flex;
+    align-items: center;
+    height: 1.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
