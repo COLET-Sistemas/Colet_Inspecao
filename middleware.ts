@@ -24,13 +24,19 @@ export function middleware(request: NextRequest) {
 
     // Obtém o cookie de autenticação e valida de forma mais robusta
     const isAuthenticatedCookie = request.cookies.get('isAuthenticated');
-    const isAuthenticated = isAuthenticatedCookie?.value === 'true';
+    const authToken = request.cookies.get('authToken');
+    const isAuthenticated = isAuthenticatedCookie?.value === 'true' && authToken?.value;
+
+    // Log para depuração em ambiente de desenvolvimento
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`Middleware: Path=${pathname}, isAuthenticated=${isAuthenticated}, hasToken=${!!authToken?.value}`);
+    }
 
     // Para rotas da API protegidas
     if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
         if (!isAuthenticated) {
             return NextResponse.json(
-                { isAuthenticated: false, message: 'Não autenticado' },
+                { isAuthenticated: false, message: 'Não autenticado', hasToken: !!authToken?.value },
                 { status: 401 }
             );
         }

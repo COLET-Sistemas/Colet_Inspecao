@@ -67,11 +67,15 @@ export async function POST(request: NextRequest) {
                 registrar_ficha: data.registrar_ficha || "",
             };
 
-            // Configurações do cookie
+            // Detecta se estamos em um ambiente seguro (HTTPS)
+            const isSecure = process.env.NODE_ENV === 'production' ||
+                request.headers.get('x-forwarded-proto') === 'https';
+
+            // Configurações do cookie ajustadas para melhor compatibilidade em produção
             const cookieOptions = {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const, // Alterado de 'strict' para 'lax' para melhor compatibilidade
+                secure: isSecure,
+                sameSite: isSecure ? 'none' as const : 'lax' as const, // Importante usar as const para corrigir o tipo
                 path: '/',
                 maxAge: remember || username === "operador" ? 7 * 24 * 60 * 60 : 24 * 60 * 60, // 7 dias se lembrar, 1 dia se não
             };

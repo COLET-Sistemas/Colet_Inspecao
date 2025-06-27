@@ -21,10 +21,15 @@ async function handleProxyRequest(request: NextRequest, method: string) {
         // Obtém o token dos cookies
         const authToken = request.cookies.get('authToken')?.value;
 
+        // Log para depuração em ambiente de desenvolvimento
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`Proxy Request: Method=${method}, Has Token=${!!authToken}`);
+        }
+
         if (!authToken) {
             return NextResponse.json(
                 { error: 'Token de autenticação não encontrado' },
-                { status: 401 }
+                { status: 401, headers: { 'X-Auth-Status': 'token-missing' } }
             );
         }
 
@@ -52,6 +57,8 @@ async function handleProxyRequest(request: NextRequest, method: string) {
         const options: RequestInit = {
             method,
             headers,
+            // Desabilita cache para requisições de API
+            cache: 'no-store',
         };
 
         // Adiciona o body se for POST, PUT, etc.
@@ -71,6 +78,8 @@ async function handleProxyRequest(request: NextRequest, method: string) {
             status: response.status,
             headers: {
                 'Content-Type': response.headers.get('Content-Type') || 'application/json',
+                'Cache-Control': 'no-store, must-revalidate',
+                'X-Auth-Status': 'token-sent' // Para diagnóstico
             },
         });
     } catch (error) {

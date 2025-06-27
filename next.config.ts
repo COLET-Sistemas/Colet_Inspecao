@@ -8,7 +8,8 @@ const nextConfig: NextConfig = {
   compress: true,
   // Configuração específica para ambientes de produção
   productionBrowserSourceMaps: false, // Desabilita source maps em produção para melhor performance
-  // Configurações para melhor gerenciamento de sessão
+
+  // Configurações para melhor gerenciamento de sessão e cookies
   headers: async () => {
     return [
       {
@@ -22,6 +23,25 @@ const nextConfig: NextConfig = {
           {
             key: 'Pragma',
             value: 'no-cache'
+          },
+          // Headers para melhorar a segurança e permitir o funcionamento adequado de cookies
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          }
+        ]
+      },
+      {
+        // Configurações especiais para rotas de API
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate, private'
           }
         ]
       }

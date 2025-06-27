@@ -29,14 +29,28 @@ export function setCookie(name: string, value: string, days?: number): void {
         expires = `; expires=${date.toUTCString()}`;
     }
 
-    document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=Strict`;
+    // Verifica se estamos em HTTPS para determinar o SameSite
+    const isSecure = window.location.protocol === 'https:';
+    const sameSite = isSecure ? 'None' : 'Lax';
+
+    // Inclui Secure flag se estivermos em HTTPS
+    const secureFlag = isSecure ? '; Secure' : '';
+
+    document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=${sameSite}${secureFlag}`;
 }
 
 // Função para remover um cookie
 export function removeCookie(name: string): void {
     if (typeof document === 'undefined') return;
 
-    document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict`;
+    // Verifica se estamos em HTTPS para determinar o SameSite
+    const isSecure = window.location.protocol === 'https:';
+    const sameSite = isSecure ? 'None' : 'Lax';
+
+    // Inclui Secure flag se estivermos em HTTPS
+    const secureFlag = isSecure ? '; Secure' : '';
+
+    document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=${sameSite}${secureFlag}`;
 }
 
 // Função para verificar se um cookie existe
