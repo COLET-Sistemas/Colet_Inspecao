@@ -54,7 +54,7 @@ export const getInstrumentosMedicao = async (): Promise<InstrumentoMedicao[]> =>
         return {
             id_instrumento,
             id_tipo_instrumento,
-            id: id_instrumento, // Usando id_instrumento como id para compatibilidade com DataTable/DataCards
+            id: id_instrumento,
             tag: item.tag || '',
             nome_instrumento: item.nome_instrumento || '',
             codigo_artigo: item.codigo_artigo || '',
@@ -64,7 +64,7 @@ export const getInstrumentosMedicao = async (): Promise<InstrumentoMedicao[]> =>
             data_validade: item.data_validade || '',
             data_ultima_calibracao: item.data_ultima_calibracao || '',
             frequencia_calibracao: item.frequencia_calibracao || '',
-            nome_tipo_instrumento // Adicionando o nome do tipo de instrumento
+            nome_tipo_instrumento 
         };
     }) : [];
 };

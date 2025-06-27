@@ -1,7 +1,33 @@
-/**
- * Utilitários para trabalhar com cookies no lado do cliente
- * Usado apenas para cookies não-HttpOnly
- */
+// Definir tipo de retorno para o ambiente
+type Environment = {
+    isProduction: boolean;
+    isSecure: boolean;
+    isDevelopment: boolean;
+};
+
+// Função para detectar o ambiente
+export function getEnvironment(): Environment {
+    if (typeof window === 'undefined') {
+        // No servidor, consideramos como produção para segurança
+        return {
+            isProduction: true,
+            isSecure: true,
+            isDevelopment: false
+        };
+    }
+
+    // Verifica se está em produção
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Verifica se estamos em HTTPS
+    const isSecure = window.location.protocol === 'https:';
+
+    return {
+        isProduction,
+        isSecure,
+        isDevelopment: !isProduction
+    };
+}
 
 // Função para obter um cookie pelo nome
 export function getCookie(name: string): string | null {
@@ -29,28 +55,40 @@ export function setCookie(name: string, value: string, days?: number): void {
         expires = `; expires=${date.toUTCString()}`;
     }
 
-    // Verifica se estamos em HTTPS para determinar o SameSite
-    const isSecure = window.location.protocol === 'https:';
-    const sameSite = isSecure ? 'None' : 'Lax';
+    const env = getEnvironment();
 
-    // Inclui Secure flag se estivermos em HTTPS
-    const secureFlag = isSecure ? '; Secure' : '';
+    // Em produção, sempre use SameSite=None para permitir cookies em requisições cross-origin
+    // mas apenas se estivermos em HTTPS, senão use Lax
+    const sameSite = env.isProduction ? 'None' : (env.isSecure ? 'None' : 'Lax');
 
-    document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=${sameSite}${secureFlag}`;
+    // Inclui Secure flag se estivermos em HTTPS ou em produção
+    const secureFlag = env.isProduction || env.isSecure ? '; Secure' : '';
+
+    // Define o domínio para compartilhar cookies entre subdomínios se necessário
+    // Deixe vazio para usar o domínio atual
+    const domain = '';
+    const domainPart = domain ? `; domain=${domain}` : '';
+
+    document.cookie = `${name}=${value || ''}${expires}; path=/${domainPart}; SameSite=${sameSite}${secureFlag}`;
 }
 
 // Função para remover um cookie
 export function removeCookie(name: string): void {
     if (typeof document === 'undefined') return;
 
-    // Verifica se estamos em HTTPS para determinar o SameSite
-    const isSecure = window.location.protocol === 'https:';
-    const sameSite = isSecure ? 'None' : 'Lax';
+    const env = getEnvironment();
 
-    // Inclui Secure flag se estivermos em HTTPS
-    const secureFlag = isSecure ? '; Secure' : '';
+    // Em produção, sempre use SameSite=None para permitir cookies em requisições cross-origin
+    const sameSite = env.isProduction ? 'None' : (env.isSecure ? 'None' : 'Lax');
 
-    document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=${sameSite}${secureFlag}`;
+    // Inclui Secure flag se estivermos em HTTPS ou em produção
+    const secureFlag = env.isProduction || env.isSecure ? '; Secure' : '';
+
+    // Define o domínio para garantir que o cookie seja removido do mesmo escopo onde foi criado
+    const domain = '';
+    const domainPart = domain ? `; domain=${domain}` : '';
+
+    document.cookie = `${name}=; Path=/${domainPart}; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=${sameSite}${secureFlag}`;
 }
 
 // Função para verificar se um cookie existe

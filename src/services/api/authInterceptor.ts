@@ -99,17 +99,26 @@ export const fetchWithAuth = async (
     };
 
     try {
+        // Cria headers específicos para diagnóstico
+        const customHeaders = {
+            ...headers as Record<string, string>, // Cast para permitir indexação dinâmica
+            'x-is-production': process.env.NODE_ENV === 'production' ? 'true' : 'false',
+            'x-has-local-token': localStorage.getItem('authToken') ? 'true' : 'false'
+        };
+
         // Faz a requisição através do proxy
         const response = await fetch('/api/proxy', {
             ...options,
-            headers,
-            credentials: 'include' // Inclui cookies HttpOnly automaticamente
+            headers: customHeaders,
+            credentials: 'include', // Inclui cookies HttpOnly automaticamente
+            // Desabilitar cache para evitar problemas com tokens expirados
+            cache: 'no-store'
         });
 
         return handleApiResponse(response);
     } catch (error) {
         // Log de erros de rede
-        if (process.env.NODE_ENV === 'development' && !isLogoutInProgress) {
+        if (!isLogoutInProgress) {
             console.error(`❌ Network Error: ${error}`);
         }
         throw error;

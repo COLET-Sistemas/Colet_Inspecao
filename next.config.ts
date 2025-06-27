@@ -4,10 +4,18 @@ const nextConfig: NextConfig = {
   /* config options here */
   poweredByHeader: false,
   reactStrictMode: true,
-  //swcMinify: true,
+  swcMinify: true,
   compress: true,
   // Configuração específica para ambientes de produção
   productionBrowserSourceMaps: false, // Desabilita source maps em produção para melhor performance
+
+  // Configuração crítica para cookies em ambientes de produção
+  images: {
+    domains: ['*'], // Ajuste conforme necessário para seu projeto
+  },
+
+  // Permitir cookies entre diferentes origens
+  crossOrigin: 'anonymous',
 
   // Configurações para melhor gerenciamento de sessão e cookies
   headers: async () => {

@@ -68,14 +68,21 @@ export async function POST(request: NextRequest) {
             };
 
             // Detecta se estamos em um ambiente seguro (HTTPS)
+            // Em produção, sempre consideramos como seguro para permitir que os cookies funcionem corretamente
             const isSecure = process.env.NODE_ENV === 'production' ||
                 request.headers.get('x-forwarded-proto') === 'https';
+
+            // Em produção, force o SameSite como None para permitir solicitações cross-origin
+            const sameSite = process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const;
+
+            // Log para diagnóstico
+            console.log(`Login: isProduction=${process.env.NODE_ENV === 'production'}, isSecure=${isSecure}, sameSite=${sameSite}`);
 
             // Configurações do cookie ajustadas para melhor compatibilidade em produção
             const cookieOptions = {
                 httpOnly: true,
-                secure: isSecure,
-                sameSite: isSecure ? 'none' as const : 'lax' as const, // Importante usar as const para corrigir o tipo
+                secure: true, // Sempre use secure em produção
+                sameSite: sameSite,
                 path: '/',
                 maxAge: remember || username === "operador" ? 7 * 24 * 60 * 60 : 24 * 60 * 60, // 7 dias se lembrar, 1 dia se não
             };
