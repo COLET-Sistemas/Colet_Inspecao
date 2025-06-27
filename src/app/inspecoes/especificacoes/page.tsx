@@ -217,6 +217,12 @@ export default function EspecificacoesPage() {
         // Navegar diretamente para a página de inspeções
         // A aba ativa será recuperada automaticamente do localStorage
         router.push('/inspecoes');
+
+        // Limpar o activeInspectionTab após a navegação
+        // O timeout garante que a navegação aconteça primeiro e depois limpamos o localStorage
+        setTimeout(() => {
+            localStorage.removeItem('activeInspectionTab');
+        }, 1500);
     }, [router]);
     // Função removida: toggleObservationField
 

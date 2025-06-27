@@ -414,6 +414,22 @@ export default function InspecoesPage() {
         }
     }, [getPostosFromLocalStorage]);
 
+    // Efeito para limpar activeInspectionTab após a página ser carregada
+    // e a aba ativa ser definida corretamente
+    useEffect(() => {
+        // Verificar se veio da página de especificações e se há uma aba salva
+        // Não há uma forma direta de verificar a origem da navegação,
+        // mas podemos usar um pequeno timeout para garantir que a página foi carregada
+        const clearStoredTabTimeout = setTimeout(() => {
+            localStorage.removeItem('activeInspectionTab');
+        }, 500); // 500ms é tempo suficiente para a página carregar
+
+        return () => {
+            // Limpar o timeout quando o componente for desmontado
+            clearTimeout(clearStoredTabTimeout);
+        };
+    }, []); // Executar apenas uma vez na montagem do componente
+
     // Initial data loading effect
     useEffect(() => {
         const loadInitialData = async () => {
