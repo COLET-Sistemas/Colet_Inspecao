@@ -1612,8 +1612,6 @@ export default function EspecificacoesPage() {
                     className="sticky bottom-4 z-10 mt-4"
                 >
                     <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
-
-                        {/* BLOCOS DE ÍCONES E TOTALIZADOS — EXIBIR APENAS EM TELAS MD+ */}
                         <div className="hidden md:flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
                             <div className="counter-item">
                                 <div className="counter-dot bg-blue-500"></div>

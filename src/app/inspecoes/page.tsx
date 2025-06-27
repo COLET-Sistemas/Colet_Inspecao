@@ -54,7 +54,27 @@ const USER_ACTIVITY_EVENTS = [
 
 export default function InspecoesPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState("processo");
+    const getInitialTab = () => {
+        try {
+            const userDataStr = localStorage.getItem('userData');
+            if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                if (userData && userData.perfil_inspecao) {
+                    // Check if perfil_inspecao contains letter 'Q'
+                    if (typeof userData.perfil_inspecao === 'string' && userData.perfil_inspecao.includes('Q')) {
+                        return "qualidade";
+                    } else if (Array.isArray(userData.perfil_inspecao) && userData.perfil_inspecao.includes('Q')) {
+                        return "qualidade";
+                    }
+                }
+            }
+            return "processo";
+        } catch {
+            return "processo";
+        }
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab());
     const [inspectionData, setInspectionData] = useState<Record<string, InspectionItem[]>>({});
     const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -91,7 +111,6 @@ export default function InspecoesPage() {
 
     // Função para definir se deve mostrar o layout compacto para tablets
     const shouldUseCompactLayout = useCallback(() => {
-        // Verifica se a largura da tela está entre valores definidos (tamanho de tablet)
         if (typeof window !== 'undefined') {
             return window.innerWidth >= TABLET_MIN_WIDTH && window.innerWidth < TABLET_MAX_WIDTH;
         }
@@ -108,14 +127,12 @@ export default function InspecoesPage() {
 
     // Estados para controlar o layout
     const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);    
-    useEffect(() => {    
+    const [isPortrait, setIsPortrait] = useState(false);
+    useEffect(() => {
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
             setIsPortrait(isInPortraitMode());
         };
-
-        // Configuração inicial
         handleResize();
 
         window.addEventListener('resize', handleResize);
@@ -128,7 +145,7 @@ export default function InspecoesPage() {
             orientationHintTimer = setTimeout(() => {
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
-        }        // Cleanup
+        }   
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
@@ -230,7 +247,6 @@ export default function InspecoesPage() {
 
             const perfilInspecao = userData.perfil_inspecao;
 
-            // Check if perfil_inspecao contains letter 'O'
             let hasPerfilO = false;
             if (typeof perfilInspecao === 'string') {
                 hasPerfilO = perfilInspecao.includes('O');
@@ -239,14 +255,12 @@ export default function InspecoesPage() {
             }
 
             if (hasPerfilO) {
-                // If has 'O' in perfil_inspecao, open login modal for verification
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
                 return;
             }
 
-            // If perfil_inspecao doesn't have 'O', check encaminhar_ficha for direct access
             if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
@@ -266,9 +280,9 @@ export default function InspecoesPage() {
             }
 
             if (hasEncaminhar4) {
-          
+
             } else {
-             
+
             }
         } catch {
             setSelectedInspection(item);
@@ -317,7 +331,7 @@ export default function InspecoesPage() {
             // Silent error handling - returning empty array if unable to access postos
             return [];
         }
-    }, []); 
+    }, []);
     const formatPostosSubtitle = useCallback((): string => {
         try {
             const userDataStr = localStorage.getItem('userData');
@@ -400,8 +414,8 @@ export default function InspecoesPage() {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
-                const initialTab = "processo";
-                await fetchTabData(initialTab);
+                // Use the current activeTab instead of hardcoding "processo"
+                await fetchTabData(activeTab);
 
                 const hasData = checkColaboradorData();
                 setHasColaboradorData(hasData);
@@ -412,7 +426,7 @@ export default function InspecoesPage() {
             }
         };
         loadInitialData();
-    }, [fetchTabData, checkColaboradorData, formatPostosSubtitle]);
+    }, [fetchTabData, checkColaboradorData, formatPostosSubtitle, activeTab]); // Add activeTab to dependencies
 
     const refreshActiveTab = useCallback(async () => {
         setIsRefreshing(true);
