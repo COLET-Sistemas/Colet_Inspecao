@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
+  //swcMinify: true,
   compress: true,
   // Configuração específica para ambientes de produção
   productionBrowserSourceMaps: false, // Desabilita source maps em produção para melhor performance
