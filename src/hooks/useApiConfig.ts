@@ -36,6 +36,7 @@ export function useApiConfig() {
                 {
                     signal: controller.signal,
                     method: 'GET',
+                    credentials: 'include',
                 },
             );
             clearTimeout(timeoutId);

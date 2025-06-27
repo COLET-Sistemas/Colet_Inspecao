@@ -1,60 +1,77 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
+
+//const isProduction = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
   compress: true,
-  // Configuração específica para ambientes de produção
-  productionBrowserSourceMaps: false, // Desabilita source maps em produção para melhor performance
+  productionBrowserSourceMaps: false,
 
-  // Configuração crítica para cookies em ambientes de produção
+  // Permite carregar imagens de domínios específicos
   images: {
-    domains: ['*'], // Ajuste conforme necessário para seu projeto
+    domains: ['10.0.0.248'], // ajuste para outros domínios se necessário
   },
 
-  // Permitir cookies entre diferentes origens
+  // Esse atributo afeta apenas tags <script> e <link>, não o fetch/cookies
   crossOrigin: 'anonymous',
 
-  // Configurações para melhor gerenciamento de sessão e cookies
+  // Headers HTTP globais
   headers: async () => {
     return [
       {
-        // Aplica estas configurações para todas as rotas
-        source: '/(.*)',
+        source: '/(.*)', // Aplica para todas as rotas
         headers: [
+          // CORS para permitir cookies em ambiente local
           {
-            key: 'Cache-Control',
-            value: 'no-store, must-revalidate'
+            key: 'Access-Control-Allow-Origin',
+            value: 'http://10.0.0.248:3001', // Altere se o frontend estiver em outra porta
           },
           {
-            key: 'Pragma',
-            value: 'no-cache'
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
           },
-          // Headers para melhorar a segurança e permitir o funcionamento adequado de cookies
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,POST,PUT,DELETE,OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+
+          // Segurança mínima (pode ser ampliada para produção)
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          }
-        ]
+            value: 'SAMEORIGIN',
+          },
+
+          // Controle de cache (útil para login/token dinâmico)
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+        ],
       },
       {
-        // Configurações especiais para rotas de API
-        source: '/api/:path*',
+        source: '/api/:path*', // Cache específico para rotas de API
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-store, must-revalidate, private'
-          }
-        ]
-      }
+            value: 'no-store, must-revalidate, private',
+          },
+        ],
+      },
     ];
-  }
+  },
 };
 
 export default nextConfig;

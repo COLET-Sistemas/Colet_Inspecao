@@ -59,6 +59,7 @@ async function handleProxyRequest(request: NextRequest, method: string) {
             headers,
             // Desabilita cache para requisições de API
             cache: 'no-store',
+            credentials: 'include',
         };
 
         // Adiciona o body se for POST, PUT, etc.

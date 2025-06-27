@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         // Faz a requisição para a API externa
         const response = await fetch(`${apiUrl}/login`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },

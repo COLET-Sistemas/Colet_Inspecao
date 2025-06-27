@@ -135,7 +135,9 @@ class InspecaoService {
      */
     async getAllInspections(): Promise<InspectionData> {
         try {
-            const response = await fetch(`${this.baseUrl}/inspections`);
+            const response = await fetch(`${this.baseUrl}/inspections`, {
+                credentials: 'include'
+            });
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
@@ -162,7 +164,9 @@ class InspecaoService {
                 }
             });
 
-            const response = await fetch(`${this.baseUrl}/inspections?${params.toString()}`);
+            const response = await fetch(`${this.baseUrl}/inspections?${params.toString()}`, {
+                credentials: 'include'
+            });
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
@@ -181,7 +185,9 @@ class InspecaoService {
      */
     async getInspectionById(id: string): Promise<InspectionItem> {
         try {
-            const response = await fetch(`${this.baseUrl}/inspections/${id}`);
+            const response = await fetch(`${this.baseUrl}/inspections/${id}`, {
+                credentials: 'include'
+            });
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
@@ -400,7 +406,9 @@ class InspecaoService {
         concluidas: number;
     }> {
         try {
-            const response = await fetch(`${this.baseUrl}/inspections/stats`);
+            const response = await fetch(`${this.baseUrl}/inspections/stats`, {
+                credentials: 'include'
+            });
 
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);

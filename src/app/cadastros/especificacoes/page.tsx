@@ -405,6 +405,7 @@ export default function Especificacoes() {
                 `/api/proxy`,
                 {
                     method: 'GET',
+                    credentials: 'include',
                     headers: {
                         ...getAuthHeaders(),
                         'x-api-url': apiUrl,

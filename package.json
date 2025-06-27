@@ -1,6 +1,6 @@
 {
   "name": "colet_inspecao",
-  "version": "1.25.0627.5",
+  "version": "1.25.0627.6",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
