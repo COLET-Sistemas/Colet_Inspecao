@@ -1397,16 +1397,28 @@ export default function EspecificacoesPage() {
                                         {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
                                             <div className="flex items-center gap-1.5 px-2.5 py-1.5 h-8 rounded-full border bg-amber-50 border-amber-200 text-amber-700 shadow-sm">
                                                 <span className="flex items-center gap-1 font-medium">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="13"
+                                                        height="13"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
                                                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                                     </svg>
-                                                    Perfil sem permissão
+                                                    <span className="hidden md:block">Perfil sem permissão</span>
                                                 </span>
                                             </div>
                                         )}
                                     </div>
-                                </div>                            </div>
+
+                                </div>
+                            </div>
                             {isExpanded && (<motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
@@ -1600,7 +1612,9 @@ export default function EspecificacoesPage() {
                     className="sticky bottom-4 z-10 mt-4"
                 >
                     <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-sm bg-white/90">
-                        <div className="minimal-counters flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
+
+                        {/* BLOCOS DE ÍCONES E TOTALIZADOS — EXIBIR APENAS EM TELAS MD+ */}
+                        <div className="hidden md:flex items-center gap-4 text-xs text-slate-600 overflow-x-auto pb-1 w-full sm:w-auto">
                             <div className="counter-item">
                                 <div className="counter-dot bg-blue-500"></div>
                                 <span className="counter-label">{specifications.length === 1 ? 'Especificação:' : 'Especificações:'}</span>
