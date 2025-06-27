@@ -22,8 +22,9 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Obtém o cookie de autenticação
-    const isAuthenticated = request.cookies.get('isAuthenticated')?.value === 'true';
+    // Obtém o cookie de autenticação e valida de forma mais robusta
+    const isAuthenticatedCookie = request.cookies.get('isAuthenticated');
+    const isAuthenticated = isAuthenticatedCookie?.value === 'true';
 
     // Para rotas da API protegidas
     if (protectedApiRoutes.some(route => pathname.startsWith(route))) {

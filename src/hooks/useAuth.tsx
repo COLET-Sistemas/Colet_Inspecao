@@ -70,7 +70,12 @@ function useProvideAuth(): AuthContextType {
         try {
             const response = await fetch('/api/auth/me', {
                 method: 'GET',
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
             });
 
             if (response.ok) {
@@ -86,7 +91,12 @@ function useProvideAuth(): AuthContextType {
         try {
             const response = await fetch('/api/auth/me', {
                 method: 'GET',
-                credentials: 'include'
+                credentials: 'include',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
             });
 
             if (response.ok) {
@@ -244,7 +254,12 @@ function useProvideAuth(): AuthContextType {
                 // Chama a API de logout para limpar cookies HttpOnly
                 await fetch('/api/auth/logout', {
                     method: 'POST',
-                    credentials: 'include'
+                    credentials: 'include',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
                 });
             } catch (error) {
                 console.error('Erro ao fazer logout:', error);

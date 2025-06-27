@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             const cookieOptions = {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict' as const,
+                sameSite: 'lax' as const, // Alterado de 'strict' para 'lax' para melhor compatibilidade
                 path: '/',
                 maxAge: remember || username === "operador" ? 7 * 24 * 60 * 60 : 24 * 60 * 60, // 7 dias se lembrar, 1 dia se não
             };

@@ -12,7 +12,7 @@ export async function POST() {
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            sameSite: 'lax' as const, // Alterado de 'strict' para 'lax' para melhor compatibilidade
             path: '/',
             maxAge: 0, // Remove o cookie
             expires: new Date(0) // Define expiração no passado para garantir remoção
