@@ -254,6 +254,7 @@ function useProvideAuth(): AuthContextType {
                 localStorage.removeItem('colaborador');
                 localStorage.removeItem('codigo_pessoa');
                 localStorage.removeItem('perfil_inspecao');
+                localStorage.removeItem('activeInspectionTab');
 
                 // Finalizando o processo de logout
                 setIsLoading(false);

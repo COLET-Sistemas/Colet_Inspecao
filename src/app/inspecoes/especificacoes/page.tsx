@@ -214,7 +214,9 @@ export default function EspecificacoesPage() {
         }
     }, [id, processSpecValue]);
     const handleBack = useCallback(() => {
-        router.back();
+        // Navegar diretamente para a página de inspeções
+        // A aba ativa será recuperada automaticamente do localStorage
+        router.push('/inspecoes');
     }, [router]);
     // Função removida: toggleObservationField
 

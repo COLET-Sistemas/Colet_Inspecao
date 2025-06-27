@@ -56,6 +56,12 @@ export default function InspecoesPage() {
     const router = useRouter();
     const getInitialTab = () => {
         try {
+            // Verifica se existe uma aba previamente salva
+            const savedTab = localStorage.getItem('activeInspectionTab');
+            if (savedTab) {
+                return savedTab;
+            }
+
             const userDataStr = localStorage.getItem('userData');
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
@@ -145,7 +151,7 @@ export default function InspecoesPage() {
             orientationHintTimer = setTimeout(() => {
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
-        }   
+        }
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
@@ -328,7 +334,6 @@ export default function InspecoesPage() {
             }
             return [];
         } catch {
-            // Silent error handling - returning empty array if unable to access postos
             return [];
         }
     }, []);
@@ -380,7 +385,7 @@ export default function InspecoesPage() {
                 }
             }
         } catch {
-            // Silent error handling for profile verification
+
         }
 
         if (postos.length === 0 && !hasPerfilQ) {
@@ -414,7 +419,7 @@ export default function InspecoesPage() {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
-                // Use the current activeTab instead of hardcoding "processo"
+
                 await fetchTabData(activeTab);
 
                 const hasData = checkColaboradorData();
@@ -492,9 +497,12 @@ export default function InspecoesPage() {
         setIsModalOpen(false);
         setHasColaboradorData(true);
 
+        // Salvar a aba ativa no localStorage antes de navegar
+        localStorage.setItem('activeInspectionTab', activeTab);
+
         // Construct URL with all necessary parameters        // Navegando apenas com o ID, já que os dados do usuário estão disponíveis no context API
         router.push(`/inspecoes/especificacoes?id=${data.inspection.id_ficha_inspecao}`);
-    }, [router]);
+    }, [router, activeTab]);
 
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         // Mostrar mensagem de sucesso
@@ -510,6 +518,9 @@ export default function InspecoesPage() {
     }, [refreshActiveTab]);
 
     const handleInspectionClick = useCallback((item: InspectionItem) => {
+        // Salvar a aba ativa no localStorage quando clica em uma inspeção
+        localStorage.setItem('activeInspectionTab', activeTab);
+
         // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 
@@ -528,7 +539,7 @@ export default function InspecoesPage() {
                     }
                 }
             } catch {
-                // Silent error handling for profile verification
+
             }
         }
 
@@ -548,7 +559,7 @@ export default function InspecoesPage() {
             setIsNaoConformidadeContext(false);
             setIsModalOpen(true);
         }
-    }, [router, checkColaboradorData]);
+    }, [router, checkColaboradorData, activeTab]);
 
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
