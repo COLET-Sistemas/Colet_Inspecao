@@ -19,7 +19,7 @@ const encodePassword = (password: string) => {
 
 export async function POST(request: NextRequest) {
     try {
-        const { username, password, remember } = await request.json();
+        const { username, password } = await request.json();
 
         // Validação básica
         if (!username || !password) {
