@@ -1281,11 +1281,11 @@ export default function EspecificacoesPage() {
                                             : 'border-slate-200'
                                 } overflow-hidden hover:shadow-lg transition-all duration-200`}
                             data-expanded={isExpanded}                            >
-                            <div className={`absolute top-0 right-0 bottom-0 w-2 ${statusInfo.text === 'Não informado' ? 'bg-slate-300' :
-                                statusInfo.text.startsWith('Conforme:') ? 'bg-gradient-to-b from-green-300 to-green-500' :
-                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-gradient-to-b from-red-300 to-red-500' :
-                                        statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado' ? 'bg-gradient-to-b from-blue-300 to-blue-500' :
-                                            'bg-slate-300'
+                            <div className={`absolute top-0 right-0 bottom-0 w-2 ${statusInfo.text === 'Não informado' ? 'bg-slate-400' :
+                                statusInfo.text.startsWith('Conforme:') ? 'bg-green-400' :
+                                    statusInfo.text.startsWith('Não Conforme:') ? 'bg-red-400' :
+                                        statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado' ? 'bg-blue-400' :
+                                            'bg-slate-400'
                                 }`} style={{ zIndex: 10 }}></div>
 
                             <div
