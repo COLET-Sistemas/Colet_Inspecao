@@ -1,6 +1,9 @@
 import { EspecificacaoInspecao } from "@/types/cadastros/processo";
 import { fetchWithAuth } from "./authInterceptor";
 
+// NOTA: O fetchWithAuth já configura automaticamente credentials: 'include' para todas as requisições,
+// garantindo que os cookies (incluindo o token de autenticação) sejam enviados em chamadas cross-origin.
+
 /**
  * Atualiza a ordem das especificações
  * @param especificacoes Array de especificações com a nova ordem
@@ -14,6 +17,7 @@ export const atualizarOrdemEspecificacoes = async (
         const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao_ft_ordem`, {
             method: 'PUT',
             body: JSON.stringify(especificacoes),
+            // credentials: 'include' já é configurado pelo fetchWithAuth
         });
 
         if (!response.ok) {

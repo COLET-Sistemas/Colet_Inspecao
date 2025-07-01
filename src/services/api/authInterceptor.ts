@@ -90,11 +90,32 @@ export const fetchWithAuth = async (
         throw new Error('API URL não configurada');
     }
 
+    // Função para obter o token do cookie ou localStorage
+    const getToken = (): string | null => {
+        // Tenta obter do cookie primeiro
+        if (typeof document !== 'undefined') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('authTokenJS=')) {
+                    return cookie.substring('authTokenJS='.length);
+                }
+            }
+        }
+        // Se não encontrar no cookie, tenta obter do localStorage
+        return localStorage.getItem('authToken');
+    };
+
+    // Obter token de autenticação
+    const authToken = getToken();
+
     // Prepara os headers para o proxy
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'x-api-url': apiUrl,
-        'x-target-path': url.replace(apiUrl, ''), // Remove a base URL para obter apenas o path
+        'x-target-path': url.replace(apiUrl, ''), // Remove a base URL para obter apenas o path,
+        // Adiciona o token nos headers para garantir autenticação mesmo sem cookies
+        'x-auth-token': authToken || '',
         ...options.headers
     };
 
@@ -105,6 +126,12 @@ export const fetchWithAuth = async (
             'x-is-production': process.env.NODE_ENV === 'production' ? 'true' : 'false',
             'x-has-local-token': localStorage.getItem('authToken') ? 'true' : 'false'
         };
+
+        // Log de depuração básico
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔄 Fazendo requisição para:', url);
+            console.log('🔑 Token disponível:', !!authToken);
+        }
 
         // Faz a requisição através do proxy
         const response = await fetch('/api/proxy', {

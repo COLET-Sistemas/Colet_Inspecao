@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+/**
+ * Hook para gerenciar a configuração da API.
+ * 
+ * NOTA IMPORTANTE: A chamada /parametros?chave=NOME-EMP&sistema=CLT&estabelecimento=1
+ * é feita diretamente à API externa, sem passar pelo proxy e sem enviar cookies ou credenciais.
+ * Isso é intencional e necessário para testar a conexão com a API sem depender de autenticação.
+ */
 export function useApiConfig() {
     const [apiUrl, setApiUrl] = useState<string>('');
     const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -17,49 +24,78 @@ export function useApiConfig() {
     }, []);
 
     const getAuthHeaders = useCallback((): HeadersInit => {
-        const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        // Não precisamos mais obter o token do storage, já que usamos o cookie httpOnly
+        // que será enviado automaticamente com credentials: 'include'
         return {
             'Content-Type': 'application/json',
-            Token: authToken || '',
         };
-    }, []);
-
-    const testApiConnection = useCallback(async (url: string): Promise<boolean> => {
+    }, []); const testApiConnection = useCallback(async (url: string): Promise<boolean> => {
         if (!url) return false;
         setIsLoading(true);
         setErrorMessage(null);
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            // Chamada direta à API externa sem proxy e sem cookies
+            const targetUrl = `${url}/parametros?chave=NOME-EMP&sistema=CLT&estabelecimento=1`;
+
+            // Log para depuração
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`🔌 Testando conexão direta com a API: ${targetUrl}`);
+                console.log(`🔑 Credenciais: omitidas intencionalmente`);
+            }
+
             const response = await fetch(
-                `${url}/parametros?chave=NOME-EMP&sistema=CLT&estabelecimento=1`,
+                targetUrl,
                 {
                     signal: controller.signal,
                     method: 'GET',
-                    credentials: 'include',
+                    // Não envia cookies nem credenciais
+                    credentials: 'omit',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 },
             );
             clearTimeout(timeoutId);
             const isOk = response.ok;
             setIsConnected(isOk);
+
+            // Log do resultado
+            if (process.env.NODE_ENV === 'development') {
+                if (isOk) {
+                    console.log(`✅ Conexão com API bem-sucedida: ${response.status} ${response.statusText}`);
+                } else {
+                    console.error(`❌ Falha na conexão com API: ${response.status} ${response.statusText}`);
+                }
+            }
+
             if (!isOk) {
-                setErrorMessage(`Server returned ${response.status}: ${response.statusText}`);
+                setErrorMessage(`O servidor retornou: ${response.status}: ${response.statusText}`);
             }
             return isOk;
         } catch (error: unknown) {
             setIsConnected(false);
+            // Log do erro completo em desenvolvimento
+            if (process.env.NODE_ENV === 'development') {
+                console.error('❌ Erro ao testar conexão com API:', error);
+            }
+
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
-                    setErrorMessage('Connection timed out. The server may be down or too slow to respond.');
+                    setErrorMessage('Tempo de conexão esgotado. O servidor pode estar indisponível ou muito lento para responder.');
                 } else if (error.message.includes('NetworkError')) {
-                    setErrorMessage('Network error. Check your internet connection and the API URL.');
+                    setErrorMessage('Erro de rede. Verifique sua conexão com a internet e o URL da API.');
                 } else if (error.message.includes('CORS')) {
-                    setErrorMessage('CORS error. The API server may not allow requests from this origin.');
+                    setErrorMessage('Erro de CORS. O servidor da API não permite requisições desta origem.');
+                } else if (error.message.includes('Failed to fetch')) {
+                    setErrorMessage('Falha na conexão. Verifique se o URL da API está correto e se o servidor está online.');
                 } else {
-                    setErrorMessage(`Connection failed: ${error.message || 'Unknown error'}`);
+                    setErrorMessage(`Falha na conexão: ${error.message || 'Erro desconhecido'}`);
                 }
             } else {
-                setErrorMessage('Connection failed: Unknown error');
+                setErrorMessage('Falha na conexão: Erro desconhecido');
             }
             return false;
         } finally {

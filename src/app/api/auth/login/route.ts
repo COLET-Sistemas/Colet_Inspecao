@@ -68,39 +68,40 @@ export async function POST(request: NextRequest) {
                 registrar_ficha: data.registrar_ficha || "",
             };
 
-            // Detecta se estamos em um ambiente seguro (HTTPS)
-            // Em produção, sempre consideramos como seguro para permitir que os cookies funcionem corretamente
+            // Para requisições cross-origin funcionarem, precisamos usar:
+            // - SameSite=None: Permite que o cookie seja enviado em requisições cross-origin
+            // - Secure=true: Obrigatório quando SameSite=None (exceto em localhost em alguns navegadores)
+            // - httpOnly=true: Previne acesso via JavaScript (segurança)
+
+            // Determina se estamos em localhost/desenvolvimento
+            const isLocalhost = request.headers.get('host')?.includes('localhost') ||
+                request.headers.get('host')?.includes('127.0.0.1');
+
+            // Em desenvolvimento local, permitimos flexibilidade para testes
             const isSecure = process.env.NODE_ENV === 'production' ||
                 request.headers.get('x-forwarded-proto') === 'https';
 
-            // Em produção, force o SameSite como None para permitir solicitações cross-origin
-            const sameSite = process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const;
+            // CRÍTICO: Para requisições cross-origin, SEMPRE use SameSite=None
+            // Exceto para testes puramente locais (mesmo domínio)
+            const sameSite = 'none' as const;
 
             // Log para diagnóstico
-            console.log(`Login: isProduction=${process.env.NODE_ENV === 'production'}, isSecure=${isSecure}, sameSite=${sameSite}`);
+            console.log(`Login: isProduction=${process.env.NODE_ENV === 'production'}, isLocalhost=${isLocalhost}, isSecure=${isSecure}, sameSite=${sameSite}`);
 
-            // Configurações do cookie ajustadas para melhor compatibilidade em produção
-            const cookieOptions = {
-                httpOnly: true,
-                secure: true, // Sempre use secure em produção
-                sameSite: sameSite,
-                path: '/',
-                maxAge: remember || username === "operador" ? 7 * 24 * 60 * 60 : 24 * 60 * 60, // 7 dias se lembrar, 1 dia se não
-            };
+            // Não usamos mais cookie HTTPOnly, apenas a abordagem com token no cookie JS
+            // e nos headers de requisição. Cookie de autenticação removido.
 
-            // Cria a resposta
+            // Cria a resposta incluindo o token para acesso via JavaScript
             const responseData = {
                 success: true,
                 user: userData,
+                token: data.token || '',  // Incluir o token na resposta para salvar em cookie JS
                 message: 'Login realizado com sucesso'
             };
 
+            // Retornamos a resposta sem definir cookies HTTPOnly
+            // O token será gerenciado apenas pelo cliente através de cookie JS
             const nextResponse = NextResponse.json(responseData, { status: 200 });
-
-            // Define os cookies
-            nextResponse.cookies.set('authToken', data.token || '', cookieOptions);
-            nextResponse.cookies.set('userData', JSON.stringify(userData), cookieOptions);
-            nextResponse.cookies.set('isAuthenticated', 'true', cookieOptions);
 
             return nextResponse;
         } else {

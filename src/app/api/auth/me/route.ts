@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
     try {
-        // Verifica se o usuário está autenticado através dos cookies
-        const isAuthenticated = request.cookies.get('isAuthenticated')?.value === 'true';
-        const userDataCookie = request.cookies.get('userData')?.value;
+        // Verifica se o usuário está autenticado através do header x-auth-token
+        const authToken = request.headers.get('x-auth-token');
 
-        if (!isAuthenticated || !userDataCookie) {
+        // Obtém os dados do usuário do localStorage (enviado nos headers)
+        const userDataHeader = request.headers.get('x-user-data');
+
+        if (!authToken || !userDataHeader) {
             return NextResponse.json(
                 { isAuthenticated: false, user: null },
                 { status: 401 }
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
         // Parse dos dados do usuário
         let userData = null;
         try {
-            userData = JSON.parse(userDataCookie);
+            userData = JSON.parse(userDataHeader);
         } catch {
             return NextResponse.json(
                 { isAuthenticated: false, user: null },

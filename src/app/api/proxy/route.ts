@@ -18,17 +18,17 @@ export async function DELETE(request: NextRequest) {
 
 async function handleProxyRequest(request: NextRequest, method: string) {
     try {
-        // Obtém o token dos cookies
-        const authToken = request.cookies.get('authToken')?.value;
+        // Obtém o token apenas do header (não usamos mais cookies HTTPOnly)
+        const authToken = request.headers.get('x-auth-token');
 
         // Log para depuração em ambiente de desenvolvimento
         if (process.env.NODE_ENV === 'development') {
-            console.log(`Proxy Request: Method=${method}, Has Token=${!!authToken}`);
+            console.log(`Proxy Request: Method=${method}, Header Token=${!!authToken}`);
         }
 
         if (!authToken) {
             return NextResponse.json(
-                { error: 'Token de autenticação não encontrado' },
+                { error: 'Token de autenticação não encontrado no header x-auth-token' },
                 { status: 401, headers: { 'X-Auth-Status': 'token-missing' } }
             );
         }

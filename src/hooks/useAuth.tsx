@@ -4,6 +4,21 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { setLogoutInProgress } from "../services/api/authInterceptor";
 
+// Função utilitária para obter o token do cookie ou localStorage
+export const getAuthToken = (): string | null => {
+    // Tenta obter do cookie primeiro
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('authTokenJS=')) {
+            return cookie.substring('authTokenJS='.length);
+        }
+    }
+
+    // Se não encontrar no cookie, tenta obter do localStorage
+    return localStorage.getItem('authToken');
+};
+
 interface User {
     username: string;
     name?: string;
@@ -68,13 +83,21 @@ function useProvideAuth(): AuthContextType {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter(); const checkAuth = useCallback(async (): Promise<boolean> => {
         try {
+            // Obter o token do storage ou cookie JS
+            const token = getAuthToken();
+            if (!token) return false;
+
+            // Obter os dados do usuário do localStorage
+            const userData = localStorage.getItem('userData');
+
             const response = await fetch('/api/auth/me', {
                 method: 'GET',
-                credentials: 'include',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Expires': '0',
+                    'x-auth-token': token,
+                    'x-user-data': userData || '{}'
                 }
             });
 
@@ -89,13 +112,21 @@ function useProvideAuth(): AuthContextType {
         }
     }, []); const getUserData = useCallback(async (): Promise<User | null> => {
         try {
+            // Obter o token do storage ou cookie JS
+            const token = getAuthToken();
+            if (!token) return null;
+
+            // Obter os dados do usuário do localStorage
+            const userData = localStorage.getItem('userData');
+
             const response = await fetch('/api/auth/me', {
                 method: 'GET',
-                credentials: 'include',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Expires': '0',
+                    'x-auth-token': token,
+                    'x-user-data': userData || '{}'
                 }
             });
 
@@ -204,6 +235,18 @@ function useProvideAuth(): AuthContextType {
                     setIsAuthenticated(true);
                     setUser(data.user);
                     setIsLoading(false);
+
+                    // Salva o token em um cookie acessível via JavaScript
+                    if (data.token) {
+                        const tokenExpiry = remember ? 7 : 1; // 7 dias se lembrar, 1 dia se não
+                        const expDate = new Date();
+                        expDate.setDate(expDate.getDate() + tokenExpiry);
+                        document.cookie = `authTokenJS=${data.token}; expires=${expDate.toUTCString()}; path=/; SameSite=Lax`;
+
+                        // Também salva no localStorage para facilitar o acesso em outros componentes
+                        localStorage.setItem('authToken', data.token);
+                    }
+
                     if (remember && username !== 'operador') {
                         localStorage.setItem('rememberedUsername', username);
                     } else if (!remember && !preserveRemembered && username !== 'operador') {
@@ -270,6 +313,10 @@ function useProvideAuth(): AuthContextType {
                 localStorage.removeItem('codigo_pessoa');
                 localStorage.removeItem('perfil_inspecao');
                 localStorage.removeItem('activeInspectionTab');
+                localStorage.removeItem('authToken');
+
+                // Remove o cookie JavaScript com o token
+                document.cookie = 'authTokenJS=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
 
                 // Finalizando o processo de logout
                 setIsLoading(false);

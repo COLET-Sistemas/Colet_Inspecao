@@ -1,6 +1,9 @@
 import { TipoInspecao } from "@/types/cadastros/tipoInspecao";
 import { fetchWithAuth } from "./authInterceptor";
 
+// NOTA: Não é necessário especificar 'credentials: "include"' nos métodos abaixo
+// porque o fetchWithAuth já configura isso automaticamente para todas as requisições.
+
 export const getTiposInspecao = async (): Promise<TipoInspecao[]> => {
     const apiUrl = localStorage.getItem("apiUrl");
     if (!apiUrl) {
@@ -9,6 +12,7 @@ export const getTiposInspecao = async (): Promise<TipoInspecao[]> => {
 
     const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
         method: 'GET',
+        // credentials: 'include' não é necessário pois o fetchWithAuth já o inclui por padrão
     });
 
     if (!response.ok) {
@@ -33,6 +37,7 @@ export const updateTipoInspecao = async (
         throw new Error("URL da API não está configurada");
     } const response = await fetchWithAuth(`${apiUrl}/inspecao/tipos_inspecao`, {
         method: 'PUT',
+        // credentials: 'include' não é necessário pois o fetchWithAuth já o inclui por padrão
         body: JSON.stringify({
             id: tipoInspecao.id,
             descricao_tipo_inspecao: tipoInspecao.descricao_tipo_inspecao,

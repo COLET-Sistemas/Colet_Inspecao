@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { corsMiddleware } from './src/middleware/corsMiddleware';
 
 export function middleware(request: NextRequest) {
+    // Primeiro, aplicamos o middleware CORS para garantir os cabeçalhos corretos
+    const corsResponse = corsMiddleware(request);
+
+    // Para requisições OPTIONS (preflight), retornamos imediatamente a resposta do CORS
+    if (request.method === 'OPTIONS') {
+        return corsResponse;
+    }
+
     const { pathname } = request.nextUrl;
 
     // Lista de rotas que não precisam de autenticação
@@ -22,21 +31,21 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Obtém o cookie de autenticação e valida de forma mais robusta
-    const isAuthenticatedCookie = request.cookies.get('isAuthenticated');
-    const authToken = request.cookies.get('authToken');
-    const isAuthenticated = isAuthenticatedCookie?.value === 'true' && authToken?.value;
+    // Agora verificamos a autenticação pelo header de autorização
+    // O cliente deve incluir o token no header x-auth-token em cada requisição
+    const authToken = request.headers.get('x-auth-token');
+    const isAuthenticated = !!authToken;
 
     // Log para depuração em ambiente de desenvolvimento
     if (process.env.NODE_ENV === 'development') {
-        console.log(`Middleware: Path=${pathname}, isAuthenticated=${isAuthenticated}, hasToken=${!!authToken?.value}`);
+        console.log(`Middleware: Path=${pathname}, isAuthenticated=${isAuthenticated}, hasToken=${!!authToken}`);
     }
 
     // Para rotas da API protegidas
     if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
         if (!isAuthenticated) {
             return NextResponse.json(
-                { isAuthenticated: false, message: 'Não autenticado', hasToken: !!authToken?.value },
+                { isAuthenticated: false, message: 'Não autenticado', hasToken: !!authToken },
                 { status: 401 }
             );
         }
@@ -67,3 +76,14 @@ export const config = {
         '/((?!_next/static|_next/image|favicon.ico).*)',
     ],
 };
+
+// CONFIGURAÇÃO DE COOKIES CROSS-ORIGIN:
+// 1. HTTPOnly: true (para segurança, previne acesso via JavaScript)
+// 2. SameSite: 'none' (obrigatório para requisições cross-origin funcionarem)
+// 3. Secure: true (obrigatório quando SameSite=None)
+// 4. credentials: 'include' em todas as requisições fetch/axios
+// 5. Access-Control-Allow-Credentials: true no backend
+//
+// IMPORTANTE: Para ambiente de desenvolvimento local sem HTTPS:
+// - Alguns navegadores permitem cookies SameSite=None sem HTTPS em localhost
+// - Chrome: execute com --disable-web-security ou use http://127.0.0.1 em vez de http://localhost
