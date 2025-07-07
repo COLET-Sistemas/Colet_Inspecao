@@ -4,7 +4,7 @@ import { AlertMessage } from '@/components/ui/AlertMessage';
 import { OperacoesModal } from '@/components/ui/cadastros/modais_cadastros/OperacoesModal';
 import { PageHeader } from '@/components/ui/cadastros/PageHeader';
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
-import { useApiConfig } from '@/hooks/useApiConfig';
+import { getProcessosFT } from '@/services/api/processosFTService';
 import {
     AlertState,
     DadosReferencia,
@@ -350,9 +350,6 @@ export default function Especificacoes() {
         dados: null
     });
 
-    // Obter headers de autenticação para chamadas à API
-    const { apiUrl, getAuthHeaders } = useApiConfig();
-
     // Função para limpar alertas
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
@@ -396,41 +393,8 @@ export default function Especificacoes() {
         setDadosReferencia(null);
 
         try {
-            if (!apiUrl) {
-                throw new Error("URL da API não configurada");
-            }
-
-            // Usar o proxy route para evitar problemas de CORS
-            const response = await fetch(
-                `/api/proxy`,
-                {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        ...getAuthHeaders(),
-                        'x-api-url': apiUrl,
-                        'x-target-path': `/inspecao/processos_ft?referencia=${encodeURIComponent(codigoReferencia.trim())}`
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                if (response.status === 409) {
-                    // Tenta obter a mensagem de erro do corpo da resposta
-                    let errorMessage = 'Conflito na requisição';
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.message || errorData.erro || errorMessage;
-                    } catch {
-                        // Se não conseguir parsear o JSON, usa a mensagem padrão
-                        errorMessage = 'Conflito na requisição - dados em conflito ou referência duplicada';
-                    }
-                    throw new Error(errorMessage);
-                }
-                throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            // Nova chamada centralizada no service
+            const data = await getProcessosFT(codigoReferencia);
             setDadosReferencia(data);
             setLoadingState('success');
 
@@ -459,7 +423,8 @@ export default function Especificacoes() {
         } finally {
             setIsLoading(false);
         }
-    }, [codigoReferencia, apiUrl, getAuthHeaders]);
+    }, [codigoReferencia]);
+
 
     // Efeito para inicializar o código de referência da URL e auto-pesquisar se necessário
     useEffect(() => {
