@@ -795,8 +795,15 @@ export default function InspecoesPage() {
                                                 {item.tipo_inspecao}
                                             </h3>
                                             <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-tight">
-                                                <span className="truncate">OF: #{item.numero_ordem}</span>
-
+                                                <span className="truncate">OF: {isPortrait ? item.numero_ordem : `#${item.numero_ordem}`}</span>
+                                                <span className="truncate inline-flex items-center">
+                                                    • <MapPin className="h-2.5 w-2.5 text-gray-400 mx-1" />
+                                                    {item.codigo_posto}
+                                                </span>
+                                                <span className="truncate inline-flex items-center">
+                                                    • <Tag className="h-2.5 w-2.5 text-gray-400 mx-1" />
+                                                    {item.origem}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -815,36 +822,49 @@ export default function InspecoesPage() {
                                                                             : item.situacao === '9' ? 'bg-red-50 text-red-700 border border-red-200'
                                                                                 : 'bg-gray-50 text-gray-700 border border-gray-200'}
                             `}>
-                                            {getSituacaoIcon(item.situacao)}
+                                            {(isCompactLayout || !isPortrait) && getSituacaoIcon(item.situacao)}
                                             <span className="whitespace-nowrap">
                                                 {getSituacao(item.situacao)}
-                                                {item.data_hora_situacao && <span className="ml-1">{formatDateTime(item.data_hora_situacao)}</span>}
+                                                {item.data_hora_situacao && <span className="ml-1">
+                                                    {isCompactLayout || isPortrait
+                                                        ? formatDateTime(item.data_hora_situacao).replace(/:\d{2}$/, '')
+                                                        : formatDateTime(item.data_hora_situacao)}
+                                                </span>}
                                             </span>
                                         </span>
 
                                         {/* Data prevista com ícone */}
                                         <span className={`flex items-center text-xs mt-0.5 ${dateTextColorClass}`}>
-                                            <Calendar className={`h-3 w-3 mr-1 ${dateTextColorClass}`} />
+                                            {(isCompactLayout || !isPortrait) && <Calendar className={`h-3 w-3 mr-1 ${dateTextColorClass}`} />}
+                                            <span className="text-gray-500 mr-1">{isPortrait ? 'Prevista:' : 'Data Prevista:'}</span>
                                             {item.data_hora_prevista ? (
                                                 <span className={`font-medium ${dateTextColorClass}`}>
-                                                    {formatDateTime(item.data_hora_prevista)}
+                                                    {isCompactLayout || isPortrait
+                                                        ? formatDateTime(item.data_hora_prevista).replace(/:\d{2}$/, '')
+                                                        : formatDateTime(item.data_hora_prevista)}
                                                 </span>
                                             ) : (
-                                                <span className="font-medium text-gray-400">Não definida</span>
+                                                <span className={`font-medium text-gray-400 ${isCompactLayout || isPortrait ? 'mr-1' : ''}`}>Não definida</span>
                                             )}
                                         </span>
                                     </div>
                                 </div>                                {/* Linha adicional para informações críticas */}
                                 <div className="flex items-center mt-3 gap-2 pr-0">
                                     <div className="flex flex-wrap gap-2 text-xs flex-1 pr-0">
-                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                            <Layers className="h-3 w-3 text-gray-500 mr-1" />
-                                            <span className="text-gray-700">{item.processo}-{item.tipo_acao}</span>
-                                        </span>
-                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                            <MapPin className="h-3 w-3 text-gray-500 mr-1" />
-                                            <span className="text-gray-700">{item.codigo_posto}</span>
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                                <Layers className="h-3 w-3 text-gray-500 mr-1" />
+                                                <span className="text-gray-700">{item.processo}-{item.tipo_acao}</span>
+                                            </span>
+                                            <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                                <Package className="h-3 w-3 text-gray-500 mr-1" />
+                                                <span className="text-gray-700">Prod: {item.qtde_produzida || 0}</span>
+                                            </span>
+                                            <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                                <CheckSquare className="h-3 w-3 text-gray-500 mr-1" />
+                                                <span className="text-gray-700">Insp: {item.qtde_inspecionada || 0}</span>
+                                            </span>
+                                        </div>
 
                                         {canRegisterNaoConformidade(item) && (
                                             <span className="ml-auto pr-0 mr-1">
@@ -860,22 +880,7 @@ export default function InspecoesPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2 text-xs mt-2">
-                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                        <Tag className="h-3 w-3 text-gray-500 mr-1" />
-                                        <span className="text-gray-700">{item.origem}</span>
-                                    </span>
-
-                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                        <Package className="h-3 w-3 text-gray-500 mr-1" />
-                                        <span className="text-gray-700">Prod: {item.qtde_produzida || 0}</span>
-                                    </span>
-
-                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                        <CheckSquare className="h-3 w-3 text-gray-500 mr-1" />
-                                        <span className="text-gray-700">Insp: {item.qtde_inspecionada || 0}</span>
-                                    </span>
-                                </div>
+                                {/* Additional info section removed as it's now shown next to OF and proc */}
 
                                 {/* Efeito de hover */}
 
@@ -908,7 +913,7 @@ export default function InspecoesPage() {
                                             <span className="flex items-center font-medium truncate">
                                                 <Tag className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
                                                 <span>OF:</span>
-                                                <span className="ml-1 font-semibold">#{item.numero_ordem}</span>
+                                                <span className="ml-1 font-semibold">{isPortrait ? item.numero_ordem : `#${item.numero_ordem}`}</span>
                                             </span>
                                             <span className="hidden sm:block text-gray-300">|</span>
                                             <span className="flex items-center">
@@ -943,13 +948,15 @@ export default function InspecoesPage() {
                                     {/* Data prevista como badge separada com ícone */}
                                     <div className={`flex items-center text-xs ${dateTextColorClass} bg-gray-50/80 px-2.5 py-1 rounded-full`}>
                                         <Calendar className={`h-3.5 w-3.5 mr-1.5 ${dateTextColorClass}`} />
-                                        <span className="text-gray-500 mr-1.5">Prevista:</span>
+                                        <span className="text-gray-500 mr-1.5">
+                                            {isCompactLayout || isPortrait ? 'Prevista:' : 'Data Prevista:'}
+                                        </span>
                                         {item.data_hora_prevista ? (
                                             <span className={`font-medium ${dateTextColorClass}`}>
                                                 {formatDateTime(item.data_hora_prevista)}
                                             </span>
                                         ) : (
-                                            <span className="font-medium text-gray-400">Não definida</span>
+                                            <span className={`font-medium text-gray-400 ${isCompactLayout || isPortrait ? 'mr-1' : ''}`}>Não definida</span>
                                         )}
                                     </div>
                                 </div>
