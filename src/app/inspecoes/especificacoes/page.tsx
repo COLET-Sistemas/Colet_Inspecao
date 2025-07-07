@@ -1359,21 +1359,7 @@ export default function EspecificacoesPage() {
                                 <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2 ml-0 md:ml-13">
                                     <div className="flex items-center gap-2.5 flex-wrap">
 
-                                        {spec.svg_caracteristica && (
-                                            <div className="flex items-center gap-1.5 bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
-                                                <span className="inline-flex flex-shrink-0 text-slate-500 items-center justify-center">
-                                                    <svg
-                                                        viewBox="0 0 100 100"
-                                                        width="20"
-                                                        height="20"
-                                                        className="spec-icon-svg"
-                                                        dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
-                                                        style={{ strokeWidth: "1", minWidth: "16px" }}
-                                                    />
-                                                </span>
-                                                <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
-                                            </div>
-                                        )}
+
 
                                         <div className="flex items-center gap-1.5 bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
                                             <span className="text-slate-500">{getInstrumentIcon(spec.tipo_instrumento || '')}</span>
@@ -1398,6 +1384,21 @@ export default function EspecificacoesPage() {
                                                         {getSelectOptions(spec.tipo_valor).map(opt => opt.label).join(' / ')}
                                                     </span>
                                                 )}
+                                            </div>
+                                        )}
+                                        {spec.svg_caracteristica && (
+                                            <div className="flex items-center gap-1.5 bg-gradient-to-r from-slate-50 to-slate-100 px-2.5 py-1.5 h-8 rounded-full border border-slate-200 shadow-sm transition-all duration-200 hover:shadow">
+                                                <span className="inline-flex flex-shrink-0 text-slate-500 items-center justify-center">
+                                                    <svg
+                                                        viewBox="0 0 100 100"
+                                                        width="20"
+                                                        height="20"
+                                                        className="spec-icon-svg"
+                                                        dangerouslySetInnerHTML={{ __html: spec.svg_caracteristica }}
+                                                        style={{ strokeWidth: "1", minWidth: "16px" }}
+                                                    />
+                                                </span>
+                                                <span className="truncate font-medium">{spec.descricao_caracteristica || 'Característica'}</span>
                                             </div>
                                         )}
                                     </div>
