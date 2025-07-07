@@ -55,6 +55,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(''); // Novo estado
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isFocusedOnProduzida, setIsFocusedOnProduzida] = useState(false);
+    const [hasEditedInspecionada, setHasEditedInspecionada] = useState(false);
 
     // Refs para elementos focáveis
     const inputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +79,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         setError('');
         setQuantidade('');
         setQuantidadeInspecionada('');
+        setIsFocusedOnProduzida(false);
+        setHasEditedInspecionada(false);
         onClose();
         if (onCancel) {
             onCancel();
@@ -124,15 +128,19 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, handleClose]); // Quando quantidade produzida muda, copiar para inspecionada se inspecionada está vazia ou igual ao valor anterior
+    }, [isOpen, handleClose]);
+
+    // Quando quantidade produzida muda, copiar para inspecionada apenas se estiver com foco no campo
+    // e se o usuário ainda não tiver editado manualmente o campo de quantidade inspecionada
     useEffect(() => {
         if (
+            isFocusedOnProduzida &&
             quantidade !== '' &&
-            (quantidadeInspecionada === '' || quantidadeInspecionada === quantidade)
+            !hasEditedInspecionada
         ) {
             setQuantidadeInspecionada(quantidade);
         }
-    }, [quantidade, quantidadeInspecionada]);
+    }, [quantidade, isFocusedOnProduzida, hasEditedInspecionada]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -230,6 +238,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
             onConfirm(quantidadeNumber);
             setQuantidade('');
             setQuantidadeInspecionada('');
+            setIsFocusedOnProduzida(false);
+            setHasEditedInspecionada(false);
         } catch (error) {
             console.error('Erro ao enviar dados da inspeção:', error);
             setError(error instanceof Error ? error.message : 'Erro ao registrar a inspeção');
@@ -238,6 +248,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         setError('');
         setQuantidade('');
         setQuantidadeInspecionada('');
+        setIsFocusedOnProduzida(false);
+        setHasEditedInspecionada(false);
         onClose();
         if (onCancel) {
             onCancel();
@@ -300,6 +312,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         placeholder="Quantidade produzida"
                                         value={quantidade}
                                         onChange={(e) => setQuantidade(e.target.value)}
+                                        onFocus={() => setIsFocusedOnProduzida(true)}
+                                        onBlur={() => setIsFocusedOnProduzida(false)}
                                         min="1"
                                         step="1"
                                         className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
@@ -315,7 +329,10 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         id="quantidade-inspecionada"
                                         placeholder="Quantidade inspecionada"
                                         value={quantidadeInspecionada}
-                                        onChange={(e) => setQuantidadeInspecionada(e.target.value)}
+                                        onChange={(e) => {
+                                            setQuantidadeInspecionada(e.target.value);
+                                            setHasEditedInspecionada(true);
+                                        }}
                                         min="1"
                                         step="1"
                                         className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
