@@ -707,7 +707,7 @@ class InspecaoService {
             conforme: boolean | null;
             observacao: string | null;
         }>,
-        qtdeProduzida: number | null = null): Promise<void> {
+        qtdeProduzida: number | null = null): Promise<{ mensagem?: string; erro?: string }> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -767,6 +767,9 @@ class InspecaoService {
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
             }
+
+            // Retornar os dados da resposta para que possamos acessar a mensagem/erro
+            return await response.json();
         } catch (error) {
             console.error('Erro ao finalizar inspeção:', error);
             throw error;

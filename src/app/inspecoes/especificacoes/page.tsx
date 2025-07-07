@@ -695,7 +695,7 @@ export default function EspecificacoesPage() {
                 })
                 .filter(item => item !== null); // Remover itens nulos (especificações não alteradas)
 
-            await inspecaoService.finalizeInspection(
+            const response = await inspecaoService.finalizeInspection(
                 parseInt(id),
                 apontamentos,
                 fichaDados.qtde_produzida // Adicionando a quantidade produzida
@@ -704,10 +704,26 @@ export default function EspecificacoesPage() {
             setIsInspectionStarted(false);
             setEditingValues({}); // Limpar valores em edição
 
-            setAlertMessage({
-                message: "Inspeção finalizada com sucesso",
-                type: "success",
-            });
+            // Verificar se a API retornou uma mensagem ou um erro
+            if (response.mensagem) {
+                // Se há uma mensagem, exibir como sucesso
+                setAlertMessage({
+                    message: response.mensagem,
+                    type: "success",
+                });
+            } else if (response.erro) {
+                // Se há um erro mas nenhuma mensagem, exibir como info
+                setAlertMessage({
+                    message: response.erro,
+                    type: "info",
+                });
+            } else {
+                // Caso padrão se nenhuma mensagem/erro específico for retornado
+                setAlertMessage({
+                    message: "Inspeção finalizada com sucesso",
+                    type: "success",
+                });
+            }
 
             // Recarregar os dados atualizados
             await handleRefresh();
@@ -1097,7 +1113,7 @@ export default function EspecificacoesPage() {
                         <ArrowLeft className="h-5 w-5 text-gray-500" />
                     </button>
                     <PageHeader
-                        title={`Especificações da Inspeção${fichaDados.descricao_tipo_inspecao ? ` (${fichaDados.descricao_tipo_inspecao})` : ''}`}
+                        title={`Especificações -${fichaDados.descricao_tipo_inspecao ? ` ${fichaDados.descricao_tipo_inspecao}` : ''}`}
                         subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} ${specifications.length === 1 ? 'especificação' : 'especificações'}${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
                             }`}
                         showButton={false}
