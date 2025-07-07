@@ -968,7 +968,7 @@ export default function InspecoesPage() {
                                 </div>
 
                                 <div className="col-span-2 sm:col-span-3 flex items-center justify-between mt-1 sm:mt-0">
-                                    {item.obs_criacao && (
+                                    {item.obs_criacao && item.obs_criacao.trim() !== "" && (
                                         <div className="flex items-center max-w-[85%]">
                                             <FileText className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
                                             <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Obs:</p>
