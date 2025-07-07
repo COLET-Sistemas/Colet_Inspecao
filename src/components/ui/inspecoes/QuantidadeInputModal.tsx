@@ -51,8 +51,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     codigoPostо,
     operacao
 }) => {
-    const [quantidade, setQuantidade] = useState<string>(''); // Produzida
-    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(''); // Novo estado
+    const [quantidade, setQuantidade] = useState<string>(''); 
+    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(''); 
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isFocusedOnProduzida, setIsFocusedOnProduzida] = useState(false);

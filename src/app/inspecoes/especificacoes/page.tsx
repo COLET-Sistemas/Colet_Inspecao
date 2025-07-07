@@ -57,14 +57,16 @@ export default function EspecificacoesPage() {
         situacao: string | null,
         qtde_produzida: number | null,
         exibe_faixa: string,
-        exibe_resultado: string
+        exibe_resultado: string,
+        descricao_tipo_inspecao: string | null
     }>({
         id_ficha_inspecao: 0,
         id_tipo_inspecao: null,
         situacao: null,
         qtde_produzida: null,
         exibe_faixa: 'S',
-        exibe_resultado: 'S'
+        exibe_resultado: 'S',
+        descricao_tipo_inspecao: null
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean | null; observacao: string; conforme?: boolean | null } }>({});
@@ -161,7 +163,8 @@ export default function EspecificacoesPage() {
                     situacao: response.fichaDados.situacao || null,
                     qtde_produzida: response.fichaDados.qtde_produzida,
                     exibe_faixa: response.fichaDados.exibe_faixa,
-                    exibe_resultado: response.fichaDados.exibe_resultado
+                    exibe_resultado: response.fichaDados.exibe_resultado,
+                    descricao_tipo_inspecao: response.fichaDados.descricao_tipo_inspecao || null
                 });
             } catch (error) {
                 console.error("Erro ao carregar especificações:", error);
@@ -204,7 +207,8 @@ export default function EspecificacoesPage() {
                 situacao: response.fichaDados.situacao || null,
                 qtde_produzida: response.fichaDados.qtde_produzida,
                 exibe_faixa: response.fichaDados.exibe_faixa,
-                exibe_resultado: response.fichaDados.exibe_resultado
+                exibe_resultado: response.fichaDados.exibe_resultado,
+                descricao_tipo_inspecao: response.fichaDados.descricao_tipo_inspecao || null
             });
         } catch (error) {
             console.error("Erro ao carregar especificações:", error);
@@ -1093,7 +1097,7 @@ export default function EspecificacoesPage() {
                         <ArrowLeft className="h-5 w-5 text-gray-500" />
                     </button>
                     <PageHeader
-                        title="Especificações da Inspeção"
+                        title={`Especificações da Inspeção${fichaDados.descricao_tipo_inspecao ? ` (${fichaDados.descricao_tipo_inspecao})` : ''}`}
                         subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} ${specifications.length === 1 ? 'especificação' : 'especificações'}${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
                             }`}
                         showButton={false}

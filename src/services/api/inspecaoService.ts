@@ -94,6 +94,7 @@ interface InspectionFilters {
 interface InspectionSpecificationResponse {
     id_ficha_inspecao: number;
     id_tipo_inspecao: number | null;
+    descricao_tipo_inspecao?: string | null;
     situacao: string | null;
     qtde_produzida: number | null;
     exibe_faixa: string;
@@ -316,6 +317,7 @@ class InspecaoService {
                     specifications: response.especificacoes || [], fichaDados: {
                         id_ficha_inspecao: response.id_ficha_inspecao,
                         id_tipo_inspecao: response.id_tipo_inspecao,
+                        descricao_tipo_inspecao: response.descricao_tipo_inspecao || null,
                         situacao: response.situacao,
                         qtde_produzida: response.qtde_produzida,
                         exibe_faixa: response.exibe_faixa,
@@ -327,6 +329,7 @@ class InspecaoService {
                 specifications: Array.isArray(data) ? data : [], fichaDados: {
                     id_ficha_inspecao: id,
                     id_tipo_inspecao: null,
+                    descricao_tipo_inspecao: null,
                     situacao: null,
                     qtde_produzida: null,
                     exibe_faixa: 'S',
