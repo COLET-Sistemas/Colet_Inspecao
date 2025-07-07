@@ -11,11 +11,13 @@ import {
     Box,
     Calendar,
     CheckCircle,
+    CheckSquare,
     Clock,
     Cog,
     FileText,
     Layers,
     MapPin,
+    Package,
     RefreshCw,
     Tag,
     User,
@@ -781,7 +783,7 @@ export default function InspecoesPage() {
                                 tabIndex={0}
                                 role="button"
                                 aria-label={`Abrir inspeção ${item.tipo_inspecao} - OF: ${item.numero_ordem}`}
-                                className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2`}
+                                className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-3 pr-0 transition-all duration-300 hover:shadow-md hover:shadow-gray-100/50 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:ring-offset-2`}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -833,8 +835,8 @@ export default function InspecoesPage() {
                                         </span>
                                     </div>
                                 </div>                                {/* Linha adicional para informações críticas */}
-                                <div className="flex items-center justify-between mt-3 gap-2">
-                                    <div className="flex flex-wrap gap-2 text-xs flex-1">
+                                <div className="flex items-center mt-3 gap-2 pr-0">
+                                    <div className="flex flex-wrap gap-2 text-xs flex-1 pr-0">
                                         <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
                                             <Layers className="h-3 w-3 text-gray-500 mr-1" />
                                             <span className="text-gray-700">{item.processo}-{item.tipo_acao}</span>
@@ -844,26 +846,38 @@ export default function InspecoesPage() {
                                             <span className="text-gray-700">{item.codigo_posto}</span>
                                         </span>
 
-                                        <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
-                                            <Tag className="h-3 w-3 text-gray-500 mr-1" />
-                                            <span className="text-gray-700">{item.origem}</span>
-                                        </span>
-
-
+                                        {canRegisterNaoConformidade(item) && (
+                                            <span className="ml-auto pr-0 mr-1">
+                                                <button
+                                                    onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
+                                                >
+                                                    <AlertTriangle className="h-3 w-3" />
+                                                    Registrar NC
+                                                </button>
+                                            </span>
+                                        )}
                                     </div>
-
-                                    {canRegisterNaoConformidade(item) && (
-                                        <div className="flex-shrink-0">
-                                            <button
-                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer"
-                                            >
-                                                <AlertTriangle className="h-3 w-3" />
-                                                Registrar NC
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
+
+                                <div className="flex flex-wrap gap-2 text-xs mt-2">
+                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                        <Tag className="h-3 w-3 text-gray-500 mr-1" />
+                                        <span className="text-gray-700">{item.origem}</span>
+                                    </span>
+
+                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                        <Package className="h-3 w-3 text-gray-500 mr-1" />
+                                        <span className="text-gray-700">Prod: {item.qtde_produzida || 0}</span>
+                                    </span>
+
+                                    <span className="flex items-center text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                                        <CheckSquare className="h-3 w-3 text-gray-500 mr-1" />
+                                        <span className="text-gray-700">Insp: {item.qtde_inspecionada || 0}</span>
+                                    </span>
+                                </div>
+
+                                {/* Efeito de hover */}
 
                                 {/* Efeito de hover */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -878,7 +892,7 @@ export default function InspecoesPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03, duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
                             onClick={() => handleInspectionClick(item)}
-                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 transition-all duration-300 hover:shadow-md hover:shadow-gray-200/50 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-[#1ABC9C]`}
+                            className={`group relative w-full overflow-hidden rounded-lg border ${bgColorClass} backdrop-blur-sm p-4 pr-0 transition-all duration-300 hover:shadow-md hover:shadow-gray-200/50 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-[#1ABC9C]`}
                         >
                             {/* Cabeçalho do Card */}
                             <div className="flex items-start justify-between gap-3 mb-2">
@@ -942,7 +956,7 @@ export default function InspecoesPage() {
                             </div>
 
                             {/* Grid de informações detalhadas */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 mt-2 pt-3 border-t border-gray-200">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 mt-2 pt-3 border-t border-gray-200 pr-0">
                                 <div>
                                     <div className="flex items-center">
                                         <Layers className="h-4 w-4 text-gray-500 mr-2" />
@@ -967,28 +981,44 @@ export default function InspecoesPage() {
                                     </div>
                                 </div>
 
-                                <div className="col-span-2 sm:col-span-3 flex items-center justify-between mt-1 sm:mt-0">
+                                <div>
+                                    <div className="flex items-center">
+                                        <Package className="h-4 w-4 text-gray-500 mr-2" />
+                                        <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Prod:</p>
+                                        <p className="text-xs font-semibold text-gray-900">{item.qtde_produzida || 0}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center">
+                                        <CheckSquare className="h-4 w-4 text-gray-500 mr-2" />
+                                        <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Insp:</p>
+                                        <p className="text-xs font-semibold text-gray-900">{item.qtde_inspecionada || 0}</p>
+                                    </div>
+                                </div>
+
+                                {canRegisterNaoConformidade(item) && (
+                                    <div className="ml-auto pr-0 mr-1">
+                                        <button
+                                            onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer mr-0"
+                                        >
+                                            <AlertTriangle className="h-3.5 w-3.5" />
+                                            <span>
+                                                {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="col-span-2 sm:col-span-3 flex items-center mt-1 sm:mt-0">
                                     {item.obs_criacao && item.obs_criacao.trim() !== "" && (
-                                        <div className="flex items-center max-w-[85%]">
+                                        <div className="flex items-center max-w-full">
                                             <FileText className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
                                             <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Obs:</p>
                                             <p className="text-xs font-semibold text-gray-900 line-clamp-1">
                                                 {item.obs_criacao}
                                             </p>
-                                        </div>
-                                    )}
-
-                                    {canRegisterNaoConformidade(item) && (
-                                        <div className="flex justify-end ml-auto">
-                                            <button
-                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer"
-                                            >
-                                                <AlertTriangle className="h-3.5 w-3.5" />
-                                                <span>
-                                                    {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
-                                                </span>
-                                            </button>
                                         </div>
                                     )}
                                 </div>
