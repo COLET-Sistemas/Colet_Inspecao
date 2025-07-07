@@ -1,8 +1,3 @@
-/**
- * Criptografa uma senha usando XOR com uma chave aleatória
- * O resultado é uma string hexadecimal onde os dois primeiros caracteres representam a chave
- * e os caracteres seguintes são os caracteres da senha criptografados com XOR
- */
 export function criptografarSenha(senha: string): string {
     if (!senha) return '';
 

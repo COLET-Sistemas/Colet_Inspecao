@@ -17,6 +17,7 @@ interface InspecaoData {
     operacao: number;
     observacao: null | string;
     qtde_produzida: number;
+    qtde_inspecionada: number;
     ficha_origem: null | number;
 }
 
@@ -50,7 +51,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     codigoPostо,
     operacao
 }) => {
-    const [quantidade, setQuantidade] = useState<string>('');
+    const [quantidade, setQuantidade] = useState<string>(''); // Produzida
+    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(''); // Novo estado
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -74,6 +76,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     const handleClose = useCallback(() => {
         setError('');
         setQuantidade('');
+        setQuantidadeInspecionada('');
         onClose();
         if (onCancel) {
             onCancel();
@@ -121,14 +124,29 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, handleClose]); const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    }, [isOpen, handleClose]); // Quando quantidade produzida muda, copiar para inspecionada se inspecionada está vazia ou igual ao valor anterior
+    useEffect(() => {
+        if (
+            quantidade !== '' &&
+            (quantidadeInspecionada === '' || quantidadeInspecionada === quantidade)
+        ) {
+            setQuantidadeInspecionada(quantidade);
+        }
+    }, [quantidade, quantidadeInspecionada]);
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         const quantidadeNumber = Number(quantidade);
+        const quantidadeInspecionadaNumber = Number(quantidadeInspecionada);
         if (!quantidade || quantidadeNumber <= 0) {
-            setError('A quantidade deve ser maior que zero');
+            setError('A quantidade produzida deve ser maior que zero');
             return;
-        } try {
+        }
+        if (!quantidadeInspecionada || quantidadeInspecionadaNumber <= 0) {
+            setError('A quantidade inspecionada deve ser maior que zero');
+            return;
+        }
+        try {
             setIsLoading(true);
 
             // Obter o código da pessoa do localStorage
@@ -187,6 +205,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 operacao: operacao ?? 0,
                 observacao: null,
                 qtde_produzida: quantidadeNumber,
+                qtde_inspecionada: quantidadeInspecionadaNumber, // Novo campo
                 ficha_origem: null
             };
 
@@ -210,6 +229,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
             setError('');
             onConfirm(quantidadeNumber);
             setQuantidade('');
+            setQuantidadeInspecionada('');
         } catch (error) {
             console.error('Erro ao enviar dados da inspeção:', error);
             setError(error instanceof Error ? error.message : 'Erro ao registrar a inspeção');
@@ -217,6 +237,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     }; const handleCancel = useCallback(() => {
         setError('');
         setQuantidade('');
+        setQuantidadeInspecionada('');
         onClose();
         if (onCancel) {
             onCancel();
@@ -262,7 +283,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
                         <div className="mb-6">
                             <p className="text-sm text-gray-600">
-                                A quantidade produzida desde a última inspeção:
+                                As quantidades desde a última inspeção:
                             </p>
                         </div>
 
@@ -271,13 +292,30 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                 <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                         <Package size={18} />
-                                    </div>                                    <input
+                                    </div>
+                                    <input
                                         ref={inputRef}
                                         type="number"
                                         id="quantidade"
-                                        placeholder="Quantidade"
+                                        placeholder="Quantidade produzida"
                                         value={quantidade}
                                         onChange={(e) => setQuantidade(e.target.value)}
+                                        min="1"
+                                        step="1"
+                                        className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
+                                        required
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <Package size={18} />
+                                    </div>
+                                    <input
+                                        type="number"
+                                        id="quantidade-inspecionada"
+                                        placeholder="Quantidade inspecionada"
+                                        value={quantidadeInspecionada}
+                                        onChange={(e) => setQuantidadeInspecionada(e.target.value)}
                                         min="1"
                                         step="1"
                                         className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-sm placeholder-gray-400 transition-colors focus:border-[#1ABC9C] focus:bg-white focus:outline-none"
