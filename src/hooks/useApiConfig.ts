@@ -104,18 +104,22 @@ export function useApiConfig() {
     }, []);
 
     const saveApiUrl = useCallback(
-        async (url: string): Promise<boolean> => {
+        async (url: string, forceConnected = false): Promise<boolean> => {
             setIsLoading(true);
             setErrorMessage(null);
             try {
                 const trimmedUrl = url.trim().replace(/\/+$/, '');
+                // Apenas testa a conexão mas não impede de salvar se forceConnected for true
                 const isValid = await testApiConnection(trimmedUrl);
-                if (isValid) {
+
+                // Salva a URL independente da conexão se forceConnected for true
+                if (isValid || forceConnected) {
                     localStorage.setItem('apiUrl', trimmedUrl);
                     setApiUrl(trimmedUrl);
-                    setIsConnected(true);
+                    setIsConnected(isValid);
                 }
-                return isValid;
+
+                return isValid || forceConnected;
             } finally {
                 setIsLoading(false);
             }

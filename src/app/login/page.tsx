@@ -218,17 +218,21 @@ export default function LoginPage() {
     const handleSaveApiConfig = async () => {
         if (!tempApiUrl) return;
 
-        const success = await saveApiUrl(tempApiUrl);
+        // Passa true como segundo parâmetro para forçar o salvamento independente da conexão
+        await saveApiUrl(tempApiUrl, true);
 
-        if (success) {
+        // Se a conexão foi testada com sucesso
+        if (isConnected) {
             setTestResult({ success: true, message: 'Conexão estabelecida com sucesso!' });
-            setShowConfigModal(false);
         } else {
+            // Se estamos salvando mesmo sem conexão
             setTestResult({
-                success: false,
-                message: 'Falha ao estabelecer conexão. '
+                success: true,
+                message: 'Endereço da API salvo, mas não foi possível estabelecer conexão. Verifique se o servidor está disponível.'
             });
         }
+
+        setShowConfigModal(false);
     };
 
 
@@ -372,12 +376,12 @@ export default function LoginPage() {
                         {/* Session Messages */}
                         {sessionExpiredMessage && (
                             <div className={`mb-6 rounded-lg p-4 ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
-                                    ? "bg-red-50"
-                                    : sessionExpiredMessage.includes("Finalizando")
-                                        ? "bg-blue-50"
-                                        : sessionExpiredMessage.includes("sucesso")
-                                            ? "bg-green-50"
-                                            : "bg-red-50"
+                                ? "bg-red-50"
+                                : sessionExpiredMessage.includes("Finalizando")
+                                    ? "bg-blue-50"
+                                    : sessionExpiredMessage.includes("sucesso")
+                                        ? "bg-green-50"
+                                        : "bg-red-50"
                                 }`} role="alert">
                                 <div className="flex items-center">
                                     {sessionExpiredMessage.includes("Finalizando") ? (
@@ -409,12 +413,12 @@ export default function LoginPage() {
                                         </svg>
                                     )}
                                     <div className={`text-sm font-medium ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
-                                            ? "text-red-700"
-                                            : sessionExpiredMessage.includes("Finalizando")
-                                                ? "text-blue-700"
-                                                : sessionExpiredMessage.includes("sucesso")
-                                                    ? "text-green-700"
-                                                    : "text-red-700"
+                                        ? "text-red-700"
+                                        : sessionExpiredMessage.includes("Finalizando")
+                                            ? "text-blue-700"
+                                            : sessionExpiredMessage.includes("sucesso")
+                                                ? "text-green-700"
+                                                : "text-red-700"
                                         }`}>
                                         {sessionExpiredMessage}
                                     </div>
