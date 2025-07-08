@@ -97,6 +97,7 @@ interface InspectionSpecificationResponse {
     descricao_tipo_inspecao?: string | null;
     situacao: string | null;
     qtde_produzida: number | null;
+    qtde_inspecionada: number | null;
     exibe_faixa: string;
     exibe_resultado: string;
     especificacoes: InspectionSpecification[];
@@ -320,6 +321,7 @@ class InspecaoService {
                         descricao_tipo_inspecao: response.descricao_tipo_inspecao || null,
                         situacao: response.situacao,
                         qtde_produzida: response.qtde_produzida,
+                        qtde_inspecionada: response.qtde_inspecionada || null,
                         exibe_faixa: response.exibe_faixa,
                         exibe_resultado: response.exibe_resultado
                     }
@@ -332,6 +334,7 @@ class InspecaoService {
                     descricao_tipo_inspecao: null,
                     situacao: null,
                     qtde_produzida: null,
+                    qtde_inspecionada: null,
                     exibe_faixa: 'S',
                     exibe_resultado: 'S'
                 } as Omit<InspectionSpecificationResponse, 'especificacoes'>
@@ -739,8 +742,8 @@ class InspecaoService {
                 if (item.conforme === true || item.conforme === false) {
                     return {
                         id_especificacao: item.id_especificacao,
-                        valor_encontrado: null, // Nesse caso, o valor_encontrado deve ser null
-                        conforme: item.conforme === true ? 'S' : 'N', // Convertendo boolean para S/N
+                        valor_encontrado: null,
+                        conforme: item.conforme === true ? 'S' : 'N',
                         observacao: item.observacao
                     };
                 }

@@ -56,6 +56,7 @@ export default function EspecificacoesPage() {
         id_tipo_inspecao: number | null,
         situacao: string | null,
         qtde_produzida: number | null,
+        qtde_inspecionada: number | null,
         exibe_faixa: string,
         exibe_resultado: string,
         descricao_tipo_inspecao: string | null
@@ -64,6 +65,7 @@ export default function EspecificacoesPage() {
         id_tipo_inspecao: null,
         situacao: null,
         qtde_produzida: null,
+        qtde_inspecionada: null,
         exibe_faixa: 'S',
         exibe_resultado: 'S',
         descricao_tipo_inspecao: null
@@ -162,6 +164,7 @@ export default function EspecificacoesPage() {
                     id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
                     situacao: response.fichaDados.situacao || null,
                     qtde_produzida: response.fichaDados.qtde_produzida,
+                    qtde_inspecionada: response.fichaDados.qtde_inspecionada,
                     exibe_faixa: response.fichaDados.exibe_faixa,
                     exibe_resultado: response.fichaDados.exibe_resultado,
                     descricao_tipo_inspecao: response.fichaDados.descricao_tipo_inspecao || null
@@ -206,6 +209,7 @@ export default function EspecificacoesPage() {
                 id_tipo_inspecao: response.fichaDados.id_tipo_inspecao || null,
                 situacao: response.fichaDados.situacao || null,
                 qtde_produzida: response.fichaDados.qtde_produzida,
+                qtde_inspecionada: response.fichaDados.qtde_inspecionada || null,
                 exibe_faixa: response.fichaDados.exibe_faixa,
                 exibe_resultado: response.fichaDados.exibe_resultado,
                 descricao_tipo_inspecao: response.fichaDados.descricao_tipo_inspecao || null
@@ -1114,7 +1118,7 @@ export default function EspecificacoesPage() {
                     </button>
                     <PageHeader
                         title={`Especificações -${fichaDados.descricao_tipo_inspecao ? ` ${fichaDados.descricao_tipo_inspecao}` : ''}`}
-                        subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} ${specifications.length === 1 ? 'especificação' : 'especificações'}${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''
+                        subtitle={`Ficha #${fichaDados.id_ficha_inspecao} • ${specifications.length} ${specifications.length === 1 ? 'especificação' : 'especificações'}${fichaDados.qtde_produzida ? ` • Qtde produzida: ${fichaDados.qtde_produzida}` : ''}${fichaDados.qtde_inspecionada ? ` • Qtde inspecionada: ${fichaDados.qtde_inspecionada}` : ''
                             }`}
                         showButton={false}
                     />
