@@ -35,24 +35,26 @@ interface QuantidadeInputModalProps {
     processo?: number;
     codigoPostо?: string;
     operacao?: number;
+    origem?: string; // Adicionado origem como prop opcional
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     isOpen,
     onClose,
     onConfirm,
-    title = "Quantidade de Não Conformidade",
+    title = "Registrar Quantidade",
     onCancel,
     tipoInspecao = 4, // Default tipo_inspecao
     numeroOrdem,
     referencia,
     roteiro,
     processo,
+    origem = "Registrar Quantidade", // Default origem
     codigoPostо,
     operacao
 }) => {
-    const [quantidade, setQuantidade] = useState<string>(''); 
-    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(''); 
+    const [quantidade, setQuantidade] = useState<string>('');
+    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isFocusedOnProduzida, setIsFocusedOnProduzida] = useState(false);
@@ -209,7 +211,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 roteiro: roteiro ?? '',
                 processo: processo ?? 0,
                 codigo_posto: codigoPostо ?? '',
-                origem: 'Não Conformidade',
+                origem: origem, // Usa a origem recebida como parâmetro
                 operacao: operacao ?? 0,
                 observacao: null,
                 qtde_produzida: quantidadeNumber,
@@ -264,7 +266,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 w-full h-full bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150"
-                        onClick={handleClose}
                     />
 
                     <motion.div
@@ -295,7 +296,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
                         <div className="mb-6">
                             <p className="text-sm text-gray-600">
-                                As quantidades desde a última inspeção:
+                                Informe as quantidades produzidas e inspecionadas:
                             </p>
                         </div>
 

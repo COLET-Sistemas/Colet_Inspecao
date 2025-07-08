@@ -4,6 +4,7 @@ import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import { ColaboradorLoginModal } from "@/components/ui/inspecoes/ColaboradorLoginModal";
+import QuantidadeInputModal from "@/components/ui/inspecoes/QuantidadeInputModal";
 import inspecaoService, { InspectionItem } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
 import {
@@ -18,6 +19,7 @@ import {
     Layers,
     MapPin,
     Package,
+    PlusCircle,
     RefreshCw,
     Tag,
     User,
@@ -91,6 +93,9 @@ export default function InspecoesPage() {
     const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
     const [hasColaboradorData, setHasColaboradorData] = useState(false);
     const [isNaoConformidadeContext, setIsNaoConformidadeContext] = useState(false);
+    const [isQuantidadeModalOpen, setIsQuantidadeModalOpen] = useState(false);
+    const [selectedQuantidadeInspection, setSelectedQuantidadeInspection] = useState<InspectionItem | null>(null);
+    const [isQuantidadeContext, setIsQuantidadeContext] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
 
@@ -230,13 +235,41 @@ export default function InspecoesPage() {
         }
     }, [activeTab]);
 
+    const canRegisterQuantidade = useCallback((item?: InspectionItem): boolean => {
+        try {
+            // Only show the button in "processo" and "naoConformidade" tabs
+            if (activeTab !== "processo" && activeTab !== "naoConformidade") {
+                return false;
+            }
+
+            // Only show for items with id_tipo_inspecao equal to 9
+            if (!item || item.id_tipo_inspecao !== 9) {
+                return false;
+            }
+
+            // Check if user data exists
+            const userDataStr = localStorage.getItem('userData');
+            if (!userDataStr) {
+                return false;
+            }
+
+            return true;
+        } catch {
+            return false;
+        }
+    }, [activeTab]);
+
     const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
         e.stopPropagation();
+
+        // Garantir que apenas o contexto correto está ativado
+        setIsQuantidadeContext(false);
+        setIsNaoConformidadeContext(true);
+        console.log('Não Conformidade Click: isNaoConformidadeContext=true, isQuantidadeContext=false');
 
         const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         if (!userDataStr) {
             setSelectedInspection(item);
-            setIsNaoConformidadeContext(true);
             setIsModalOpen(true);
             return;
         }
@@ -515,12 +548,32 @@ export default function InspecoesPage() {
         setIsModalOpen(false);
         setHasColaboradorData(true);
 
+        // Log para debug dos contextos
+        console.log('Modal Success - Contextos antes:', {
+            isNaoConformidadeContext,
+            isQuantidadeContext
+        });
+
+        // Check if we're in quantidade context
+        if (isQuantidadeContext) {
+            // In quantidade context, open the quantidade modal instead of navigating
+            setIsQuantidadeContext(false);
+            setSelectedQuantidadeInspection(data.inspection);
+            setIsQuantidadeModalOpen(true);
+            return;
+        }
+
+        // Se estamos no contexto de não conformidade, ele é tratado pelo handler específico
+        // então não precisamos fazer nada aqui
+
+        // Regular flow for inspection navigation
         // Salvar a aba ativa no localStorage antes de navegar
         localStorage.setItem('activeInspectionTab', activeTab);
 
-        // Construct URL with all necessary parameters        // Navegando apenas com o ID, já que os dados do usuário estão disponíveis no context API
+        // Construct URL with all necessary parameters
+        // Navegando apenas com o ID, já que os dados do usuário estão disponíveis no context API
         router.push(`/inspecoes/especificacoes?id=${data.inspection.id_ficha_inspecao}`);
-    }, [router, activeTab]);
+    }, [router, activeTab, isQuantidadeContext, isNaoConformidadeContext]);
 
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
         // Mostrar mensagem de sucesso
@@ -534,6 +587,73 @@ export default function InspecoesPage() {
         // Atualizar a lista de inspeções após o registro bem-sucedido
         refreshActiveTab();
     }, [refreshActiveTab]);
+
+    const handleRegistrarQuantidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
+        e.stopPropagation();
+
+        const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+        if (!userDataStr) {
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(false); // Not a non-conformity context
+            setIsQuantidadeContext(true); // Set quantidade context
+            setIsModalOpen(true); // Open the login modal instead
+            return;
+        }
+
+        try {
+            const userData = JSON.parse(userDataStr);
+
+            // Check if userData has perfil_inspecao field
+            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
+                // User has userData but no perfil_inspecao field - open login modal
+                setSelectedInspection(item);
+                setIsNaoConformidadeContext(false);
+                setIsQuantidadeContext(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            const perfilInspecao = userData.perfil_inspecao;
+
+            let hasPerfilO = false;
+            if (typeof perfilInspecao === 'string') {
+                hasPerfilO = perfilInspecao.includes('O');
+            } else if (Array.isArray(perfilInspecao)) {
+                hasPerfilO = perfilInspecao.includes('O');
+            }
+
+            // If the user has perfil_inspecao "O", always opens the login modal
+            if (hasPerfilO) {
+                setSelectedInspection(item);
+                setIsNaoConformidadeContext(false);
+                setIsQuantidadeContext(true);
+                setIsModalOpen(true);
+                return;
+            }
+
+            // Check if user has valid authentication data to bypass login modal
+            if (userData.hasOwnProperty('codigo_pessoa') &&
+                userData.codigo_pessoa !== undefined &&
+                userData.codigo_pessoa !== null &&
+                userData.codigo_pessoa !== '') {
+                // User is authenticated, open the quantity input modal directly
+                setSelectedQuantidadeInspection(item);
+                setIsQuantidadeModalOpen(true);
+                return;
+            }
+
+            // Default case: open login modal
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(false);
+            setIsQuantidadeContext(true);
+            setIsModalOpen(true);
+        } catch {
+            setSelectedInspection(item);
+            setIsNaoConformidadeContext(false);
+            setIsQuantidadeContext(true);
+            setIsModalOpen(true);
+        }
+    }, []);
 
     const handleInspectionClick = useCallback((item: InspectionItem) => {
         // Salvar a aba ativa no localStorage quando clica em uma inspeção
@@ -582,8 +702,29 @@ export default function InspecoesPage() {
     const handleModalClose = useCallback(() => {
         setIsModalOpen(false);
         setIsNaoConformidadeContext(false);
+        setIsQuantidadeContext(false);
         setSelectedInspection(null);
     }, []);
+
+    const handleQuantidadeModalClose = useCallback(() => {
+        setIsQuantidadeModalOpen(false);
+        setSelectedQuantidadeInspection(null);
+    }, []);
+
+    const handleQuantidadeSuccess = useCallback((quantidade: number) => {
+        // Mostrar mensagem de sucesso
+        if (selectedQuantidadeInspection) {
+            setAlertMessage(`Quantidade ${quantidade} registrada com sucesso para a inspeção ${selectedQuantidadeInspection.referencia}`);
+            setAlertType("success");
+        }
+
+        // Reset do estado
+        setIsQuantidadeModalOpen(false);
+        setSelectedQuantidadeInspection(null);
+
+        // Atualizar a lista de inspeções após o registro bem-sucedido
+        refreshActiveTab();
+    }, [refreshActiveTab, selectedQuantidadeInspection]);
 
     // Função para mostrar alertas
     const showAlert = useCallback((message: string, type: "success" | "error" | "warning" | "info" = "error") => {
@@ -869,17 +1010,30 @@ export default function InspecoesPage() {
 
 
                                         </div>
-                                        {canRegisterNaoConformidade(item) && (
-                                            <span className="ml-auto pr-0 mr-1">
-                                                <button
-                                                    onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
-                                                >
-                                                    <AlertTriangle className="h-3 w-3" />
-                                                    Registrar NC
-                                                </button>
-                                            </span>
-                                        )}
+                                        <div className="flex gap-2 ml-auto pr-0 mr-1">
+                                            {canRegisterNaoConformidade(item) && (
+                                                <span>
+                                                    <button
+                                                        onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
+                                                    >
+                                                        <AlertTriangle className="h-3 w-3" />
+                                                        Registrar NC
+                                                    </button>
+                                                </span>
+                                            )}
+                                            {canRegisterQuantidade(item) && (
+                                                <span>
+                                                    <button
+                                                        onClick={(e) => handleRegistrarQuantidadeClick(e, item)}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
+                                                    >
+                                                        <PlusCircle className="h-3 w-3" />
+                                                        Registrar Quantidade
+                                                    </button>
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -945,19 +1099,34 @@ export default function InspecoesPage() {
                                     </span>
 
                                     {/* Data prevista como badge separada com ícone */}
-                                    {canRegisterNaoConformidade(item) && (
-                                        <div className="ml-auto pr-0 mr-1">
-                                            <button
-                                                onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer mr-0"
-                                            >
-                                                <AlertTriangle className="h-3.5 w-3.5" />
-                                                <span>
-                                                    {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
-                                                </span>
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="flex gap-2 ml-auto pr-0 mr-1">
+                                        {canRegisterNaoConformidade(item) && (
+                                            <div>
+                                                <button
+                                                    onClick={(e) => handleNaoConformidadeClick(e, item)}
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer mr-0"
+                                                >
+                                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                                    <span>
+                                                        {isCompactLayout || isPortrait ? 'Registrar NC' : 'Registrar Não Conformidade'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        )}
+                                        {canRegisterQuantidade(item) && (
+                                            <div>
+                                                <button
+                                                    onClick={(e) => handleRegistrarQuantidadeClick(e, item)}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer mr-0"
+                                                >
+                                                    <PlusCircle className="h-3.5 w-3.5" />
+                                                    <span>
+                                                        {isCompactLayout || isPortrait ? 'Registrar Qtd' : 'Registrar Quantidade'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1083,8 +1252,24 @@ export default function InspecoesPage() {
                     onSuccess={handleModalSuccess}
                     inspection={selectedInspection}
                     isNaoConformidadeContext={isNaoConformidadeContext}
+                    isQuantidadeContext={isQuantidadeContext}
                     onNaoConformidadeSuccess={handleNaoConformidadeSuccess}
                     onShowAlert={showAlert}
+                />
+            )}
+            {selectedQuantidadeInspection && (
+                <QuantidadeInputModal
+                    isOpen={isQuantidadeModalOpen}
+                    onClose={handleQuantidadeModalClose}
+                    onConfirm={handleQuantidadeSuccess}
+                    title="Registrar Quantidade"
+                    tipoInspecao={9} // Tipo de inspeção 9
+                    numeroOrdem={selectedQuantidadeInspection.numero_ordem}
+                    referencia={selectedQuantidadeInspection.referencia}
+                    roteiro={selectedQuantidadeInspection.roteiro}
+                    processo={selectedQuantidadeInspection.processo}
+                    codigoPostо={selectedQuantidadeInspection.codigo_posto}
+                    operacao={selectedQuantidadeInspection.operacao}
                 />
             )}
 

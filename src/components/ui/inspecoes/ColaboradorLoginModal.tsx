@@ -35,8 +35,8 @@ interface ColaboradorLoginModalProps {
         inspection: InspectionItem;
     }) => void;
     inspection: InspectionItem;
-    // Propriedades opcionais para controle de contexto de não conformidade
     isNaoConformidadeContext?: boolean;
+    isQuantidadeContext?: boolean;
     onNaoConformidadeSuccess?: (quantidade: number, inspection: InspectionItem) => void;
     onShowAlert?: (message: string, type?: "success" | "error" | "warning" | "info") => void;
 }
@@ -47,17 +47,25 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     onSuccess,
     inspection,
     isNaoConformidadeContext = false,
+    isQuantidadeContext = false,
     onNaoConformidadeSuccess,
     onShowAlert,
 }) => {
-    // useAuth não é necessário explicitamente - vamos atualizar o localStorage
-    // e o useAuth detectará as mudanças automaticamente
     const [codigo, setCodigo] = useState('');
     const [senha, setSenha] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showQuantidadeModal, setShowQuantidadeModal] = useState(false);
+
+    // Limpar campos quando o modal for fechado
+    const handleClose = React.useCallback(() => {
+        setCodigo('');
+        setSenha('');
+        setError('');
+        setShowPassword(false);
+        onClose();
+    }, [onClose]);
 
     // Refs para controle de foco
     const codigoInputRef = useRef<HTMLInputElement>(null);
@@ -110,13 +118,13 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
 
             // Fechar modal com ESC
             if (e.key === 'Escape') {
-                onClose();
+                handleClose();
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+    }, [isOpen, handleClose]);
 
     // Função para verificar se o usuário tem permissão para registrar não conformidade
     const hasNaoConformidadePermission = (registrarFicha: string | number | boolean | Array<string | number>): boolean => {
@@ -144,11 +152,8 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         if (onNaoConformidadeSuccess) {
             onNaoConformidadeSuccess(quantidade, inspection);
         }
-        // Limpar form após sucesso
-        setCodigo('');
-        setSenha('');
-        setError('');
-        onClose();
+        // Fechar modal e limpar form após sucesso
+        handleClose();
     }; const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -167,7 +172,13 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 const existingUserData = localStorage.getItem('userData') ?
                     JSON.parse(localStorage.getItem('userData') || '{}') : {};
 
-                // Atualiza o objeto userData com as novas informações
+                let origem = "Acesso Normal";
+                if (isNaoConformidadeContext) {
+                    origem = "Não Conformidade";
+                } else if (isQuantidadeContext) {
+                    origem = "Registrar Quantidade";
+                } 
+
                 const updatedUserData = {
                     ...existingUserData,
                     codigo_pessoa: codigo,
@@ -176,50 +187,52 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     funcao: response.funcao,
                     registrar_ficha: response.registrar_ficha,
                     encaminhar_ficha: response.encaminhar_ficha,
-                    perfil_inspecao: 'O' // Sempre salva o perfil como 'O'
+                    perfil_inspecao: 'O', 
+                    origem: origem 
                 };
 
                 // Salvar no localStorage apenas userData
                 localStorage.setItem('userData', JSON.stringify(updatedUserData));
                 localStorage.setItem('isAuthenticated', 'true');
 
-                // O contexto de autenticação será atualizado automaticamente em useAuth
-                // pois ele observa mudanças no localStorage
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
-            }// Callback de sucesso com os dados do usuário e a inspeção selecionada
-            // Se estamos no contexto de não conformidade, verificar permissão
+            }            
             if (isNaoConformidadeContext && onNaoConformidadeSuccess) {
                 const hasPermission = hasNaoConformidadePermission(response.registrar_ficha);
 
                 if (hasPermission) {
-                    // Usuário tem permissão - abrir modal de quantidade
                     setShowQuantidadeModal(true);
-                } else {
-                    // Usuário não tem permissão - fechar modal e mostrar alerta
                     setCodigo('');
                     setSenha('');
-                    setError('');
+                } else {
                     setIsLoading(false);
-                    onClose();
+                    handleClose();
 
                     if (onShowAlert) {
                         onShowAlert('Você não possui permissão para registrar não conformidades.', 'error');
                     }
                     return;
                 }
-            } else {
-                // Contexto normal - prosseguir com callback padrão
+            } else if (isQuantidadeContext) {
                 onSuccess({
                     ...response,
                     inspection
                 });
+                handleClose();
+            } else {
+                onSuccess({
+                    ...response,
+                    inspection
+                });
+                handleClose();
             }
         } catch (err) {
             console.error('Erro ao autenticar:', err);
             setError('Código ou senha inválidos. Por favor, tente novamente.');
         } finally {
             setIsLoading(false);
+         
         }
     };
 
@@ -234,7 +247,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 w-full h-full bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150"
-                            onClick={onClose}
+                        // Removido onClick={handleClose} para evitar que o modal feche ao clicar fora
                         />
 
                         <motion.div
@@ -255,7 +268,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                 </h2>
                                 <button
                                     ref={closeButtonRef}
-                                    onClick={onClose}
+                                    onClick={handleClose}
                                     className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
                                     aria-label="Fechar"
                                 >
@@ -265,7 +278,12 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
 
                             <div className="mb-6">
                                 <p className="text-sm text-gray-600">
-                                    Para acessar os detalhes da inspeção, por favor informe seu código e senha
+                                    {isQuantidadeContext
+                                        ? "Para registrar quantidades, por favor informe seu código e senha"
+                                        : isNaoConformidadeContext
+                                            ? "Para registrar não conformidade, por favor informe seu código e senha"
+                                            : "Para acessar os detalhes da inspeção, por favor informe seu código e senha"
+                                    }
                                 </p>
                             </div>
 
@@ -342,8 +360,9 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                                                 <span className="text-sm">Autenticando...</span>
                                             </div>
                                         ) : (
-                                            'Acessar Inspeção'
-                                        )}                                </button>
+                                            'Autenticar'
+                                        )}
+                                    </button>
                                 </div>
                             </form>
                         </motion.div>
@@ -356,7 +375,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 onCancel={() => {
                     // Fechar o modal de colaborador também
                     setShowQuantidadeModal(false);
-                    onClose(); // Fechar o modal de colaborador
+                    handleClose(); // Fechar o modal de colaborador e limpar campos
                 }}
                 title="Registrar Não Conformidade"
                 // Passar os campos necessários da inspeção para o POST
@@ -366,6 +385,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 processo={inspection.processo}
                 codigoPostо={inspection.codigo_posto}
                 operacao={inspection.operacao}
+                origem="Não Conformidade" // Definir explicitamente a origem como Não Conformidade
             />
         </>
     );

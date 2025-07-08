@@ -32,20 +32,24 @@ export function AlertMessage({
         }
 
         setIsVisible(true);
-        setProgress(100); if (autoDismiss) {
+        setProgress(100);
+
+        if (autoDismiss) {
+            // Adiciona 2 segundos extras (2000ms) para alertas do tipo info
+            const finalDuration = type === "info" ? dismissDuration + 2000 : dismissDuration;
             const startTime = Date.now();
-            const endTime = startTime + dismissDuration;
+            const endTime = startTime + finalDuration;
 
             const timer = setTimeout(() => {
                 setIsVisible(false);
                 if (onDismiss) onDismiss();
-            }, dismissDuration);
+            }, finalDuration);
 
             // Atualiza a barra de progresso a cada 50ms
             const progressInterval = setInterval(() => {
                 const now = Date.now();
                 const remaining = Math.max(0, endTime - now);
-                const progressValue = (remaining / dismissDuration) * 100;
+                const progressValue = (remaining / finalDuration) * 100;
                 setProgress(progressValue);
 
                 if (remaining <= 0) {
@@ -58,7 +62,7 @@ export function AlertMessage({
                 clearInterval(progressInterval);
             };
         }
-    }, [message, autoDismiss, onDismiss, dismissDuration]);
+    }, [message, autoDismiss, onDismiss, dismissDuration, type]);
 
     // Se não há mensagem ou o alerta não é mais visível, não renderize nada
     if (!message) {

@@ -127,11 +127,7 @@ export const fetchWithAuth = async (
             'x-has-local-token': localStorage.getItem('authToken') ? 'true' : 'false'
         };
 
-        // Log de depuração básico
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🔄 Fazendo requisição para:', url);
-            console.log('🔑 Token disponível:', !!authToken);
-        }
+      
 
         // Faz a requisição através do proxy
         const response = await fetch('/api/proxy', {
