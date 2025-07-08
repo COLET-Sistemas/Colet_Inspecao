@@ -4,8 +4,6 @@ import { Eye, EyeOff, KeyRound, User, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import QuantidadeInputModal from './QuantidadeInputModal';
 
-
-// Função para codificar senha usando cifra XOR (mesma usada em useAuth)
 const encodePassword = (password: string) => {
     const key = Math.floor(Math.random() * 255);
     const hexResult = [];
@@ -86,7 +84,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         }
     }, [isOpen]);
 
-    // Effect para trap focus dentro do modal
     useEffect(() => {
         if (!isOpen) return;
 
@@ -102,7 +99,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
                 if (e.shiftKey) {
-                    // Shift + Tab (indo para trás)
                     if (document.activeElement === firstElement || !modalRef.current?.contains(document.activeElement)) {
                         e.preventDefault();
                         lastElement.focus();
@@ -116,7 +112,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 }
             }
 
-            // Fechar modal com ESC
+
             if (e.key === 'Escape') {
                 handleClose();
             }
@@ -139,7 +135,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         } else if (typeof registrarFicha === 'number') {
             return registrarFicha === 4;
         } else if (typeof registrarFicha === 'boolean') {
-            // Se for boolean true, consideramos que tem permissão (para compatibilidade)
             return registrarFicha;
         }
 
@@ -247,7 +242,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 w-full h-full bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150"
-                        // Removido onClick={handleClose} para evitar que o modal feche ao clicar fora
                         />
 
                         <motion.div
@@ -373,19 +367,19 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 onClose={() => setShowQuantidadeModal(false)}
                 onConfirm={handleQuantidadeConfirm}
                 onCancel={() => {
-                    // Fechar o modal de colaborador também
+                    
                     setShowQuantidadeModal(false);
-                    handleClose(); // Fechar o modal de colaborador e limpar campos
+                    handleClose(); 
                 }}
                 title="Registrar Não Conformidade"
-                // Passar os campos necessários da inspeção para o POST
+              
                 numeroOrdem={inspection.numero_ordem}
                 referencia={inspection.referencia}
                 roteiro={inspection.roteiro}
                 processo={inspection.processo}
                 codigoPostо={inspection.codigo_posto}
                 operacao={inspection.operacao}
-                origem="Não Conformidade" // Definir explicitamente a origem como Não Conformidade
+                origem="Não Conformidade" 
             />
         </>
     );
