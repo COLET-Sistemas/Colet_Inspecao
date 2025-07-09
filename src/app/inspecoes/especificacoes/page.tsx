@@ -11,6 +11,7 @@ import {
     ArrowLeft,
     CheckCircle,
     CheckSquare,
+    Edit3,
     Eye,
     MessageSquare, RefreshCw,
     Ruler,
@@ -81,6 +82,8 @@ export default function EspecificacoesPage() {
     const [isConfirmingReceipt, setIsConfirmingReceipt] = useState(false);
     // Variável para controlar se está finalizando a inspeção
     const [isFinalizing, setIsFinalizing] = useState(false);
+    // Variável para controlar se está editando quantidades
+    const [isEditingQuantity, setIsEditingQuantity] = useState(false);
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para rastrear qual input está em foco
@@ -743,6 +746,18 @@ export default function EspecificacoesPage() {
             setIsFinalizing(false);
         }
     }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
+    const handleEditQuantity = useCallback(() => {
+        setIsEditingQuantity(true);
+
+        setAlertMessage({
+            message: "Funcionalidade de edição de quantidades em implementação",
+            type: "info"
+        });
+
+        setTimeout(() => {
+            setIsEditingQuantity(false);
+        }, 2000);
+    }, []);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
         if (tipoInstrumento?.toLowerCase() === 'visual') {
@@ -1227,6 +1242,22 @@ export default function EspecificacoesPage() {
                             }
                             return null;
                         })()}
+
+                        {/* Botão de Editar Quantidade - exibido apenas quando a inspeção estiver iniciada */}
+                        {isInspectionStarted && (
+                            <button
+                                onClick={handleEditQuantity}
+                                disabled={isSaving}
+                                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isEditingQuantity
+                                    ? "bg-gradient-to-r from-[#1d4ed8] to-[#1e40af] animate-pulse"
+                                    : "bg-gradient-to-r from-[#3b82f6] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8]"
+                                    }`}
+                            >
+                                <Edit3 className={`h-4 w-4 ${isEditingQuantity ? 'animate-spin' : ''}`} />
+                                {isEditingQuantity ? "Editando..." : "Editar Quantidade"}
+                            </button>
+                        )}
+
                         <button
                             onClick={handleStartInspection}
                             disabled={isInspectionStarted || isSaving}
