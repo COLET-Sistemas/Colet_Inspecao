@@ -201,14 +201,11 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
 
             const result = await response.json();
 
-            // Notifica o componente pai sobre o sucesso
             onSuccess(
                 quantidadeNumber,
                 quantidadeInspecionadaNumber,
                 result.message || "Quantidades atualizadas com sucesso"
             );
-
-            // Fecha o modal
             handleClose();
         } catch (error) {
             console.error("Erro ao atualizar quantidades:", error);
@@ -219,7 +216,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         }
     };
 
-    // Não renderiza nada se o modal não estiver aberto
     if (!isOpen) return null;
 
     return (
