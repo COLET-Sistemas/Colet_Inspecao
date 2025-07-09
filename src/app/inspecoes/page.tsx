@@ -871,7 +871,6 @@ export default function InspecoesPage() {
                         try {
                             let dataPrevista: Date;
 
-                            // Se a data já vem no formato brasileiro (DD/MM/YYYY HH:mm:ss)
                             if (item.data_hora_prevista.includes('/')) {
                                 const parts = item.data_hora_prevista.split(' ');
                                 const dateParts = parts[0].split('/');

@@ -1127,24 +1127,6 @@ export default function EspecificacoesPage() {
                 {/* Botões de ação à direita do título */}
                 {specifications.length > 0 && shouldShowActionButtons() && (
                     <div className="flex flex-row items-center space-x-2">
-                        <button
-                            onClick={handleStartInspection}
-                            disabled={isInspectionStarted || isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving && !isForwardingToCQ && !isConfirmingReceipt ? (
-                                <>
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                    Iniciando...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckSquare className="h-4 w-4" />
-                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar Inspeção"}
-                                </>
-                            )}
-                        </button>
-
                         {/* Botão de encaminhar para CQ */}
                         {(() => {
                             const userDataStr = localStorage.getItem('userData');
@@ -1245,6 +1227,25 @@ export default function EspecificacoesPage() {
                             }
                             return null;
                         })()}
+                        <button
+                            onClick={handleStartInspection}
+                            disabled={isInspectionStarted || isSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16A085] px-4 py-2.5 text-sm font-medium text-white hover:from-[#16A085] hover:to-[#0E8C7F] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving && !isForwardingToCQ && !isConfirmingReceipt ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Iniciando...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckSquare className="h-4 w-4" />
+                                    {isInspectionStarted ? "Inspeção iniciada" : "Iniciar Inspeção"}
+                                </>
+                            )}
+                        </button>
+
+
                     </div>
                 )}
             </div>
