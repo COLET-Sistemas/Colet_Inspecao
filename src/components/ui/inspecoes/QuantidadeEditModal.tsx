@@ -246,7 +246,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                         aria-modal="true"
                         aria-labelledby="modal-title"
                     >
-                        <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center justify-between mb-1">
                             <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
                                 {title}
                             </h2>
@@ -260,7 +260,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                             </button>
                         </div>
 
-                        <div className="mb-6">
+                        <div className="mb-4">
                             <p className="text-sm text-gray-600">
                                 Informe as quantidades produzidas e inspecionadas:
                             </p>
