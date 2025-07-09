@@ -172,7 +172,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     origem = "Não Conformidade";
                 } else if (isQuantidadeContext) {
                     origem = "Registrar Quantidade";
-                } 
+                }
 
                 const updatedUserData = {
                     ...existingUserData,
@@ -182,8 +182,8 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     funcao: response.funcao,
                     registrar_ficha: response.registrar_ficha,
                     encaminhar_ficha: response.encaminhar_ficha,
-                    perfil_inspecao: 'O', 
-                    origem: origem 
+                    perfil_inspecao: 'O',
+                    origem: origem
                 };
 
                 // Salvar no localStorage apenas userData
@@ -192,7 +192,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
 
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
-            }            
+            }
             if (isNaoConformidadeContext && onNaoConformidadeSuccess) {
                 const hasPermission = hasNaoConformidadePermission(response.registrar_ficha);
 
@@ -227,7 +227,7 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
             setError('Código ou senha inválidos. Por favor, tente novamente.');
         } finally {
             setIsLoading(false);
-         
+
         }
     };
 
@@ -367,19 +367,20 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                 onClose={() => setShowQuantidadeModal(false)}
                 onConfirm={handleQuantidadeConfirm}
                 onCancel={() => {
-                    
+
                     setShowQuantidadeModal(false);
-                    handleClose(); 
+                    handleClose();
                 }}
                 title="Registrar Não Conformidade"
-              
+
                 numeroOrdem={inspection.numero_ordem}
                 referencia={inspection.referencia}
                 roteiro={inspection.roteiro}
                 processo={inspection.processo}
                 codigoPostо={inspection.codigo_posto}
                 operacao={inspection.operacao}
-                origem="Não Conformidade" 
+                origem="Não Conformidade"
+                id_ficha_inspecao={inspection.id_ficha_inspecao}
             />
         </>
     );

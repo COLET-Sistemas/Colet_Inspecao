@@ -19,7 +19,7 @@ import {
     Layers,
     MapPin,
     Package,
-    PlusCircle,
+    Pencil,
     RefreshCw,
     Tag,
     User,
@@ -711,10 +711,13 @@ export default function InspecoesPage() {
         setSelectedQuantidadeInspection(null);
     }, []);
 
-    const handleQuantidadeSuccess = useCallback((quantidade: number) => {
+    const handleQuantidadeSuccess = useCallback((quantidade: number, quantidadeInspecionada?: number) => {
         // Mostrar mensagem de sucesso
         if (selectedQuantidadeInspection) {
-            setAlertMessage(`Quantidade ${quantidade} registrada com sucesso para a inspeção ${selectedQuantidadeInspection.referencia}`);
+            const message = quantidadeInspecionada !== undefined
+                ? `Quantidade ${quantidade} produzida e ${quantidadeInspecionada} inspecionada registrada com sucesso`
+                : `Quantidade ${quantidade} registrada com sucesso para a inspeção ${selectedQuantidadeInspection.referencia}`;
+            setAlertMessage(message);
             setAlertType("success");
         }
 
@@ -1028,8 +1031,8 @@ export default function InspecoesPage() {
                                                         onClick={(e) => handleRegistrarQuantidadeClick(e, item)}
                                                         className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
                                                     >
-                                                        <PlusCircle className="h-3 w-3" />
-                                                        Registrar Quantidade
+                                                        <Pencil className="h-3 w-3" />
+                                                        Quantidade
                                                     </button>
                                                 </span>
                                             )}
@@ -1119,9 +1122,9 @@ export default function InspecoesPage() {
                                                     onClick={(e) => handleRegistrarQuantidadeClick(e, item)}
                                                     className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors duration-200 shadow-sm flex items-center gap-2 cursor-pointer mr-0"
                                                 >
-                                                    <PlusCircle className="h-3.5 w-3.5" />
+                                                    <Pencil className="h-3.5 w-3.5" />
                                                     <span>
-                                                        {isCompactLayout || isPortrait ? 'Registrar Qtd' : 'Registrar Quantidade'}
+                                                        {isCompactLayout || isPortrait ? 'Quantidade' : 'Quantidade'}
                                                     </span>
                                                 </button>
                                             </div>
@@ -1263,13 +1266,14 @@ export default function InspecoesPage() {
                     onClose={handleQuantidadeModalClose}
                     onConfirm={handleQuantidadeSuccess}
                     title="Registrar Quantidade"
-                    tipoInspecao={9} // Tipo de inspeção 9
+                    tipoInspecao={9}
                     numeroOrdem={selectedQuantidadeInspection.numero_ordem}
                     referencia={selectedQuantidadeInspection.referencia}
                     roteiro={selectedQuantidadeInspection.roteiro}
                     processo={selectedQuantidadeInspection.processo}
                     codigoPostо={selectedQuantidadeInspection.codigo_posto}
                     operacao={selectedQuantidadeInspection.operacao}
+                    id_ficha_inspecao={selectedQuantidadeInspection.id_ficha_inspecao}
                 />
             )}
 

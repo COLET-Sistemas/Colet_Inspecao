@@ -5,29 +5,38 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-interface InspecaoData {
-    tipo_inspecao: number;
+// Interface para o novo formato de dados para o PUT
+interface InspecaoUpdateData {
+    id_ficha_inspecao: number | undefined;
     codigo_pessoa: string;
-    numero_ordem: number;
-    referencia: string;
-    roteiro: string;
-    processo: number;
-    codigo_posto: string;
-    origem: string;
-    operacao: number;
-    observacao: null | string;
     qtde_produzida: number;
     qtde_inspecionada: number;
-    ficha_origem: null | number;
+}
+
+// Interface para o formato de dados para o POST de não conformidade
+interface NaoConformidadeData {
+    tipo_inspecao: number;
+    codigo_pessoa: string;
+    numero_ordem: number | undefined;
+    referencia: string | undefined;
+    roteiro: string | undefined;
+    processo: number | undefined;
+    codigo_posto: string | undefined;
+    origem: string;
+    operacao: number | undefined;
+    observacao: null;
+    qtde_produzida: number;
+    qtde_inspecionada: number;
+    ficha_origem: number | undefined;
 }
 
 interface QuantidadeInputModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (quantidade: number) => void;
+    onConfirm: (quantidade: number, quantidadeInspecionada?: number) => void;
     title?: string;
     onCancel?: () => void;
-    // Dados necessários para o POST
+    // Dados necessários para o PUT
     tipoInspecao?: number;
     numeroOrdem?: number;
     referencia?: string;
@@ -36,6 +45,7 @@ interface QuantidadeInputModalProps {
     codigoPostо?: string;
     operacao?: number;
     origem?: string; // Adicionado origem como prop opcional
+    id_ficha_inspecao?: number; // ID da ficha de inspeção para o PUT
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
@@ -44,14 +54,15 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     onConfirm,
     title = "Registrar Quantidade",
     onCancel,
-    tipoInspecao = 4, // Default tipo_inspecao
+    tipoInspecao = 4,
     numeroOrdem,
     referencia,
     roteiro,
     processo,
-    origem = "Registrar Quantidade", // Default origem
+    origem = "Registrar Quantidade",
     codigoPostо,
-    operacao
+    operacao,
+    id_ficha_inspecao
 }) => {
     const [quantidade, setQuantidade] = useState<string>('');
     const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>('');
@@ -200,33 +211,65 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 setError('URL da API não está configurada');
                 setIsLoading(false);
                 return;
+            }            // Verificar se é uma não conformidade ou um registro de quantidade normal
+            // Para não conformidade: usar POST com todos os campos
+            // Para quantidade normal: usar PUT apenas com id_ficha_inspecao, codigo_pessoa, qtde_produzida, qtde_inspecionada
+            const isNaoConformidade = origem === "Não Conformidade";
+
+            let response;
+
+            if (isNaoConformidade) {
+                // Para não conformidade, usar POST com todos os campos
+                const naoConformidadeData: NaoConformidadeData = {
+                    tipo_inspecao: tipoInspecao,
+                    codigo_pessoa: codigoPessoa,
+                    numero_ordem: numeroOrdem,
+                    referencia: referencia,
+                    roteiro: roteiro,
+                    processo: processo,
+                    codigo_posto: codigoPostо,
+                    origem: origem,
+                    operacao: operacao,
+                    observacao: null,
+                    qtde_produzida: quantidadeNumber,
+                    qtde_inspecionada: quantidadeInspecionadaNumber,
+                    ficha_origem: id_ficha_inspecao
+                };
+
+                // Enviar o POST para o endpoint
+                response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(naoConformidadeData)
+                });
+            } else {
+                // Para registro de quantidade normal, usar PUT
+                // Verificar se temos o id da ficha
+                if (!id_ficha_inspecao) {
+                    setError('ID da ficha de inspeção não encontrado');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Preparar os dados para o PUT
+                const inspecaoData: InspecaoUpdateData = {
+                    id_ficha_inspecao: id_ficha_inspecao,
+                    codigo_pessoa: codigoPessoa,
+                    qtde_produzida: quantidadeNumber,
+                    qtde_inspecionada: quantidadeInspecionadaNumber
+                };
+
+                // Enviar o PUT para o endpoint
+                response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(inspecaoData)
+                });
             }
-
-            // Preparar os dados para o POST
-            const inspecaoData: InspecaoData = {
-                tipo_inspecao: tipoInspecao,
-                codigo_pessoa: codigoPessoa,
-                numero_ordem: numeroOrdem ?? 0,
-                referencia: referencia ?? '',
-                roteiro: roteiro ?? '',
-                processo: processo ?? 0,
-                codigo_posto: codigoPostо ?? '',
-                origem: origem, // Usa a origem recebida como parâmetro
-                operacao: operacao ?? 0,
-                observacao: null,
-                qtde_produzida: quantidadeNumber,
-                qtde_inspecionada: quantidadeInspecionadaNumber, // Novo campo
-                ficha_origem: null
-            };
-
-            // Enviar o POST para o endpoint
-            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(inspecaoData)
-            });
 
             setIsLoading(false);
 
@@ -237,7 +280,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
             // Se tudo deu certo, executar o onConfirm e fechar o modal
             setError('');
-            onConfirm(quantidadeNumber);
+            onConfirm(quantidadeNumber, quantidadeInspecionadaNumber);
             setQuantidade('');
             setQuantidadeInspecionada('');
             setIsFocusedOnProduzida(false);
