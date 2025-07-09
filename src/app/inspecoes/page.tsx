@@ -720,16 +720,12 @@ export default function InspecoesPage() {
             setAlertMessage(message);
             setAlertType("success");
         }
-
-        // Reset do estado
         setIsQuantidadeModalOpen(false);
         setSelectedQuantidadeInspection(null);
 
-        // Atualizar a lista de inspeções após o registro bem-sucedido
         refreshActiveTab();
     }, [refreshActiveTab, selectedQuantidadeInspection]);
 
-    // Função para mostrar alertas
     const showAlert = useCallback((message: string, type: "success" | "error" | "warning" | "info" = "error") => {
         setAlertMessage(message);
         setAlertType(type);
@@ -752,7 +748,7 @@ export default function InspecoesPage() {
             case '9': return <AlertTriangle className="h-3.5 w-3.5 text-red-500" />;
             default: return <Clock className="h-3.5 w-3.5 text-gray-400" />;
         }
-    }, []);    // Initial loading effect moved after formatPostosSubtitle definition
+    }, []);
 
     useEffect(() => {
         const handleActivity = () => {
@@ -906,7 +902,6 @@ export default function InspecoesPage() {
                                 dateTextColorClass = "text-amber-600 font-bold !text-amber-600";
                             }
                         } catch {
-                            // Silent error handling for date processing
                         }
                     }
 
@@ -939,16 +934,19 @@ export default function InspecoesPage() {
                                                 {item.tipo_inspecao}
                                             </h3>
                                             <div className="flex items-center gap-1.5 text-xs text-gray-500 leading-tight">
-                                                <span className="truncate">OF: {isPortrait ? item.numero_ordem : `#${item.numero_ordem}`}</span>
                                                 <span className="truncate inline-flex items-center">
-                                                    • <MapPin className="h-2.5 w-2.5 text-gray-400 mx-1" />
+                                                    #{item.numero_ordem}
+                                                </span>
+                                                <span className="truncate inline-flex items-center">
+                                                    • <MapPin className="h-2.5 w-2.5 text-gray-400 mx-1 hidden sm:inline" />
                                                     {item.codigo_posto}
                                                 </span>
                                                 <span className="truncate inline-flex items-center">
-                                                    • <Tag className="h-2.5 w-2.5 text-gray-400 mx-1" />
+                                                    • <Tag className="h-2.5 w-2.5 text-gray-400 mx-1 hidden sm:inline" />
                                                     {item.origem}
                                                 </span>
                                             </div>
+
                                         </div>
                                     </div>
 
@@ -976,12 +974,8 @@ export default function InspecoesPage() {
                                                 </span>}
                                             </span>
                                         </span>
-
-
-
-
                                     </div>
-                                </div>                                {/* Linha adicional para informações críticas */}
+                                </div>
                                 <div className="flex items-center mt-3 gap-2 pr-0">
                                     <div className="flex flex-wrap gap-2 text-xs flex-1 pr-0">
                                         <div className="flex items-center gap-2">
@@ -1010,18 +1004,16 @@ export default function InspecoesPage() {
                                                 )}
                                                 </span>
                                             </span>
-
-
                                         </div>
                                         <div className="flex gap-2 ml-auto pr-0 mr-1">
                                             {canRegisterNaoConformidade(item) && (
                                                 <span>
                                                     <button
                                                         onClick={(e) => handleNaoConformidadeClick(e, item)}
-                                                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
                                                     >
                                                         <AlertTriangle className="h-3 w-3" />
-                                                        Registrar NC
+                                                        <span className="hidden sm:inline">Registrar NC</span>
                                                     </button>
                                                 </span>
                                             )}
@@ -1029,18 +1021,17 @@ export default function InspecoesPage() {
                                                 <span>
                                                     <button
                                                         onClick={(e) => handleRegistrarQuantidadeClick(e, item)}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-medium transition-colors duration-200 shadow-sm flex items-center gap-1 cursor-pointer mr-0"
                                                     >
                                                         <Pencil className="h-3 w-3" />
-                                                        Quantidade
+                                                        <span className="hidden sm:inline">Quantidade</span>
                                                     </button>
                                                 </span>
                                             )}
                                         </div>
+
                                     </div>
                                 </div>
-
-
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#1ABC9C]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             </motion.div>
                         );
@@ -1329,7 +1320,6 @@ export default function InspecoesPage() {
                 </div>
             </div>
 
-            {/* Container principal da lista */}
             <div className="rounded-lg bg-gradient-to-br from-gray-50/80 to-white/80 backdrop-blur-sm border border-gray-100/50 p-2 sm:p-3 shadow-sm">
                 <div className="w-full">
                     {renderTabContent()}
