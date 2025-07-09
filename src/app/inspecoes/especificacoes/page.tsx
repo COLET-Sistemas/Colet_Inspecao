@@ -3,6 +3,7 @@
 import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import QuantidadeEditModal from "@/components/ui/inspecoes/QuantidadeEditModal";
 import { useAuth } from "@/hooks/useAuth";
 import inspecaoService, { InspectionSpecification } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
@@ -82,8 +83,8 @@ export default function EspecificacoesPage() {
     const [isConfirmingReceipt, setIsConfirmingReceipt] = useState(false);
     // Variável para controlar se está finalizando a inspeção
     const [isFinalizing, setIsFinalizing] = useState(false);
-    // Variável para controlar se está editando quantidades
-    const [isEditingQuantity, setIsEditingQuantity] = useState(false);
+    // Variável para controlar se o modal de edição de quantidades está aberto
+    const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para rastrear qual input está em foco
@@ -746,17 +747,46 @@ export default function EspecificacoesPage() {
             setIsFinalizing(false);
         }
     }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
+    /**
+     * Manipula a abertura do modal de edição de quantidades
+     */
     const handleEditQuantity = useCallback(() => {
-        setIsEditingQuantity(true);
+        // Abre o modal
+        setIsQuantityModalOpen(true);
+    }, []);
+
+    /**
+     * Manipula o fechamento do modal de edição de quantidades
+     */
+    const handleCloseQuantityModal = useCallback(() => {
+        setIsQuantityModalOpen(false);
+    }, []);
+
+    /**
+     * Manipula o sucesso na edição de quantidades
+     */
+    const handleQuantityEditSuccess = useCallback((qtdeProduzida: number | null, qtdeInspecionada: number | null, message: string) => {
+        // Atualiza o estado local após sucesso na API
+        setFichaDados(prev => ({
+            ...prev,
+            qtde_produzida: qtdeProduzida,
+            qtde_inspecionada: qtdeInspecionada
+        }));
 
         setAlertMessage({
-            message: "Funcionalidade de edição de quantidades em implementação",
-            type: "info"
+            message: message,
+            type: "success"
         });
+    }, []);
 
-        setTimeout(() => {
-            setIsEditingQuantity(false);
-        }, 2000);
+    /**
+     * Manipula erro na edição de quantidades
+     */
+    const handleQuantityEditError = useCallback((message: string) => {
+        setAlertMessage({
+            message: message,
+            type: "error"
+        });
     }, []);
 
     const getInstrumentIcon = (tipoInstrumento: string) => {
@@ -1112,6 +1142,20 @@ export default function EspecificacoesPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
+            {/* Modal de edição de quantidades */}
+            {isQuantityModalOpen && (
+                <QuantidadeEditModal
+                    isOpen={isQuantityModalOpen}
+                    onClose={handleCloseQuantityModal}
+                    onSuccess={handleQuantityEditSuccess}
+                    onError={handleQuantityEditError}
+                    initialQtdeProduzida={fichaDados.qtde_produzida}
+                    initialQtdeInspecionada={fichaDados.qtde_inspecionada}
+                    fichaId={id || ""}
+                    title="Editar Quantidades"
+                />
+            )}
+
             {alertMessage && (
                 <AlertMessage
                     message={alertMessage.message}
@@ -1247,14 +1291,14 @@ export default function EspecificacoesPage() {
                         {isInspectionStarted && (
                             <button
                                 onClick={handleEditQuantity}
-                                disabled={isSaving}
-                                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isEditingQuantity
-                                    ? "bg-gradient-to-r from-[#1d4ed8] to-[#1e40af] animate-pulse"
+                                disabled={isSaving || isQuantityModalOpen}
+                                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isQuantityModalOpen
+                                    ? "bg-gradient-to-r from-[#1d4ed8] to-[#1e40af]"
                                     : "bg-gradient-to-r from-[#3b82f6] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8]"
                                     }`}
                             >
-                                <Edit3 className={`h-4 w-4 ${isEditingQuantity ? 'animate-spin' : ''}`} />
-                                {isEditingQuantity ? "Editando..." : "Editar Quantidade"}
+                                <Edit3 className={`h-4 w-4 ${isQuantityModalOpen ? 'animate-spin' : ''}`} />
+                                {isQuantityModalOpen ? "Editando..." : "Editar Quantidade"}
                             </button>
                         )}
 

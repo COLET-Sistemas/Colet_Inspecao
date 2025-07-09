@@ -778,6 +778,52 @@ class InspecaoService {
             throw error;
         }
     }
+
+    /**
+     * Atualiza as quantidades de uma ficha de inspeção
+     */
+    async updateQuantities(idFicha: number, data: {
+        qtde_produzida: number | null;
+        qtde_inspecionada: number | null;
+    }): Promise<{ success: boolean; message?: string }> {
+        try {
+            const apiUrl = localStorage.getItem("apiUrl");
+            if (!apiUrl) {
+                throw new Error("URL da API não está configurada");
+            }
+
+            // Obter código da pessoa do localStorage
+            const userData = localStorage.getItem("userData");
+            if (!userData) {
+                throw new Error("Dados do usuário não encontrados");
+            }
+
+            const { codigo_pessoa } = JSON.parse(userData);
+            if (!codigo_pessoa) {
+                throw new Error("Código da pessoa não encontrado");
+            }
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas/${idFicha}/quantidades`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...data,
+                    codigo_pessoa
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+
+            return { success: true, message: "Quantidades atualizadas com sucesso" };
+        } catch (error) {
+            console.error(`Erro ao atualizar quantidades da ficha ${idFicha}:`, error);
+            throw error;
+        }
+    }
 }
 
 // Instância singleton do serviço
