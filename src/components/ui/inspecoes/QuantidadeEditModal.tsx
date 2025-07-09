@@ -7,6 +7,7 @@ interface QuantidadeEditModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (qtdeProduzida: number | null, qtdeInspecionada: number | null, message: string) => void;
+    onError: (message: string) => void;
     initialQtdeProduzida: number | null;
     initialQtdeInspecionada: number | null;
     fichaId: number | string;
@@ -17,6 +18,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
+    onError,
     initialQtdeProduzida,
     initialQtdeInspecionada,
     fichaId,
@@ -112,16 +114,19 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
 
         if (!tempQtdeProduzida || quantidadeNumber <= 0) {
             setError('A quantidade produzida deve ser maior que zero');
+            onError('A quantidade produzida deve ser maior que zero');
             return;
         }
 
         if (!tempQtdeInspecionada || quantidadeInspecionadaNumber <= 0) {
             setError('A quantidade inspecionada deve ser maior que zero');
+            onError('A quantidade inspecionada deve ser maior que zero');
             return;
         }
 
         if (!fichaId) {
             setError("ID da ficha de inspeção não encontrado");
+            onError("ID da ficha de inspeção não encontrado");
             return;
         }
 
@@ -159,6 +164,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
 
             if (!codigoPessoa) {
                 setError('Usuário não está logado corretamente');
+                onError('Usuário não está logado corretamente');
                 return;
             }
 
@@ -166,6 +172,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
             const apiUrl = localStorage.getItem('apiUrl');
             if (!apiUrl) {
                 setError('URL da API não está configurada');
+                onError('URL da API não está configurada');
                 return;
             }
 
@@ -206,6 +213,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         } catch (error) {
             console.error("Erro ao atualizar quantidades:", error);
             setError(error instanceof Error ? error.message : "Erro ao atualizar quantidades");
+            onError(error instanceof Error ? error.message : "Erro ao atualizar quantidades");
         } finally {
             setIsSaving(false);
         }
