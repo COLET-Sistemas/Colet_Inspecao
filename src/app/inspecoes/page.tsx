@@ -1264,6 +1264,8 @@ export default function InspecoesPage() {
                     codigoPostо={selectedQuantidadeInspection.codigo_posto}
                     operacao={selectedQuantidadeInspection.operacao}
                     id_ficha_inspecao={selectedQuantidadeInspection.id_ficha_inspecao}
+                    initialQtdeProduzida={selectedQuantidadeInspection.qtde_produzida || undefined}
+                    initialQtdeInspecionada={selectedQuantidadeInspection.qtde_inspecionada || undefined}
                 />
             )}
 

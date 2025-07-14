@@ -44,8 +44,11 @@ interface QuantidadeInputModalProps {
     processo?: number;
     codigoPostо?: string;
     operacao?: number;
-    origem?: string; // Adicionado origem como prop opcional
-    id_ficha_inspecao?: number; // ID da ficha de inspeção para o PUT
+    origem?: string;
+    id_ficha_inspecao?: number;
+    // Valores iniciais para os campos
+    initialQtdeProduzida?: number;
+    initialQtdeInspecionada?: number;
 }
 
 const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
@@ -62,14 +65,16 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     origem = "Registrar Quantidade",
     codigoPostо,
     operacao,
-    id_ficha_inspecao
+    id_ficha_inspecao,
+    initialQtdeProduzida,
+    initialQtdeInspecionada
 }) => {
-    const [quantidade, setQuantidade] = useState<string>('');
-    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>('');
+    const [quantidade, setQuantidade] = useState<string>(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
+    const [quantidadeInspecionada, setQuantidadeInspecionada] = useState<string>(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isFocusedOnProduzida, setIsFocusedOnProduzida] = useState(false);
-    const [hasEditedInspecionada, setHasEditedInspecionada] = useState(false);
+    const [hasEditedInspecionada, setHasEditedInspecionada] = useState(initialQtdeInspecionada !== undefined);
 
     // Refs para elementos focáveis
     const inputRef = useRef<HTMLInputElement>(null);
@@ -87,18 +92,33 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
             return () => clearTimeout(timer);
         }
-    }, [isOpen]);    // Define handleClose before using it in useEffect
+    }, [isOpen]);
+
+    // Atualizar valores quando o modal é aberto ou os valores iniciais mudam
+    useEffect(() => {
+        if (isOpen) {
+            setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
+            setQuantidadeInspecionada(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
+            setHasEditedInspecionada(initialQtdeInspecionada !== undefined);
+        }
+    }, [isOpen, initialQtdeProduzida, initialQtdeInspecionada]);
+
+    // Define handleClose before using it in useEffect
     const handleClose = useCallback(() => {
         setError('');
-        setQuantidade('');
-        setQuantidadeInspecionada('');
+        // Redefinir os valores para os iniciais quando o modal é fechado
+        setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
+        setQuantidadeInspecionada(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
         setIsFocusedOnProduzida(false);
-        setHasEditedInspecionada(false);
+        setHasEditedInspecionada(initialQtdeInspecionada !== undefined);
         onClose();
         if (onCancel) {
             onCancel();
         }
-    }, [onClose, onCancel]);
+    }, [onClose, onCancel, initialQtdeProduzida, initialQtdeInspecionada]);
+
+    // Ref para o segundo input (quantidade inspecionada)
+    const qtdInspecionadaInputRef = useRef<HTMLInputElement>(null);
 
     // Trap de foco dentro do modal
     useEffect(() => {
@@ -110,34 +130,34 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 return;
             }
 
+            // Gerenciamos o Tab apenas quando ele iria sair do modal, não interferindo na ordem natural
             if (e.key === 'Tab') {
-                const focusableElements = [
-                    inputRef.current,
-                    cancelButtonRef.current,
-                    confirmButtonRef.current,
-                    closeButtonRef.current
-                ].filter(Boolean) as HTMLElement[];
-
-                const currentIndex = focusableElements.findIndex(
-                    element => element === document.activeElement
+                // Coleta todos os elementos focáveis no modal
+                const focusableElements = modalRef.current?.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
                 );
 
-                if (e.shiftKey) {
-                    e.preventDefault();
-                    const previousIndex = currentIndex <= 0
-                        ? focusableElements.length - 1
-                        : currentIndex - 1;
-                    focusableElements[previousIndex]?.focus();
-                } else {
+                if (!focusableElements || focusableElements.length === 0) return;
 
+                const firstElement = focusableElements[0] as HTMLElement;
+                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                // Se pressionar Shift+Tab no primeiro elemento, vai para o último
+                if (e.shiftKey && document.activeElement === firstElement) {
                     e.preventDefault();
-                    const nextIndex = currentIndex >= focusableElements.length - 1
-                        ? 0
-                        : currentIndex + 1;
-                    focusableElements[nextIndex]?.focus();
+                    lastElement.focus();
                 }
+                // Se pressionar Tab no último elemento, vai para o primeiro
+                else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+                // Caso contrário, deixa o comportamento natural do Tab
             }
         };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
@@ -291,15 +311,16 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         }
     }; const handleCancel = useCallback(() => {
         setError('');
-        setQuantidade('');
-        setQuantidadeInspecionada('');
+        // Redefinir os valores para os iniciais quando o modal é cancelado
+        setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
+        setQuantidadeInspecionada(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
         setIsFocusedOnProduzida(false);
-        setHasEditedInspecionada(false);
+        setHasEditedInspecionada(initialQtdeInspecionada !== undefined);
         onClose();
         if (onCancel) {
             onCancel();
         }
-    }, [onClose, onCancel]); return (
+    }, [onClose, onCancel, initialQtdeProduzida, initialQtdeInspecionada]); return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto">
@@ -369,6 +390,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                                         <Package size={18} />
                                     </div>
                                     <input
+                                        ref={qtdInspecionadaInputRef}
                                         type="number"
                                         id="quantidade-inspecionada"
                                         placeholder="Quantidade inspecionada"
