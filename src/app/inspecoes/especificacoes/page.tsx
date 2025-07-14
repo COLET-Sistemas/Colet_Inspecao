@@ -226,8 +226,6 @@ export default function EspecificacoesPage() {
         }
     }, [id, processSpecValue]);
     const handleBack = useCallback(() => {
-        // Navegar diretamente para a página de inspeções
-        // A aba ativa será recuperada automaticamente do localStorage
         router.push('/inspecoes');
 
         // Limpar o activeInspectionTab após a navegação
@@ -269,8 +267,7 @@ export default function EspecificacoesPage() {
     // Função para verificar se o tipo_valor requer input numérico
     const isNumericType = useCallback((tipoValor: string) => {
         return ['F', 'U'].includes(tipoValor);
-    }, []);    // Função para verificar se o usuário tem permissão para editar uma especificação
-    // baseado no local_inspecao e perfil_inspecao
+    }, []);  
     const hasEditPermission = useCallback((localInspecao: string) => {
         // Obtém o perfil de inspeção do usuário do localStorage
         const userDataStr = localStorage.getItem('userData');
@@ -374,9 +371,6 @@ export default function EspecificacoesPage() {
                     } else {
                         updatedValues.conforme = null;
                     }
-
-                    // Não modificar o campo observação
-                    // updatedValues.observacao permanece inalterado
                 } else {
                     updatedValues.conforme = typeof value === 'boolean' ? value : null;
                 }
@@ -420,57 +414,9 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id]);    // Global action handlers
+    }, [id]); 
 
-    // Efeito para verificar os dados do localStorage
-    useEffect(() => {
-        // Função para checar os dados armazenados no localStorage
-        const checkLocalStorageData = () => {
-            try {
-                // Verificar dados do colaborador
-                const colaboradorData = localStorage.getItem('colaborador');
-                if (colaboradorData) {
-                    const parsed = JSON.parse(colaboradorData);
-                    console.log('Dados do colaborador:', parsed);
-                } else {
-                    console.log('Nenhum dado de colaborador encontrado no localStorage');
-                }
-
-                // Verificar userData
-                const userDataStr = localStorage.getItem('userData');
-                if (userDataStr) {
-                    const userData = JSON.parse(userDataStr);
-                    console.log('UserData:', userData);
-                    console.log('Código da pessoa (userData):', userData.codigo_pessoa);
-                    console.log('Perfil de inspeção (userData):', userData.perfil_inspecao);
-                } else {
-                    console.log('Nenhum userData encontrado no localStorage');
-                }
-
-                // Verificar código da pessoa direto
-                const codigoPessoa = localStorage.getItem('codigo_pessoa');
-                console.log('Código da pessoa (direto):', codigoPessoa);
-
-                console.log('======================================');
-            } catch (error) {
-                console.error('Erro ao ler dados do localStorage:', error);
-            }
-        };
-
-        checkLocalStorageData();
-
-        const handleStorageChange = () => {
-            checkLocalStorageData();
-        };
-
-        window.addEventListener('storage', handleStorageChange); return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
-
-    // Helper function to process inspection values consistently
     const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean | null; observacao?: string; conforme?: boolean | null }) => {
-        // Result object
         const result = {
             valorEncontrado: null as string | number | null,
             conforme: null as boolean | null,
@@ -479,7 +425,6 @@ export default function EspecificacoesPage() {
 
         // Process valor_encontrado based on tipo_valor
         if (['F', 'U'].includes(spec.tipo_valor)) {
-            // Numeric fields - always process as numbers
             if (editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '') {
                 const numValue = parseFloat(String(editingValue.valor_encontrado));
                 result.valorEncontrado = isNaN(numValue) ? null : numValue;
@@ -488,14 +433,12 @@ export default function EspecificacoesPage() {
                 result.valorEncontrado = isNaN(numValue) ? null : numValue;
             }
 
-            // For numeric fields, conforme should always be null
-            // The backend will determine conformity based on min/max values
             result.conforme = null;
         }
         // For selection fields (A, C, S, L)
         else if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
             // For selection fields, always set valorEncontrado to null
-            result.valorEncontrado = null;            // Only for selection fields, pass the conforme value based on S/N
+            result.valorEncontrado = null;         
             if (editingValue?.conforme !== undefined) {
                 if (editingValue.conforme === true) {
                     result.conforme = true;  // Corresponde a 'S' no backend
@@ -508,7 +451,7 @@ export default function EspecificacoesPage() {
                 result.conforme = spec.conforme;
             }
         }
-        // Other types
+    
         else {
             if (editingValue?.valor_encontrado !== undefined) {
                 if (typeof editingValue.valor_encontrado === 'boolean') {
