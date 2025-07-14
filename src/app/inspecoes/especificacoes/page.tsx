@@ -263,7 +263,7 @@ export default function EspecificacoesPage() {
     // Função para verificar se o tipo_valor requer input numérico
     const isNumericType = useCallback((tipoValor: string) => {
         return ['F', 'U'].includes(tipoValor);
-    }, []);  
+    }, []);
     const hasEditPermission = useCallback((localInspecao: string) => {
         // Obtém o perfil de inspeção do usuário do localStorage
         const userDataStr = localStorage.getItem('userData');
@@ -410,7 +410,7 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id]); 
+    }, [id]);
 
     const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean | null; observacao?: string; conforme?: boolean | null }) => {
         const result = {
@@ -434,7 +434,7 @@ export default function EspecificacoesPage() {
         // For selection fields (A, C, S, L)
         else if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
             // For selection fields, always set valorEncontrado to null
-            result.valorEncontrado = null;         
+            result.valorEncontrado = null;
             if (editingValue?.conforme !== undefined) {
                 if (editingValue.conforme === true) {
                     result.conforme = true;  // Corresponde a 'S' no backend
@@ -447,7 +447,7 @@ export default function EspecificacoesPage() {
                 result.conforme = spec.conforme;
             }
         }
-    
+
         else {
             if (editingValue?.valor_encontrado !== undefined) {
                 if (typeof editingValue.valor_encontrado === 'boolean') {
@@ -508,16 +508,16 @@ export default function EspecificacoesPage() {
                         observacao: processedValues.observacao
                     };
                 })
-                .filter(item => item !== null); 
+                .filter(item => item !== null);
 
             await inspecaoService.interruptInspection(
                 parseInt(id),
                 apontamentos,
-                fichaDados.qtde_produzida 
+                fichaDados.qtde_produzida
             );
 
             setIsInspectionStarted(false);
-            setEditingValues({}); 
+            setEditingValues({});
 
             setAlertMessage({
                 message: "Inspeção interrompida com sucesso",
@@ -592,7 +592,7 @@ export default function EspecificacoesPage() {
             setIsSaving(false);
             setIsConfirmingReceipt(false);
         }
-    }, [id, handleRefresh]);   
+    }, [id, handleRefresh]);
 
     const handleFinalizeInspection = useCallback(async () => {
         if (!isInspectionStarted || !id) return;
@@ -640,11 +640,11 @@ export default function EspecificacoesPage() {
             const response = await inspecaoService.finalizeInspection(
                 parseInt(id),
                 apontamentos,
-                fichaDados.qtde_produzida 
+                fichaDados.qtde_produzida
             );
 
             setIsInspectionStarted(false);
-            setEditingValues({}); 
+            setEditingValues({});
 
             // Verificar se a API retornou uma mensagem ou um erro
             if (response.mensagem) {
@@ -681,7 +681,7 @@ export default function EspecificacoesPage() {
             setIsFinalizing(false);
         }
     }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
-  
+
 
     const handleEditQuantity = useCallback(() => {
         setIsQuantityModalOpen(true);
@@ -718,7 +718,7 @@ export default function EspecificacoesPage() {
         }
         return <Ruler className="h-5 w-5" />;
     }; const getConformeStatus = (conforme: boolean | null | undefined | string, valorEncontrado: string | number | boolean | null | undefined, unidadeMedida?: string, tipoValor?: string, spec?: InspectionSpecification) => {
-      
+
         let conformeBoolean: boolean | null | undefined = null;
         if (typeof conforme === 'boolean') {
             conformeBoolean = conforme;
@@ -985,23 +985,6 @@ export default function EspecificacoesPage() {
     if (loading) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
-                {/* Cabeçalho da página */}
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                    <div className="flex items-center">
-                        <button
-                            onClick={handleBack}
-                            className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                            <ArrowLeft className="h-5 w-5 text-gray-500" />
-                        </button>
-                        <PageHeader
-                            title="Especificações da Inspeção"
-                            subtitle={`Ficha #${id}`}
-                            showButton={false}
-                        />
-                    </div>
-                    {/* Espaço para botões que aparecerão quando carregado */}
-                </div>
                 <div className="flex justify-center py-20">
                     <LoadingSpinner
                         size="large"
@@ -1015,23 +998,6 @@ export default function EspecificacoesPage() {
     } if (error) {
         return (
             <div className="w-full space-y-4 p-2 sm:p-3 md:p-4">
-                {/* Cabeçalho da página */}
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                    <div className="flex items-center">
-                        <button
-                            onClick={handleBack}
-                            className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                            <ArrowLeft className="h-5 w-5 text-gray-500" />
-                        </button>
-                        <PageHeader
-                            title="Especificações da Inspeção"
-                            subtitle={`Ficha #${id}`}
-                            showButton={false}
-                        />
-                    </div>
-                    {/* Espaço para botões que aparecerão quando carregado */}
-                </div>
                 <div className="flex flex-col items-center justify-center py-20">
                     <div className="text-center bg-white p-8 rounded-xl border border-red-100 shadow-lg max-w-md">
                         <div className="relative mx-auto h-16 w-16 flex items-center justify-center">
@@ -1091,7 +1057,7 @@ export default function EspecificacoesPage() {
                 <div className="flex items-center">
                     <button
                         onClick={handleBack}
-                        className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                        className="mr-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                     >
                         <ArrowLeft className="h-5 w-5 text-gray-500" />
                     </button>
