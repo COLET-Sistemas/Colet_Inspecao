@@ -88,13 +88,12 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         if (isOpen && inputRef.current) {
             const timer = setTimeout(() => {
                 inputRef.current?.focus();
-            }, 100); // Pequeno delay para garantir que a animação termine
+            }, 100); 
 
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
 
-    // Atualizar valores quando o modal é aberto ou os valores iniciais mudam
     useEffect(() => {
         if (isOpen) {
             setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
@@ -103,7 +102,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         }
     }, [isOpen, initialQtdeProduzida, initialQtdeInspecionada]);
 
-    // Define handleClose before using it in useEffect
     const handleClose = useCallback(() => {
         setError('');
         // Redefinir os valores para os iniciais quando o modal é fechado
@@ -130,9 +128,7 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 return;
             }
 
-            // Gerenciamos o Tab apenas quando ele iria sair do modal, não interferindo na ordem natural
             if (e.key === 'Tab') {
-                // Coleta todos os elementos focáveis no modal
                 const focusableElements = modalRef.current?.querySelectorAll(
                     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
                 );
@@ -152,7 +148,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     e.preventDefault();
                     firstElement.focus();
                 }
-                // Caso contrário, deixa o comportamento natural do Tab
             }
         };
 
@@ -163,8 +158,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, handleClose]);
 
-    // Quando quantidade produzida muda, copiar para inspecionada apenas se estiver com foco no campo
-    // e se o usuário ainda não tiver editado manualmente o campo de quantidade inspecionada
     useEffect(() => {
         if (
             isFocusedOnProduzida &&
@@ -231,9 +224,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 setError('URL da API não está configurada');
                 setIsLoading(false);
                 return;
-            }            // Verificar se é uma não conformidade ou um registro de quantidade normal
-            // Para não conformidade: usar POST com todos os campos
-            // Para quantidade normal: usar PUT apenas com id_ficha_inspecao, codigo_pessoa, qtde_produzida, qtde_inspecionada
+            }           
+          
             const isNaoConformidade = origem === "Não Conformidade";
 
             let response;
