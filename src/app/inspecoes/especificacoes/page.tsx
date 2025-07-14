@@ -3,6 +3,7 @@
 import { AlertMessage } from "@/components/ui/AlertMessage";
 import { LoadingSpinner } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
+import { ConfirmInspectionModal } from "@/components/ui/cadastros/modais_cadastros/ConfirmInspectionModal";
 import QuantidadeEditModal from "@/components/ui/inspecoes/QuantidadeEditModal";
 import { useAuth } from "@/hooks/useAuth";
 import inspecaoService, { InspectionSpecification } from "@/services/api/inspecaoService";
@@ -85,6 +86,10 @@ export default function EspecificacoesPage() {
     const [isFinalizing, setIsFinalizing] = useState(false);
     // Variável para controlar se o modal de edição de quantidades está aberto
     const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+
+    // Modal de confirmação para inspeção tipo 9
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
     // Variável para expandir/retrair cards
     const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
     // Estado para rastrear qual input está em foco
@@ -385,16 +390,16 @@ export default function EspecificacoesPage() {
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
         return "";
     }, []);    // Function removed as it's no longer used// Função para iniciar a inspeção
-    const handleStartInspection = useCallback(async () => {
-        if (!id) return;
 
+    // Função que realmente inicia o processo de inspeção
+    const startInspectionProcess = useCallback(async () => {
         try {
             setIsSaving(true);
             // Certificando que não estamos no modo de encaminhamento para o CQ
             setIsForwardingToCQ(false);
 
             // O código da pessoa já está sendo obtido no service
-            await inspecaoService.startInspection(parseInt(id));
+            await inspecaoService.startInspection(parseInt(id || ""));
             setIsInspectionStarted(true);
 
             setAlertMessage({
@@ -411,6 +416,18 @@ export default function EspecificacoesPage() {
             setIsSaving(false);
         }
     }, [id]);
+
+    const handleStartInspection = useCallback(async () => {
+        if (!id) return;
+
+        // Verificar se é inspeção tipo 9 e mostrar modal de confirmação
+        if (fichaDados.id_tipo_inspecao === 9) {
+            setIsConfirmModalOpen(true);
+            return;
+        }
+
+        await startInspectionProcess();
+    }, [id, fichaDados.id_tipo_inspecao, startInspectionProcess]);
 
     const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean | null; observacao?: string; conforme?: boolean | null }) => {
         const result = {
@@ -979,6 +996,15 @@ export default function EspecificacoesPage() {
             return true;
         }
 
+        // Se id_tipo_inspecao for 9 e situação de 1 a 7 e diferente de 5
+        if (
+            fichaDados.id_tipo_inspecao === 9 &&
+            fichaDados.situacao !== null &&
+            [1, 2, 3, 4, 6, 7].includes(parseInt(fichaDados.situacao))
+        ) {
+            return true;
+        }
+
         return false;
     }, [fichaDados.id_tipo_inspecao, fichaDados.situacao]);
 
@@ -1041,6 +1067,19 @@ export default function EspecificacoesPage() {
                     title="Editar Quantidades"
                 />
             )}
+
+            {/* Modal de confirmação para inspeção tipo 9 */}
+            <ConfirmInspectionModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={() => {
+                    setIsConfirmModalOpen(false);
+                    startInspectionProcess();
+                }}
+                message={`Confirma o tamanho do lote de inspeção de ${fichaDados.qtde_inspecionada} peças.`}
+                title="Confirmação de Lote"
+                isSubmitting={isSaving}
+            />
 
             {alertMessage && (
                 <AlertMessage
