@@ -8,11 +8,13 @@ import { useEffect, useRef, useState } from "react";
 interface FormModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onCloseX?: () => void; // Optional separate handler for the X button
     title: string;
     isEditing?: boolean;
     children: React.ReactNode;
     onSubmit?: (data: Record<string, FormDataEntryValue>) => Promise<void>;
     submitLabel?: string;
+    cancelLabel?: string; // New property for customizing the cancel button text
     size?: "sm" | "md" | "lg" | "xl";
     isSubmitting?: boolean;
     extraButton?: {
@@ -26,11 +28,13 @@ interface FormModalProps {
 export function FormModal({
     isOpen,
     onClose,
+    onCloseX,
     title,
     isEditing = false,
     children,
     onSubmit,
     submitLabel = isEditing ? "Salvar alterações" : "Criar",
+    cancelLabel = "Cancelar", // Default value for cancel button
     size = "md",
     isSubmitting: externalIsSubmitting,
     extraButton,
@@ -52,25 +56,35 @@ export function FormModal({
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === "Escape" && isOpen) {
-                onClose();
+                // Use onCloseX if provided, otherwise fall back to onClose
+                if (onCloseX) {
+                    onCloseX();
+                } else {
+                    onClose();
+                }
             }
         };
 
         window.addEventListener("keydown", handleEscape);
         return () => window.removeEventListener("keydown", handleEscape);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, onCloseX]);
 
     // Manipular o click fora do modal
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (modalRef.current && !modalRef.current.contains(e.target as Node) && isOpen) {
-                onClose();
+                // Use onCloseX if provided, otherwise fall back to onClose
+                if (onCloseX) {
+                    onCloseX();
+                } else {
+                    onClose();
+                }
             }
         };
 
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, onCloseX]);
 
     // Impedir scroll no background quando modal está aberto
     useEffect(() => {
@@ -155,7 +169,7 @@ export function FormModal({
 
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={onCloseX || onClose} // Use onCloseX if provided, otherwise fall back to onClose
                                 aria-label="Fechar"
                                 className="rounded-md p-1 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
                                 disabled={isSubmitting}
@@ -176,7 +190,7 @@ export function FormModal({
                                     className="w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
                                     disabled={isSubmitting}
                                 >
-                                    Cancelar
+                                    {cancelLabel}
                                 </button>
 
                                 {extraButton && (!extraButton.onlyLargeScreen || (extraButton.onlyLargeScreen && typeof window !== 'undefined' && window.innerWidth >= 768)) && (

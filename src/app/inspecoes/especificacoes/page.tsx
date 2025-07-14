@@ -1076,6 +1076,7 @@ export default function EspecificacoesPage() {
                     setIsConfirmModalOpen(false);
                     startInspectionProcess();
                 }}
+                onNoClick={handleEditQuantity}
                 message={`Confirma o tamanho do lote de inspeção de ${fichaDados.qtde_inspecionada} peças.`}
                 title="Confirmação de Lote"
                 isSubmitting={isSaving}
