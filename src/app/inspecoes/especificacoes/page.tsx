@@ -227,14 +227,10 @@ export default function EspecificacoesPage() {
     }, [id, processSpecValue]);
     const handleBack = useCallback(() => {
         router.push('/inspecoes');
-
-        // Limpar o activeInspectionTab após a navegação
-        // O timeout garante que a navegação aconteça primeiro e depois limpamos o localStorage
         setTimeout(() => {
             localStorage.removeItem('activeInspectionTab');
         }, 1500);
     }, [router]);
-    // Função removida: toggleObservationField
 
     // Função para obter as opções de select baseadas no tipo_valor
     const getSelectOptions = useCallback((tipoValor: string) => {
@@ -463,7 +459,6 @@ export default function EspecificacoesPage() {
                 result.valorEncontrado = spec.valor_encontrado;
             }
 
-            // For other types, also set conforme to null
             result.conforme = null;
         }
 
@@ -513,16 +508,16 @@ export default function EspecificacoesPage() {
                         observacao: processedValues.observacao
                     };
                 })
-                .filter(item => item !== null); // Remover itens nulos (especificações não alteradas)
+                .filter(item => item !== null); 
 
             await inspecaoService.interruptInspection(
                 parseInt(id),
                 apontamentos,
-                fichaDados.qtde_produzida // Adicionando a quantidade produzida
+                fichaDados.qtde_produzida 
             );
 
             setIsInspectionStarted(false);
-            setEditingValues({}); // Limpar valores em edição
+            setEditingValues({}); 
 
             setAlertMessage({
                 message: "Inspeção interrompida com sucesso",
@@ -572,9 +567,6 @@ export default function EspecificacoesPage() {
         }
     }, [id, router]);
 
-    /**
-     * Confirma o recebimento de uma ficha de inspeção
-     */
     const handleConfirmReceipt = useCallback(async () => {
         if (!id) return;
 
@@ -600,9 +592,8 @@ export default function EspecificacoesPage() {
             setIsSaving(false);
             setIsConfirmingReceipt(false);
         }
-    }, [id, handleRefresh]);    /**
-     * Finaliza uma ficha de inspeção
-     */
+    }, [id, handleRefresh]);   
+
     const handleFinalizeInspection = useCallback(async () => {
         if (!isInspectionStarted || !id) return;
 
@@ -644,16 +635,16 @@ export default function EspecificacoesPage() {
                         observacao: processedValues.observacao
                     };
                 })
-                .filter(item => item !== null); // Remover itens nulos (especificações não alteradas)
+                .filter(item => item !== null);
 
             const response = await inspecaoService.finalizeInspection(
                 parseInt(id),
                 apontamentos,
-                fichaDados.qtde_produzida // Adicionando a quantidade produzida
+                fichaDados.qtde_produzida 
             );
 
             setIsInspectionStarted(false);
-            setEditingValues({}); // Limpar valores em edição
+            setEditingValues({}); 
 
             // Verificar se a API retornou uma mensagem ou um erro
             if (response.mensagem) {
@@ -690,24 +681,16 @@ export default function EspecificacoesPage() {
             setIsFinalizing(false);
         }
     }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
-    /**
-     * Manipula a abertura do modal de edição de quantidades
-     */
+  
+
     const handleEditQuantity = useCallback(() => {
-        // Abre o modal
         setIsQuantityModalOpen(true);
     }, []);
 
-    /**
-     * Manipula o fechamento do modal de edição de quantidades
-     */
     const handleCloseQuantityModal = useCallback(() => {
         setIsQuantityModalOpen(false);
     }, []);
 
-    /**
-     * Manipula o sucesso na edição de quantidades
-     */
     const handleQuantityEditSuccess = useCallback((qtdeProduzida: number | null, qtdeInspecionada: number | null, message: string) => {
         // Atualiza o estado local após sucesso na API
         setFichaDados(prev => ({
@@ -722,9 +705,6 @@ export default function EspecificacoesPage() {
         });
     }, []);
 
-    /**
-     * Manipula erro na edição de quantidades
-     */
     const handleQuantityEditError = useCallback((message: string) => {
         setAlertMessage({
             message: message,
@@ -738,8 +718,7 @@ export default function EspecificacoesPage() {
         }
         return <Ruler className="h-5 w-5" />;
     }; const getConformeStatus = (conforme: boolean | null | undefined | string, valorEncontrado: string | number | boolean | null | undefined, unidadeMedida?: string, tipoValor?: string, spec?: InspectionSpecification) => {
-        // Para os tipos de seleção (A, C, S, L), consideramos apenas o campo conforme
-        // Para os outros tipos, verificamos o valor_encontrado        // Normalizar valores de conforme: 'S'/true para true, 'N'/false para false
+      
         let conformeBoolean: boolean | null | undefined = null;
         if (typeof conforme === 'boolean') {
             conformeBoolean = conforme;
@@ -802,8 +781,6 @@ export default function EspecificacoesPage() {
                 };
             }
         }
-
-        // A partir daqui, exibe_resultado é 'S', então mostramos Conforme/Não Conforme com detalhes
 
         // Caso 1: Não informado - se não tem valor preenchido nem conforme definido
         if (!isValueFilled(valorEncontrado) && conformeBoolean === null) {
