@@ -10,7 +10,9 @@ import {
     Gauge,
     LayoutDashboard, Loader2, LogOut,
     Menu, Ruler,
-    Settings, User, X
+    Settings,
+    Sliders,
+    User, X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -65,6 +67,7 @@ export default function Navbar() {
     }, []); const navItems: NavItem[] = useMemo(() => [
         { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
         { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4" /> },
+        { label: "Definições", href: "/definicoes", icon: <Sliders className="w-4 h-4" /> },
         { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4" /> },
         { label: "Relatórios", href: "/relatorios", icon: <FileText className="w-4 h-4" /> },
         {

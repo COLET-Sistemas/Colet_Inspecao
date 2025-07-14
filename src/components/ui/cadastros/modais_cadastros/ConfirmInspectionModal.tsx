@@ -6,7 +6,7 @@ interface ConfirmInspectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    onNoClick: () => void; // New handler for "Não" button that opens Quantity Edit Modal
+    onNoClick: () => void;
     message: string;
     title?: string;
     isSubmitting?: boolean;
@@ -23,18 +23,18 @@ export function ConfirmInspectionModal({
 }: ConfirmInspectionModalProps) {
     // Custom handler for the "Não" button
     const handleNoClick = () => {
-        onClose(); // Close this modal first
-        onNoClick(); // Then open the Quantity Edit Modal
+        onClose();
+        onNoClick();
     };
 
     return (
         <FormModal
             isOpen={isOpen}
-            onClose={handleNoClick} // "Não" button handler (opens quantity edit modal)
-            onCloseX={onClose} // X button handler (just closes the modal)
+            onClose={handleNoClick}
+            onCloseX={onClose}
             title={title}
-            submitLabel="Sim"
-            cancelLabel="Não" // Set the cancel button text to "Não"
+            submitLabel="Prosseguir"
+            cancelLabel="Editar quantidades"
             onSubmit={async () => {
                 onConfirm();
             }}

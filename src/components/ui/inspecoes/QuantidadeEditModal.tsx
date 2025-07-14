@@ -31,7 +31,8 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
     const [error, setError] = useState('');
 
     // Refs para elementos focáveis
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputProduzidaRef = useRef<HTMLInputElement>(null);
+    const inputInspecionadaRef = useRef<HTMLInputElement>(null); // Novo ref para o campo de quantidade inspecionada
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const cancelButtonRef = useRef<HTMLButtonElement>(null);
     const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -44,9 +45,12 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
             setTempQtdeInspecionada(initialQtdeInspecionada?.toString() || '');
             setError('');
 
-            // Focar no input quando o modal abrir
+            // Focar no input de quantidade inspecionada quando o modal abrir e selecionar o texto
             const timer = setTimeout(() => {
-                inputRef.current?.focus();
+                if (inputInspecionadaRef.current) {
+                    inputInspecionadaRef.current.focus();
+                    inputInspecionadaRef.current.select();
+                }
             }, 100);
 
             return () => clearTimeout(timer);
@@ -65,7 +69,8 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
 
             if (e.key === 'Tab') {
                 const focusableElements = [
-                    inputRef.current,
+                    inputProduzidaRef.current,
+                    inputInspecionadaRef.current,
                     cancelButtonRef.current,
                     confirmButtonRef.current,
                     closeButtonRef.current
@@ -273,7 +278,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                                             <Package size={18} />
                                         </div>
                                         <input
-                                            ref={inputRef}
+                                            ref={inputProduzidaRef}
                                             type="number"
                                             id="qtdeProduzida"
                                             placeholder="Quantidade produzida"
@@ -296,6 +301,7 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                                             <CheckSquare size={18} />
                                         </div>
                                         <input
+                                            ref={inputInspecionadaRef}
                                             type="number"
                                             id="qtdeInspecionada"
                                             placeholder="Quantidade inspecionada"
