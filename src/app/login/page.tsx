@@ -6,7 +6,6 @@ import { getIsLogoutInProgress } from "@/services/api/authInterceptor";
 import { CheckCircle, Eye, EyeOff, Loader, Lock, Settings, User, X, XCircle } from "lucide-react";
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
-
 import packageInfo from '../../../package.json';
 
 interface ApiTestResult {
@@ -15,45 +14,37 @@ interface ApiTestResult {
 }
 
 export default function LoginPage() {
-
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [formSubmitted, setFormSubmitted] = useState(false);
-    const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
-
-    // Add a local state to track button loading only during submission
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Auth hook
-    const { login, error: authError } = useAuth();
-
-    // Config modal state
     const [tempApiUrl, setTempApiUrl] = useState('');
     const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
     const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
     const [logoutInProgress, setLogoutInProgress] = useState<boolean>(false);
-
-    // Add a state to detect orientation
     const [isLandscape, setIsLandscape] = useState(false);
 
-    // Effect to detect orientation changes
+    const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
+    const { login, error: authError } = useAuth();
+
     useEffect(() => {
         const checkOrientation = () => {
             setIsLandscape(window.matchMedia("(orientation: landscape) and (max-width: 1024px)").matches);
         };
 
         checkOrientation();
-
         const mediaQuery = window.matchMedia("(orientation: landscape) and (max-width: 1024px)");
         mediaQuery.addEventListener("change", checkOrientation);
 
         return () => {
             mediaQuery.removeEventListener("change", checkOrientation);
         };
-    }, []); useEffect(() => {
+    }, []);
+
+    useEffect(() => {
         setTempApiUrl(apiUrl);
 
         const savedUsername = localStorage.getItem('rememberedUsername');
@@ -62,62 +53,40 @@ export default function LoginPage() {
             setRememberMe(true);
         }
 
-        // Check for session expiration message
         if (typeof sessionStorage !== 'undefined') {
             const authError = sessionStorage.getItem('authError');
             if (authError) {
                 setSessionExpiredMessage(authError);
-                // Remove the message after retrieving it
                 sessionStorage.removeItem('authError');
-
-                // Add a small delay to clear the message after it's been displayed
-                setTimeout(() => {
-                    setSessionExpiredMessage(null);
-                }, 5000); // 5 seconds
+                setTimeout(() => setSessionExpiredMessage(null), 5000);
             }
         }
     }, [apiUrl]);
 
-    // Check for logout in progress
     useEffect(() => {
         const checkLogoutStatus = () => {
             const isLogoutActive = getIsLogoutInProgress();
             setLogoutInProgress(isLogoutActive);
 
-            // If logout is in progress, show a temporary message
             if (isLogoutActive) {
                 setSessionExpiredMessage("Finalizando sessão...");
 
-                // Clear message after logout completes
                 const interval = setInterval(() => {
                     if (!getIsLogoutInProgress()) {
                         setLogoutInProgress(false);
                         setSessionExpiredMessage("Sessão finalizada com sucesso.");
-
-                        // Auto-clear the message after a few seconds
-                        setTimeout(() => {
-                            setSessionExpiredMessage(null);
-                        }, 3000);
-
+                        setTimeout(() => setSessionExpiredMessage(null), 3000);
                         clearInterval(interval);
                     }
                 }, 200);
 
-                // Safety cleanup after 5 seconds
-                setTimeout(() => {
-                    clearInterval(interval);
-                }, 5000);
+                setTimeout(() => clearInterval(interval), 5000);
             }
         };
 
         checkLogoutStatus();
-
-        // Check status periodically in case it changes
         const statusCheck = setInterval(checkLogoutStatus, 500);
-
-        return () => {
-            clearInterval(statusCheck);
-        };
+        return () => clearInterval(statusCheck);
     }, []);
 
     const togglePasswordVisibility = () => {
@@ -129,26 +98,26 @@ export default function LoginPage() {
         if (!rememberMe) {
             localStorage.removeItem('rememberedUsername');
         }
-    }; const handleOperatorAccess = async (e: React.MouseEvent) => {
+    };
+
+    const handleOperatorAccess = async (e: React.MouseEvent) => {
         e.preventDefault();
 
-        // Definindo as credenciais do operador
         const operatorUsername = "operador";
         const operatorPassword = "yp0p0th@m";
 
-        // Check if API URL is configured
         if (!apiUrl) {
             setShowConfigModal(true);
             return;
         }
 
-        // Set local submitting state to true
-        setIsSubmitting(true); try {
+        setIsSubmitting(true);
+
+        try {
             await login({
                 username: operatorUsername,
                 password: operatorPassword,
-                // Não passamos o parâmetro remember para não afetar o rememberedUsername existente
-                preserveRemembered: true // Indica que devemos preservar o rememberedUsername no localStorage
+                preserveRemembered: true
             });
         } catch {
             console.error("Login como operador error");
@@ -161,37 +130,25 @@ export default function LoginPage() {
         e.preventDefault();
         setFormSubmitted(true);
 
-        // Don't proceed if logout is in progress
-        if (logoutInProgress) {
+        if (logoutInProgress || !username || !password) {
             return;
         }
 
-        // Validate form
-        if (!username || !password) {
-            return;
-        }
-
-        // Check if API URL is configured
         if (!apiUrl) {
             setShowConfigModal(true);
             return;
         }
 
-        // Set local submitting state to true
-        setIsSubmitting(true); try {
-            // Use the login method from useAuth hook
-            const loginSuccess = await login({ username, password, remember: rememberMe });
+        setIsSubmitting(true);
 
-            if (loginSuccess) {
-                if (rememberMe) {
-                    localStorage.setItem('rememberedUsername', username);
-                }
+        try {
+            const loginSuccess = await login({ username, password, remember: rememberMe });
+            if (loginSuccess && rememberMe) {
+                localStorage.setItem('rememberedUsername', username);
             }
         } catch {
-            // Error handling is managed by the useAuth hook
             console.error("Login error");
         } finally {
-            // Always reset submitting state when done
             setIsSubmitting(false);
         }
     };
@@ -199,14 +156,14 @@ export default function LoginPage() {
     const handleTestApiConnection = async () => {
         if (!tempApiUrl) return;
 
-        setTestResult(null); try {
-            const success = await testApiConnection(tempApiUrl);
+        setTestResult(null);
 
-            if (success) {
-                setTestResult({ success: true, message: 'Conexão estabelecida com sucesso!' });
-            } else {
-                setTestResult({ success: false, message: 'Falha ao conectar com a API.' });
-            }
+        try {
+            const success = await testApiConnection(tempApiUrl);
+            setTestResult({
+                success,
+                message: success ? 'Conexão estabelecida com sucesso!' : 'Falha ao conectar com a API.'
+            });
         } catch {
             setTestResult({
                 success: false,
@@ -218,56 +175,42 @@ export default function LoginPage() {
     const handleSaveApiConfig = async () => {
         if (!tempApiUrl) return;
 
-        // Passa true como segundo parâmetro para forçar o salvamento independente da conexão
         await saveApiUrl(tempApiUrl, true);
 
-        // Se a conexão foi testada com sucesso
-        if (isConnected) {
-            setTestResult({ success: true, message: 'Conexão estabelecida com sucesso!' });
-        } else {
-            // Se estamos salvando mesmo sem conexão
-            setTestResult({
-                success: true,
-                message: 'Endereço da API salvo, mas não foi possível estabelecer conexão. Verifique se o servidor está disponível.'
-            });
-        }
+        setTestResult({
+            success: true,
+            message: isConnected
+                ? 'Conexão estabelecida com sucesso!'
+                : 'Endereço da API salvo, mas não foi possível estabelecer conexão. Verifique o servidor.'
+        });
 
         setShowConfigModal(false);
     };
-
 
     const isLoading = apiIsLoading;
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
-            {/* Left Panel - Modern Redesigned Layout */}
             <div className={`hidden ${isLandscape ? 'lg:flex' : 'md:flex'} md:w-5/12 lg:w-1/2 relative overflow-hidden`}>
-                {/* Modern gradient background with enhanced design */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#08a88f] via-[#3c787a] to-[#1a5f7a] z-0"></div>
 
-                {/* Decorative elements */}
                 <div className="absolute inset-0 z-0">
-                    {/* Circular shapes */}
                     <div className="absolute top-20 right-20 w-64 h-64 rounded-full bg-white/10 backdrop-blur-3xl"></div>
                     <div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-white/5 backdrop-blur-3xl"></div>
 
-                    {/* Abstract patterns */}
                     <div className="absolute top-0 left-0 w-full h-full opacity-20">
                         <svg className="absolute top-1/4 left-1/4 w-1/2 h-1/2 text-white/10" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                             <path fill="currentColor" d="M42.7,-62.2C56.1,-53.3,68.2,-41.6,73.8,-27.2C79.4,-12.8,78.4,4.4,72.8,19.5C67.2,34.5,57,47.3,44.3,56.3C31.5,65.4,15.8,70.5,0.1,70.3C-15.6,70.2,-31.1,64.7,-43.9,55.5C-56.7,46.3,-66.7,33.3,-71.8,18.2C-77,3,-77.2,-14.3,-70.1,-27.7C-63,-41.1,-48.6,-50.5,-34.8,-59C-21,-67.5,-10.5,-75,1.8,-77.7C14.2,-80.5,28.3,-78.3,42.7,-69.4Z" transform="translate(100 100)" />
                         </svg>
                     </div>
 
-                    {/* Light grid pattern for texture */}
                     <div className="absolute inset-0" style={{
                         backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
                         backgroundSize: '30px 30px'
                     }}></div>
                 </div>
 
-                {/* Content layout */}
                 <div className="relative flex flex-col h-full z-10 px-6 md:px-8 lg:px-12 py-12 md:py-16">
-                    {/* Logo section */}
                     <div className="mb-auto">
                         <Image
                             src="/images/logoLoginColet.png"
@@ -280,7 +223,6 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    {/* Main content section */}
                     <div className="mb-12">
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 tracking-tight leading-tight">
                             Inspeção
@@ -291,7 +233,6 @@ export default function LoginPage() {
                             Plataforma integrada para gestão completa das suas inspeções técnicas
                         </p>
 
-                        {/* Feature highlights in cleaner layout */}
                         <div className="space-y-4 md:space-y-6 mt-6 md:mt-8">
                             <div className="flex items-start space-x-4">
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 flex-shrink-0">
@@ -331,7 +272,6 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* Footer section */}
                     <div className="mt-auto border-t border-white/10 pt-6">
                         <p className="text-white/60 text-sm">
                             © {new Date().getFullYear()} Colet Sistemas • Sistema de Gestão de Inspeções
@@ -340,10 +280,8 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Right Panel - Login Form with Light Theme */}
             <div className={`w-full ${isLandscape ? '' : 'md:w-7/12 lg:w-1/2'} flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-y-auto`}>
                 <div className={`w-full ${isLandscape ? 'max-w-lg' : 'max-w-md'} my-auto py-6`}>
-                    {/* Logo only shown on mobile or landscape tablet - with responsive sizing */}
                     <div className={`flex justify-center ${isLandscape ? '' : 'md:hidden'} mb-2`}>
                         <Image
                             src="/images/logoLoginColetMobile.png"
@@ -355,9 +293,7 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    {/* Login Panel */}
                     <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-100 relative">
-                        {/* Settings icon with darker gray circle */}
                         <button
                             onClick={() => setShowConfigModal(true)}
                             className="absolute top-4 right-4 transition-colors group"
@@ -368,12 +304,13 @@ export default function LoginPage() {
                                 <Settings size={20} className={`${isConnected ? 'text-[#09A08D]' : 'text-gray-600'}`} />
                                 <span className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                             </div>
-                        </button>                        <div className="mb-6 text-center">
+                        </button>
+
+                        <div className="mb-6 text-center">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Bem-vindo de volta</h2>
                             <p className="text-gray-500">Acesse sua conta para continuar</p>
                         </div>
 
-                        {/* Session Messages */}
                         {sessionExpiredMessage && (
                             <div className={`mb-6 rounded-lg p-4 ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
                                 ? "bg-red-50"
@@ -385,32 +322,11 @@ export default function LoginPage() {
                                 }`} role="alert">
                                 <div className="flex items-center">
                                     {sessionExpiredMessage.includes("Finalizando") ? (
-                                        <svg
-                                            className="animate-spin mr-3 h-5 w-5 text-blue-500"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
+                                        <Loader className="mr-3 h-5 w-5 text-blue-500 animate-spin" />
                                     ) : sessionExpiredMessage.includes("sucesso") ? (
                                         <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
                                     ) : (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="mr-3 h-5 w-5 text-red-500"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="12" y1="8" x2="12" y2="12" />
-                                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                                        </svg>
+                                        <XCircle className="mr-3 h-5 w-5 text-red-500" />
                                     )}
                                     <div className={`text-sm font-medium ${sessionExpiredMessage.includes("expirou") || sessionExpiredMessage.includes("não tem permissão")
                                         ? "text-red-700"
@@ -429,20 +345,7 @@ export default function LoginPage() {
                         {authError && (
                             <div className="mb-6 rounded-lg bg-red-50 p-4" role="alert">
                                 <div className="flex items-center">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="mr-3 h-5 w-5 text-red-500"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
+                                    <XCircle className="mr-3 h-5 w-5 text-red-500" />
                                     <div className="text-sm font-medium text-red-700">{authError.message}</div>
                                 </div>
                             </div>
@@ -546,18 +449,12 @@ export default function LoginPage() {
                                 >
                                     {isSubmitting ? (
                                         <span className="flex items-center">
-                                            <svg className="mr-2 h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
+                                            <Loader className="mr-2 h-4 w-4 animate-spin text-white" />
                                             <span>Entrando...</span>
                                         </span>
                                     ) : logoutInProgress ? (
                                         <span className="flex items-center">
-                                            <svg className="mr-2 h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
+                                            <Loader className="mr-2 h-4 w-4 animate-spin text-white" />
                                             <span>Finalizando sessão...</span>
                                         </span>
                                     ) : (
@@ -570,7 +467,7 @@ export default function LoginPage() {
 
                     <div className="mt-6 sm:mt-8 text-center">
                         <p className="text-xs text-gray-500">
-                            {new Date().getFullYear()} Sistema de Inspeções Colet Sistemas • Versão {packageInfo.version}
+                            © {new Date().getFullYear()} Sistema de Inspeções Colet Sistemas • Versão {packageInfo.version}
                         </p>
                     </div>
                 </div>
@@ -581,7 +478,7 @@ export default function LoginPage() {
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
                         onClick={() => setShowConfigModal(false)}
-                    ></div>
+                    />
 
                     <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4 p-6 bg-white rounded-xl shadow-xl z-50 border-t-4 border-[#09A08D]">
                         <div className="flex justify-between items-center mb-5">
@@ -648,7 +545,7 @@ export default function LoginPage() {
                                     disabled={isLoading || !tempApiUrl}
                                     className="flex items-center justify-center py-2 px-4 border border-[#09A08D] rounded-md text-[#09A08D] hover:bg-[#09A08D]/5 focus:outline-none focus:ring-2 focus:ring-[#09A08D]/50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    {isLoading ? <Loader className="animate-spin mr-2" size={18} /> : null}
+                                    {isLoading && <Loader className="animate-spin mr-2" size={18} />}
                                     Testar
                                 </button>
 

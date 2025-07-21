@@ -123,6 +123,12 @@ interface InspectionSpecification {
     valor_encontrado?: number | null;
     conforme?: boolean | null;
     observacao?: string | null;
+    ocorrencias_nc?: Array<{
+        quantidade: number;
+        maior_menor: string;
+        menor_valor: number;
+        maior_valor: number;
+    }>;
 }
 
 class InspecaoService {
@@ -632,8 +638,15 @@ class InspecaoService {
             valor_encontrado: string | number | null;
             conforme: boolean | null;
             observacao: string | null;
+            ocorrencias_nc?: Array<{
+                quantidade: number;
+                maior_menor: string;
+                menor_valor: number;
+                maior_valor: number;
+            }>;
         }>,
-        qtdeProduzida: number | null = null): Promise<void> {
+        qtdeProduzida: number | null = null,
+        qtdeInspecionada: number | null = null): Promise<void> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -654,8 +667,16 @@ class InspecaoService {
 
             if (!codigo_pessoa) {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
-            } const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;            // Processar os apontamentos antes de enviá-los
+            }
+
+            const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
+
+            // Processar os apontamentos antes de enviá-los
             const apontamentosProcessados = apontamentos.map(item => {
+                // Preservar ocorrencias_nc sempre - para tipo 9 é essencial
+                // Garantir que ocorrencias_nc seja sempre um array, mesmo que vazio
+                const ocorrenciasNc = Array.isArray(item.ocorrencias_nc) ? item.ocorrencias_nc : [];
+
                 // Não temos acesso direto às especificações, mas podemos verificar 
                 // se conforme é boolean e converter para S/N
                 if (item.conforme === true || item.conforme === false) {
@@ -663,16 +684,18 @@ class InspecaoService {
                         id_especificacao: item.id_especificacao,
                         valor_encontrado: null, // Nesse caso, o valor_encontrado deve ser null
                         conforme: item.conforme === true ? 'S' : 'N', // Convertendo boolean para S/N
-                        observacao: item.observacao
+                        observacao: item.observacao,
+                        ocorrencias_nc: ocorrenciasNc
                     };
                 }
-                return item;
+                return {
+                    ...item,
+                    ocorrencias_nc: ocorrenciasNc
+                };
             });
 
-            // Filtrar apenas apontamentos que possuem valores preenchidos
-            const apontamentosPreenchidos = apontamentosProcessados.filter(
-                item => item.valor_encontrado !== null || item.observacao || item.conforme !== null
-            );
+            // Não filtre os apontamentos para tipo 9, TODOS os apontamentos são importantes
+            const apontamentosPreenchidos = apontamentosProcessados;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
@@ -684,7 +707,8 @@ class InspecaoService {
                     apontamentos: apontamentosPreenchidos,
                     acao: "interromper",
                     codigo_pessoa: codigo_pessoa_num,
-                    qtde_produzida: qtdeProduzida
+                    qtde_produzida: qtdeProduzida,
+                    qtde_inspecionada: qtdeInspecionada
                 })
             });
 
@@ -709,8 +733,16 @@ class InspecaoService {
             valor_encontrado: string | number | null;
             conforme: boolean | null;
             observacao: string | null;
+            ocorrencias_nc?: Array<{
+                quantidade: number;
+                maior_menor: string;
+                menor_valor: number;
+                maior_valor: number;
+            }>;
         }>,
-        qtdeProduzida: number | null = null): Promise<{ mensagem?: string; erro?: string }> {
+        qtdeProduzida: number | null = null,
+        isTipoInspecao9: boolean = false,
+        qtdeInspecionada: number | null = null): Promise<{ mensagem?: string; erro?: string }> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
@@ -732,11 +764,16 @@ class InspecaoService {
             // Se não encontrou no userData, busca diretamente no localStorage
             if (!codigo_pessoa) {
                 codigo_pessoa = localStorage.getItem("codigo_pessoa");
-            }            // Convertendo o código de pessoa para número (pode ser null)
+            }
+            // Convertendo o código de pessoa para número (pode ser null)
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
             // Processar os apontamentos antes de enviá-los
             const apontamentosProcessados = apontamentos.map(item => {
+                // Preservar ocorrencias_nc sempre - para tipo 9 é essencial
+                // Garantir que ocorrencias_nc seja sempre um array, mesmo que vazio
+                const ocorrenciasNc = Array.isArray(item.ocorrencias_nc) ? item.ocorrencias_nc : [];
+
                 // Não temos acesso direto às especificações, mas podemos verificar 
                 // se conforme é boolean e converter para S/N
                 if (item.conforme === true || item.conforme === false) {
@@ -744,16 +781,25 @@ class InspecaoService {
                         id_especificacao: item.id_especificacao,
                         valor_encontrado: null,
                         conforme: item.conforme === true ? 'S' : 'N',
-                        observacao: item.observacao
+                        observacao: item.observacao,
+                        ocorrencias_nc: ocorrenciasNc
                     };
                 }
-                return item;
+                return {
+                    ...item,
+                    ocorrencias_nc: ocorrenciasNc
+                };
             });
 
-            // Filtrar apenas apontamentos que possuem valores preenchidos
-            const apontamentosPreenchidos = apontamentosProcessados.filter(
-                item => item.valor_encontrado !== null || item.observacao || item.conforme !== null
-            ); const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
+            // Para tipo 9, não filtrar nenhum apontamento, todos são importantes
+            // principalmente os que têm ocorrencias_nc
+            const apontamentosPreenchidos = isTipoInspecao9
+                ? apontamentosProcessados
+                : apontamentosProcessados.filter(
+                    item => item.valor_encontrado !== null || item.observacao || item.conforme !== null || item.ocorrencias_nc.length > 0
+                );
+
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -763,7 +809,8 @@ class InspecaoService {
                     apontamentos: apontamentosPreenchidos,
                     acao: "finalizar",
                     codigo_pessoa: codigo_pessoa_num,
-                    qtde_produzida: qtdeProduzida
+                    qtde_produzida: qtdeProduzida,
+                    qtde_inspecionada: isTipoInspecao9 ? qtdeInspecionada : undefined
                 })
             });
 

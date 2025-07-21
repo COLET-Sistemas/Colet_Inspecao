@@ -9,7 +9,7 @@ interface ConfirmDeleteModalProps {
     title: string;
     message: string;
     isDeleting?: boolean;
-    itemName?: string; // Nome do item a ser excluído para destacar
+    itemName?: string;
 }
 
 export function ConfirmDeleteModal({
@@ -21,10 +21,8 @@ export function ConfirmDeleteModal({
     isDeleting = false,
     itemName,
 }: ConfirmDeleteModalProps) {
-    // Ref para o botão de cancelar para foco automático
     const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-    // Animar entrada/saída
     const overlayVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
@@ -32,10 +30,15 @@ export function ConfirmDeleteModal({
 
     const modalVariants = {
         hidden: { y: 50, opacity: 0 },
-        visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 25, stiffness: 500 } },
+        visible: { y: 0, opacity: 1 },
     };
 
-    // Gerenciar o foco quando o modal abre
+    const modalTransition = {
+        type: "spring" as const,
+        damping: 25,
+        stiffness: 500,
+    };
+
     useEffect(() => {
         if (isOpen) {
             setTimeout(() => {
@@ -44,7 +47,6 @@ export function ConfirmDeleteModal({
         }
     }, [isOpen]);
 
-    // Fechar no ESC
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
             if (event.key === "Escape" && isOpen && !isDeleting) {
@@ -86,8 +88,8 @@ export function ConfirmDeleteModal({
                 animate="visible"
                 exit="hidden"
                 variants={modalVariants}
+                transition={modalTransition}
             >
-                {/* Cabeçalho */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
                     <div className="flex items-center">
                         <div className="flex-shrink-0 mr-3">
@@ -115,7 +117,6 @@ export function ConfirmDeleteModal({
                     )}
                 </div>
 
-                {/* Corpo */}
                 <div className="p-6">
                     <div className="flex items-start mb-4">
                         <div className="flex-shrink-0">
@@ -141,7 +142,6 @@ export function ConfirmDeleteModal({
                         </div>
                     </div>
 
-                    {/* Estado de processamento */}
                     {isDeleting && (
                         <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-100">
                             <div className="flex items-center space-x-3">
@@ -153,7 +153,6 @@ export function ConfirmDeleteModal({
                         </div>
                     )}
 
-                    {/* Botões */}
                     <div className="mt-6 flex justify-end space-x-3">
                         {!isDeleting && (
                             <button

@@ -58,24 +58,20 @@ const USER_ACTIVITY_EVENTS = [
 
 export default function InspecoesPage() {
     const router = useRouter();
+
     const getInitialTab = () => {
         try {
-            // Verifica se existe uma aba previamente salva
             const savedTab = localStorage.getItem('activeInspectionTab');
-            if (savedTab) {
-                return savedTab;
-            }
+            if (savedTab) return savedTab;
 
             const userDataStr = localStorage.getItem('userData');
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
-                if (userData && userData.perfil_inspecao) {
-                    // Check if perfil_inspecao contains letter 'Q'
-                    if (typeof userData.perfil_inspecao === 'string' && userData.perfil_inspecao.includes('Q')) {
-                        return "qualidade";
-                    } else if (Array.isArray(userData.perfil_inspecao) && userData.perfil_inspecao.includes('Q')) {
-                        return "qualidade";
-                    }
+                if (userData?.perfil_inspecao) {
+                    const perfil = userData.perfil_inspecao;
+                    const hasQ = (typeof perfil === 'string' && perfil.includes('Q')) ||
+                        (Array.isArray(perfil) && perfil.includes('Q'));
+                    if (hasQ) return "qualidade";
                 }
             }
             return "processo";
@@ -91,20 +87,21 @@ export default function InspecoesPage() {
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState<InspectionItem | null>(null);
-    const [hasColaboradorData, setHasColaboradorData] = useState(false);
     const [isNaoConformidadeContext, setIsNaoConformidadeContext] = useState(false);
     const [isQuantidadeModalOpen, setIsQuantidadeModalOpen] = useState(false);
     const [selectedQuantidadeInspection, setSelectedQuantidadeInspection] = useState<InspectionItem | null>(null);
     const [isQuantidadeContext, setIsQuantidadeContext] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
+    const [isCompactLayout, setIsCompactLayout] = useState(false);
+    const [isPortrait, setIsPortrait] = useState(false);
+    const [postosText, setPostosText] = useState<string>("");
 
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastActivityRef = useRef(Date.now());
-    const initialLoadRef = useRef(false); const [postosText, setPostosText] = useState<string>("");
+    const initialLoadRef = useRef(false);
 
-    // Helper functions to compute display values
     const getSituacao = useCallback((situacao: string) => {
         switch (situacao) {
             case '1': return 'Pendente desde';
@@ -119,74 +116,57 @@ export default function InspecoesPage() {
             default: return 'Desconhecida';
         }
     }, []);
-    const TABLET_MIN_WIDTH = 640;
-    const TABLET_MAX_WIDTH = 1024;
 
-    // Função para definir se deve mostrar o layout compacto para tablets
     const shouldUseCompactLayout = useCallback(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth >= TABLET_MIN_WIDTH && window.innerWidth < TABLET_MAX_WIDTH;
-        }
-        return false;
+        return typeof window !== 'undefined' &&
+            window.innerWidth >= 640 &&
+            window.innerWidth < 1024;
     }, []);
 
-    // Função para verificar se o dispositivo está em orientação vertical (portrait)
     const isInPortraitMode = useCallback(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerHeight > window.innerWidth;
-        }
-        return false;
+        return typeof window !== 'undefined' &&
+            window.innerHeight > window.innerWidth;
     }, []);
 
-    // Estados para controlar o layout
-    const [isCompactLayout, setIsCompactLayout] = useState(false);
-    const [isPortrait, setIsPortrait] = useState(false);
     useEffect(() => {
         const handleResize = () => {
             setIsCompactLayout(shouldUseCompactLayout());
             setIsPortrait(isInPortraitMode());
         };
-        handleResize();
 
+        handleResize();
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', handleResize);
 
         let orientationHintTimer: NodeJS.Timeout | null = null;
-
-        // Mostra um tooltip sobre orientação apenas em tablets (uma vez por sessão)
         if (shouldUseCompactLayout() && isInPortraitMode() && !sessionStorage.getItem('orientation-hint')) {
             orientationHintTimer = setTimeout(() => {
                 sessionStorage.setItem('orientation-hint', 'true');
             }, 2000);
         }
+
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
-
             if (orientationHintTimer) {
                 clearTimeout(orientationHintTimer);
             }
         };
-    }, [shouldUseCompactLayout, isInPortraitMode]); const checkColaboradorData = useCallback((): boolean => {
+    }, [shouldUseCompactLayout, isInPortraitMode]);
+
+    const checkColaboradorData = useCallback((): boolean => {
         try {
-            // Check for codigo_pessoa in colaborador or userData
             const colaboradorData = localStorage.getItem('colaborador');
             const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
 
-            // First check colaborador data
             if (colaboradorData) {
                 const parsed = JSON.parse(colaboradorData);
-                if (!!parsed && typeof parsed.codigo_pessoa === 'string' && parsed.codigo_pessoa.length > 0) {
-                    return true;
-                }
+                if (parsed?.codigo_pessoa?.length > 0) return true;
             }
 
-            // Then check userData
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
-                if (!!userData && typeof userData.codigo_pessoa === 'string' && userData.codigo_pessoa.length > 0) {
-                    return true;
-                }
+                if (userData?.codigo_pessoa?.length > 0) return true;
             }
 
             return false;
@@ -197,39 +177,19 @@ export default function InspecoesPage() {
 
     const canRegisterNaoConformidade = useCallback((item?: InspectionItem): boolean => {
         try {
-            if (activeTab !== "processo") {
-                return false;
-            }
-
-            if (!item || item.id_tipo_inspecao !== 4) {
-                return false;
-            }
-
-            if (!item || item.origem == "Não Conformidade") {
+            if (activeTab !== "processo" || !item || item.id_tipo_inspecao !== 4 || item.origem === "Não Conformidade") {
                 return false;
             }
 
             const userDataStr = localStorage.getItem('userData');
-            if (!userDataStr) {
-                return false;
-            }
+            if (!userDataStr) return false;
 
             const userData = JSON.parse(userDataStr);
+            if (!userData?.perfil_inspecao) return false;
 
-            // Check if userData has perfil_inspecao field
-            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
-                return false;
-            }
-
-            const perfilInspecao = userData.perfil_inspecao;
-
-            let hasPerfilO = false;
-            if (typeof perfilInspecao === 'string') {
-                hasPerfilO = perfilInspecao.includes('O');
-            } else if (Array.isArray(perfilInspecao)) {
-                hasPerfilO = perfilInspecao.includes('O');
-            }
-            return hasPerfilO;
+            const perfil = userData.perfil_inspecao;
+            return (typeof perfil === 'string' && perfil.includes('O')) ||
+                (Array.isArray(perfil) && perfil.includes('O'));
         } catch {
             return false;
         }
@@ -237,23 +197,12 @@ export default function InspecoesPage() {
 
     const canRegisterQuantidade = useCallback((item?: InspectionItem): boolean => {
         try {
-            // Only show the button in "processo" and "naoConformidade" tabs
-            if (activeTab !== "processo" && activeTab !== "naoConformidade") {
+            if (!["processo", "naoConformidade"].includes(activeTab) ||
+                !item ||
+                item.id_tipo_inspecao !== 9) {
                 return false;
             }
-
-            // Only show for items with id_tipo_inspecao equal to 9
-            if (!item || item.id_tipo_inspecao !== 9) {
-                return false;
-            }
-
-            // Check if user data exists
-            const userDataStr = localStorage.getItem('userData');
-            if (!userDataStr) {
-                return false;
-            }
-
-            return true;
+            return !!localStorage.getItem('userData');
         } catch {
             return false;
         }
@@ -261,11 +210,8 @@ export default function InspecoesPage() {
 
     const handleNaoConformidadeClick = useCallback((e: React.MouseEvent, item: InspectionItem) => {
         e.stopPropagation();
-
-        // Garantir que apenas o contexto correto está ativado
         setIsQuantidadeContext(false);
         setIsNaoConformidadeContext(true);
-        console.log('Não Conformidade Click: isNaoConformidadeContext=true, isQuantidadeContext=false');
 
         const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         if (!userDataStr) {
@@ -276,24 +222,16 @@ export default function InspecoesPage() {
 
         try {
             const userData = JSON.parse(userDataStr);
-
-            // Check if userData has perfil_inspecao field
-            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
-                // User has userData but no perfil_inspecao field - open login modal in non-conformity context
+            if (!userData?.perfil_inspecao) {
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
                 return;
             }
 
-            const perfilInspecao = userData.perfil_inspecao;
-
-            let hasPerfilO = false;
-            if (typeof perfilInspecao === 'string') {
-                hasPerfilO = perfilInspecao.includes('O');
-            } else if (Array.isArray(perfilInspecao)) {
-                hasPerfilO = perfilInspecao.includes('O');
-            }
+            const perfil = userData.perfil_inspecao;
+            const hasPerfilO = (typeof perfil === 'string' && perfil.includes('O')) ||
+                (Array.isArray(perfil) && perfil.includes('O'));
 
             if (hasPerfilO) {
                 setSelectedInspection(item);
@@ -302,29 +240,13 @@ export default function InspecoesPage() {
                 return;
             }
 
-            if (!userData.hasOwnProperty('encaminhar_ficha') || userData.encaminhar_ficha === undefined || userData.encaminhar_ficha === null) {
+            if (!userData?.encaminhar_ficha) {
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(true);
                 setIsModalOpen(true);
                 return;
             }
 
-            const encaminharFicha = userData.encaminhar_ficha;
-            let hasEncaminhar4 = false;
-
-            if (typeof encaminharFicha === 'string') {
-                hasEncaminhar4 = encaminharFicha.includes('4');
-            } else if (Array.isArray(encaminharFicha)) {
-                hasEncaminhar4 = encaminharFicha.includes(4) || encaminharFicha.includes('4');
-            } else if (typeof encaminharFicha === 'number') {
-                hasEncaminhar4 = encaminharFicha === 4;
-            }
-
-            if (hasEncaminhar4) {
-
-            } else {
-
-            }
         } catch {
             setSelectedInspection(item);
             setIsNaoConformidadeContext(true);
@@ -334,12 +256,8 @@ export default function InspecoesPage() {
 
     const formatDateTime = useCallback((dateString: string) => {
         if (!dateString) return 'N/A';
+        if (dateString.includes('/')) return dateString;
 
-        if (dateString.includes('/')) {
-            return dateString;
-        }
-
-        // Caso contrário, tenta fazer o parse e formatar
         try {
             const date = new Date(dateString);
             return date.toLocaleString('pt-BR', {
@@ -361,42 +279,33 @@ export default function InspecoesPage() {
             if (!postosData) return [];
 
             const parsedData = JSON.parse(postosData);
-            if (Array.isArray(parsedData)) {
-                return parsedData;
-            }
-            if (parsedData.selectedPostos && Array.isArray(parsedData.selectedPostos)) {
-                return parsedData.selectedPostos;
-            }
+            if (Array.isArray(parsedData)) return parsedData;
+            if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
             return [];
         } catch {
             return [];
         }
     }, []);
+
     const formatPostosSubtitle = useCallback((): string => {
         try {
             const userDataStr = localStorage.getItem('userData');
             const userData = userDataStr ? JSON.parse(userDataStr) : null;
             const perfil = userData?.perfil_inspecao;
 
-            const hasQ =
-                (typeof perfil === 'string' && perfil.includes('Q')) ||
-                (Array.isArray(perfil) && perfil.includes('Q')); if (hasQ) {
-                    return "Todos os postos CQ";
-                }
+            const hasQ = (typeof perfil === 'string' && perfil.includes('Q')) ||
+                (Array.isArray(perfil) && perfil.includes('Q'));
+
+            if (hasQ) return "Todos os postos CQ";
 
             const postos = getPostosFromLocalStorage();
-
-            if (postos.length === 0) {
-                return "Postos: Nenhum posto selecionado";
-            }
+            if (postos.length === 0) return "Postos: Nenhum posto selecionado";
 
             const limite = 8;
             const exibidos = postos.slice(0, limite);
             const restante = postos.length - limite;
-
             const label = `Postos: ${exibidos.join(', ')}`;
             return restante > 0 ? `${label} +${restante}` : label;
-
         } catch {
             return "Postos: -";
         }
@@ -411,16 +320,12 @@ export default function InspecoesPage() {
             const userDataStr = localStorage.getItem('userData');
             if (userDataStr) {
                 const userData = JSON.parse(userDataStr);
-                if (userData && userData.perfil_inspecao) {
-                    if (typeof userData.perfil_inspecao === 'string') {
-                        hasPerfilQ = userData.perfil_inspecao.includes('Q');
-                    } else if (Array.isArray(userData.perfil_inspecao)) {
-                        hasPerfilQ = userData.perfil_inspecao.includes('Q');
-                    }
-                }
+                const perfil = userData?.perfil_inspecao;
+                hasPerfilQ = (typeof perfil === 'string' && perfil.includes('Q')) ||
+                    (Array.isArray(perfil) && perfil.includes('Q'));
             }
         } catch {
-
+            // Silent error handling
         }
 
         if (postos.length === 0 && !hasPerfilQ) {
@@ -433,12 +338,9 @@ export default function InspecoesPage() {
 
         try {
             const abaApi = TAB_API_MAP[tabId as keyof typeof TAB_API_MAP];
-            if (!abaApi) {
-                return [];
-            }
+            if (!abaApi) return [];
 
             const allData = await inspecaoService.getFichasInspecaoPorAba(postos, abaApi);
-
             setInspectionData(prev => ({ ...prev, [tabId]: allData }));
             return allData;
         } catch {
@@ -449,52 +351,36 @@ export default function InspecoesPage() {
         }
     }, [getPostosFromLocalStorage]);
 
-    // Efeito para limpar activeInspectionTab após a página ser carregada
-    // e a aba ativa ser definida corretamente
     useEffect(() => {
-        // Verificar se veio da página de especificações e se há uma aba salva
-        // Não há uma forma direta de verificar a origem da navegação,
-        // mas podemos usar um pequeno timeout para garantir que a página foi carregada
         const clearStoredTabTimeout = setTimeout(() => {
             localStorage.removeItem('activeInspectionTab');
-        }, 500); // 500ms é tempo suficiente para a página carregar
+        }, 500);
 
-        return () => {
-            // Limpar o timeout quando o componente for desmontado
-            clearTimeout(clearStoredTabTimeout);
-        };
-    }, []); // Executar apenas uma vez na montagem do componente
+        return () => clearTimeout(clearStoredTabTimeout);
+    }, []);
 
-    // Initial data loading effect
     useEffect(() => {
         const loadInitialData = async () => {
             if (!initialLoadRef.current) {
                 initialLoadRef.current = true;
-
                 await fetchTabData(activeTab);
 
-                const hasData = checkColaboradorData();
-                setHasColaboradorData(hasData);
-
-                // Set the postos text for the header
                 const subtitleText = formatPostosSubtitle();
                 setPostosText(subtitleText);
             }
         };
         loadInitialData();
-    }, [fetchTabData, checkColaboradorData, formatPostosSubtitle, activeTab]); // Add activeTab to dependencies
+    }, [fetchTabData, formatPostosSubtitle, activeTab]);
 
     const refreshActiveTab = useCallback(async () => {
         setIsRefreshing(true);
         try {
             await fetchTabData(activeTab);
             setLastRefresh(new Date());
-
-            // Update postos subtitle text when refreshing
             const subtitleText = formatPostosSubtitle();
             setPostosText(subtitleText);
         } catch {
-            // Silent error handling for data refresh
+            // Silent error handling
         } finally {
             setIsRefreshing(false);
         }
@@ -503,21 +389,13 @@ export default function InspecoesPage() {
     const resetIdleTimer = useCallback(() => {
         lastActivityRef.current = Date.now();
 
-        if (idleTimerRef.current) {
-            clearTimeout(idleTimerRef.current);
-        }
-
-        if (autoRefreshTimerRef.current) {
-            clearTimeout(autoRefreshTimerRef.current);
-        }
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        if (autoRefreshTimerRef.current) clearTimeout(autoRefreshTimerRef.current);
 
         idleTimerRef.current = setTimeout(() => {
             const startAutoRefresh = () => {
                 refreshActiveTab();
-                autoRefreshTimerRef.current = setTimeout(
-                    startAutoRefresh,
-                    AUTO_REFRESH_INTERVAL
-                );
+                autoRefreshTimerRef.current = setTimeout(startAutoRefresh, AUTO_REFRESH_INTERVAL);
             };
             startAutoRefresh();
         }, IDLE_TIME);
@@ -530,7 +408,6 @@ export default function InspecoesPage() {
 
     const handleTabChange = useCallback(async (tabId: string) => {
         setActiveTab(tabId);
-
         if (!inspectionData[tabId]) {
             await fetchTabData(tabId);
         }
@@ -546,45 +423,23 @@ export default function InspecoesPage() {
         inspection: InspectionItem;
     }) => {
         setIsModalOpen(false);
-        setHasColaboradorData(true);
 
-        // Log para debug dos contextos
-        console.log('Modal Success - Contextos antes:', {
-            isNaoConformidadeContext,
-            isQuantidadeContext
-        });
-
-        // Check if we're in quantidade context
         if (isQuantidadeContext) {
-            // In quantidade context, open the quantidade modal instead of navigating
             setIsQuantidadeContext(false);
             setSelectedQuantidadeInspection(data.inspection);
             setIsQuantidadeModalOpen(true);
             return;
         }
 
-        // Se estamos no contexto de não conformidade, ele é tratado pelo handler específico
-        // então não precisamos fazer nada aqui
-
-        // Regular flow for inspection navigation
-        // Salvar a aba ativa no localStorage antes de navegar
         localStorage.setItem('activeInspectionTab', activeTab);
-
-        // Construct URL with all necessary parameters
-        // Navegando apenas com o ID, já que os dados do usuário estão disponíveis no context API
         router.push(`/inspecoes/especificacoes?id=${data.inspection.id_ficha_inspecao}`);
-    }, [router, activeTab, isQuantidadeContext, isNaoConformidadeContext]);
+    }, [router, activeTab, isQuantidadeContext]);
 
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
-        // Mostrar mensagem de sucesso
         setAlertMessage(`${quantidade} não conformidade(s) registrada(s) com sucesso para a inspeção ${inspection.referencia}`);
         setAlertType("success");
-
-        // Reset do estado
         setIsNaoConformidadeContext(false);
         setSelectedInspection(null);
-
-        // Atualizar a lista de inspeções após o registro bem-sucedido
         refreshActiveTab();
     }, [refreshActiveTab]);
 
@@ -594,18 +449,16 @@ export default function InspecoesPage() {
         const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         if (!userDataStr) {
             setSelectedInspection(item);
-            setIsNaoConformidadeContext(false); // Not a non-conformity context
-            setIsQuantidadeContext(true); // Set quantidade context
-            setIsModalOpen(true); // Open the login modal instead
+            setIsNaoConformidadeContext(false);
+            setIsQuantidadeContext(true);
+            setIsModalOpen(true);
             return;
         }
 
         try {
             const userData = JSON.parse(userDataStr);
 
-            // Check if userData has perfil_inspecao field
-            if (!userData.hasOwnProperty('perfil_inspecao') || userData.perfil_inspecao === undefined || userData.perfil_inspecao === null) {
-                // User has userData but no perfil_inspecao field - open login modal
+            if (!userData?.perfil_inspecao) {
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(false);
                 setIsQuantidadeContext(true);
@@ -613,16 +466,10 @@ export default function InspecoesPage() {
                 return;
             }
 
-            const perfilInspecao = userData.perfil_inspecao;
+            const perfil = userData.perfil_inspecao;
+            const hasPerfilO = (typeof perfil === 'string' && perfil.includes('O')) ||
+                (Array.isArray(perfil) && perfil.includes('O'));
 
-            let hasPerfilO = false;
-            if (typeof perfilInspecao === 'string') {
-                hasPerfilO = perfilInspecao.includes('O');
-            } else if (Array.isArray(perfilInspecao)) {
-                hasPerfilO = perfilInspecao.includes('O');
-            }
-
-            // If the user has perfil_inspecao "O", always opens the login modal
             if (hasPerfilO) {
                 setSelectedInspection(item);
                 setIsNaoConformidadeContext(false);
@@ -631,18 +478,12 @@ export default function InspecoesPage() {
                 return;
             }
 
-            // Check if user has valid authentication data to bypass login modal
-            if (userData.hasOwnProperty('codigo_pessoa') &&
-                userData.codigo_pessoa !== undefined &&
-                userData.codigo_pessoa !== null &&
-                userData.codigo_pessoa !== '') {
-                // User is authenticated, open the quantity input modal directly
+            if (userData?.codigo_pessoa) {
                 setSelectedQuantidadeInspection(item);
                 setIsQuantidadeModalOpen(true);
                 return;
             }
 
-            // Default case: open login modal
             setSelectedInspection(item);
             setIsNaoConformidadeContext(false);
             setIsQuantidadeContext(true);
@@ -656,32 +497,23 @@ export default function InspecoesPage() {
     }, []);
 
     const handleInspectionClick = useCallback((item: InspectionItem) => {
-        // Salvar a aba ativa no localStorage quando clica em uma inspeção
         localStorage.setItem('activeInspectionTab', activeTab);
-
-        // Verificar se o usuário tem código_pessoa no localStorage
         const hasData = checkColaboradorData();
 
-        // Verificar se o usuário tem perfil_inspecao igual a "O"
         const userDataStr = localStorage.getItem('userData') || sessionStorage.getItem('userData');
         let hasPerfilO = false;
 
         if (userDataStr) {
             try {
                 const userData = JSON.parse(userDataStr);
-                if (userData && userData.perfil_inspecao) {
-                    if (typeof userData.perfil_inspecao === 'string') {
-                        hasPerfilO = userData.perfil_inspecao.includes('O');
-                    } else if (Array.isArray(userData.perfil_inspecao)) {
-                        hasPerfilO = userData.perfil_inspecao.includes('O');
-                    }
-                }
+                const perfil = userData?.perfil_inspecao;
+                hasPerfilO = (typeof perfil === 'string' && perfil.includes('O')) ||
+                    (Array.isArray(perfil) && perfil.includes('O'));
             } catch {
-
+                // Silent error handling
             }
         }
 
-        // Se o usuário tem perfil_inspecao "O", sempre abre o modal de login
         if (hasPerfilO) {
             setSelectedInspection(item);
             setIsNaoConformidadeContext(false);
@@ -689,7 +521,6 @@ export default function InspecoesPage() {
             return;
         }
 
-        // Fluxo normal
         if (hasData) {
             router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
         } else {
@@ -712,7 +543,6 @@ export default function InspecoesPage() {
     }, []);
 
     const handleQuantidadeSuccess = useCallback((quantidade: number, quantidadeInspecionada?: number) => {
-        // Mostrar mensagem de sucesso
         if (selectedQuantidadeInspection) {
             const message = quantidadeInspecionada !== undefined
                 ? `Quantidade ${quantidade} produzida e ${quantidadeInspecionada} inspecionada registrada com sucesso`
@@ -722,7 +552,6 @@ export default function InspecoesPage() {
         }
         setIsQuantidadeModalOpen(false);
         setSelectedQuantidadeInspection(null);
-
         refreshActiveTab();
     }, [refreshActiveTab, selectedQuantidadeInspection]);
 
@@ -731,12 +560,10 @@ export default function InspecoesPage() {
         setAlertType(type);
     }, []);
 
-    // Função para fechar alertas
     const handleAlertDismiss = useCallback(() => {
         setAlertMessage(null);
     }, []);
 
-    // Função para obter ícone de status da inspeção baseado na situação
     const getSituacaoIcon = useCallback((situacao: string) => {
         switch (situacao) {
             case '1': return <Clock className="h-3.5 w-3.5 text-amber-500" />;
@@ -751,9 +578,7 @@ export default function InspecoesPage() {
     }, []);
 
     useEffect(() => {
-        const handleActivity = () => {
-            resetIdleTimer();
-        };
+        const handleActivity = () => resetIdleTimer();
 
         USER_ACTIVITY_EVENTS.forEach((event) => {
             document.addEventListener(event, handleActivity, true);
@@ -766,13 +591,8 @@ export default function InspecoesPage() {
                 document.removeEventListener(event, handleActivity, true);
             });
 
-            if (idleTimerRef.current) {
-                clearTimeout(idleTimerRef.current);
-            }
-
-            if (autoRefreshTimerRef.current) {
-                clearTimeout(autoRefreshTimerRef.current);
-            }
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+            if (autoRefreshTimerRef.current) clearTimeout(autoRefreshTimerRef.current);
         };
     }, [resetIdleTimer]);
 
@@ -1199,10 +1019,7 @@ export default function InspecoesPage() {
 
     return (
         <div className="space-y-5 p-2 sm:p-4 md:p-6 mx-auto">
-            {/* Header com título e botões de ação */}
-            <div className="hidden">
-                Authentication status: {hasColaboradorData ? 'Authenticated' : 'Not authenticated'}
-            </div>            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
                 <PageHeader
                     title="Listas de Inspeções"
                     subtitle={postosText}
@@ -1213,7 +1030,6 @@ export default function InspecoesPage() {
                         <span className="mr-1.5">Última atualização:</span>
                         <span className="font-medium text-gray-700">{lastRefresh.toLocaleTimeString('pt-BR')}</span>
                     </div>
-                    {/** Botão visível apenas em telas sm para cima */}
                     <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
@@ -1237,7 +1053,6 @@ export default function InspecoesPage() {
                 </div>
             </div>
 
-            {/* Modais e alertas */}
             {selectedInspection && (
                 <ColaboradorLoginModal
                     isOpen={isModalOpen}
@@ -1277,7 +1092,6 @@ export default function InspecoesPage() {
                 dismissDuration={5000}
             />
 
-            {/* Navegação por abas com design aprimorado */}
             <div className="mt-1 sm:mt-2">
                 <div className="border-b border-gray-100">
                     <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-6 overflow-x-auto scrollbar-hide pb-2">
@@ -1306,7 +1120,7 @@ export default function InspecoesPage() {
                                 <span className="sm:hidden">{tab.mobileLabel || tab.label}</span>
                                 {tab.count > 0 && (
                                     <span className={`
-                                        inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-semibold
+                                        inline-flex h-5 min-w-[1.25rem] items-end justify-center rounded-full px-1 text-xs font-semibold leading-none pb-0.5
                                         ${activeTab === tab.id
                                             ? "bg-[#1ABC9C] text-white"
                                             : "bg-gray-100 text-gray-600 group-hover:bg-gray-200"

@@ -56,7 +56,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [showQuantidadeModal, setShowQuantidadeModal] = useState(false);
 
-    // Limpar campos quando o modal for fechado
     const handleClose = React.useCallback(() => {
         setCodigo('');
         setSenha('');
@@ -65,7 +64,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         onClose();
     }, [onClose]);
 
-    // Refs para controle de foco
     const codigoInputRef = useRef<HTMLInputElement>(null);
     const senhaInputRef = useRef<HTMLInputElement>(null);
     const showPasswordButtonRef = useRef<HTMLButtonElement>(null);
@@ -73,7 +71,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Effect para focar no input quando o modal abrir
     useEffect(() => {
         if (isOpen && codigoInputRef.current) {
             const timer = setTimeout(() => {
@@ -104,14 +101,12 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                         lastElement.focus();
                     }
                 } else {
-                    // Tab (indo para frente)
                     if (document.activeElement === lastElement || !modalRef.current?.contains(document.activeElement)) {
                         e.preventDefault();
                         firstElement.focus();
                     }
                 }
             }
-
 
             if (e.key === 'Escape') {
                 handleClose();
@@ -122,7 +117,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, handleClose]);
 
-    // Função para verificar se o usuário tem permissão para registrar não conformidade
     const hasNaoConformidadePermission = (registrarFicha: string | number | boolean | Array<string | number>): boolean => {
         if (registrarFicha === undefined || registrarFicha === null) {
             return false;
@@ -141,15 +135,15 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         return false;
     };
 
-    // Handler para confirmar quantidade no modal de quantidade
     const handleQuantidadeConfirm = (quantidade: number) => {
         setShowQuantidadeModal(false);
         if (onNaoConformidadeSuccess) {
             onNaoConformidadeSuccess(quantidade, inspection);
         }
-        // Fechar modal e limpar form após sucesso
         handleClose();
-    }; const handleSubmit = async (e: React.FormEvent) => {
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!codigo || !senha) {
@@ -158,11 +152,12 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
         }
 
         setError('');
-        setIsLoading(true); try {
+        setIsLoading(true);
+
+        try {
             const senhaCriptografada = encodePassword(senha);
             const response = await inspecaoService.authColaborador(codigo, senhaCriptografada);
 
-            // Salvar apenas no formato 'userData' para compatibilidade com o resto do sistema
             try {
                 const existingUserData = localStorage.getItem('userData') ?
                     JSON.parse(localStorage.getItem('userData') || '{}') : {};
@@ -186,13 +181,13 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                     origem: origem
                 };
 
-                // Salvar no localStorage apenas userData
                 localStorage.setItem('userData', JSON.stringify(updatedUserData));
                 localStorage.setItem('isAuthenticated', 'true');
 
             } catch (e) {
                 console.error('Erro ao salvar em userData:', e);
             }
+
             if (isNaoConformidadeContext && onNaoConformidadeSuccess) {
                 const hasPermission = hasNaoConformidadePermission(response.registrar_ficha);
 
@@ -227,7 +222,6 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
             setError('Código ou senha inválidos. Por favor, tente novamente.');
         } finally {
             setIsLoading(false);
-
         }
     };
 
@@ -362,17 +356,17 @@ export const ColaboradorLoginModal: React.FC<ColaboradorLoginModalProps> = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>            <QuantidadeInputModal
+            </AnimatePresence>
+
+            <QuantidadeInputModal
                 isOpen={showQuantidadeModal}
                 onClose={() => setShowQuantidadeModal(false)}
                 onConfirm={handleQuantidadeConfirm}
                 onCancel={() => {
-
                     setShowQuantidadeModal(false);
                     handleClose();
                 }}
                 title="Registrar Não Conformidade"
-
                 numeroOrdem={inspection.numero_ordem}
                 referencia={inspection.referencia}
                 roteiro={inspection.roteiro}

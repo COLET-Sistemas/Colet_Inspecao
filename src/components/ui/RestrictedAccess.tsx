@@ -24,16 +24,12 @@ export function RestrictedAccess({
     redirectDelay = 2000,
 }: RestrictedAccessProps) {
     const router = useRouter();
-
-    // Alert state for displaying messages
     const [alert, setAlert] = useState<AlertState>({ message: null, type: "error" });
 
-    // Clear alert message
     const clearAlert = useCallback(() => {
         setAlert({ message: null, type: "success" });
     }, []);
 
-    // Handle redirect when user doesn't have permission
     useEffect(() => {
         if (!isLoading && !hasPermission) {
             setAlert({
@@ -41,7 +37,6 @@ export function RestrictedAccess({
                 type: "error"
             });
 
-            // Redirect after showing the message for the specified delay
             const timer = setTimeout(() => {
                 router.push(redirectTo);
             }, redirectDelay);
@@ -50,7 +45,6 @@ export function RestrictedAccess({
         }
     }, [hasPermission, isLoading, router, redirectTo, redirectDelay]);
 
-    // If auth is still loading or user has permission, don't render the restricted access screen
     if (isLoading || hasPermission) {
         return null;
     }

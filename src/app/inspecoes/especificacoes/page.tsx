@@ -18,7 +18,8 @@ import {
     MessageSquare, RefreshCw,
     Ruler,
     Send,
-    StopCircle,
+    StopCircle, TrendingDown,
+    TrendingUp,
     XCircle
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -74,7 +75,22 @@ export default function EspecificacoesPage() {
         descricao_tipo_inspecao: null
     });
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null); const [editingValues, setEditingValues] = useState<{ [key: number]: { valor_encontrado: string | number | boolean | null; observacao: string; conforme?: boolean | null } }>({});
+    const [error, setError] = useState<string | null>(null);
+    const [editingValues, setEditingValues] = useState<{
+        [key: number]: {
+            valor_encontrado: string | number | boolean | null;
+            observacao: string;
+            conforme?: boolean | null;
+            quantidade?: number | null;
+            menor_valor?: number | null;
+            maior_valor?: number | null;
+            maior_menor?: string;
+            quantidade_menor?: number | null;
+            menor_valor_menor?: number | null;
+            maior_valor_menor?: number | null;
+            maior_menor_menor?: string;
+        }
+    }>({});
     const [isSaving, setIsSaving] = useState(false);
     // Variável para controlar se a inspeção foi iniciada
     const [isInspectionStarted, setIsInspectionStarted] = useState(false);
@@ -110,7 +126,22 @@ export default function EspecificacoesPage() {
         // Se não for um dos tipos permitidos, converte para string
         return String(value);
     }, []);    // Função para processar os valores vindos da API e garantir que são tratados corretamente
-    const processSpecValue = useCallback((spec: { valor_encontrado?: string | number | null | undefined; observacao?: string | null; conforme?: boolean | string | null }) => {
+    const processSpecValue = useCallback((spec: InspectionSpecification) => {
+        // Use type assertion to handle the additional properties
+        const specExtended = spec as unknown as {
+            valor_encontrado?: string | number | null | undefined;
+            observacao?: string | null;
+            conforme?: boolean | string | null;
+            quantidade?: number | null;
+            menor_valor?: number | null;
+            maior_valor?: number | null;
+            maior_menor?: string;
+            quantidade_menor?: number | null;
+            menor_valor_menor?: number | null;
+            maior_valor_menor?: number | null;
+            maior_menor_menor?: string;
+        };
+
         // Processa o valor 'conforme', convertendo strings 'S'/'N' para boolean
         let conformeValue: boolean | null = null;
         if (spec.conforme !== undefined && spec.conforme !== null) {
@@ -128,7 +159,15 @@ export default function EspecificacoesPage() {
                 (spec.valor_encontrado === 0 ? 0 : convertToValidValue(spec.valor_encontrado)) :
                 '',
             observacao: spec.observacao || '',
-            conforme: conformeValue
+            conforme: conformeValue,
+            quantidade: specExtended.quantidade !== undefined ? specExtended.quantidade : null,
+            menor_valor: specExtended.menor_valor !== undefined ? specExtended.menor_valor : null,
+            maior_valor: specExtended.maior_valor !== undefined ? specExtended.maior_valor : null,
+            maior_menor: specExtended.maior_menor || ">",
+            quantidade_menor: specExtended.quantidade_menor !== undefined ? specExtended.quantidade_menor : null,
+            menor_valor_menor: specExtended.menor_valor_menor !== undefined ? specExtended.menor_valor_menor : null,
+            maior_valor_menor: specExtended.maior_valor_menor !== undefined ? specExtended.maior_valor_menor : null,
+            maior_menor_menor: specExtended.maior_menor_menor || "<"
         };
     }, [convertToValidValue]);
 
@@ -159,7 +198,21 @@ export default function EspecificacoesPage() {
                 setSpecifications(response.specifications);
 
                 // Inicializa os estados de edição com os valores carregados
-                const initialEditingValues: { [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } } = {};                // Prepara os valores iniciais para o estado editingValues
+                const initialEditingValues: {
+                    [key: number]: {
+                        valor_encontrado: string | number | boolean;
+                        observacao: string;
+                        conforme?: boolean | null;
+                        quantidade?: number | null;
+                        menor_valor?: number | null;
+                        maior_valor?: number | null;
+                        maior_menor?: string;
+                        quantidade_menor?: number | null;
+                        menor_valor_menor?: number | null;
+                        maior_valor_menor?: number | null;
+                        maior_menor_menor?: string;
+                    }
+                } = {};                // Prepara os valores iniciais para o estado editingValues
                 response.specifications.forEach(spec => {
                     // Inicializa valores para todas as especificações, garantindo tratamento correto para valores como 0
                     initialEditingValues[spec.id_especificacao] = processSpecValue(spec);
@@ -188,7 +241,7 @@ export default function EspecificacoesPage() {
         };
 
         loadSpecifications();
-    }, [id, convertToValidValue, processSpecValue]); // Depende do ID e das funções de processamento
+    }, [id, processSpecValue]); // Depende do ID e da função de processamento
 
 
     // Função para refresh manual
@@ -204,10 +257,99 @@ export default function EspecificacoesPage() {
             setSpecifications(response.specifications);
 
             // Inicializa os estados de edição com os valores atualizados
-            const initialEditingValues: { [key: number]: { valor_encontrado: string | number | boolean; observacao: string; conforme?: boolean | null } } = {};            // Prepara os valores iniciais para o estado editingValues
+            const initialEditingValues: {
+                [key: number]: {
+                    valor_encontrado: string | number | boolean;
+                    observacao: string;
+                    conforme?: boolean | null;
+                    quantidade?: number | null;
+                    menor_valor?: number | null;
+                    maior_valor?: number | null;
+                    maior_menor?: string;
+                    quantidade_menor?: number | null;
+                    menor_valor_menor?: number | null;
+                    maior_valor_menor?: number | null;
+                    maior_menor_menor?: string;
+                }
+            } = {};            // Prepara os valores iniciais para o estado editingValues
             response.specifications.forEach(spec => {
                 // Inicializa valores para todas as especificações, garantindo tratamento correto para valores como 0
-                initialEditingValues[spec.id_especificacao] = processSpecValue(spec);
+                const processedValue = processSpecValue(spec);
+
+                // Se for inspeção tipo 9, inicializar os campos adicionais
+                if (response.fichaDados.id_tipo_inspecao === 9) {
+                    // Inicializar os campos adicionais com valores padrão
+                    // A API pode não ter estes campos ainda, então inicializamos com null
+                    initialEditingValues[spec.id_especificacao] = {
+                        ...processedValue,
+                        quantidade: null,
+                        menor_valor: null,
+                        maior_valor: null,
+                        maior_menor: ">",
+                        quantidade_menor: null,
+                        menor_valor_menor: null,
+                        maior_valor_menor: null,
+                        maior_menor_menor: "<"
+                    };
+
+                    // Tentamos acessar os valores se existirem usando Object.hasOwn para segurança
+                    try {
+                        // Primeiro convertemos para unknown e depois para um tipo indexável
+                        // Isso resolve o erro de TypeScript enquanto mantém a segurança de tipos
+                        const specAny = (spec as unknown) as Record<string, unknown>;
+
+                        if ('quantidade' in specAny) {
+                            initialEditingValues[spec.id_especificacao].quantidade =
+                                typeof specAny.quantidade === 'number' ? specAny.quantidade :
+                                    typeof specAny.quantidade === 'string' ? Number(specAny.quantidade) : null;
+                        }
+
+                        if ('menor_valor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].menor_valor =
+                                typeof specAny.menor_valor === 'number' ? specAny.menor_valor :
+                                    typeof specAny.menor_valor === 'string' ? Number(specAny.menor_valor) : null;
+                        }
+
+                        if ('maior_valor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].maior_valor =
+                                typeof specAny.maior_valor === 'number' ? specAny.maior_valor :
+                                    typeof specAny.maior_valor === 'string' ? Number(specAny.maior_valor) : null;
+                        }
+
+                        // Campos para medidas menores (<)
+                        if ('quantidade_menor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].quantidade_menor =
+                                typeof specAny.quantidade_menor === 'number' ? specAny.quantidade_menor :
+                                    typeof specAny.quantidade_menor === 'string' ? Number(specAny.quantidade_menor) : null;
+                        }
+
+                        if ('maior_menor_menor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].maior_menor_menor =
+                                typeof specAny.maior_menor_menor === 'string' ? specAny.maior_menor_menor : "<";
+                        }
+
+                        if ('menor_valor_menor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].menor_valor_menor =
+                                typeof specAny.menor_valor_menor === 'number' ? specAny.menor_valor_menor :
+                                    typeof specAny.menor_valor_menor === 'string' ? Number(specAny.menor_valor_menor) : null;
+                        }
+
+                        if ('maior_valor_menor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].maior_valor_menor =
+                                typeof specAny.maior_valor_menor === 'number' ? specAny.maior_valor_menor :
+                                    typeof specAny.maior_valor_menor === 'string' ? Number(specAny.maior_valor_menor) : null;
+                        }
+
+                        if ('maior_menor' in specAny) {
+                            initialEditingValues[spec.id_especificacao].maior_menor =
+                                typeof specAny.maior_menor === 'string' ? specAny.maior_menor : ">";
+                        }
+                    } catch (e) {
+                        console.error('Erro ao processar campos adicionais para inspeção tipo 9:', e);
+                    }
+                } else {
+                    initialEditingValues[spec.id_especificacao] = processedValue;
+                }
             });
 
             // Atualiza o estado com os valores atualizados
@@ -297,9 +439,26 @@ export default function EspecificacoesPage() {
     }, [fichaDados.id_tipo_inspecao]);
 
     // Função para atualizar valores em edição    
-    const handleValueChange = useCallback((specId: number, field: 'valor_encontrado' | 'observacao' | 'conforme', value: string | number | boolean) => {
+    const handleValueChange = useCallback((
+        specId: number,
+        field: 'valor_encontrado' | 'observacao' | 'conforme' | 'quantidade' | 'menor_valor' | 'maior_valor' |
+            'maior_menor' | 'quantidade_menor' | 'menor_valor_menor' | 'maior_valor_menor' | 'maior_menor_menor',
+        value: string | number | boolean
+    ) => {
         setEditingValues((prev) => {
-            const currentSpec = prev[specId] || { valor_encontrado: '', observacao: '', conforme: null };
+            const currentSpec = prev[specId] || {
+                valor_encontrado: '',
+                observacao: '',
+                conforme: null,
+                quantidade: null,
+                menor_valor: null,
+                maior_valor: null,
+                maior_menor: ">",
+                quantidade_menor: null,
+                menor_valor_menor: null,
+                maior_valor_menor: null,
+                maior_menor_menor: "<"
+            };
 
             // Encontrar a especificação atual para verificar o tipo_valor
             const specification = specifications.find(spec => spec.id_especificacao === specId);
@@ -375,6 +534,23 @@ export default function EspecificacoesPage() {
                 } else {
                     updatedValues.conforme = typeof value === 'boolean' ? value : null;
                 }
+            } else if (field === 'quantidade' || field === 'menor_valor' || field === 'maior_valor' ||
+                field === 'quantidade_menor' || field === 'menor_valor_menor' || field === 'maior_valor_menor') {
+                // Garantir que o valor é um número válido ou null
+                if (value === '' || value === null) {
+                    updatedValues[field] = null;
+                } else {
+                    // Converter para string e permitir apenas números e ponto decimal
+                    let numericValue = String(value).replace(/[^0-9.]/g, '');
+
+                    // Garantir apenas um ponto decimal
+                    const parts = numericValue.split('.');
+                    if (parts.length > 2) {
+                        numericValue = `${parts[0]}.${parts.slice(1).join('')}`;
+                    }
+
+                    updatedValues[field] = numericValue === '' ? null : Number(numericValue);
+                }
             }
 
             return {
@@ -427,9 +603,94 @@ export default function EspecificacoesPage() {
         }
 
         await startInspectionProcess();
-    }, [id, fichaDados.id_tipo_inspecao, startInspectionProcess]);
+    }, [id, fichaDados.id_tipo_inspecao, startInspectionProcess]); const processInspectionValue = useCallback((
+        spec: InspectionSpecification,
+        editingValue?: {
+            valor_encontrado?: string | number | boolean | null;
+            observacao?: string;
+            conforme?: boolean | null;
+            quantidade?: number | null;
+            menor_valor?: number | null;
+            maior_valor?: number | null;
+            maior_menor?: string;
+            quantidade_menor?: number | null;
+            menor_valor_menor?: number | null;
+            maior_valor_menor?: number | null;
+            maior_menor_menor?: string;
+        }
+    ) => {
+        // Para inspeção tipo 9, processamos os campos adicionais
+        if (fichaDados.id_tipo_inspecao === 9) {
+            const result = {
+                valorEncontrado: null as string | number | null,
+                conforme: null as boolean | null,
+                observacao: null as string | null,
+                quantidade: null as number | null,
+                menorValor: null as number | null,
+                maiorValor: null as number | null,
+                maiorMenor: ">" as string,
+                quantidadeMenor: null as number | null,
+                menorValorMenor: null as number | null,
+                maiorValorMenor: null as number | null,
+                maiorMenorMenor: "<" as string
+            };
 
-    const processInspectionValue = useCallback((spec: InspectionSpecification, editingValue?: { valor_encontrado?: string | number | boolean | null; observacao?: string; conforme?: boolean | null }) => {
+            // Processar valores maiores (>)
+            // Processar quantidade
+            if (editingValue?.quantidade !== undefined) {
+                result.quantidade = editingValue.quantidade;
+            }
+
+            // Processar maior_menor
+            if (editingValue?.maior_menor !== undefined) {
+                result.maiorMenor = editingValue.maior_menor;
+            } else {
+                result.maiorMenor = ">";  // Valor padrão
+            }
+
+            // Para tipo_valor F ou U, processar menor_valor e maior_valor
+            if (['F', 'U'].includes(spec.tipo_valor)) {
+                if (editingValue?.menor_valor !== undefined) {
+                    result.menorValor = editingValue.menor_valor;
+                }
+
+                if (editingValue?.maior_valor !== undefined) {
+                    result.maiorValor = editingValue.maior_valor;
+                }
+            }
+
+            // Processar valores menores (<)
+            // Processar quantidade_menor
+            if (editingValue?.quantidade_menor !== undefined) {
+                result.quantidadeMenor = editingValue.quantidade_menor;
+            }
+
+            // Processar maior_menor_menor
+            if (editingValue?.maior_menor_menor !== undefined) {
+                result.maiorMenorMenor = editingValue.maior_menor_menor;
+            } else {
+                result.maiorMenorMenor = "<";  // Valor padrão
+            }
+
+            // Processar menor_valor_menor
+            if (editingValue?.menor_valor_menor !== undefined) {
+                result.menorValorMenor = editingValue.menor_valor_menor;
+            }
+
+            // Processar maior_valor_menor
+            if (editingValue?.maior_valor_menor !== undefined) {
+                result.maiorValorMenor = editingValue.maior_valor_menor;
+            }
+
+            // Processar observação
+            result.observacao = editingValue?.observacao !== undefined
+                ? editingValue.observacao
+                : (spec.observacao || null);
+
+            return result;
+        }
+
+        // Processamento normal para outros tipos de inspeção
         const result = {
             valorEncontrado: null as string | number | null,
             conforme: null as boolean | null,
@@ -470,10 +731,14 @@ export default function EspecificacoesPage() {
                 if (typeof editingValue.valor_encontrado === 'boolean') {
                     result.valorEncontrado = editingValue.valor_encontrado ? 'S' : 'N';
                 } else {
-                    result.valorEncontrado = editingValue.valor_encontrado;
+                    result.valorEncontrado = String(editingValue.valor_encontrado);
                 }
             } else if (spec.valor_encontrado !== undefined) {
-                result.valorEncontrado = spec.valor_encontrado;
+                if (typeof spec.valor_encontrado === 'boolean') {
+                    result.valorEncontrado = spec.valor_encontrado ? 'S' : 'N';
+                } else {
+                    result.valorEncontrado = String(spec.valor_encontrado);
+                }
             }
 
             result.conforme = null;
@@ -485,53 +750,155 @@ export default function EspecificacoesPage() {
             : (spec.observacao || null);
 
         return result;
-    }, []);    // Função para interromper a inspeção
+    }, [fichaDados.id_tipo_inspecao]);
+
+    // Função para interromper a inspeção
     const handleInterruptInspection = useCallback(async () => {
         if (!isInspectionStarted || !id) return;
 
         try {
             setIsSaving(true);
-            // Preparar os apontamentos para enviar ao servidor - apenas os que foram alterados
+            // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications
                 .map(spec => {
                     // Verificar se há valores em edição para esta especificação
                     const editingValue = editingValues[spec.id_especificacao];
 
-                    // Se não houver valores em edição, não incluir esta especificação
-                    if (!editingValue) return null;
+                    // Se não houver valores em edição e não for tipo 9, não incluir esta especificação
+                    // Para tipo 9, sempre criamos um valor de edição padrão se não existir
+                    if (!editingValue) {
+                        if (fichaDados.id_tipo_inspecao === 9) {
+                            // Criar um valor de edição padrão para inspeções tipo 9
+                            editingValues[spec.id_especificacao] = {
+                                valor_encontrado: null,
+                                observacao: '',
+                                conforme: null,
+                                quantidade: null,
+                                menor_valor: null,
+                                maior_valor: null,
+                                maior_menor: ">",
+                                quantidade_menor: null,
+                                menor_valor_menor: null,
+                                maior_valor_menor: null,
+                                maior_menor_menor: "<"
+                            };
+                        } else {
+                            return null;
+                        }
+                    }
 
-                    // Verificar se houve alguma alteração nos valores
-                    const valorAlterado = editingValue.valor_encontrado !== undefined &&
-                        editingValue.valor_encontrado !== '' &&
-                        editingValue.valor_encontrado !== spec.valor_encontrado;
+                    // Para tipo 9, não precisamos verificar alterações, sempre incluímos
+                    if (fichaDados.id_tipo_inspecao !== 9) {
+                        // Verificar se houve alguma alteração nos valores
+                        const valorAlterado = editingValue.valor_encontrado !== undefined &&
+                            editingValue.valor_encontrado !== '' &&
+                            editingValue.valor_encontrado !== spec.valor_encontrado;
 
-                    const conformeAlterado = editingValue.conforme !== undefined &&
-                        editingValue.conforme !== spec.conforme;
+                        const conformeAlterado = editingValue.conforme !== undefined &&
+                            editingValue.conforme !== spec.conforme;
 
-                    const observacaoAlterada = editingValue.observacao !== undefined &&
-                        editingValue.observacao !== spec.observacao &&
-                        editingValue.observacao !== '';
+                        const observacaoAlterada = editingValue.observacao !== undefined &&
+                            editingValue.observacao !== spec.observacao &&
+                            editingValue.observacao !== '';
 
-                    // Se nenhum valor foi alterado, não incluir esta especificação
-                    if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+                        // Se nenhum valor foi alterado e não for tipo 9, não incluir esta especificação
+                        if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+                    }
 
                     // Process values using our helper function
                     const processedValues = processInspectionValue(spec, editingValue);
 
-                    return {
-                        id_especificacao: spec.id_especificacao,
-                        valor_encontrado: processedValues.valorEncontrado,
-                        conforme: processedValues.conforme,
-                        observacao: processedValues.observacao
-                    };
+                    // Para inspeção tipo 9, criar a estrutura especial de ocorrencias_nc
+                    if (fichaDados.id_tipo_inspecao === 9) {
+                        // Criar array de ocorrências
+                        const ocorrencias_nc = [];
+
+                        // Se estamos usando o tipo 9, processedValues terá campos específicos
+                        const tipo9Values = processedValues as {
+                            valorEncontrado: string | number | null;
+                            conforme: boolean | null;
+                            observacao: string | null;
+                            quantidade: number | null;
+                            menorValor: number | null;
+                            maiorValor: number | null;
+                            maiorMenor: string;
+                            quantidadeMenor: number | null;
+                            menorValorMenor: number | null;
+                            maiorValorMenor: number | null;
+                            maiorMenorMenor: string;
+                        };
+
+                        // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
+                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
+                        if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
+                            ocorrencias_nc.push({
+                                quantidade: tipo9Values.quantidadeMenor || 0,
+                                maior_menor: "<", // Fixado como "<" conforme exemplo
+                                menor_valor: tipo9Values.menorValorMenor || 0,
+                                maior_valor: tipo9Values.maiorValorMenor || 0
+                            });
+                        }
+
+                        // Adicionar ocorrência maior (>) depois, conforme o exemplo
+                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
+                        if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
+                            ocorrencias_nc.push({
+                                quantidade: tipo9Values.quantidade || 0,
+                                maior_menor: ">", // Fixado como ">" conforme exemplo
+                                menor_valor: tipo9Values.menorValor || 0,
+                                maior_valor: tipo9Values.maiorValor || 0
+                            });
+                        }
+
+                        return {
+                            id_especificacao: spec.id_especificacao,
+                            valor_encontrado: null, // Nulo para inspeção tipo 9
+                            conforme: null, // Nulo para inspeção tipo 9
+                            observacao: tipo9Values.observacao,
+                            ocorrencias_nc: ocorrencias_nc
+                        };
+                    } else {
+                        // Para outros tipos de inspeção, retornar formato normal
+                        return {
+                            id_especificacao: spec.id_especificacao,
+                            valor_encontrado: processedValues.valorEncontrado,
+                            conforme: processedValues.conforme,
+                            observacao: processedValues.observacao
+                        };
+                    }
                 })
                 .filter(item => item !== null);
 
-            await inspecaoService.interruptInspection(
-                parseInt(id),
-                apontamentos,
-                fichaDados.qtde_produzida
-            );
+            // Log para debug - verificar se apontamentos está vazio
+            console.log('DEBUG - Apontamentos antes de interromper:', apontamentos);
+
+            // Garantir que para tipo 9 nunca enviamos um array vazio
+            const apontamentosFinais = fichaDados.id_tipo_inspecao === 9 && apontamentos.length === 0
+                ? specifications.map(spec => ({
+                    id_especificacao: spec.id_especificacao,
+                    valor_encontrado: null,
+                    conforme: null,
+                    observacao: null,
+                    ocorrencias_nc: []
+                }))
+                : apontamentos;
+
+            if (fichaDados.id_tipo_inspecao === 9) {
+                // Para inspeção tipo 9, passar qtde_inspecionada
+                await inspecaoService.interruptInspection(
+                    parseInt(id),
+                    apontamentosFinais,
+                    fichaDados.qtde_produzida,
+                    fichaDados.qtde_inspecionada
+                );
+            } else {
+                // Para outros tipos, usar o método original
+                await inspecaoService.interruptInspection(
+                    parseInt(id),
+                    apontamentosFinais,
+                    fichaDados.qtde_produzida
+                );
+            }
 
             setIsInspectionStarted(false);
             setEditingValues({});
@@ -553,7 +920,7 @@ export default function EspecificacoesPage() {
         } finally {
             setIsSaving(false);
         }
-    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
+    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, fichaDados.qtde_inspecionada, fichaDados.id_tipo_inspecao, processInspectionValue]);
 
     const handleForwardToCQ = useCallback(async () => {
         if (!id) return;
@@ -618,47 +985,150 @@ export default function EspecificacoesPage() {
             setIsSaving(true);
             setIsFinalizing(true);
 
-            // Preparar os apontamentos para enviar ao servidor - apenas os que foram alterados
+            // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications
                 .map(spec => {
                     // Verificar se há valores em edição para esta especificação
                     const editingValue = editingValues[spec.id_especificacao];
 
-                    // Se não houver valores em edição, não incluir esta especificação
-                    if (!editingValue) return null;
+                    // Se não houver valores em edição e não for tipo 9, não incluir esta especificação
+                    // Para tipo 9, sempre criamos um valor de edição padrão se não existir
+                    if (!editingValue) {
+                        if (fichaDados.id_tipo_inspecao === 9) {
+                            // Criar um valor de edição padrão para inspeções tipo 9
+                            editingValues[spec.id_especificacao] = {
+                                valor_encontrado: null,
+                                observacao: '',
+                                conforme: null,
+                                quantidade: null,
+                                menor_valor: null,
+                                maior_valor: null,
+                                maior_menor: ">",
+                                quantidade_menor: null,
+                                menor_valor_menor: null,
+                                maior_valor_menor: null,
+                                maior_menor_menor: "<"
+                            };
+                        } else {
+                            return null;
+                        }
+                    }
 
-                    // Verificar se houve alguma alteração nos valores
-                    const valorAlterado = editingValue.valor_encontrado !== undefined &&
-                        editingValue.valor_encontrado !== '' &&
-                        editingValue.valor_encontrado !== spec.valor_encontrado;
+                    // Para tipo 9, não precisamos verificar alterações, sempre incluímos
+                    if (fichaDados.id_tipo_inspecao !== 9) {
+                        // Verificar se houve alguma alteração nos valores
+                        const valorAlterado = editingValue.valor_encontrado !== undefined &&
+                            editingValue.valor_encontrado !== '' &&
+                            editingValue.valor_encontrado !== spec.valor_encontrado;
 
-                    const conformeAlterado = editingValue.conforme !== undefined &&
-                        editingValue.conforme !== spec.conforme;
+                        const conformeAlterado = editingValue.conforme !== undefined &&
+                            editingValue.conforme !== spec.conforme;
 
-                    const observacaoAlterada = editingValue.observacao !== undefined &&
-                        editingValue.observacao !== spec.observacao &&
-                        editingValue.observacao !== '';
+                        const observacaoAlterada = editingValue.observacao !== undefined &&
+                            editingValue.observacao !== spec.observacao &&
+                            editingValue.observacao !== '';
 
-                    // Se nenhum valor foi alterado, não incluir esta especificação
-                    if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+                        // Se nenhum valor foi alterado e não for tipo 9, não incluir esta especificação
+                        if (!valorAlterado && !conformeAlterado && !observacaoAlterada) return null;
+                    }
 
                     // Process values using our helper function
                     const processedValues = processInspectionValue(spec, editingValue);
 
-                    return {
-                        id_especificacao: spec.id_especificacao,
-                        valor_encontrado: processedValues.valorEncontrado,
-                        conforme: processedValues.conforme,
-                        observacao: processedValues.observacao
-                    };
+                    // Para inspeção tipo 9, criar a estrutura especial de ocorrencias_nc
+                    if (fichaDados.id_tipo_inspecao === 9) {
+                        // Criar array de ocorrências
+                        const ocorrencias_nc = [];
+
+                        // Se estamos usando o tipo 9, processedValues terá campos específicos
+                        const tipo9Values = processedValues as {
+                            valorEncontrado: string | number | null;
+                            conforme: boolean | null;
+                            observacao: string | null;
+                            quantidade: number | null;
+                            menorValor: number | null;
+                            maiorValor: number | null;
+                            maiorMenor: string;
+                            quantidadeMenor: number | null;
+                            menorValorMenor: number | null;
+                            maiorValorMenor: number | null;
+                            maiorMenorMenor: string;
+                        };
+
+                        // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
+                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
+                        if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
+                            ocorrencias_nc.push({
+                                quantidade: tipo9Values.quantidadeMenor || 0,
+                                maior_menor: "<", // Fixado como "<" conforme exemplo
+                                menor_valor: tipo9Values.menorValorMenor || 0,
+                                maior_valor: tipo9Values.maiorValorMenor || 0
+                            });
+                        }
+
+                        // Adicionar ocorrência maior (>) depois, conforme o exemplo
+                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
+                        if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
+                            ocorrencias_nc.push({
+                                quantidade: tipo9Values.quantidade || 0,
+                                maior_menor: ">", // Fixado como ">" conforme exemplo
+                                menor_valor: tipo9Values.menorValor || 0,
+                                maior_valor: tipo9Values.maiorValor || 0
+                            });
+                        }
+
+                        return {
+                            id_especificacao: spec.id_especificacao,
+                            valor_encontrado: null, // Nulo para inspeção tipo 9
+                            conforme: null, // Nulo para inspeção tipo 9
+                            observacao: tipo9Values.observacao,
+                            ocorrencias_nc: ocorrencias_nc
+                        };
+                    } else {
+                        // Para outros tipos de inspeção, retornar formato normal
+                        return {
+                            id_especificacao: spec.id_especificacao,
+                            valor_encontrado: processedValues.valorEncontrado,
+                            conforme: processedValues.conforme,
+                            observacao: processedValues.observacao
+                        };
+                    }
                 })
                 .filter(item => item !== null);
 
-            const response = await inspecaoService.finalizeInspection(
-                parseInt(id),
-                apontamentos,
-                fichaDados.qtde_produzida
-            );
+            let response;
+
+            // Log para debug - verificar se apontamentos está vazio
+            console.log('DEBUG - Apontamentos antes de finalizar:', apontamentos);
+
+            // Garantir que para tipo 9 nunca enviamos um array vazio
+            const apontamentosFinais = fichaDados.id_tipo_inspecao === 9 && apontamentos.length === 0
+                ? specifications.map(spec => ({
+                    id_especificacao: spec.id_especificacao,
+                    valor_encontrado: null,
+                    conforme: null,
+                    observacao: null,
+                    ocorrencias_nc: []
+                }))
+                : apontamentos;
+
+            if (fichaDados.id_tipo_inspecao === 9) {
+                // Para inspeção tipo 9, passar flag e qtde_inspecionada
+                response = await inspecaoService.finalizeInspection(
+                    parseInt(id),
+                    apontamentosFinais,
+                    fichaDados.qtde_produzida,
+                    true, // isTipoInspecao9
+                    fichaDados.qtde_inspecionada
+                );
+            } else {
+                // Para outros tipos, usar o método original
+                response = await inspecaoService.finalizeInspection(
+                    parseInt(id),
+                    apontamentosFinais,
+                    fichaDados.qtde_produzida
+                );
+            }
 
             setIsInspectionStarted(false);
             setEditingValues({});
@@ -684,9 +1154,10 @@ export default function EspecificacoesPage() {
                 });
             }
 
-            // Recarregar os dados atualizados
-            await handleRefresh();
-
+            // Redirecionar após um pequeno delay para garantir que o usuário veja a mensagem
+            setTimeout(() => {
+                router.back();
+            }, 1500);
         } catch (error) {
             console.error("Erro ao finalizar inspeção:", error);
             setAlertMessage({
@@ -694,10 +1165,10 @@ export default function EspecificacoesPage() {
                 type: "error",
             });
         } finally {
-            setIsSaving(false);
             setIsFinalizing(false);
+            setIsSaving(false);
         }
-    }, [id, isInspectionStarted, specifications, editingValues, handleRefresh, fichaDados.qtde_produzida, processInspectionValue]);
+    }, [id, isInspectionStarted, specifications, editingValues, processInspectionValue, fichaDados.qtde_produzida, fichaDados.qtde_inspecionada, fichaDados.id_tipo_inspecao, router]);
 
 
     const handleEditQuantity = useCallback(() => {
@@ -1466,64 +1937,109 @@ export default function EspecificacoesPage() {
                                     </div>
                                     {isSelectType(spec.tipo_valor) ? (
                                         <div>
-                                            <p className="text-xs text-slate-600 mb-2 font-medium flex items-center gap-2">
-                                                Selecione uma opção:
-                                                {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
-                                                    <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 ml-auto">
-                                                        {getPermissionMessage(spec.local_inspecao)}
-                                                    </span>
-                                                )}
-                                            </p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {getSelectOptions(spec.tipo_valor).map((option) => (
-                                                    <button
-                                                        key={String(option.value)}
-                                                        onClick={() =>
-                                                            handleValueChange(spec.id_especificacao, 'conforme', option.value)
-                                                        }
-                                                        disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
-                                                        className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all border shadow-sm
-                        ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao))
-                                                                ? 'opacity-50 cursor-not-allowed'
-                                                                : 'hover:shadow'
-                                                            }
-                        ${(() => {
-                                                                // Função auxiliar para normalizar o valor conforme
-                                                                const isConformeMatch = (conformeValue: boolean | string | null | undefined, optionValue: boolean) => {
-                                                                    // Se for booleano, comparação direta
-                                                                    if (typeof conformeValue === 'boolean') {
-                                                                        return conformeValue === optionValue;
+                                            {/* Para id_tipo_inspecao igual a 9, não mostrar os botões de seleção */}
+                                            {fichaDados.id_tipo_inspecao !== 9 ? (
+                                                <>
+                                                    <p className="text-xs text-slate-600 mb-2 font-medium flex items-center gap-2">
+                                                        Selecione uma opção:
+                                                        {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
+                                                            <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 ml-auto">
+                                                                {getPermissionMessage(spec.local_inspecao)}
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {getSelectOptions(spec.tipo_valor).map((option) => (
+                                                            <button
+                                                                key={String(option.value)}
+                                                                onClick={() =>
+                                                                    handleValueChange(spec.id_especificacao, 'conforme', option.value)
+                                                                }
+                                                                disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all border shadow-sm
+                                ${(!isInspectionStarted || !hasEditPermission(spec.local_inspecao))
+                                                                        ? 'opacity-50 cursor-not-allowed'
+                                                                        : 'hover:shadow'
                                                                     }
-                                                                    // Se for string 'S'/'N', converter para boolean
-                                                                    else if (typeof conformeValue === 'string') {
-                                                                        return (conformeValue === 'S' && optionValue === true) ||
-                                                                            (conformeValue === 'N' && optionValue === false);
+                                ${(() => {
+                                                                        // Função auxiliar para normalizar o valor conforme
+                                                                        const isConformeMatch = (conformeValue: boolean | string | null | undefined, optionValue: boolean) => {
+                                                                            // Se for booleano, comparação direta
+                                                                            if (typeof conformeValue === 'boolean') {
+                                                                                return conformeValue === optionValue;
+                                                                            }
+                                                                            // Se for string 'S'/'N', converter para boolean
+                                                                            else if (typeof conformeValue === 'string') {
+                                                                                return (conformeValue === 'S' && optionValue === true) ||
+                                                                                    (conformeValue === 'N' && optionValue === false);
+                                                                            }
+                                                                            return false;
+                                                                        };
+
+                                                                        // Verificar em editingValues
+                                                                        const editingValueMatch = editingValues[spec.id_especificacao]?.conforme !== undefined &&
+                                                                            isConformeMatch(editingValues[spec.id_especificacao].conforme, option.value);
+
+                                                                        // Verificar no valor original da spec
+                                                                        const specValueMatch = !editingValues[spec.id_especificacao] &&
+                                                                            spec.conforme !== undefined &&
+                                                                            spec.conforme !== null &&
+                                                                            isConformeMatch(spec.conforme, option.value);
+
+                                                                        return (editingValueMatch || specValueMatch)
+                                                                            ? option.value
+                                                                                ? 'bg-green-100/80 text-green-700 border border-green-100 shadow-inner'
+                                                                                : 'bg-red-100/80 text-red-700 border border-red-100 shadow-inner'
+                                                                            : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100';
+                                                                    })()
+                                                                    }`}
+                                                            >
+                                                                {option.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p className="text-xs text-slate-600 mb-1 font-medium flex items-center gap-2">
+
+                                                    {isInspectionStarted && !hasEditPermission(spec.local_inspecao) && (
+                                                        <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 ml-auto">
+                                                            {getPermissionMessage(spec.local_inspecao)}
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            )}
+
+                                            {/* Campo de quantidade para tipos A, C, S, L quando é tipo_inspecao 9 */}
+                                            {fichaDados.id_tipo_inspecao === 9 && (
+                                                <div className={fichaDados.id_tipo_inspecao === 9 ? "" : "mt-3 pt-2 border-t border-dashed border-slate-200"}>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        <div className="relative flex-1 w-full sm:w-1/4">
+                                                            <label className="block text-xs leading-tight text-slate-600 font-medium mb-1 flex items-center gap-1.5">
+                                                                Quantidade:
+                                                            </label>
+                                                            <div className="relative input-focus-container">
+                                                                <input
+                                                                    type="number"
+                                                                    step="1"
+                                                                    value={editingValues[spec.id_especificacao]?.quantidade || ""}
+                                                                    onChange={(e) =>
+                                                                        handleValueChange(spec.id_especificacao, "quantidade", e.target.value)
                                                                     }
-                                                                    return false;
-                                                                };
-
-                                                                // Verificar em editingValues
-                                                                const editingValueMatch = editingValues[spec.id_especificacao]?.conforme !== undefined &&
-                                                                    isConformeMatch(editingValues[spec.id_especificacao].conforme, option.value);
-
-                                                                // Verificar no valor original da spec
-                                                                const specValueMatch = !editingValues[spec.id_especificacao] &&
-                                                                    spec.conforme !== undefined &&
-                                                                    spec.conforme !== null &&
-                                                                    isConformeMatch(spec.conforme, option.value);
-
-                                                                return (editingValueMatch || specValueMatch)
-                                                                    ? option.value
-                                                                        ? 'bg-green-100/80 text-green-700 border border-green-100 shadow-inner'
-                                                                        : 'bg-red-100/80 text-red-700 border border-red-100 shadow-inner'
-                                                                    : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100';
-                                                            })()
-                                                            }`}
-                                                    >
-                                                        {option.label}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                                                    onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 3)}
+                                                                    onBlur={() => setFocusedInputId(null)}
+                                                                    disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                    className={`w-full h-[36px] px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm relative z-10 font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                        ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                        : "hover:shadow-md"
+                                                                        }`}
+                                                                    placeholder="Quantidade"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : null}
 
@@ -1535,6 +2051,179 @@ export default function EspecificacoesPage() {
                                                 const inputClass =
                                                     "w-full h-[36px] px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition-all duration-200 ease-in-out modern-input compact-input shadow-sm relative z-10";
                                                 const containerClass = "relative flex-1";
+
+                                                // Se for inspeção tipo 9, não renderizar os inputs padrões
+                                                if (fichaDados.id_tipo_inspecao === 9) {
+                                                    return (
+                                                        <>
+
+                                                            {/* Para tipo_valor F ou U, mostrar os campos duplicados */}
+                                                            {isNumericType(spec.tipo_valor) && (
+                                                                <>
+                                                                    <div className="flex flex-col gap-3 w-full">
+                                                                        {/* Seção de medidas maiores */}
+                                                                        <div className="w-full border-b border-dashed border-slate-200 pb-2">
+                                                                            <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                                                                                <TrendingUp className="text-red-500 w-4 h-4" />
+                                                                                Medidas maiores
+                                                                            </h4>
+                                                                            <div className="flex flex-wrap gap-3">
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>Quantidade:</label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="1"
+                                                                                            value={editingValues[spec.id_especificacao]?.quantidade || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "quantidade", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 3)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Qtde. maior"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>
+                                                                                        Menor medida:
+                                                                                    </label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "menor_valor", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 1)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Medida mínima"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>
+                                                                                        Maior medida:
+                                                                                    </label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "maior_valor", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 2)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Medida máxima"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Seção de medidas menores */}
+                                                                        <div className="w-full">
+                                                                            <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                                                                                <TrendingDown className="text-orange-500 w-4 h-4" />
+                                                                                Medidas menores
+                                                                            </h4>
+                                                                            <div className="flex flex-wrap gap-3">
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>Quantidade:</label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="1"
+                                                                                            value={editingValues[spec.id_especificacao]?.quantidade_menor || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "quantidade_menor", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 6)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Qtde. menor"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>
+                                                                                        Menor medida:
+                                                                                    </label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor_menor || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "menor_valor_menor", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 7)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Medida mínima"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className={`${containerClass} w-full sm:w-1/4`}>
+                                                                                    <label className={labelClass}>
+                                                                                        Maior medida:
+                                                                                    </label>
+                                                                                    <div className="relative input-focus-container">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor_menor || ""}
+                                                                                            onChange={(e) =>
+                                                                                                handleValueChange(spec.id_especificacao, "maior_valor_menor", e.target.value)
+                                                                                            }
+                                                                                            onFocus={() => setFocusedInputId(spec.id_especificacao * 10 + 8)}
+                                                                                            onBlur={() => setFocusedInputId(null)}
+                                                                                            disabled={!isInspectionStarted || !hasEditPermission(spec.local_inspecao)}
+                                                                                            className={`${inputClass} font-mono ${!isInspectionStarted || !hasEditPermission(spec.local_inspecao)
+                                                                                                ? "opacity-50 cursor-not-allowed bg-slate-50"
+                                                                                                : "hover:shadow-md"
+                                                                                                }`}
+                                                                                            placeholder="Medida máxima"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    );
+                                                }
 
                                                 return (
                                                     <>

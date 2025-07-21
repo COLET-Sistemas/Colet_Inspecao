@@ -24,28 +24,23 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
     fichaId,
     title = "Editar Quantidades"
 }) => {
-    // Estados
     const [tempQtdeProduzida, setTempQtdeProduzida] = useState<string>(initialQtdeProduzida?.toString() || '');
     const [tempQtdeInspecionada, setTempQtdeInspecionada] = useState<string>(initialQtdeInspecionada?.toString() || '');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
 
-    // Refs para elementos focáveis
     const inputProduzidaRef = useRef<HTMLInputElement>(null);
-    const inputInspecionadaRef = useRef<HTMLInputElement>(null); // Novo ref para o campo de quantidade inspecionada
+    const inputInspecionadaRef = useRef<HTMLInputElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const cancelButtonRef = useRef<HTMLButtonElement>(null);
     const confirmButtonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
-
-    // Reset values when modal opens with new initialValues
     useEffect(() => {
         if (isOpen) {
             setTempQtdeProduzida(initialQtdeProduzida?.toString() || '');
             setTempQtdeInspecionada(initialQtdeInspecionada?.toString() || '');
             setError('');
 
-            // Focar no input de quantidade inspecionada quando o modal abrir e selecionar o texto
             const timer = setTimeout(() => {
                 if (inputInspecionadaRef.current) {
                     inputInspecionadaRef.current.focus();
@@ -57,7 +52,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         }
     }, [isOpen, initialQtdeProduzida, initialQtdeInspecionada]);
 
-    // Trap de foco dentro do modal
     useEffect(() => {
         if (!isOpen) return;
 
@@ -100,7 +94,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    // Handle para limpar e fechar o modal
     const handleClose = useCallback(() => {
         setError('');
         setTempQtdeProduzida('');
@@ -108,9 +101,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         onClose();
     }, [onClose]);
 
-    /**
-     * Manipula a submissão do formulário de edição de quantidades
-     */
     const handleQuantitySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -138,10 +128,8 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
         try {
             setIsSaving(true);
 
-            // Obter o código da pessoa do localStorage
             let codigoPessoa = localStorage.getItem('codigo_pessoa');
 
-            // Se não encontrar o código no código_pessoa, buscar no objeto colaborador
             if (!codigoPessoa) {
                 try {
                     const colaboradorData = localStorage.getItem('colaborador');
@@ -154,7 +142,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                 }
             }
 
-            // Se ainda não encontrou, buscar em userData
             if (!codigoPessoa) {
                 try {
                     const userDataStr = localStorage.getItem('userData');
@@ -173,7 +160,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                 return;
             }
 
-            // Obter a URL da API do localStorage
             const apiUrl = localStorage.getItem('apiUrl');
             if (!apiUrl) {
                 setError('URL da API não está configurada');
@@ -181,7 +167,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                 return;
             }
 
-            // Preparar os dados para o PUT
             const idFichaInspecao = typeof fichaId === 'string' ? parseInt(fichaId) : fichaId;
             const requestData = {
                 id_ficha_inspecao: idFichaInspecao,
@@ -190,7 +175,6 @@ const QuantidadeEditModal: FC<QuantidadeEditModalProps> = ({
                 qtde_inspecionada: quantidadeInspecionadaNumber
             };
 
-            // Enviar PUT para o endpoint especificacoes_inspecao
             const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
                 method: 'PUT',
                 headers: {

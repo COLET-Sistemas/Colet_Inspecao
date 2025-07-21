@@ -58,7 +58,6 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
         }
     };
 
-    // Container styling based on fullScreen prop
     const containerClasses = fullScreen
         ? "min-h-screen flex items-center justify-center bg-[#F3F4F6]"
         : "flex items-center justify-center py-8";
@@ -72,7 +71,6 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
                 transition={{ duration: 0.5 }}
             >
                 <div className={`relative ${sizeMap[size]}`}>
-                    {/* Outer spinning ring */}
                     <motion.div
                         className={`absolute inset-0 border-4 border-transparent ${colorMap[color].outer} rounded-full`}
                         animate={{ rotate: 360 }}
@@ -83,7 +81,6 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
                         }}
                     />
 
-                    {/* Inner spinning ring (opposite direction) */}
                     <motion.div
                         className={`absolute inset-2 border-4 border-transparent ${colorMap[color].inner} rounded-full`}
                         animate={{ rotate: -360 }}
@@ -94,7 +91,6 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
                         }}
                     />
 
-                    {/* Center dot */}
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className={`w-2 h-2 ${colorMap[color].dot} rounded-full`} />
                     </div>
@@ -115,9 +111,7 @@ export const LoadingSpinner = forwardRef<HTMLDivElement, LoadingSpinnerProps>(({
     );
 });
 
-// Set display name for forwardRef component
 LoadingSpinner.displayName = 'LoadingSpinner';
 
-// Named export for backward compatibility
 export { LoadingSpinner as Loading };
 

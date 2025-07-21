@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-// Interface para o novo formato de dados para o PUT
 interface InspecaoUpdateData {
     id_ficha_inspecao: number | undefined;
     codigo_pessoa: string;
@@ -13,7 +12,6 @@ interface InspecaoUpdateData {
     qtde_inspecionada: number;
 }
 
-// Interface para o formato de dados para o POST de não conformidade
 interface NaoConformidadeData {
     tipo_inspecao: number;
     codigo_pessoa: string;
@@ -36,7 +34,6 @@ interface QuantidadeInputModalProps {
     onConfirm: (quantidade: number, quantidadeInspecionada?: number) => void;
     title?: string;
     onCancel?: () => void;
-    // Dados necessários para o PUT
     tipoInspecao?: number;
     numeroOrdem?: number;
     referencia?: string;
@@ -46,7 +43,6 @@ interface QuantidadeInputModalProps {
     operacao?: number;
     origem?: string;
     id_ficha_inspecao?: number;
-    // Valores iniciais para os campos
     initialQtdeProduzida?: number;
     initialQtdeInspecionada?: number;
 }
@@ -76,19 +72,17 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
     const [isFocusedOnProduzida, setIsFocusedOnProduzida] = useState(false);
     const [hasEditedInspecionada, setHasEditedInspecionada] = useState(initialQtdeInspecionada !== undefined);
 
-    // Refs para elementos focáveis
     const inputRef = useRef<HTMLInputElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const cancelButtonRef = useRef<HTMLButtonElement>(null);
     const confirmButtonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Focar no input quando o modal abrir
     useEffect(() => {
         if (isOpen && inputRef.current) {
             const timer = setTimeout(() => {
                 inputRef.current?.focus();
-            }, 100); 
+            }, 100);
 
             return () => clearTimeout(timer);
         }
@@ -104,7 +98,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
 
     const handleClose = useCallback(() => {
         setError('');
-        // Redefinir os valores para os iniciais quando o modal é fechado
         setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
         setQuantidadeInspecionada(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
         setIsFocusedOnProduzida(false);
@@ -115,10 +108,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         }
     }, [onClose, onCancel, initialQtdeProduzida, initialQtdeInspecionada]);
 
-    // Ref para o segundo input (quantidade inspecionada)
     const qtdInspecionadaInputRef = useRef<HTMLInputElement>(null);
 
-    // Trap de foco dentro do modal
     useEffect(() => {
         if (!isOpen) return;
 
@@ -138,21 +129,16 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 const firstElement = focusableElements[0] as HTMLElement;
                 const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-                // Se pressionar Shift+Tab no primeiro elemento, vai para o último
                 if (e.shiftKey && document.activeElement === firstElement) {
                     e.preventDefault();
                     lastElement.focus();
                 }
-                // Se pressionar Tab no último elemento, vai para o primeiro
                 else if (!e.shiftKey && document.activeElement === lastElement) {
                     e.preventDefault();
                     firstElement.focus();
                 }
             }
         };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
@@ -183,10 +169,8 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         try {
             setIsLoading(true);
 
-            // Obter o código da pessoa do localStorage
             let codigoPessoa = localStorage.getItem('codigo_pessoa');
 
-            // Se não encontrar o código no código_pessoa, buscar no objeto colaborador
             if (!codigoPessoa) {
                 try {
                     const colaboradorData = localStorage.getItem('colaborador');
@@ -199,7 +183,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 }
             }
 
-            // Se ainda não encontrou, buscar em userData
             if (!codigoPessoa) {
                 try {
                     const userDataStr = localStorage.getItem('userData');
@@ -218,20 +201,18 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 return;
             }
 
-            // Obter a URL da API do localStorage
             const apiUrl = localStorage.getItem('apiUrl');
             if (!apiUrl) {
                 setError('URL da API não está configurada');
                 setIsLoading(false);
                 return;
-            }           
-          
+            }
+
             const isNaoConformidade = origem === "Não Conformidade";
 
             let response;
 
             if (isNaoConformidade) {
-                // Para não conformidade, usar POST com todos os campos
                 const naoConformidadeData: NaoConformidadeData = {
                     tipo_inspecao: tipoInspecao,
                     codigo_pessoa: codigoPessoa,
@@ -248,7 +229,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     ficha_origem: id_ficha_inspecao
                 };
 
-                // Enviar o POST para o endpoint
                 response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
                     method: 'POST',
                     headers: {
@@ -257,15 +237,12 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     body: JSON.stringify(naoConformidadeData)
                 });
             } else {
-                // Para registro de quantidade normal, usar PUT
-                // Verificar se temos o id da ficha
                 if (!id_ficha_inspecao) {
                     setError('ID da ficha de inspeção não encontrado');
                     setIsLoading(false);
                     return;
                 }
 
-                // Preparar os dados para o PUT
                 const inspecaoData: InspecaoUpdateData = {
                     id_ficha_inspecao: id_ficha_inspecao,
                     codigo_pessoa: codigoPessoa,
@@ -273,7 +250,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                     qtde_inspecionada: quantidadeInspecionadaNumber
                 };
 
-                // Enviar o PUT para o endpoint
                 response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao`, {
                     method: 'PUT',
                     headers: {
@@ -290,7 +266,6 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
                 throw new Error(errorData?.message || `Erro HTTP: ${response.status}`);
             }
 
-            // Se tudo deu certo, executar o onConfirm e fechar o modal
             setError('');
             onConfirm(quantidadeNumber, quantidadeInspecionadaNumber);
             setQuantidade('');
@@ -301,9 +276,10 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
             console.error('Erro ao enviar dados da inspeção:', error);
             setError(error instanceof Error ? error.message : 'Erro ao registrar a inspeção');
         }
-    }; const handleCancel = useCallback(() => {
+    };
+
+    const handleCancel = useCallback(() => {
         setError('');
-        // Redefinir os valores para os iniciais quando o modal é cancelado
         setQuantidade(initialQtdeProduzida !== undefined ? String(initialQtdeProduzida) : '');
         setQuantidadeInspecionada(initialQtdeInspecionada !== undefined ? String(initialQtdeInspecionada) : '');
         setIsFocusedOnProduzida(false);
@@ -312,7 +288,9 @@ const QuantidadeInputModal: React.FC<QuantidadeInputModalProps> = ({
         if (onCancel) {
             onCancel();
         }
-    }, [onClose, onCancel, initialQtdeProduzida, initialQtdeInspecionada]); return (
+    }, [onClose, onCancel, initialQtdeProduzida, initialQtdeInspecionada]);
+
+    return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto">

@@ -7,7 +7,6 @@ import { AlertCircle, CircleCheck, Code, FileText, Info, Ruler } from "lucide-re
 import { useCallback, useEffect, useState } from "react";
 import { FormModal } from "../FormModal";
 
-// Interface para dados de formulário
 interface CotaCaracteristicaFormData {
     descricao: string;
     tipo: string;
@@ -18,7 +17,6 @@ interface CotaCaracteristicaFormData {
     local_inspecao?: string;
 }
 
-// Interface para erros da API
 interface ApiError {
     message?: string;
     erro?: string;
@@ -44,38 +42,30 @@ export function CotaCaracteristicaModal({
     const [svgPreview, setSvgPreview] = useState<string>(cotaCaracteristica?.simbolo_path_svg || '');
     const [selectedTipo, setSelectedTipo] = useState<string>(cotaCaracteristica?.tipo || '');
 
-    // Atualizar a prévia e valores quando o modal é aberto com um item existente
     useEffect(() => {
         if (isOpen) {
             setSvgPreview(cotaCaracteristica?.simbolo_path_svg || '');
 
-            // Definir o tipo apenas se tiver um item existente para edição
             if (cotaCaracteristica?.tipo) {
                 setSelectedTipo(cotaCaracteristica.tipo);
             } else {
-                // Limpar o tipo para novo cadastro
                 setSelectedTipo('');
             }
 
-            setError(null); // Limpar erros ao abrir o modal
+            setError(null);
         }
     }, [isOpen, cotaCaracteristica]);
 
-    // Função para atualizar a prévia do SVG
     const handleSvgChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const svgContent = e.target.value.trim();
         setSvgPreview(svgContent);
-    };    // Função para atualizar o tipo selecionado
+    };
+
     const handleTipoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newTipo = e.target.value;
-        console.log("Tipo selecionado:", newTipo); // Debug
-
-        // Atualizar o estado para garantir que o React saiba da mudança
         setSelectedTipo(newTipo);
 
-        // Apenas limpar campos quando mudou de Cota para Característica
         if (newTipo === "A") {
-            // Reset dos campos que não são aplicáveis para Característica
             setTimeout(() => {
                 const unidadeMedidaField = document.getElementById('unidade_medida') as HTMLInputElement;
                 const rejeitaMenorField = document.getElementById('rejeita_menor') as HTMLSelectElement;
@@ -88,12 +78,10 @@ export function CotaCaracteristicaModal({
                 if (localInspecaoField) localInspecaoField.value = '*';
             }, 0);
         }
-        // Quando selecionar Cota (O), manter os valores existentes sem reset
     };
 
     const handleSubmit = useCallback(
         async (data: Record<string, FormDataEntryValue>) => {
-            // Map generic form data to CotaCaracteristicaFormData
             const formData: CotaCaracteristicaFormData = {
                 descricao: String(data.descricao || ""),
                 tipo: String(data.tipo || ""),
@@ -103,8 +91,10 @@ export function CotaCaracteristicaModal({
                 rejeita_maior: String(data.rejeita_maior || "false"),
                 local_inspecao: data.local_inspecao ? String(data.local_inspecao) : undefined,
             };
+
             try {
-                setError(null);                // Validar campos obrigatórios
+                setError(null);
+
                 if (!formData.descricao?.trim()) {
                     setError("A descrição é obrigatória");
                     return;
@@ -115,10 +105,7 @@ export function CotaCaracteristicaModal({
                     return;
                 }
 
-                // Processar o valor do SVG - remover tags <svg></svg> se estiverem presentes
                 let svgContent = formData.simbolo_path_svg?.trim() || "";
-
-                // Remover as tags <svg> e </svg> se existirem, preservando apenas o conteúdo interno
                 svgContent = svgContent.replace(/<svg[^>]*>|<\/svg>/gi, '').trim(); const payload: {
                     descricao: string;
                     tipo: string;
@@ -132,7 +119,6 @@ export function CotaCaracteristicaModal({
                     descricao: formData.descricao.trim(),
                     tipo: formData.tipo.trim(),
                     simbolo_path_svg: svgContent,
-                    // Para Característica (tipo "A"), estes campos são null
                     unidade_medida: formData.tipo.trim() === "O" ? (formData.unidade_medida?.trim() || "") : null,
                     rejeita_menor: formData.tipo.trim() === "O" ? (formData.rejeita_menor === "true" || formData.rejeita_menor === "sim" ? "s" : "n") : null,
                     rejeita_maior: formData.tipo.trim() === "O" ? (formData.rejeita_maior === "true" || formData.rejeita_maior === "sim" ? "s" : "n") : null,
@@ -141,60 +127,54 @@ export function CotaCaracteristicaModal({
 
                 let responseData: CotaCaracteristica;
 
-                if (cotaCaracteristica?.id) {                    // Modo de edição - PUT
+                if (cotaCaracteristica?.id) {
                     try {
-                        responseData = await updateCotaCaracteristica(
-                            {
-                                id: Number(cotaCaracteristica.id),
-                                descricao: payload.descricao,
-                                tipo: payload.tipo,
-                                simbolo_path_svg: payload.simbolo_path_svg,
-                                unidade_medida: payload.unidade_medida,
-                                rejeita_menor: payload.rejeita_menor,
-                                rejeita_maior: payload.rejeita_maior,
-                                local_inspecao: payload.local_inspecao
-                            }
-                        );
+                        responseData = await updateCotaCaracteristica({
+                            id: Number(cotaCaracteristica.id),
+                            descricao: payload.descricao,
+                            tipo: payload.tipo,
+                            simbolo_path_svg: payload.simbolo_path_svg,
+                            unidade_medida: payload.unidade_medida,
+                            rejeita_menor: payload.rejeita_menor,
+                            rejeita_maior: payload.rejeita_maior,
+                            local_inspecao: payload.local_inspecao
+                        });
                     } catch (error: unknown) {
                         const apiError = error as ApiError;
                         throw new Error(apiError.message || apiError.erro || "Erro ao atualizar cota/característica");
                     }
-                } else {                    // Modo de criação - POST
+                } else {
                     try {
-                        responseData = await createCotaCaracteristica(
-                            {
-                                descricao: payload.descricao,
-                                tipo: payload.tipo,
-                                simbolo_path_svg: payload.simbolo_path_svg,
-                                unidade_medida: payload.unidade_medida,
-                                rejeita_menor: payload.rejeita_menor,
-                                rejeita_maior: payload.rejeita_maior,
-                                local_inspecao: payload.local_inspecao
-                            }
-                        );
+                        responseData = await createCotaCaracteristica({
+                            descricao: payload.descricao,
+                            tipo: payload.tipo,
+                            simbolo_path_svg: payload.simbolo_path_svg,
+                            unidade_medida: payload.unidade_medida,
+                            rejeita_menor: payload.rejeita_menor,
+                            rejeita_maior: payload.rejeita_maior,
+                            local_inspecao: payload.local_inspecao
+                        });
                     } catch (error: unknown) {
                         const apiError = error as ApiError;
                         throw new Error(apiError.message || apiError.erro || "Erro ao criar cota/característica");
                     }
                 }
 
-                // Se não temos um ID na resposta, pode ser necessário usar um ID temporário
                 if (!responseData || responseData.id === undefined) {
                     console.warn("API não retornou um ID válido. Usando um ID temporário.");
                     responseData = {
                         ...payload,
-                        id: cotaCaracteristica?.id || Math.floor(Math.random() * 10000) + 1 // Usa o ID existente ou cria um temporário
+                        id: cotaCaracteristica?.id || Math.floor(Math.random() * 10000) + 1
                     };
                 }
 
-                if (onSuccess) {                    // Garantir que todos os campos necessários estejam presentes
+                if (onSuccess) {
                     const successData = {
                         ...responseData,
                         id: responseData.id,
                         descricao: responseData.descricao || formData.descricao.trim(),
                         tipo: responseData.tipo || formData.tipo.trim(),
                         simbolo_path_svg: responseData.simbolo_path_svg || formData.simbolo_path_svg?.trim() || "",
-                        // Para Característica (tipo "A"), estes campos são null
                         unidade_medida: formData.tipo === "O" ? (responseData.unidade_medida || formData.unidade_medida?.trim() || "") : null,
                         rejeita_menor: formData.tipo === "O" ? (responseData.rejeita_menor || (formData.rejeita_menor === "true" ? "s" : "n")) : null,
                         rejeita_maior: formData.tipo === "O" ? (responseData.rejeita_maior || (formData.rejeita_maior === "true" ? "s" : "n")) : null,
@@ -209,9 +189,7 @@ export function CotaCaracteristicaModal({
                 console.error("Erro ao processar formulário:", err);
                 const apiError = err as ApiError;
                 const errorMessage = apiError.message || "Ocorreu um erro inesperado";
-                // Fechar o modal em caso de erro
                 onClose();
-                // Propagar o erro para o componente pai
                 if (onError) {
                     onError(errorMessage);
                 }
@@ -220,7 +198,6 @@ export function CotaCaracteristicaModal({
         [cotaCaracteristica, onClose, onSuccess, onError]
     );
 
-    // Feedback visual para erros
     const renderFeedback = () => {
         if (error) {
             return (
@@ -256,7 +233,6 @@ export function CotaCaracteristicaModal({
 
             <div className="space-y-4">
                 <div className="bg-white rounded-md">
-                    {/* Campo de descrição */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
@@ -279,10 +255,10 @@ export function CotaCaracteristicaModal({
                                 onBlur={() => setIsFocused(null)}
                             />
                         </div>
-                    </div>                    {/* Layout unificado - sempre renderizado para evitar remontagem */}
-                    <div className="mb-4">                        {/* Primeira linha - Layout dinâmico baseado no tipo */}
+                    </div>
+
+                    <div className="mb-4">
                         <div className={`grid gap-4 ${selectedTipo === "O" ? "grid-cols-10" : "grid-cols-1"}`} key="tipo-layout">
-                            {/* Campo de tipo */}
                             <div className={selectedTipo === "O" ? "col-span-4" : "col-span-1"}>
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center space-x-2">
@@ -292,23 +268,24 @@ export function CotaCaracteristicaModal({
                                         </label>
                                     </div>
                                 </div>
-                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>                                    <select
-                                    id="tipo"
-                                    name="tipo"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
-                                    required
-                                    value={selectedTipo}
-                                    onChange={handleTipoChange}
-                                    onFocus={() => setIsFocused('tipo')}
-                                    onBlur={() => setIsFocused(null)}
-                                >
-                                    <option value="">Selecione o tipo</option>
-                                    <option value="O">Cota</option>
-                                    <option value="A">Característica Especial</option>
-                                </select>
+                                <div className={`relative transition-all duration-200 ${isFocused === 'tipo' ? 'ring-2 ring-[#09A08D]/30 rounded-md' : ''}`}>
+                                    <select
+                                        id="tipo"
+                                        name="tipo"
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#09A08D] focus:outline-none focus:shadow-sm transition-all duration-300"
+                                        required
+                                        value={selectedTipo}
+                                        onChange={handleTipoChange}
+                                        onFocus={() => setIsFocused('tipo')}
+                                        onBlur={() => setIsFocused(null)}
+                                    >
+                                        <option value="">Selecione o tipo</option>
+                                        <option value="O">Cota</option>
+                                        <option value="A">Característica Especial</option>
+                                    </select>
                                 </div>
-                            </div>                            {/* Campos de rejeição - com visibilidade condicional mas sempre renderizados */}
-                            {/* Campo rejeita_menor - 30% da linha */}
+                            </div>
+
                             <div className={`col-span-3 ${selectedTipo !== "O" ? "hidden" : ""}`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center space-x-2">
@@ -340,7 +317,6 @@ export function CotaCaracteristicaModal({
                                 </div>
                             </div>
 
-                            {/* Campo rejeita_maior - 30% da linha */}
                             <div className={`col-span-3 ${selectedTipo !== "O" ? "hidden" : ""}`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center space-x-2">
@@ -373,7 +349,6 @@ export function CotaCaracteristicaModal({
                             </div>
                         </div>
 
-                        {/* Feedback informativo */}
                         {selectedTipo && (
                             <div className="mt-1 text-xs text-gray-500">
                                 {selectedTipo === "O"
@@ -384,12 +359,9 @@ export function CotaCaracteristicaModal({
                         )}
                     </div>
 
-                    {/* Campos específicos para Cota - Segunda linha */}
                     {selectedTipo === "O" && (
                         <>
-                            {/* Segunda linha: Unidade de Medida e Local de Inspeção */}
                             <div className="mb-4 grid grid-cols-2 gap-4">
-                                {/* Campo de unidade de medida */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center space-x-2">
@@ -413,7 +385,6 @@ export function CotaCaracteristicaModal({
                                     </div>
                                 </div>
 
-                                {/* Campo local de inspeção */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center space-x-2">
@@ -442,7 +413,6 @@ export function CotaCaracteristicaModal({
                         </>
                     )}
 
-                    {/* Campo para símbolo SVG com prévia */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
@@ -453,9 +423,7 @@ export function CotaCaracteristicaModal({
                             </div>
                         </div>
 
-                        {/* Layout em grid com textarea à esquerda e visualização à direita */}
                         <div className="grid grid-cols-1 md:grid-cols-2  gap-3">
-                            {/* Textarea para código SVG à esquerda */}
                             <div className={`relative transition-all duration-200 border border-gray-200 p-2 ${isFocused === 'simbolo_path_svg' ? 'ring-2 ring-[#09A08D]/30  rounded-md' : ''}`}>
                                 <textarea
                                     id="simbolo_path_svg"
@@ -476,7 +444,6 @@ export function CotaCaracteristicaModal({
                                 </div>
                             </div>
 
-                            {/* Área de visualização do SVG à direita */}
                             <div className="flex flex-col items-center justify-center bg-gray-50 border border-gray-200 rounded-md p-3">
                                 <div className="bg-white shadow-sm rounded-md p-2 w-full h-full max-h-32 flex items-center justify-center">
                                     <svg
@@ -494,7 +461,6 @@ export function CotaCaracteristicaModal({
                         </div>
                     </div>
 
-                    {/* Mensagem sobre campos obrigatórios */}
                     <div className="text-xs text-gray-500 mt-4">
                         <span className="text-red-500">*</span> Campos obrigatórios
                     </div>
