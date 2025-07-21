@@ -138,9 +138,6 @@ class InspecaoService {
         this.baseUrl = baseUrl;
     }
 
-    /**
-     * Busca todas as inspeções organizadas por categoria
-     */
     async getAllInspections(): Promise<InspectionData> {
         try {
             const response = await fetch(`${this.baseUrl}/inspections`, {
@@ -159,9 +156,6 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Busca inspeções com filtros específicos
-     */
     async getFilteredInspections(filters: InspectionFilters): Promise<InspectionData> {
         try {
             const params = new URLSearchParams();
@@ -188,9 +182,6 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Busca uma inspeção específica por ID
-     */
     async getInspectionById(id: string): Promise<InspectionItem> {
         try {
             const response = await fetch(`${this.baseUrl}/inspections/${id}`, {
@@ -235,13 +226,11 @@ class InspecaoService {
                 }
             } catch (error) {
                 console.error('Erro ao verificar perfil de inspeção:', error);
-            }            // Se o usuário tem perfil Q, usar apenas o posto CQ, caso contrário usar os postos originais
+            }
             let postos: string[];
             if (hasPerfilQ) {
-                // Se tem perfil Q, usar apenas o posto CQ (ignorando os postos vinculados)
                 postos = ['CQ'];
             } else {
-                // Se não tem perfil Q, usar os postos originais
                 postos = Array.isArray(codigosPostos) ? codigosPostos : codigosPostos.split(',').map(p => p.trim());
             }
 
@@ -260,9 +249,8 @@ class InspecaoService {
         } catch (error) {
             throw error;
         }
-    }    /**
-     * Mapeia os dados da API para o formato InspectionItem
-     */    private mapApiDataToInspectionItem(apiItem: ApiInspectionItem): InspectionItem {
+    }
+    private mapApiDataToInspectionItem(apiItem: ApiInspectionItem): InspectionItem {
         return {
             // Dados originais da API
             id: apiItem.id_ficha_inspecao?.toString() || '',
@@ -296,9 +284,8 @@ class InspecaoService {
             tipo_acao: apiItem.tipo_acao || null,
             produto: apiItem.produto || null,
         };
-    }    /**
-     * Busca especificações de uma ficha de inspeção
-     */
+    }
+
     async getInspectionSpecifications(id: number): Promise<{
         specifications: InspectionSpecification[],
         fichaDados: Omit<InspectionSpecificationResponse, 'especificacoes'>
@@ -317,7 +304,7 @@ class InspecaoService {
                 throw new Error(`Erro HTTP: ${response.status}`);
             }
 
-            const data = await response.json();            // Novo formato da API
+            const data = await response.json();
             if (data && data.especificacoes) {
                 const response = data as InspectionSpecificationResponse;
                 return {
@@ -332,7 +319,7 @@ class InspecaoService {
                         exibe_resultado: response.exibe_resultado
                     }
                 };
-            }            // Formato antigo da API (compatibilidade)
+            }
             return {
                 specifications: Array.isArray(data) ? data : [], fichaDados: {
                     id_ficha_inspecao: id,
@@ -349,10 +336,8 @@ class InspecaoService {
             console.error(`Erro ao buscar especificações da ficha ${id}:`, error);
             throw error;
         }
-    }    /**
-     * Atualiza uma especificação da inspeção
-     * Pode ser usada sem autenticação
-     */    async updateInspectionSpecification(idEspecificacao: number, data: {
+    }
+    async updateInspectionSpecification(idEspecificacao: number, data: {
         valor_encontrado: number | string;
         conforme: boolean | null;
         observacao?: string | null;
@@ -362,7 +347,7 @@ class InspecaoService {
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 throw new Error("URL da API não está configurada");
-            }            // Clone os dados para não modificar o objeto original
+            }
             const processedData: {
                 valor_encontrado: number | string | null;
                 conforme: boolean | string | null;
@@ -372,7 +357,6 @@ class InspecaoService {
 
             // Para os tipos A, C, S, L (Aprovado/Reprovado, Conforme/Não Conforme, etc)
             if (data.tipo_valor && ['A', 'C', 'S', 'L'].includes(data.tipo_valor)) {
-                // Converter boolean para S/N
                 if (data.conforme === true) {
                     processedData.conforme = 'S';
                 } else if (data.conforme === false) {
@@ -380,11 +364,9 @@ class InspecaoService {
                 } else {
                     processedData.conforme = null;
                 }
-                // Para esses tipos, o valor_encontrado deve ser sempre null
                 processedData.valor_encontrado = null;
             }
 
-            // Remover o campo tipo_valor antes de enviar para a API
             delete processedData.tipo_valor;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes/${idEspecificacao}`, {
@@ -407,9 +389,7 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Busca estatísticas das inspeções
-     */
+
     async getInspectionStats(): Promise<{
         total: number;
         porTipo: Record<string, number>;
@@ -432,10 +412,7 @@ class InspecaoService {
             console.error('Erro ao buscar estatísticas:', error);
             throw error;
         }
-    }    /**
-     * Inicia uma inspeção
-     * @param idFichaInspecao - ID da ficha de inspeção
-     */
+    }
     async startInspection(idFichaInspecao: number): Promise<void> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
@@ -443,7 +420,6 @@ class InspecaoService {
                 throw new Error("URL da API não está configurada");
             }
 
-            // Tenta obter o código da pessoa, mas não é mais obrigatório
             let codigo_pessoa = null;
             const userDataStr = localStorage.getItem("userData");
             if (userDataStr) {
@@ -473,7 +449,7 @@ class InspecaoService {
                 body: JSON.stringify({
                     id_ficha_inspecao: idFichaInspecao,
                     acao: "iniciar",
-                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
+                    codigo_pessoa: codigo_pessoa_num
                 })
             });
 
@@ -486,11 +462,6 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Autentica um colaborador para inspeção
-     * @param codigoPessoa - Código do colaborador
-     * @param senhaCriptografada - Senha criptografada
-     */
     async authColaborador(codigoPessoa: string, senhaCriptografada: string): Promise<ColaboradorResponse> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
@@ -560,7 +531,7 @@ class InspecaoService {
                 body: JSON.stringify({
                     id_ficha_inspecao: idFichaInspecao,
                     acao: "encaminhar",
-                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
+                    codigo_pessoa: codigo_pessoa_num
                 })
             });
 
@@ -573,10 +544,6 @@ class InspecaoService {
         }
     }
 
-    /**
-     * Confirma o recebimento de uma ficha de inspeção
-     * @param idFichaInspecao - ID da ficha de inspeção
-     */
     async confirmReceipt(idFichaInspecao: number): Promise<void> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
@@ -584,7 +551,6 @@ class InspecaoService {
                 throw new Error("URL da API não está configurada");
             }
 
-            // Tenta obter o código da pessoa, mas não é mais obrigatório
             let codigo_pessoa = null;
             const userDataStr = localStorage.getItem("userData");
             if (userDataStr) {
@@ -614,7 +580,7 @@ class InspecaoService {
                 body: JSON.stringify({
                     id_ficha_inspecao: idFichaInspecao,
                     acao: "receber",
-                    codigo_pessoa: codigo_pessoa_num // Código é enviado se disponível, mas não é obrigatório
+                    codigo_pessoa: codigo_pessoa_num
                 })
             });
 
@@ -625,12 +591,8 @@ class InspecaoService {
             console.error('Erro ao confirmar recebimento da inspeção:', error);
             throw error;
         }
-    }    /**
-     * Interrompe uma inspeção em andamento
-     * @param idFichaInspecao - ID da ficha de inspeção
-     * @param apontamentos - Array de apontamentos com valores encontrados e observações
-     * @param qtdeProduzida - Quantidade produzida
-     */
+    }
+
     async interruptInspection(
         idFichaInspecao: number,
         apontamentos: Array<{
@@ -671,19 +633,14 @@ class InspecaoService {
 
             const codigo_pessoa_num = codigo_pessoa ? parseInt(codigo_pessoa) : null;
 
-            // Processar os apontamentos antes de enviá-los
             const apontamentosProcessados = apontamentos.map(item => {
-                // Preservar ocorrencias_nc sempre - para tipo 9 é essencial
-                // Garantir que ocorrencias_nc seja sempre um array, mesmo que vazio
                 const ocorrenciasNc = Array.isArray(item.ocorrencias_nc) ? item.ocorrencias_nc : [];
 
-                // Não temos acesso direto às especificações, mas podemos verificar 
-                // se conforme é boolean e converter para S/N
                 if (item.conforme === true || item.conforme === false) {
                     return {
                         id_especificacao: item.id_especificacao,
-                        valor_encontrado: null, // Nesse caso, o valor_encontrado deve ser null
-                        conforme: item.conforme === true ? 'S' : 'N', // Convertendo boolean para S/N
+                        valor_encontrado: null,
+                        conforme: item.conforme === true ? 'S' : 'N',
                         observacao: item.observacao,
                         ocorrencias_nc: ocorrenciasNc
                     };
@@ -694,7 +651,6 @@ class InspecaoService {
                 };
             });
 
-            // Não filtre os apontamentos para tipo 9, TODOS os apontamentos são importantes
             const apontamentosPreenchidos = apontamentosProcessados;
 
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao`, {
@@ -721,11 +677,6 @@ class InspecaoService {
         }
     }
 
-    /**     * Finaliza uma inspeção em andamento
-     * @param idFichaInspecao - ID da ficha de inspeção
-     * @param apontamentos - Array de apontamentos com valores encontrados e observações
-     * @param qtdeProduzida - Quantidade produzida
-     */
     async finalizeInspection(
         idFichaInspecao: number,
         apontamentos: Array<{

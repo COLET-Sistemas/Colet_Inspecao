@@ -894,45 +894,44 @@ export default function EspecificacoesPage() {
 
             // Validação específica para inspeção tipo 9
             if (fichaDados.id_tipo_inspecao === 9) {
-                let somaQuantidades = 0;
                 let validationError = null;
 
-                // Somar todas as quantidades preenchidas (quantidade e quantidade_menor) e validar campos obrigatórios
+                // Validar cada especificação individualmente
                 specifications.forEach(spec => {
                     const editingValue = editingValues[spec.id_especificacao];
                     if (editingValue) {
-                        // Somar quantidade (maior)
-                        if (editingValue.quantidade && editingValue.quantidade > 0) {
-                            somaQuantidades += editingValue.quantidade;
-
-                            // Validar se campos obrigatórios estão preenchidos para quantidade > 0 (apenas tipos F e U)
-                            if (['F', 'U'].includes(spec.tipo_valor)) {
-                                if (editingValue.menor_valor === null || editingValue.menor_valor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Menor Valor deve ser preenchido.`;
-                                    return;
-                                }
-                                if (editingValue.maior_valor === null || editingValue.maior_valor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Maior Valor deve ser preenchido.`;
-                                    return;
-                                }
-                            }
+                        // Validar se quantidade (medida maior) é maior que qtde_inspecionada
+                        if (editingValue.quantidade !== null && editingValue.quantidade !== undefined &&
+                            fichaDados.qtde_inspecionada && editingValue.quantidade > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a quantidade (${editingValue.quantidade}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
                         }
 
-                        // Somar quantidade_menor (menor)
-                        if (editingValue.quantidade_menor && editingValue.quantidade_menor > 0) {
-                            somaQuantidades += editingValue.quantidade_menor;
+                        // Validar se quantidade_menor (medida menor) é maior que qtde_inspecionada
+                        if (editingValue.quantidade_menor !== null && editingValue.quantidade_menor !== undefined &&
+                            fichaDados.qtde_inspecionada && editingValue.quantidade_menor > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a quantidade menor (${editingValue.quantidade_menor}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
+                        }
 
-                            // Validar se campos obrigatórios estão preenchidos para quantidade_menor > 0 (apenas tipos F e U)
-                            if (['F', 'U'].includes(spec.tipo_valor)) {
-                                if (editingValue.menor_valor_menor === null || editingValue.menor_valor_menor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Menor Valor deve ser preenchido.`;
-                                    return;
-                                }
-                                if (editingValue.maior_valor_menor === null || editingValue.maior_valor_menor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Maior Valor deve ser preenchido.`;
-                                    return;
-                                }
-                            }
+                        // Validar se a soma das quantidades é maior que qtde_inspecionada
+                        const quantidade = editingValue.quantidade || 0;
+                        const quantidadeMenor = editingValue.quantidade_menor || 0;
+                        const somaQuantidades = quantidade + quantidadeMenor;
+
+                        if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a soma das quantidades (${somaQuantidades}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
+                        }
+
+                        // Validar se maior_valor ou menor_valor estão preenchidos, então quantidade, maior_valor e menor_valor devem estar preenchidos
+                        const hasMaiorValor = editingValue.maior_valor !== null && editingValue.maior_valor !== undefined;
+                        const hasMenorValor = editingValue.menor_valor !== null && editingValue.menor_valor !== undefined;
+                        const hasQuantidade = editingValue.quantidade !== null && editingValue.quantidade !== undefined && editingValue.quantidade > 0;
+
+                        if ((hasMaiorValor || hasMenorValor) && (!hasQuantidade || !hasMaiorValor || !hasMenorValor)) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", se maior medida ou menor medida estiverem preenchidos, todods os campos devem estar todos preenchidos.`;
+                            return;
                         }
                     }
                 });
@@ -941,18 +940,6 @@ export default function EspecificacoesPage() {
                 if (validationError) {
                     setAlertMessage({
                         message: validationError,
-                        type: "info",
-                    });
-                    setIsSaving(false);
-                    return;
-                }
-
-                console.log(`Validação quantidade: soma=${somaQuantidades}, qtde_inspecionada=${fichaDados.qtde_inspecionada}`);
-
-                // Verificar se a soma é maior que qtde_inspecionada
-                if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
-                    setAlertMessage({
-                        message: `A soma das quantidades informadas (${somaQuantidades}) é maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}). Ajuste os valores antes de continuar.`,
                         type: "info",
                     });
                     setIsSaving(false);
@@ -1217,45 +1204,54 @@ export default function EspecificacoesPage() {
 
             // Validação específica para inspeção tipo 9
             if (fichaDados.id_tipo_inspecao === 9) {
-                let somaQuantidades = 0;
                 let validationError = null;
 
-                // Somar todas as quantidades preenchidas (quantidade e quantidade_menor) e validar campos obrigatórios
+                // Validar cada especificação individualmente
                 specifications.forEach(spec => {
                     const editingValue = editingValues[spec.id_especificacao];
                     if (editingValue) {
-                        // Somar quantidade (maior)
-                        if (editingValue.quantidade && editingValue.quantidade > 0) {
-                            somaQuantidades += editingValue.quantidade;
-
-                            // Validar se campos obrigatórios estão preenchidos para quantidade > 0 (apenas tipos F e U)
-                            if (['F', 'U'].includes(spec.tipo_valor)) {
-                                if (editingValue.menor_valor === null || editingValue.menor_valor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Menor Valor deve ser preenchido.`;
-                                    return;
-                                }
-                                if (editingValue.maior_valor === null || editingValue.maior_valor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Maior Valor deve ser preenchido.`;
-                                    return;
-                                }
-                            }
+                        // Validar se quantidade (medida maior) é maior que qtde_inspecionada
+                        if (editingValue.quantidade !== null && editingValue.quantidade !== undefined &&
+                            fichaDados.qtde_inspecionada && editingValue.quantidade > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a quantidade (${editingValue.quantidade}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
                         }
 
-                        // Somar quantidade_menor (menor)
-                        if (editingValue.quantidade_menor && editingValue.quantidade_menor > 0) {
-                            somaQuantidades += editingValue.quantidade_menor;
+                        // Validar se quantidade_menor (medida menor) é maior que qtde_inspecionada
+                        if (editingValue.quantidade_menor !== null && editingValue.quantidade_menor !== undefined &&
+                            fichaDados.qtde_inspecionada && editingValue.quantidade_menor > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a quantidade menor (${editingValue.quantidade_menor}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
+                        }
 
-                            // Validar se campos obrigatórios estão preenchidos para quantidade_menor > 0 (apenas tipos F e U)
-                            if (['F', 'U'].includes(spec.tipo_valor)) {
-                                if (editingValue.menor_valor_menor === null || editingValue.menor_valor_menor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Menor Valor deve ser preenchido.`;
-                                    return;
-                                }
-                                if (editingValue.maior_valor_menor === null || editingValue.maior_valor_menor === undefined) {
-                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Maior Valor deve ser preenchido.`;
-                                    return;
-                                }
-                            }
+                        // Validar se a soma das quantidades é maior que qtde_inspecionada
+                        const quantidade = editingValue.quantidade || 0;
+                        const quantidadeMenor = editingValue.quantidade_menor || 0;
+                        const somaQuantidades = quantidade + quantidadeMenor;
+
+                        if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", a soma das quantidades (${somaQuantidades}) não pode ser maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}).`;
+                            return;
+                        }
+
+                        // Validar se maior_valor ou menor_valor estão preenchidos, então quantidade, maior_valor e menor_valor devem estar preenchidos
+                        const hasMaiorValor = editingValue.maior_valor !== null && editingValue.maior_valor !== undefined;
+                        const hasMenorValor = editingValue.menor_valor !== null && editingValue.menor_valor !== undefined;
+                        const hasQuantidade = editingValue.quantidade !== null && editingValue.quantidade !== undefined && editingValue.quantidade > 0;
+
+                        if ((hasMaiorValor || hasMenorValor) && (!hasQuantidade || !hasMaiorValor || !hasMenorValor)) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", se maior_valor ou menor_valor estiverem preenchidos, os campos quantidade, maior_valor e menor_valor devem estar todos preenchidos.`;
+                            return;
+                        }
+
+                        // Validar se maior_valor_menor ou menor_valor_menor estão preenchidos, então quantidade_menor, maior_valor_menor e menor_valor_menor devem estar preenchidos
+                        const hasMaiorValorMenor = editingValue.maior_valor_menor !== null && editingValue.maior_valor_menor !== undefined;
+                        const hasMenorValorMenor = editingValue.menor_valor_menor !== null && editingValue.menor_valor_menor !== undefined;
+                        const hasQuantidadeMenor = editingValue.quantidade_menor !== null && editingValue.quantidade_menor !== undefined && editingValue.quantidade_menor > 0;
+
+                        if ((hasMaiorValorMenor || hasMenorValorMenor) && (!hasQuantidadeMenor || !hasMaiorValorMenor || !hasMenorValorMenor)) {
+                            validationError = `Para a especificação "${spec.descricao_cota}", se maior_valor_menor ou menor_valor_menor estiverem preenchidos, os campos quantidade_menor, maior_valor_menor e menor_valor_menor devem estar todos preenchidos.`;
+                            return;
                         }
                     }
                 });
@@ -1264,19 +1260,6 @@ export default function EspecificacoesPage() {
                 if (validationError) {
                     setAlertMessage({
                         message: validationError,
-                        type: "info",
-                    });
-                    setIsSaving(false);
-                    setIsFinalizing(false);
-                    return;
-                }
-
-                console.log(`Validação quantidade: soma=${somaQuantidades}, qtde_inspecionada=${fichaDados.qtde_inspecionada}`);
-
-                // Verificar se a soma é maior que qtde_inspecionada
-                if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
-                    setAlertMessage({
-                        message: `A soma das quantidades informadas (${somaQuantidades}) é maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}). Ajuste os valores antes de continuar.`,
                         type: "info",
                     });
                     setIsSaving(false);
@@ -2721,47 +2704,51 @@ export default function EspecificacoesPage() {
                                 </span>
                             </div>
 
-                            <div className="counter-item">
-                                <div className="counter-dot bg-amber-500"></div>
-                                <span className="counter-label">Informados:</span>
-                                <span className="counter-value text-amber-600 font-mono ml-1">
-                                    {specifications.filter(s => {
-                                        const editingValue = editingValues[s.id_especificacao];
-                                        // Para campos de seleção, verificar se conforme foi definido
-                                        if (isSelectType(s.tipo_valor)) {
-                                            return (editingValue?.conforme !== undefined && editingValue.conforme !== null) ||
-                                                (s.conforme !== null && s.conforme !== undefined);
-                                        }
-                                        // Para outros campos, verificar valor_encontrado
-                                        const hasEditingValue = editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '';
-                                        const hasOriginalValue = s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0;
-                                        return hasEditingValue || hasOriginalValue;
-                                    }).length}
-                                </span>
-                            </div>
+                            {fichaDados.id_tipo_inspecao !== 9 && (
+                                <>
+                                    <div className="counter-item">
+                                        <div className="counter-dot bg-amber-500"></div>
+                                        <span className="counter-label">Informados:</span>
+                                        <span className="counter-value text-amber-600 font-mono ml-1">
+                                            {specifications.filter(s => {
+                                                const editingValue = editingValues[s.id_especificacao];
+                                                // Para campos de seleção, verificar se conforme foi definido
+                                                if (isSelectType(s.tipo_valor)) {
+                                                    return (editingValue?.conforme !== undefined && editingValue.conforme !== null) ||
+                                                        (s.conforme !== null && s.conforme !== undefined);
+                                                }
+                                                // Para outros campos, verificar valor_encontrado
+                                                const hasEditingValue = editingValue?.valor_encontrado !== undefined && editingValue.valor_encontrado !== '';
+                                                const hasOriginalValue = s.valor_encontrado !== null && s.valor_encontrado !== undefined && s.valor_encontrado !== 0;
+                                                return hasEditingValue || hasOriginalValue;
+                                            }).length}
+                                        </span>
+                                    </div>
 
-                            <div className="counter-item">
-                                <div className="counter-dot bg-slate-400"></div>
-                                <span className="counter-label">{fichaDados.exibe_resultado === 'S' ? 'Pendentes:' : 'Não informados:'}</span>
-                                <span className="counter-value text-slate-600 font-mono ml-1">
-                                    {specifications.filter(s => {
-                                        const editingValue = editingValues[s.id_especificacao];
-                                        if (isNumericType(s.tipo_valor)) {
-                                            return (editingValue?.valor_encontrado !== undefined) ?
-                                                !editingValue.valor_encontrado :
-                                                (s.valor_encontrado === null || s.valor_encontrado === undefined);
-                                        }
-                                        if (isSelectType(s.tipo_valor)) {
-                                            // Para campos de seleção (A, C, S, L), verificamos se o campo conforme está definido
-                                            return (editingValue?.conforme !== undefined) ?
-                                                editingValue.conforme === null :
-                                                s.conforme === null;
-                                        }
+                                    <div className="counter-item">
+                                        <div className="counter-dot bg-slate-400"></div>
+                                        <span className="counter-label">{fichaDados.exibe_resultado === 'S' ? 'Pendentes:' : 'Não informados:'}</span>
+                                        <span className="counter-value text-slate-600 font-mono ml-1">
+                                            {specifications.filter(s => {
+                                                const editingValue = editingValues[s.id_especificacao];
+                                                if (isNumericType(s.tipo_valor)) {
+                                                    return (editingValue?.valor_encontrado !== undefined) ?
+                                                        !editingValue.valor_encontrado :
+                                                        (s.valor_encontrado === null || s.valor_encontrado === undefined);
+                                                }
+                                                if (isSelectType(s.tipo_valor)) {
+                                                    // Para campos de seleção (A, C, S, L), verificamos se o campo conforme está definido
+                                                    return (editingValue?.conforme !== undefined) ?
+                                                        editingValue.conforme === null :
+                                                        s.conforme === null;
+                                                }
 
-                                        return false;
-                                    }).length}
-                                </span>
-                            </div>
+                                                return false;
+                                            }).length}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div className="flex items-center gap-3 whitespace-nowrap">
                             {shouldShowActionButtons() && (
