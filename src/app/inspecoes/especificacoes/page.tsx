@@ -89,6 +89,8 @@ export default function EspecificacoesPage() {
             menor_valor_menor?: number | null;
             maior_valor_menor?: number | null;
             maior_menor_menor?: string;
+            id_ocorrencia_maior?: number | null;
+            id_ocorrencia_menor?: number | null;
         }
     }>({});
     const [isSaving, setIsSaving] = useState(false);
@@ -211,14 +213,82 @@ export default function EspecificacoesPage() {
                         menor_valor_menor?: number | null;
                         maior_valor_menor?: number | null;
                         maior_menor_menor?: string;
+                        id_ocorrencia_maior?: number | null;
+                        id_ocorrencia_menor?: number | null;
                     }
                 } = {};                // Prepara os valores iniciais para o estado editingValues
                 response.specifications.forEach(spec => {
                     // Inicializa valores para todas as especificações, garantindo tratamento correto para valores como 0
-                    initialEditingValues[spec.id_especificacao] = processSpecValue(spec);
+                    const processedValue = processSpecValue(spec);
+
+                    // Se for inspeção tipo 9, inicializar os campos adicionais
+                    if (response.fichaDados.id_tipo_inspecao === 9) {
+                        // Inicializar os campos adicionais com valores padrão
+                        initialEditingValues[spec.id_especificacao] = {
+                            ...processedValue,
+                            quantidade: null,
+                            menor_valor: null,
+                            maior_valor: null,
+                            maior_menor: ">",
+                            quantidade_menor: null,
+                            menor_valor_menor: null,
+                            maior_valor_menor: null,
+                            maior_menor_menor: "<",
+                            id_ocorrencia_maior: null,
+                            id_ocorrencia_menor: null
+                        };
+
+                        // Processar dados de ocorrencias_nc se existirem
+                        if (spec.ocorrencias_nc && Array.isArray(spec.ocorrencias_nc) && spec.ocorrencias_nc.length > 0) {
+                            console.log(`Processando ocorrencias_nc para especificação ${spec.id_especificacao}:`, spec.ocorrencias_nc);
+
+                            // Encontrar ocorrências com maior_menor ">" ou "R" (medidas maiores)
+                            const ocorrenciaMaior = spec.ocorrencias_nc.find(ocr => ocr.maior_menor === ">" || ocr.maior_menor === "R");
+                            if (ocorrenciaMaior) {
+                                initialEditingValues[spec.id_especificacao].quantidade = ocorrenciaMaior.quantidade;
+                                initialEditingValues[spec.id_especificacao].menor_valor = ocorrenciaMaior.menor_valor;
+                                initialEditingValues[spec.id_especificacao].maior_valor = ocorrenciaMaior.maior_valor;
+                                initialEditingValues[spec.id_especificacao].maior_menor = ocorrenciaMaior.maior_menor;
+                                // Capturar id_ocorrencia se existir
+                                const ocorrenciaComId = ocorrenciaMaior as {
+                                    quantidade: number;
+                                    maior_menor: string;
+                                    menor_valor: number;
+                                    maior_valor: number;
+                                    id_ocorrencia?: number;
+                                };
+                                if (ocorrenciaComId.id_ocorrencia) {
+                                    initialEditingValues[spec.id_especificacao].id_ocorrencia_maior = ocorrenciaComId.id_ocorrencia;
+                                }
+                            }
+
+                            // Encontrar ocorrências com maior_menor "<" (medidas menores)
+                            const ocorrenciaMenor = spec.ocorrencias_nc.find(ocr => ocr.maior_menor === "<");
+                            if (ocorrenciaMenor) {
+                                initialEditingValues[spec.id_especificacao].quantidade_menor = ocorrenciaMenor.quantidade;
+                                initialEditingValues[spec.id_especificacao].menor_valor_menor = ocorrenciaMenor.menor_valor;
+                                initialEditingValues[spec.id_especificacao].maior_valor_menor = ocorrenciaMenor.maior_valor;
+                                initialEditingValues[spec.id_especificacao].maior_menor_menor = ocorrenciaMenor.maior_menor;
+                                // Capturar id_ocorrencia se existir
+                                const ocorrenciaComIdMenor = ocorrenciaMenor as {
+                                    quantidade: number;
+                                    maior_menor: string;
+                                    menor_valor: number;
+                                    maior_valor: number;
+                                    id_ocorrencia?: number;
+                                };
+                                if (ocorrenciaComIdMenor.id_ocorrencia) {
+                                    initialEditingValues[spec.id_especificacao].id_ocorrencia_menor = ocorrenciaComIdMenor.id_ocorrencia;
+                                }
+                            }
+                        }
+                    } else {
+                        initialEditingValues[spec.id_especificacao] = processedValue;
+                    }
                 });
 
                 // Atualiza o estado com os valores iniciais
+                console.log('[loadSpecifications] Valores finais de editingValues:', initialEditingValues);
                 setEditingValues(initialEditingValues);
 
                 setFichaDados({
@@ -270,6 +340,8 @@ export default function EspecificacoesPage() {
                     menor_valor_menor?: number | null;
                     maior_valor_menor?: number | null;
                     maior_menor_menor?: string;
+                    id_ocorrencia_maior?: number | null;
+                    id_ocorrencia_menor?: number | null;
                 }
             } = {};            // Prepara os valores iniciais para o estado editingValues
             response.specifications.forEach(spec => {
@@ -279,7 +351,6 @@ export default function EspecificacoesPage() {
                 // Se for inspeção tipo 9, inicializar os campos adicionais
                 if (response.fichaDados.id_tipo_inspecao === 9) {
                     // Inicializar os campos adicionais com valores padrão
-                    // A API pode não ter estes campos ainda, então inicializamos com null
                     initialEditingValues[spec.id_especificacao] = {
                         ...processedValue,
                         quantidade: null,
@@ -289,60 +360,105 @@ export default function EspecificacoesPage() {
                         quantidade_menor: null,
                         menor_valor_menor: null,
                         maior_valor_menor: null,
-                        maior_menor_menor: "<"
+                        maior_menor_menor: "<",
+                        id_ocorrencia_maior: null,
+                        id_ocorrencia_menor: null
                     };
 
-                    // Tentamos acessar os valores se existirem usando Object.hasOwn para segurança
+                    // Processar dados de ocorrencias_nc se existirem
+                    if (spec.ocorrencias_nc && Array.isArray(spec.ocorrencias_nc) && spec.ocorrencias_nc.length > 0) {
+                        console.log(`[handleRefresh] Processando ocorrencias_nc para especificação ${spec.id_especificacao}:`, spec.ocorrencias_nc);
+
+                        // Encontrar ocorrências com maior_menor ">" ou "R" (medidas maiores)
+                        const ocorrenciaMaior = spec.ocorrencias_nc.find(ocr => ocr.maior_menor === ">" || ocr.maior_menor === "R");
+                        if (ocorrenciaMaior) {
+                            console.log(`[handleRefresh] Encontrada ocorrência maior (${ocorrenciaMaior.maior_menor}) para especificação ${spec.id_especificacao}:`, ocorrenciaMaior);
+                            initialEditingValues[spec.id_especificacao].quantidade = ocorrenciaMaior.quantidade;
+                            initialEditingValues[spec.id_especificacao].menor_valor = ocorrenciaMaior.menor_valor;
+                            initialEditingValues[spec.id_especificacao].maior_valor = ocorrenciaMaior.maior_valor;
+                            initialEditingValues[spec.id_especificacao].maior_menor = ocorrenciaMaior.maior_menor;
+                            // Capturar id_ocorrencia se existir
+                            const ocorrenciaComId = ocorrenciaMaior as {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            };
+                            if (ocorrenciaComId.id_ocorrencia) {
+                                initialEditingValues[spec.id_especificacao].id_ocorrencia_maior = ocorrenciaComId.id_ocorrencia;
+                            }
+                        }
+
+                        // Encontrar ocorrências com maior_menor "<" (medidas menores)
+                        const ocorrenciaMenor = spec.ocorrencias_nc.find(ocr => ocr.maior_menor === "<");
+                        if (ocorrenciaMenor) {
+                            console.log(`[handleRefresh] Encontrada ocorrência menor (<) para especificação ${spec.id_especificacao}:`, ocorrenciaMenor);
+                            initialEditingValues[spec.id_especificacao].quantidade_menor = ocorrenciaMenor.quantidade;
+                            initialEditingValues[spec.id_especificacao].menor_valor_menor = ocorrenciaMenor.menor_valor;
+                            initialEditingValues[spec.id_especificacao].maior_valor_menor = ocorrenciaMenor.maior_valor;
+                            initialEditingValues[spec.id_especificacao].maior_menor_menor = ocorrenciaMenor.maior_menor;
+                            // Capturar id_ocorrencia se existir
+                            const ocorrenciaComIdMenor = ocorrenciaMenor as {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            };
+                            if (ocorrenciaComIdMenor.id_ocorrencia) {
+                                initialEditingValues[spec.id_especificacao].id_ocorrencia_menor = ocorrenciaComIdMenor.id_ocorrencia;
+                            }
+                        }
+                    }                    // Manter compatibilidade com campos diretos (caso existam)
                     try {
-                        // Primeiro convertemos para unknown e depois para um tipo indexável
-                        // Isso resolve o erro de TypeScript enquanto mantém a segurança de tipos
                         const specAny = (spec as unknown) as Record<string, unknown>;
 
-                        if ('quantidade' in specAny) {
+                        if ('quantidade' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].quantidade =
                                 typeof specAny.quantidade === 'number' ? specAny.quantidade :
                                     typeof specAny.quantidade === 'string' ? Number(specAny.quantidade) : null;
                         }
 
-                        if ('menor_valor' in specAny) {
+                        if ('menor_valor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].menor_valor =
                                 typeof specAny.menor_valor === 'number' ? specAny.menor_valor :
                                     typeof specAny.menor_valor === 'string' ? Number(specAny.menor_valor) : null;
                         }
 
-                        if ('maior_valor' in specAny) {
+                        if ('maior_valor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].maior_valor =
                                 typeof specAny.maior_valor === 'number' ? specAny.maior_valor :
                                     typeof specAny.maior_valor === 'string' ? Number(specAny.maior_valor) : null;
                         }
 
-                        // Campos para medidas menores (<)
-                        if ('quantidade_menor' in specAny) {
+                        if ('maior_menor' in specAny && !spec.ocorrencias_nc) {
+                            initialEditingValues[spec.id_especificacao].maior_menor =
+                                typeof specAny.maior_menor === 'string' ? specAny.maior_menor : ">";
+                        }
+
+                        // Campos para medidas menores (<) - apenas se não há ocorrencias_nc
+                        if ('quantidade_menor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].quantidade_menor =
                                 typeof specAny.quantidade_menor === 'number' ? specAny.quantidade_menor :
                                     typeof specAny.quantidade_menor === 'string' ? Number(specAny.quantidade_menor) : null;
                         }
 
-                        if ('maior_menor_menor' in specAny) {
+                        if ('maior_menor_menor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].maior_menor_menor =
                                 typeof specAny.maior_menor_menor === 'string' ? specAny.maior_menor_menor : "<";
                         }
 
-                        if ('menor_valor_menor' in specAny) {
+                        if ('menor_valor_menor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].menor_valor_menor =
                                 typeof specAny.menor_valor_menor === 'number' ? specAny.menor_valor_menor :
                                     typeof specAny.menor_valor_menor === 'string' ? Number(specAny.menor_valor_menor) : null;
                         }
 
-                        if ('maior_valor_menor' in specAny) {
+                        if ('maior_valor_menor' in specAny && !spec.ocorrencias_nc) {
                             initialEditingValues[spec.id_especificacao].maior_valor_menor =
                                 typeof specAny.maior_valor_menor === 'number' ? specAny.maior_valor_menor :
                                     typeof specAny.maior_valor_menor === 'string' ? Number(specAny.maior_valor_menor) : null;
-                        }
-
-                        if ('maior_menor' in specAny) {
-                            initialEditingValues[spec.id_especificacao].maior_menor =
-                                typeof specAny.maior_menor === 'string' ? specAny.maior_menor : ">";
                         }
                     } catch (e) {
                         console.error('Erro ao processar campos adicionais para inspeção tipo 9:', e);
@@ -353,6 +469,7 @@ export default function EspecificacoesPage() {
             });
 
             // Atualiza o estado com os valores atualizados
+            console.log('[handleRefresh] Valores finais de editingValues:', initialEditingValues);
             setEditingValues(initialEditingValues);
 
             setFichaDados({
@@ -457,7 +574,9 @@ export default function EspecificacoesPage() {
                 quantidade_menor: null,
                 menor_valor_menor: null,
                 maior_valor_menor: null,
-                maior_menor_menor: "<"
+                maior_menor_menor: "<",
+                id_ocorrencia_maior: null,
+                id_ocorrencia_menor: null
             };
 
             // Encontrar a especificação atual para verificar o tipo_valor
@@ -648,8 +767,12 @@ export default function EspecificacoesPage() {
                 result.maiorMenor = ">";  // Valor padrão
             }
 
+            // Para tipo_valor A, C, S ou L, usar "R" como maior_menor
+            if (['A', 'C', 'S', 'L'].includes(spec.tipo_valor)) {
+                result.maiorMenor = "R";
+            }
             // Para tipo_valor F ou U, processar menor_valor e maior_valor
-            if (['F', 'U'].includes(spec.tipo_valor)) {
+            else if (['F', 'U'].includes(spec.tipo_valor)) {
                 if (editingValue?.menor_valor !== undefined) {
                     result.menorValor = editingValue.menor_valor;
                 }
@@ -657,9 +780,7 @@ export default function EspecificacoesPage() {
                 if (editingValue?.maior_valor !== undefined) {
                     result.maiorValor = editingValue.maior_valor;
                 }
-            }
-
-            // Processar valores menores (<)
+            }            // Processar valores menores (<)
             // Processar quantidade_menor
             if (editingValue?.quantidade_menor !== undefined) {
                 result.quantidadeMenor = editingValue.quantidade_menor;
@@ -758,6 +879,75 @@ export default function EspecificacoesPage() {
 
         try {
             setIsSaving(true);
+
+            // Validação específica para inspeção tipo 9
+            if (fichaDados.id_tipo_inspecao === 9) {
+                let somaQuantidades = 0;
+                let validationError = null;
+
+                // Somar todas as quantidades preenchidas (quantidade e quantidade_menor) e validar campos obrigatórios
+                specifications.forEach(spec => {
+                    const editingValue = editingValues[spec.id_especificacao];
+                    if (editingValue) {
+                        // Somar quantidade (maior)
+                        if (editingValue.quantidade && editingValue.quantidade > 0) {
+                            somaQuantidades += editingValue.quantidade;
+
+                            // Validar se campos obrigatórios estão preenchidos para quantidade > 0 (apenas tipos F e U)
+                            if (['F', 'U'].includes(spec.tipo_valor)) {
+                                if (editingValue.menor_valor === null || editingValue.menor_valor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Menor Valor deve ser preenchido.`;
+                                    return;
+                                }
+                                if (editingValue.maior_valor === null || editingValue.maior_valor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Maior Valor deve ser preenchido.`;
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Somar quantidade_menor (menor)
+                        if (editingValue.quantidade_menor && editingValue.quantidade_menor > 0) {
+                            somaQuantidades += editingValue.quantidade_menor;
+
+                            // Validar se campos obrigatórios estão preenchidos para quantidade_menor > 0 (apenas tipos F e U)
+                            if (['F', 'U'].includes(spec.tipo_valor)) {
+                                if (editingValue.menor_valor_menor === null || editingValue.menor_valor_menor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Menor Valor deve ser preenchido.`;
+                                    return;
+                                }
+                                if (editingValue.maior_valor_menor === null || editingValue.maior_valor_menor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Maior Valor deve ser preenchido.`;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Se houve erro de validação, exibir e parar
+                if (validationError) {
+                    setAlertMessage({
+                        message: validationError,
+                        type: "info",
+                    });
+                    setIsSaving(false);
+                    return;
+                }
+
+                console.log(`Validação quantidade: soma=${somaQuantidades}, qtde_inspecionada=${fichaDados.qtde_inspecionada}`);
+
+                // Verificar se a soma é maior que qtde_inspecionada
+                if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
+                    setAlertMessage({
+                        message: `A soma das quantidades informadas (${somaQuantidades}) é maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}). Ajuste os valores antes de continuar.`,
+                        type: "info",
+                    });
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications
                 .map(spec => {
@@ -780,7 +970,9 @@ export default function EspecificacoesPage() {
                                 quantidade_menor: null,
                                 menor_valor_menor: null,
                                 maior_valor_menor: null,
-                                maior_menor_menor: "<"
+                                maior_menor_menor: "<",
+                                id_ocorrencia_maior: null,
+                                id_ocorrencia_menor: null
                             };
                         } else {
                             return null;
@@ -831,23 +1023,48 @@ export default function EspecificacoesPage() {
                         // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
                         // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
                         if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
-                            ocorrencias_nc.push({
+                            const ocorrenciaMenor: {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            } = {
                                 quantidade: tipo9Values.quantidadeMenor || 0,
-                                maior_menor: "<", // Fixado como "<" conforme exemplo
+                                maior_menor: "<",
                                 menor_valor: tipo9Values.menorValorMenor || 0,
                                 maior_valor: tipo9Values.maiorValorMenor || 0
-                            });
+                            };
+                            // Adicionar id_ocorrencia se existir
+                            if (editingValue?.id_ocorrencia_menor) {
+                                ocorrenciaMenor.id_ocorrencia = editingValue.id_ocorrencia_menor;
+                            }
+                            ocorrencias_nc.push(ocorrenciaMenor);
                         }
 
                         // Adicionar ocorrência maior (>) depois, conforme o exemplo
                         // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
                         if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
-                            ocorrencias_nc.push({
-                                quantidade: tipo9Values.quantidade || 0,
-                                maior_menor: ">", // Fixado como ">" conforme exemplo
+                            // Para tipo_valor A, C, S, L usar "R", para outros usar ">"
+                            const maiorMenorValue = ['A', 'C', 'S', 'L'].includes(spec.tipo_valor) ? "R" : ">";
+
+                            const ocorrenciaMaior: {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            } = {
+                                quantidade: tipo9Values.quantidade !== null ? tipo9Values.quantidade : 0,
+                                maior_menor: maiorMenorValue,
                                 menor_valor: tipo9Values.menorValor || 0,
                                 maior_valor: tipo9Values.maiorValor || 0
-                            });
+                            };
+                            // Adicionar id_ocorrencia se existir
+                            if (editingValue?.id_ocorrencia_maior) {
+                                ocorrenciaMaior.id_ocorrencia = editingValue.id_ocorrencia_maior;
+                            }
+                            ocorrencias_nc.push(ocorrenciaMaior);
                         }
 
                         return {
@@ -871,6 +1088,7 @@ export default function EspecificacoesPage() {
 
             // Log para debug - verificar se apontamentos está vazio
             console.log('DEBUG - Apontamentos antes de interromper:', apontamentos);
+            console.log('DEBUG - Estrutura completa com id_ocorrencia:', JSON.stringify(apontamentos, null, 2));
 
             // Garantir que para tipo 9 nunca enviamos um array vazio
             const apontamentosFinais = fichaDados.id_tipo_inspecao === 9 && apontamentos.length === 0
@@ -985,6 +1203,76 @@ export default function EspecificacoesPage() {
             setIsSaving(true);
             setIsFinalizing(true);
 
+            // Validação específica para inspeção tipo 9
+            if (fichaDados.id_tipo_inspecao === 9) {
+                let somaQuantidades = 0;
+                let validationError = null;
+
+                // Somar todas as quantidades preenchidas (quantidade e quantidade_menor) e validar campos obrigatórios
+                specifications.forEach(spec => {
+                    const editingValue = editingValues[spec.id_especificacao];
+                    if (editingValue) {
+                        // Somar quantidade (maior)
+                        if (editingValue.quantidade && editingValue.quantidade > 0) {
+                            somaQuantidades += editingValue.quantidade;
+
+                            // Validar se campos obrigatórios estão preenchidos para quantidade > 0 (apenas tipos F e U)
+                            if (['F', 'U'].includes(spec.tipo_valor)) {
+                                if (editingValue.menor_valor === null || editingValue.menor_valor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Menor Valor deve ser preenchido.`;
+                                    return;
+                                }
+                                if (editingValue.maior_valor === null || editingValue.maior_valor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade ${editingValue.quantidade}, o campo Maior Valor deve ser preenchido.`;
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Somar quantidade_menor (menor)
+                        if (editingValue.quantidade_menor && editingValue.quantidade_menor > 0) {
+                            somaQuantidades += editingValue.quantidade_menor;
+
+                            // Validar se campos obrigatórios estão preenchidos para quantidade_menor > 0 (apenas tipos F e U)
+                            if (['F', 'U'].includes(spec.tipo_valor)) {
+                                if (editingValue.menor_valor_menor === null || editingValue.menor_valor_menor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Menor Valor deve ser preenchido.`;
+                                    return;
+                                }
+                                if (editingValue.maior_valor_menor === null || editingValue.maior_valor_menor === undefined) {
+                                    validationError = `Para a especificação "${spec.descricao_caracteristica}" com quantidade menor ${editingValue.quantidade_menor}, o campo Maior Valor deve ser preenchido.`;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Se houve erro de validação, exibir e parar
+                if (validationError) {
+                    setAlertMessage({
+                        message: validationError,
+                        type: "info",
+                    });
+                    setIsSaving(false);
+                    setIsFinalizing(false);
+                    return;
+                }
+
+                console.log(`Validação quantidade: soma=${somaQuantidades}, qtde_inspecionada=${fichaDados.qtde_inspecionada}`);
+
+                // Verificar se a soma é maior que qtde_inspecionada
+                if (fichaDados.qtde_inspecionada && somaQuantidades > fichaDados.qtde_inspecionada) {
+                    setAlertMessage({
+                        message: `A soma das quantidades informadas (${somaQuantidades}) é maior que a quantidade inspecionada (${fichaDados.qtde_inspecionada}). Ajuste os valores antes de continuar.`,
+                        type: "info",
+                    });
+                    setIsSaving(false);
+                    setIsFinalizing(false);
+                    return;
+                }
+            }
+
             // Preparar os apontamentos para enviar ao servidor
             const apontamentos = specifications
                 .map(spec => {
@@ -1007,7 +1295,9 @@ export default function EspecificacoesPage() {
                                 quantidade_menor: null,
                                 menor_valor_menor: null,
                                 maior_valor_menor: null,
-                                maior_menor_menor: "<"
+                                maior_menor_menor: "<",
+                                id_ocorrencia_maior: null,
+                                id_ocorrencia_menor: null
                             };
                         } else {
                             return null;
@@ -1058,23 +1348,48 @@ export default function EspecificacoesPage() {
                         // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
                         // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
                         if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
-                            ocorrencias_nc.push({
+                            const ocorrenciaMenor: {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            } = {
                                 quantidade: tipo9Values.quantidadeMenor || 0,
-                                maior_menor: "<", // Fixado como "<" conforme exemplo
+                                maior_menor: "<",
                                 menor_valor: tipo9Values.menorValorMenor || 0,
                                 maior_valor: tipo9Values.maiorValorMenor || 0
-                            });
+                            };
+                            // Adicionar id_ocorrencia se existir
+                            if (editingValue?.id_ocorrencia_menor) {
+                                ocorrenciaMenor.id_ocorrencia = editingValue.id_ocorrencia_menor;
+                            }
+                            ocorrencias_nc.push(ocorrenciaMenor);
                         }
 
                         // Adicionar ocorrência maior (>) depois, conforme o exemplo
                         // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
                         if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
-                            ocorrencias_nc.push({
-                                quantidade: tipo9Values.quantidade || 0,
-                                maior_menor: ">", // Fixado como ">" conforme exemplo
+                            // Para tipo_valor A, C, S, L usar "R", para outros usar ">"
+                            const maiorMenorValue = ['A', 'C', 'S', 'L'].includes(spec.tipo_valor) ? "R" : ">";
+
+                            const ocorrenciaMaior: {
+                                quantidade: number;
+                                maior_menor: string;
+                                menor_valor: number;
+                                maior_valor: number;
+                                id_ocorrencia?: number;
+                            } = {
+                                quantidade: tipo9Values.quantidade !== null ? tipo9Values.quantidade : 0,
+                                maior_menor: maiorMenorValue,
                                 menor_valor: tipo9Values.menorValor || 0,
                                 maior_valor: tipo9Values.maiorValor || 0
-                            });
+                            };
+                            // Adicionar id_ocorrencia se existir
+                            if (editingValue?.id_ocorrencia_maior) {
+                                ocorrenciaMaior.id_ocorrencia = editingValue.id_ocorrencia_maior;
+                            }
+                            ocorrencias_nc.push(ocorrenciaMaior);
                         }
 
                         return {
@@ -2022,7 +2337,7 @@ export default function EspecificacoesPage() {
                                                                 <input
                                                                     type="number"
                                                                     step="1"
-                                                                    value={editingValues[spec.id_especificacao]?.quantidade || ""}
+                                                                    value={editingValues[spec.id_especificacao]?.quantidade ?? ""}
                                                                     onChange={(e) =>
                                                                         handleValueChange(spec.id_especificacao, "quantidade", e.target.value)
                                                                     }
@@ -2074,7 +2389,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="1"
-                                                                                            value={editingValues[spec.id_especificacao]?.quantidade || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.quantidade ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "quantidade", e.target.value)
                                                                                             }
@@ -2098,7 +2413,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="0.01"
-                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "menor_valor", e.target.value)
                                                                                             }
@@ -2122,7 +2437,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="0.01"
-                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "maior_valor", e.target.value)
                                                                                             }
@@ -2153,7 +2468,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="1"
-                                                                                            value={editingValues[spec.id_especificacao]?.quantidade_menor || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.quantidade_menor ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "quantidade_menor", e.target.value)
                                                                                             }
@@ -2177,7 +2492,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="0.01"
-                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor_menor || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.menor_valor_menor ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "menor_valor_menor", e.target.value)
                                                                                             }
@@ -2201,7 +2516,7 @@ export default function EspecificacoesPage() {
                                                                                         <input
                                                                                             type="number"
                                                                                             step="0.01"
-                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor_menor || ""}
+                                                                                            value={editingValues[spec.id_especificacao]?.maior_valor_menor ?? ""}
                                                                                             onChange={(e) =>
                                                                                                 handleValueChange(spec.id_especificacao, "maior_valor_menor", e.target.value)
                                                                                             }
