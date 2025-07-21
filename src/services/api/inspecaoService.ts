@@ -126,8 +126,8 @@ interface InspectionSpecification {
     ocorrencias_nc?: Array<{
         quantidade: number;
         maior_menor: string;
-        menor_valor: number;
-        maior_valor: number;
+        menor_valor: number | null;
+        maior_valor: number | null;
     }>;
 }
 
@@ -641,8 +641,8 @@ class InspecaoService {
             ocorrencias_nc?: Array<{
                 quantidade: number;
                 maior_menor: string;
-                menor_valor: number;
-                maior_valor: number;
+                menor_valor: number | null;
+                maior_valor: number | null;
             }>;
         }>,
         qtdeProduzida: number | null = null,
@@ -736,8 +736,8 @@ class InspecaoService {
             ocorrencias_nc?: Array<{
                 quantidade: number;
                 maior_menor: string;
-                menor_valor: number;
-                maior_valor: number;
+                menor_valor: number | null;
+                maior_valor: number | null;
             }>;
         }>,
         qtdeProduzida: number | null = null,

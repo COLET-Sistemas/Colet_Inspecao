@@ -773,12 +773,18 @@ export default function EspecificacoesPage() {
             }
             // Para tipo_valor F ou U, processar menor_valor e maior_valor
             else if (['F', 'U'].includes(spec.tipo_valor)) {
-                if (editingValue?.menor_valor !== undefined) {
-                    result.menorValor = editingValue.menor_valor;
-                }
+                // Se quantidade for 0, enviar menor_valor e maior_valor como null
+                if (result.quantidade === 0) {
+                    result.menorValor = null;
+                    result.maiorValor = null;
+                } else {
+                    if (editingValue?.menor_valor !== undefined) {
+                        result.menorValor = editingValue.menor_valor;
+                    }
 
-                if (editingValue?.maior_valor !== undefined) {
-                    result.maiorValor = editingValue.maior_valor;
+                    if (editingValue?.maior_valor !== undefined) {
+                        result.maiorValor = editingValue.maior_valor;
+                    }
                 }
             }            // Processar valores menores (<)
             // Processar quantidade_menor
@@ -793,14 +799,20 @@ export default function EspecificacoesPage() {
                 result.maiorMenorMenor = "<";  // Valor padrão
             }
 
-            // Processar menor_valor_menor
-            if (editingValue?.menor_valor_menor !== undefined) {
-                result.menorValorMenor = editingValue.menor_valor_menor;
-            }
+            // Se quantidade_menor for 0, enviar menor_valor_menor e maior_valor_menor como null
+            if (result.quantidadeMenor === 0) {
+                result.menorValorMenor = null;
+                result.maiorValorMenor = null;
+            } else {
+                // Processar menor_valor_menor
+                if (editingValue?.menor_valor_menor !== undefined) {
+                    result.menorValorMenor = editingValue.menor_valor_menor;
+                }
 
-            // Processar maior_valor_menor
-            if (editingValue?.maior_valor_menor !== undefined) {
-                result.maiorValorMenor = editingValue.maior_valor_menor;
+                // Processar maior_valor_menor
+                if (editingValue?.maior_valor_menor !== undefined) {
+                    result.maiorValorMenor = editingValue.maior_valor_menor;
+                }
             }
 
             // Processar observação
@@ -1021,19 +1033,19 @@ export default function EspecificacoesPage() {
                         };
 
                         // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
-                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
-                        if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
+                        // Verificar se pelo menos um campo foi preenchido (incluindo valor 0)
+                        if (tipo9Values.quantidadeMenor !== null || tipo9Values.menorValorMenor !== null || tipo9Values.maiorValorMenor !== null) {
                             const ocorrenciaMenor: {
                                 quantidade: number;
                                 maior_menor: string;
-                                menor_valor: number;
-                                maior_valor: number;
+                                menor_valor: number | null;
+                                maior_valor: number | null;
                                 id_ocorrencia?: number;
                             } = {
-                                quantidade: tipo9Values.quantidadeMenor || 0,
+                                quantidade: tipo9Values.quantidadeMenor !== null ? tipo9Values.quantidadeMenor : 0,
                                 maior_menor: "<",
-                                menor_valor: tipo9Values.menorValorMenor || 0,
-                                maior_valor: tipo9Values.maiorValorMenor || 0
+                                menor_valor: (tipo9Values.quantidadeMenor === 0) ? null : (tipo9Values.menorValorMenor !== null ? tipo9Values.menorValorMenor : 0),
+                                maior_valor: (tipo9Values.quantidadeMenor === 0) ? null : (tipo9Values.maiorValorMenor !== null ? tipo9Values.maiorValorMenor : 0)
                             };
                             // Adicionar id_ocorrencia se existir
                             if (editingValue?.id_ocorrencia_menor) {
@@ -1043,22 +1055,22 @@ export default function EspecificacoesPage() {
                         }
 
                         // Adicionar ocorrência maior (>) depois, conforme o exemplo
-                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
-                        if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
+                        // Verificar se pelo menos um campo foi preenchido (incluindo valor 0)
+                        if (tipo9Values.quantidade !== null || tipo9Values.menorValor !== null || tipo9Values.maiorValor !== null) {
                             // Para tipo_valor A, C, S, L usar "R", para outros usar ">"
                             const maiorMenorValue = ['A', 'C', 'S', 'L'].includes(spec.tipo_valor) ? "R" : ">";
 
                             const ocorrenciaMaior: {
                                 quantidade: number;
                                 maior_menor: string;
-                                menor_valor: number;
-                                maior_valor: number;
+                                menor_valor: number | null;
+                                maior_valor: number | null;
                                 id_ocorrencia?: number;
                             } = {
                                 quantidade: tipo9Values.quantidade !== null ? tipo9Values.quantidade : 0,
                                 maior_menor: maiorMenorValue,
-                                menor_valor: tipo9Values.menorValor || 0,
-                                maior_valor: tipo9Values.maiorValor || 0
+                                menor_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.menorValor !== null ? tipo9Values.menorValor : 0),
+                                maior_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.maiorValor !== null ? tipo9Values.maiorValor : 0)
                             };
                             // Adicionar id_ocorrencia se existir
                             if (editingValue?.id_ocorrencia_maior) {
@@ -1346,19 +1358,19 @@ export default function EspecificacoesPage() {
                         };
 
                         // Adicionar ocorrência menor (<) primeiro, conforme o exemplo
-                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
-                        if (tipo9Values.quantidadeMenor || tipo9Values.menorValorMenor || tipo9Values.maiorValorMenor) {
+                        // Verificar se pelo menos um campo foi preenchido (incluindo valor 0)
+                        if (tipo9Values.quantidadeMenor !== null || tipo9Values.menorValorMenor !== null || tipo9Values.maiorValorMenor !== null) {
                             const ocorrenciaMenor: {
                                 quantidade: number;
                                 maior_menor: string;
-                                menor_valor: number;
-                                maior_valor: number;
+                                menor_valor: number | null;
+                                maior_valor: number | null;
                                 id_ocorrencia?: number;
                             } = {
-                                quantidade: tipo9Values.quantidadeMenor || 0,
+                                quantidade: tipo9Values.quantidadeMenor !== null ? tipo9Values.quantidadeMenor : 0,
                                 maior_menor: "<",
-                                menor_valor: tipo9Values.menorValorMenor || 0,
-                                maior_valor: tipo9Values.maiorValorMenor || 0
+                                menor_valor: (tipo9Values.quantidadeMenor === 0) ? null : (tipo9Values.menorValorMenor !== null ? tipo9Values.menorValorMenor : 0),
+                                maior_valor: (tipo9Values.quantidadeMenor === 0) ? null : (tipo9Values.maiorValorMenor !== null ? tipo9Values.maiorValorMenor : 0)
                             };
                             // Adicionar id_ocorrencia se existir
                             if (editingValue?.id_ocorrencia_menor) {
@@ -1368,22 +1380,22 @@ export default function EspecificacoesPage() {
                         }
 
                         // Adicionar ocorrência maior (>) depois, conforme o exemplo
-                        // Não exigimos que todos os campos estejam preenchidos, apenas verificamos se pelo menos um está
-                        if (tipo9Values.quantidade || tipo9Values.menorValor || tipo9Values.maiorValor) {
+                        // Verificar se pelo menos um campo foi preenchido (incluindo valor 0)
+                        if (tipo9Values.quantidade !== null || tipo9Values.menorValor !== null || tipo9Values.maiorValor !== null) {
                             // Para tipo_valor A, C, S, L usar "R", para outros usar ">"
                             const maiorMenorValue = ['A', 'C', 'S', 'L'].includes(spec.tipo_valor) ? "R" : ">";
 
                             const ocorrenciaMaior: {
                                 quantidade: number;
                                 maior_menor: string;
-                                menor_valor: number;
-                                maior_valor: number;
+                                menor_valor: number | null;
+                                maior_valor: number | null;
                                 id_ocorrencia?: number;
                             } = {
                                 quantidade: tipo9Values.quantidade !== null ? tipo9Values.quantidade : 0,
                                 maior_menor: maiorMenorValue,
-                                menor_valor: tipo9Values.menorValor || 0,
-                                maior_valor: tipo9Values.maiorValor || 0
+                                menor_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.menorValor !== null ? tipo9Values.menorValor : 0),
+                                maior_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.maiorValor !== null ? tipo9Values.maiorValor : 0)
                             };
                             // Adicionar id_ocorrencia se existir
                             if (editingValue?.id_ocorrencia_maior) {
