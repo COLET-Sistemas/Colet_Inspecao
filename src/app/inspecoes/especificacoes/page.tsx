@@ -1533,6 +1533,54 @@ export default function EspecificacoesPage() {
             conformeBoolean = conforme as (boolean | null | undefined);
         }
 
+        // Lógica específica para inspeção tipo 9
+        if (fichaDados.id_tipo_inspecao === 9 && spec) {
+            const editingValue = editingValues[spec.id_especificacao];
+
+            // Verificar se há dados preenchidos
+            let hasAnyData = false;
+
+            if (editingValue) {
+                // Para tipos F e U (numéricos), verificar se quantidade > 0 e menor/maior valores estão preenchidos
+                if (['F', 'U'].includes(spec.tipo_valor)) {
+                    // Verificar seção "maior"
+                    const hasQuantidadeMaior = editingValue.quantidade !== null && editingValue.quantidade !== undefined;
+                    const hasMenorValor = editingValue.menor_valor !== null && editingValue.menor_valor !== undefined;
+                    const hasMaiorValor = editingValue.maior_valor !== null && editingValue.maior_valor !== undefined;
+
+                    // Verificar seção "menor"
+                    const hasQuantidadeMenor = editingValue.quantidade_menor !== null && editingValue.quantidade_menor !== undefined;
+                    const hasMenorValorMenor = editingValue.menor_valor_menor !== null && editingValue.menor_valor_menor !== undefined;
+                    const hasMaiorValorMenor = editingValue.maior_valor_menor !== null && editingValue.maior_valor_menor !== undefined;
+
+                    // Dados completos: se tem quantidade > 0, deve ter menor e maior valores também
+                    const maiorComplete = !hasQuantidadeMaior || (editingValue.quantidade === 0) || (hasMenorValor && hasMaiorValor);
+                    const menorComplete = !hasQuantidadeMenor || (editingValue.quantidade_menor === 0) || (hasMenorValorMenor && hasMaiorValorMenor);
+
+                    // Só considera informado se todos os dados necessários estão completos
+                    hasAnyData = (hasQuantidadeMaior || hasQuantidadeMenor) && maiorComplete && menorComplete;
+                } else {
+                    // Para tipos A, C, S, L, verificar se pelo menos uma quantidade está preenchida
+                    hasAnyData = (editingValue.quantidade !== null && editingValue.quantidade !== undefined) ||
+                        (editingValue.quantidade_menor !== null && editingValue.quantidade_menor !== undefined);
+                }
+            }
+
+            if (hasAnyData) {
+                return {
+                    icon: <CheckCircle className="h-4 w-4 relative top-[-2px] mr-1" />,
+                    text: "Informado",
+                    className: "badge-informado valor-informado-badge"
+                };
+            } else {
+                return {
+                    icon: <AlertCircle className="h-4 w-4 relative top-[-2px] mr-1" />,
+                    text: "Não informado",
+                    className: "badge-nao-informado valor-informado-badge badge-needs-attention"
+                };
+            }
+        }
+
         // Se exibe_resultado for 'N', sempre mostramos apenas "Informado" ou "Não informado"
         if (fichaDados.exibe_resultado === 'N') {
             // Se não tem valor preenchido - Não informado
@@ -2144,7 +2192,8 @@ export default function EspecificacoesPage() {
                                     </div>
                                     <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 h-8 text-xs font-medium status-badge-modern ${statusInfo.text.startsWith('Conforme:') ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
                                         : statusInfo.text.startsWith('Não Conforme:')
-                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
+                                            ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
+                                            : statusInfo.text.startsWith('Informado:') || statusInfo.text === 'Informado'
                                                 ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
                                                 : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'
                                         }`}>
