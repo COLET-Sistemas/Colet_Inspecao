@@ -68,6 +68,17 @@ export async function POST(request: NextRequest) {
                 registrar_ficha: data.registrar_ficha || "",
             };
 
+            // Verificar se o usuário não é "operador" e não tem código_pessoa
+            if (username !== "operador" && !userData.codigo_pessoa) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message: 'Usuário não possui código de pessoa associado. Entre em contato com o administrador.'
+                    },
+                    { status: 403 }
+                );
+            }
+
             // Para requisições cross-origin funcionarem, precisamos usar:
             // - SameSite=None: Permite que o cookie seja enviado em requisições cross-origin
             // - Secure=true: Obrigatório quando SameSite=None (exceto em localhost em alguns navegadores)
