@@ -7,14 +7,16 @@ import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import definicaoService from "@/services/api/definicaoService";
 import { InspectionItem } from "@/services/api/inspecaoService";
 import { motion } from "framer-motion";
-import { AlertCircle, Clock, FileText, Filter, SlidersHorizontal } from "lucide-react";
+import { AlertCircle, FileText, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function DefinicoesPage() {
     const router = useRouter();
     const [definicoesData, setDefinicoesData] = useState<InspectionItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(new Date());
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
     const [postosText, setPostosText] = useState<string>("");
@@ -41,60 +43,64 @@ export default function DefinicoesPage() {
         }
     }, []);
 
+    // Função para obter postos do localStorage
+    const getPostosFromLocalStorage = (): string[] => {
+        try {
+            const postosData = localStorage.getItem("postos-vinculados");
+            if (!postosData) return [];
+
+            const parsedData = JSON.parse(postosData);
+            if (Array.isArray(parsedData)) return parsedData;
+            if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
+            return [];
+        } catch {
+            return [];
+        }
+    };
+
+    // Função para carregar dados de definições - disponibilizada no escopo do componente
+    const fetchData = useCallback(async () => {
+        if (!hasQPermission) return;
+
+        setIsRefreshing(true);
+        setIsLoading(true);
+        try {
+            // Obter postos do localStorage como nas outras páginas
+            const postos = getPostosFromLocalStorage();
+
+            // Obter dados do usuário para exibição
+            const userDataStr = localStorage.getItem('userData');
+            let userPostos: string[] = [];
+            if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                if (userData?.postos && Array.isArray(userData.postos)) {
+                    userPostos = userData.postos;
+                }
+            }
+
+            // Montar texto para exibição
+            if (userPostos.length > 0) {
+                setPostosText(`Postos: ${userPostos.join(', ')}`);
+            }
+
+            // Buscar dados da API de definições usando o serviço especializado
+            const data = await definicaoService.getFichasInspecaoDefinicoes(postos);
+            setDefinicoesData(data);
+            setLastRefresh(new Date());
+        } catch (error) {
+            console.error("Erro ao carregar definições:", error);
+            setAlertMessage("Erro ao carregar definições. Tente novamente mais tarde.");
+            setAlertType("error");
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [hasQPermission, setAlertMessage, setAlertType, setDefinicoesData, setIsLoading, setIsRefreshing, setLastRefresh, setPostosText]);
+
     // Carregar dados de definições
     useEffect(() => {
-        const fetchData = async () => {
-            if (!hasQPermission) return;
-
-            setIsLoading(true);
-            try {
-                // Obter postos do localStorage como nas outras páginas
-                const getPostosFromLocalStorage = (): string[] => {
-                    try {
-                        const postosData = localStorage.getItem("postos-vinculados");
-                        if (!postosData) return [];
-
-                        const parsedData = JSON.parse(postosData);
-                        if (Array.isArray(parsedData)) return parsedData;
-                        if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
-                        return [];
-                    } catch {
-                        return [];
-                    }
-                };
-
-                const postos = getPostosFromLocalStorage();
-
-                // Obter dados do usuário para exibição
-                const userDataStr = localStorage.getItem('userData');
-                let userPostos: string[] = [];
-                if (userDataStr) {
-                    const userData = JSON.parse(userDataStr);
-                    if (userData?.postos && Array.isArray(userData.postos)) {
-                        userPostos = userData.postos;
-                    }
-                }
-
-                // Montar texto para exibição
-                if (userPostos.length > 0) {
-                    setPostosText(`Postos: ${userPostos.join(', ')}`);
-                }
-
-                // Buscar dados da API de definições usando o serviço especializado
-                // Agora incluindo o parâmetro codigo_posto
-                const data = await definicaoService.getFichasInspecaoDefinicoes(postos);
-                setDefinicoesData(data);
-            } catch (error) {
-                console.error("Erro ao carregar definições:", error);
-                setAlertMessage("Erro ao carregar definições. Tente novamente mais tarde.");
-                setAlertType("error");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchData();
-    }, [hasQPermission]);
+    }, [hasQPermission, fetchData]);
 
     // Função para navegar para a tela de detalhes da definição
     const handleItemClick = (item: InspectionItem) => {
@@ -111,12 +117,58 @@ export default function DefinicoesPage() {
                 redirectTo="/dashboard"
             />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 py-0 gap-3">
-                <PageHeader
-                    title="Listas de Definições"
-                    subtitle={postosText}
-                    showButton={false}
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
+                <div className="flex-1">
+                    <PageHeader
+                        title="Listas de Definições"
+                        subtitle={postosText}
+                        infoSubtitle={!isLoading && definicoesData.length > 0 ? `Resumo do totalizador: ${definicoesData.length} item(ns) pendente(s) para análise` : ""}
+                        showButton={false}
+                        showRefreshButton={false}
+                    />
+                </div>
+                <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                    {/* Versão desktop com texto e indicador de última atualização */}
+                    <div className="hidden sm:flex items-center text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span className="mr-1.5">Última atualização:</span>
+                        <span className="font-medium text-gray-700">{lastRefresh.toLocaleTimeString('pt-BR')}</span>
+                    </div>
+
+                    {/* Botão para desktop */}
+                    <button
+                        onClick={fetchData}
+                        disabled={isRefreshing}
+                        className={`
+                            hidden sm:flex relative items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 shadow-sm
+                            ${isRefreshing
+                                ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-[#1ABC9C] hover:bg-[#1ABC9C] hover:text-white hover:shadow-md"
+                            }
+                        `}
+                        title="Atualizar dados"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                        <span>
+                            {isRefreshing ? "Atualizando..." : "Atualizar"}
+                        </span>
+                    </button>
+
+                    {/* Botão apenas com ícone para mobile */}
+                    <button
+                        onClick={fetchData}
+                        disabled={isRefreshing}
+                        className={`
+                            sm:hidden flex items-center justify-center h-10 w-10 rounded-full border transition-all duration-200 shadow-sm
+                            ${isRefreshing
+                                ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-[#1ABC9C] hover:bg-[#1ABC9C] hover:text-white"
+                            }
+                        `}
+                        title="Atualizar dados"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                    </button>
+                </div>
             </div>
 
             {alertMessage && (
@@ -127,54 +179,7 @@ export default function DefinicoesPage() {
                 />
             )}
 
-            {/* Filter section */}
-            {!isLoading && definicoesData.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                        <SlidersHorizontal size={18} className="text-gray-600" />
-                        <h3 className="font-medium">Filtros</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm text-gray-600 mb-1">Período</label>
-                            <div className="flex items-center gap-2 border rounded-md p-2">
-                                <Clock size={16} className="text-gray-500" />
-                                <select className="w-full bg-transparent border-0 focus:ring-0">
-                                    <option value="all">Todos</option>
-                                    <option value="today">Hoje</option>
-                                    <option value="week">Última semana</option>
-                                    <option value="month">Último mês</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm text-gray-600 mb-1">Referência</label>
-                            <div className="flex items-center gap-2 border rounded-md p-2">
-                                <Filter size={16} className="text-gray-500" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar por referência"
-                                    className="w-full bg-transparent border-0 focus:ring-0"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm text-gray-600 mb-1">Lote</label>
-                            <div className="flex items-center gap-2 border rounded-md p-2">
-                                <Filter size={16} className="text-gray-500" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar por lote"
-                                    className="w-full bg-transparent border-0 focus:ring-0"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}            {/* Status summary section */}
+            {/* Status summary section */}
             {!isLoading && definicoesData.length > 0 && (
                 <div className="bg-white rounded-lg shadow p-4 mb-6">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
