@@ -44,7 +44,7 @@ interface LoginCredentials {
     username: string;
     password: string;
     remember?: boolean;
-    preserveRemembered?: boolean; // Nova propriedade para indicar que não deve remover o rememberedUsername
+    preserveRemembered?: boolean; 
 }
 
 interface AuthError {
@@ -215,6 +215,25 @@ function useProvideAuth(): AuthContextType {
             }
 
             try {
+                // Função para codificar senha usando cifra XOR (igual ao backend)
+                const encodePassword = (password: string) => {
+                    const key = Math.floor(Math.random() * 255);
+                    const hexResult = [];
+                    let result = "";
+                    hexResult.push((key >> 4).toString(16).toUpperCase());
+                    hexResult.push((key & 0xf).toString(16).toUpperCase());
+                    result += hexResult.join("");
+                    for (let i = 0; i < password.length; i++) {
+                        const converted = password.charCodeAt(i) ^ key;
+                        hexResult[0] = (converted >> 4).toString(16).toUpperCase();
+                        hexResult[1] = (converted & 0xf).toString(16).toUpperCase();
+                        result += hexResult.join("");
+                    }
+                    return result;
+                };
+
+                const senha_cripto = encodePassword(password);
+
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -223,8 +242,8 @@ function useProvideAuth(): AuthContextType {
                     },
                     credentials: 'include',
                     body: JSON.stringify({
-                        username,
-                        password,
+                        usuario: username,
+                        senha_cripto,
                         remember
                     }),
                 });

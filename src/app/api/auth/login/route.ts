@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Função para codificar senha usando cifra XOR (mesma do frontend)
-const encodePassword = (password: string) => {
-    const key = Math.floor(Math.random() * 255);
-    const hexResult = [];
-    let result = "";
-    hexResult.push((key >> 4).toString(16).toUpperCase());
-    hexResult.push((key & 0xf).toString(16).toUpperCase());
-    result += hexResult.join("");
-    for (let i = 0; i < password.length; i++) {
-        const converted = password.charCodeAt(i) ^ key;
-        hexResult[0] = (converted >> 4).toString(16).toUpperCase();
-        hexResult[1] = (converted & 0xf).toString(16).toUpperCase();
-        result += hexResult.join("");
-    }
-    return result;
-};
-
 export async function POST(request: NextRequest) {
     try {
-        const { username, password } = await request.json();
+        // Log do payload recebido do frontend para debug
+        const requestData = await request.json();
+        console.log("Payload recebido do frontend:", JSON.stringify(requestData));
+
+        const { usuario, senha_cripto } = requestData;
 
         // Validação básica
-        if (!username || !password) {
+        if (!usuario || !senha_cripto) {
             return NextResponse.json(
                 { success: false, message: 'Usuário e senha são obrigatórios' },
                 { status: 400 }
@@ -38,8 +25,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Codifica a senha
-        const senha_cripto = encodePassword(password);
+        // Prepara o payload no formato correto para a API externa
+        const payload = {
+            usuario,
+            senha_cripto
+        };
+
 
         // Faz a requisição para a API externa
         const response = await fetch(`${apiUrl}/login`, {
@@ -48,10 +39,7 @@ export async function POST(request: NextRequest) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                usuario: username,
-                senha_cripto
-            }),
+            body: JSON.stringify(payload),
         });
 
         const data = await response.json();
@@ -59,8 +47,8 @@ export async function POST(request: NextRequest) {
         if (response.status === 200 && (data.success === undefined || data.success)) {
             // Prepara os dados do usuário
             const userData = {
-                username: username,
-                name: data.nome || data.usuario || username,
+                username: usuario,
+                name: data.nome || data.usuario || usuario,
                 permissao: data.permissao || "",
                 perfil_inspecao: data.perfil_inspecao || "",
                 codigo_pessoa: data.codigo_pessoa || "",
@@ -69,7 +57,7 @@ export async function POST(request: NextRequest) {
             };
 
             // Verificar se o usuário não é "operador" e não tem código_pessoa
-            if (username !== "operador" && !userData.codigo_pessoa) {
+            if (usuario !== "operador" && !userData.codigo_pessoa) {
                 return NextResponse.json(
                     {
                         success: false,
@@ -78,11 +66,6 @@ export async function POST(request: NextRequest) {
                     { status: 403 }
                 );
             }
-
-            // Para requisições cross-origin funcionarem, precisamos usar:
-            // - SameSite=None: Permite que o cookie seja enviado em requisições cross-origin
-            // - Secure=true: Obrigatório quando SameSite=None (exceto em localhost em alguns navegadores)
-            // - httpOnly=true: Previne acesso via JavaScript (segurança)
 
             // Determina se estamos em localhost/desenvolvimento
             const isLocalhost = request.headers.get('host')?.includes('localhost') ||
@@ -99,14 +82,11 @@ export async function POST(request: NextRequest) {
             // Log para diagnóstico
             console.log(`Login: isProduction=${process.env.NODE_ENV === 'production'}, isLocalhost=${isLocalhost}, isSecure=${isSecure}, sameSite=${sameSite}`);
 
-            // Não usamos mais cookie HTTPOnly, apenas a abordagem com token no cookie JS
-            // e nos headers de requisição. Cookie de autenticação removido.
-
             // Cria a resposta incluindo o token para acesso via JavaScript
             const responseData = {
                 success: true,
                 user: userData,
-                token: data.token || '',  // Incluir o token na resposta para salvar em cookie JS
+                token: data.token || '',  
                 message: 'Login realizado com sucesso'
             };
 
