@@ -5,7 +5,7 @@ import { LoadingSpinner } from "@/components/ui/Loading";
 import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import definicaoService from "@/services/api/definicaoService";
-import { InspectionItem } from "@/services/api/inspecaoService";
+import inspecaoService, { InspectionItem, InspectionSpecification } from "@/services/api/inspecaoService";
 import { ArrowLeft, Clock, FileCheck, FileText, Tag } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +16,9 @@ export default function DefinicaoDetailsPage() {
     const id = params?.id as string;
 
     const [definicao, setDefinicao] = useState<InspectionItem | null>(null);
+    const [especificacoes, setEspecificacoes] = useState<InspectionSpecification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingEspecificacoes, setIsLoadingEspecificacoes] = useState(true);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
     const [hasQPermission, setHasQPermission] = useState(false);
@@ -49,31 +51,30 @@ export default function DefinicaoDetailsPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Obter postos do localStorage como nas outras páginas
-                const getPostosFromLocalStorage = (): string[] => {
-                    try {
-                        const postosData = localStorage.getItem("postos-vinculados");
-                        if (!postosData) return [];
-
-                        const parsedData = JSON.parse(postosData);
-                        if (Array.isArray(parsedData)) return parsedData;
-                        if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
-                        return [];
-                    } catch {
-                        return [];
-                    }
-                };
-
-                const postos = getPostosFromLocalStorage();
-
-                // Buscar a definição específica pelo ID com o filtro de postos
-                const foundDefinicao = await definicaoService.getFichaInspecaoById(parseInt(id), postos);
+                // Buscar a definição específica pelo ID diretamente, sem filtro de postos
+                // Como estamos na página de detalhes, não precisamos filtrar por posto nem chamar /inspecao/fichas_inspecao?codigo_posto=CQ&aba=definicoes
+                const foundDefinicao = await definicaoService.getFichaInspecaoByIdDireto(parseInt(id));
 
                 if (foundDefinicao) {
                     setDefinicao(foundDefinicao);
+
+                    // Log para debug - verificar se id_ficha_inspecao está presente
+                    console.log("Definição encontrada:", foundDefinicao);
+                    console.log("ID da ficha de inspeção:", foundDefinicao.id_ficha_inspecao);
+
+                    // Buscar especificações da inspeção apenas se tivermos um ID válido
+                    if (foundDefinicao.id_ficha_inspecao) {
+                        fetchEspecificacoes(foundDefinicao.id_ficha_inspecao);
+                    } else {
+                        console.error("id_ficha_inspecao não encontrado na definição");
+                        setAlertMessage("Erro ao identificar a ficha de inspeção.");
+                        setAlertType("error");
+                        setIsLoadingEspecificacoes(false);
+                    }
                 } else {
                     setAlertMessage("Definição não encontrada ou você não tem permissão para visualizá-la.");
                     setAlertType("error");
+                    setIsLoadingEspecificacoes(false);
                 }
             } catch (error) {
                 console.error("Erro ao carregar detalhes da definição:", error);
@@ -86,6 +87,33 @@ export default function DefinicaoDetailsPage() {
 
         fetchData();
     }, [hasQPermission, id]);
+
+    // Função para buscar as especificações de inspeção
+    const fetchEspecificacoes = async (idFichaInspecao: number) => {
+        console.log("Chamando fetchEspecificacoes com idFichaInspecao:", idFichaInspecao);
+
+        if (!idFichaInspecao) {
+            console.error("ID da ficha de inspeção é undefined ou zero!");
+            setAlertMessage("Erro: ID da ficha de inspeção inválido.");
+            setAlertType("error");
+            setIsLoadingEspecificacoes(false);
+            return;
+        }
+
+        setIsLoadingEspecificacoes(true);
+        try {
+            // Buscar as especificações usando o endpoint inspecao/especificacoes_inspecao
+            const result = await inspecaoService.getInspectionSpecifications(idFichaInspecao);
+            setEspecificacoes(result.specifications);
+
+        } catch (error) {
+            console.error("Erro ao carregar especificações da inspeção:", error);
+            setAlertMessage("Erro ao carregar especificações da inspeção. Tente novamente mais tarde.");
+            setAlertType("error");
+        } finally {
+            setIsLoadingEspecificacoes(false);
+        }
+    };
 
     const handleBack = () => {
         router.back();
@@ -223,6 +251,64 @@ export default function DefinicaoDetailsPage() {
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Seção de Especificações da Inspeção */}
+                    <div className="border-t border-gray-200 mt-6 pt-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <FileText size={28} className="text-blue-600" />
+                            <h2 className="text-xl font-semibold">Especificações da Inspeção</h2>
+                        </div>
+
+                        {isLoadingEspecificacoes ? (
+                            <div className="flex justify-center items-center h-28">
+                                <LoadingSpinner size="medium" />
+                            </div>
+                        ) : especificacoes.length === 0 ? (
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                                <p className="text-gray-500">Nenhuma especificação encontrada para esta inspeção.</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50">
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Característica</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Tipo Instrumento</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Local</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Valor Mín.</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Valor Máx.</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Unidade</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Valor Encontrado</th>
+                                            <th className="px-4 py-2 text-left text-gray-700 text-sm font-medium border border-gray-200">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {especificacoes.map((especificacao, index) => (
+                                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.descricao_caracteristica}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.tipo_instrumento}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.local_inspecao}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.valor_minimo}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.valor_maximo}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.unidade_medida}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">{especificacao.valor_encontrado !== undefined ? especificacao.valor_encontrado : '-'}</td>
+                                                <td className="px-4 py-2 text-sm border border-gray-200">
+                                                    {especificacao.conforme !== undefined ? (
+                                                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${especificacao.conforme
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                            }`}>
+                                                            {especificacao.conforme ? 'Conforme' : 'Não Conforme'}
+                                                        </span>
+                                                    ) : '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 mt-6 pt-6">

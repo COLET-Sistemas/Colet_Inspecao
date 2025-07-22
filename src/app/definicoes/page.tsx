@@ -138,7 +138,7 @@ export default function DefinicoesPage() {
                 redirectTo="/dashboard"
             />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0 py-0 gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 py-0 gap-3">
                 <div className="flex-1">
                     <PageHeader
                         title="Listas de Definições"

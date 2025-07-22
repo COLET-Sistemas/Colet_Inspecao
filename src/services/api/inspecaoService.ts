@@ -291,11 +291,16 @@ class InspecaoService {
         fichaDados: Omit<InspectionSpecificationResponse, 'especificacoes'>
     }> {
         try {
+            if (!id) {
+                throw new Error("ID da ficha de inspeção é obrigatório");
+            }
+
             const apiUrl = localStorage.getItem("apiUrl");
             if (!apiUrl) {
                 throw new Error("URL da API não está configurada");
             }
 
+            console.log(`Buscando especificações para ID: ${id}`);
             const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao?id=${id}`, {
                 method: 'GET'
             });
