@@ -401,19 +401,6 @@ export default function Navbar() {
                             </div>
                         </div>
                         <div className="mt-3 space-y-0.5 px-2">
-                            <a
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setMobileMenuOpen(false);
-                                }}
-                                className="flex items-center px-3 py-2.5 text-base font-medium text-gray-300 hover:text-white 
-                                         transition-colors duration-200 rounded-lg hover:bg-[#2c2c2c]/60"
-                            >
-                                <User className="mr-3 h-4 w-4 opacity-80" />
-                                Perfil
-                            </a>
                             <button
                                 type="button"
                                 onClick={(e) => handleLogout(e)}
