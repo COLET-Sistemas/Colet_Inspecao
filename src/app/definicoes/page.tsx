@@ -6,7 +6,6 @@ import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import definicaoService from "@/services/api/definicaoService";
 import { InspectionItem } from "@/services/api/inspecaoService";
-import { motion } from "framer-motion";
 import { AlertCircle, FileText, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -22,6 +21,25 @@ export default function DefinicoesPage() {
     const [postosText, setPostosText] = useState<string>("");
     const [hasQPermission, setHasQPermission] = useState(false);
     const [isCheckingPermission, setIsCheckingPermission] = useState(true);
+
+    // Função para ordenar os dados por prioridade
+    const sortDataByPriority = useCallback((data: InspectionItem[]) => {
+        const dataCopy = [...data];
+
+        // Ordenar por prioridade: não conformes primeiro, depois por dias em atraso
+        dataCopy.sort((a, b) => {
+            // Primeiro critério: resultado da inspeção (não conforme tem prioridade)
+            if (a.resultado_inspecao === "N" && b.resultado_inspecao !== "N") return -1;
+            if (a.resultado_inspecao !== "N" && b.resultado_inspecao === "N") return 1;
+
+            // Segundo critério: dias em atraso (mais antigo tem prioridade)
+            const dataCriacaoA = new Date(a.data_hora_criacao);
+            const dataCriacaoB = new Date(b.data_hora_criacao);
+            return dataCriacaoA.getTime() - dataCriacaoB.getTime();
+        });
+
+        setDefinicoesData(dataCopy);
+    }, []);
 
     // Verificar permissões do usuário
     useEffect(() => {
@@ -85,7 +103,10 @@ export default function DefinicoesPage() {
 
             // Buscar dados da API de definições usando o serviço especializado
             const data = await definicaoService.getFichasInspecaoDefinicoes(postos);
-            setDefinicoesData(data);
+
+            // Ordenar dados por prioridade e atualizar estado
+            sortDataByPriority(data);
+
             setLastRefresh(new Date());
         } catch (error) {
             console.error("Erro ao carregar definições:", error);
@@ -95,7 +116,7 @@ export default function DefinicoesPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [hasQPermission, setAlertMessage, setAlertType, setDefinicoesData, setIsLoading, setIsRefreshing, setLastRefresh, setPostosText]);
+    }, [hasQPermission, sortDataByPriority]);
 
     // Carregar dados de definições
     useEffect(() => {
@@ -179,31 +200,7 @@ export default function DefinicoesPage() {
                 />
             )}
 
-            {/* Status summary section */}
-            {!isLoading && definicoesData.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-medium text-gray-800">Status das Definições</h3>
-                            <p className="text-gray-600">Total de {definicoesData.length} definição(ões) aguardando análise</p>
-                        </div>
-                        <div className="flex items-center gap-4 mt-3 md:mt-0">
-                            <div className="flex items-center gap-2">
-                                <span className="h-3 w-3 rounded-full bg-amber-500"></span>
-                                <span className="text-sm text-gray-600">Aguardando</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-3 w-3 rounded-full bg-blue-500"></span>
-                                <span className="text-sm text-gray-600">Em análise</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-3 w-3 rounded-full bg-green-500"></span>
-                                <span className="text-sm text-gray-600">Finalizada</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Sem filtros e controles */}
 
             {isLoading ? (
                 <div className="flex justify-center items-center h-60">
@@ -218,64 +215,171 @@ export default function DefinicoesPage() {
                     <p className="text-gray-500">Não há definições pendentes para os postos selecionados.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {definicoesData.map((item) => (
-                        <motion.div
-                            key={item.id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-white p-4 rounded-lg shadow cursor-pointer border border-gray-200 hover:border-blue-500 transition-all relative overflow-hidden"
-                            onClick={() => handleItemClick(item)}
-                        >
-                            {/* Status indicator strip */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
+                <div className="overflow-x-auto">
+                    <table className="w-full bg-white rounded-lg shadow">
+                        <thead className="bg-gray-50 text-gray-700 text-sm">
+                            <tr>
+                                <th className="py-3 px-4 text-left font-medium">Referência</th>
+                                <th className="py-3 px-4 text-left font-medium">Produto</th>
+                                <th className="py-3 px-4 text-left font-medium">Processo/Operação</th>
+                                <th className="py-3 px-4 text-left font-medium">Posto</th>
+                                <th className="py-3 px-4 text-left font-medium">Status</th>
+                                <th className="py-3 px-4 text-left font-medium">Criado em</th>
+                                <th className="py-3 px-4 text-left font-medium">Inspeção</th>
+                                <th className="py-3 px-4 text-center font-medium">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {definicoesData.map((item) => {
+                                // Calcula dias desde a data de criação
+                                const dataCriacao = new Date(item.data_hora_criacao);
+                                const hoje = new Date();
+                                const diasAtrasados = Math.floor((hoje.getTime() - dataCriacao.getTime()) / (1000 * 3600 * 24));
 
-                            <div className="flex items-start mb-2 pl-2">
-                                <div className="bg-amber-100 p-2 rounded-lg mr-3">
-                                    <FileText size={24} className="text-amber-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-medium text-lg">{item.referencia}</h3>
-                                    <p className="text-gray-600 text-sm">Lote: {item.numero_lote}</p>
-                                </div>
-                            </div>
+                                // Define cor baseada no resultado da inspeção (N = Não conforme) e dias atrasados
+                                const statusColor = item.resultado_inspecao === "N" ? "red" : "amber";
+                                const isPriority = diasAtrasados > 5 || item.resultado_inspecao === "N";
 
-                            <div className="pl-2">
-                                <div className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full w-fit mb-2">
-                                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                                    <span>Aguardando definição</span>
-                                </div>
-                            </div>
+                                // Calcula a porcentagem de inspeção
+                                const porcentagemInspecao = item.qtde_inspecionada && item.qtde_produzida
+                                    ? Math.round((item.qtde_inspecionada / item.qtde_produzida) * 100)
+                                    : 0;
 
-                            <div className="border-t border-gray-100 pt-2 mt-2 pl-2">
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div>
-                                        <p className="text-gray-500">Processo:</p>
-                                        <p className="font-medium">{item.processo}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Operação:</p>
-                                        <p className="font-medium">{item.operacao}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Posto:</p>
-                                        <p className="font-medium">{item.codigo_posto}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Criado em:</p>
-                                        <p className="font-medium">{new Date(item.data_hora_criacao).toLocaleDateString('pt-BR')}</p>
-                                    </div>
-                                </div>
-                            </div>
+                                return (
+                                    <tr
+                                        key={item.id_ficha_inspecao}
+                                        className={`hover:bg-gray-50 cursor-pointer border-l-4 ${isPriority
+                                            ? item.resultado_inspecao === "N"
+                                                ? "border-l-red-500"
+                                                : "border-l-amber-500"
+                                            : "border-l-transparent"
+                                            }`}
+                                        onClick={() => handleItemClick(item)}
+                                    >
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-1.5 rounded-md bg-${statusColor}-100`}>
+                                                    <FileText size={18} className={`text-${statusColor}-600`} />
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">{item.referencia}</span>
+                                                    {item.numero_lote !== "0" && (
+                                                        <p className="text-xs text-gray-500">Lote: {item.numero_lote}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
 
-                            {/* Priority/age indicator */}
-                            <div className="absolute top-2 right-2">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    Prioridade
-                                </span>
-                            </div>
-                        </motion.div>
-                    ))}
+                                        <td className="py-3 px-4">
+                                            <div className="max-w-xs">
+                                                <p className="truncate text-sm" title={item.produto || ""}>
+                                                    {item.produto || "Sem descrição do produto"}
+                                                </p>
+                                            </div>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <div className="text-sm">
+                                                <p className="text-gray-700">{item.processo}</p>
+                                                <p className="text-xs text-gray-500 truncate max-w-[150px]" title={item.tipo_acao || ""}>
+                                                    {item.operacao} - {item.tipo_acao}
+                                                </p>
+                                            </div>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <span className="inline-block px-2 py-1 rounded-md text-xs bg-gray-100">
+                                                {item.codigo_posto}
+                                            </span>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className={`flex items-center gap-1.5 text-xs text-${statusColor}-700 bg-${statusColor}-50 px-2 py-1 rounded-md max-w-fit`}>
+                                                    <span className={`h-2 w-2 rounded-full bg-${statusColor}-500`}></span>
+                                                    <span>{item.resultado_inspecao === "N" ? "Não conforme" : "Aguardando"}</span>
+                                                </div>
+
+                                                {diasAtrasados > 0 && (
+                                                    <div className={`flex items-center gap-1.5 text-xs ${diasAtrasados > 5 ? "text-red-700 bg-red-50" : "text-amber-700 bg-amber-50"
+                                                        } px-2 py-1 rounded-md max-w-fit`}>
+                                                        {diasAtrasados} {diasAtrasados === 1 ? 'dia' : 'dias'}
+                                                    </div>
+                                                )}
+
+                                                <span className={`text-xs ${item.tipo_inspecao === "Nao Conformidade" ? "text-red-700 bg-red-50" : "text-blue-700 bg-blue-50"
+                                                    } px-2 py-1 rounded-md max-w-fit`}>
+                                                    {item.tipo_inspecao}
+                                                </span>
+                                            </div>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <div className="text-sm">
+                                                <p className="font-medium">
+                                                    {new Date(item.data_hora_criacao).toLocaleDateString('pt-BR')}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(item.data_hora_criacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {item.nome_pessoa_criacao}
+                                                </p>
+                                            </div>
+                                        </td>
+
+                                        <td className="py-3 px-4">
+                                            <div className="flex flex-col gap-1 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-gray-600">Produzida:</span>
+                                                    <span className="font-medium">{item.qtde_produzida}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-gray-600">Inspecionada:</span>
+                                                    <span className="font-medium">{item.qtde_inspecionada}</span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                                    <div
+                                                        className={`h-1.5 rounded-full ${porcentagemInspecao < 50
+                                                            ? "bg-red-500"
+                                                            : porcentagemInspecao < 80
+                                                                ? "bg-amber-500"
+                                                                : "bg-green-500"
+                                                            }`}
+                                                        style={{ width: `${porcentagemInspecao}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-center text-xs text-gray-500">
+                                                    {porcentagemInspecao}%
+                                                </span>
+                                            </div>
+                                        </td>
+
+                                        <td className="py-3 px-4 text-center">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleItemClick(item);
+                                                }}
+                                                className="inline-flex items-center justify-center p-2 rounded-full hover:bg-gray-100"
+                                                title="Visualizar definição"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </button>
+                                            {isPriority && (
+                                                <span className="block mt-1 text-xs font-medium text-red-600">
+                                                    {diasAtrasados > 5 ? 'Alta Prioridade' : 'Prioridade'}
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>
