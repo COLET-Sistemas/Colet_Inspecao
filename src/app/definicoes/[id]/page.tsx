@@ -18,7 +18,7 @@ export default function DefinicaoDetailsPage() {
     const [definicao, setDefinicao] = useState<InspectionItem | null>(null);
     const [especificacoes, setEspecificacoes] = useState<InspectionSpecification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isLoadingEspecificacoes, setIsLoadingEspecificacoes] = useState(true);
+    const [isLoadingEspecificacoes, setIsLoadingEspecificacoes] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<"success" | "error" | "warning" | "info">("error");
     const [hasQPermission, setHasQPermission] = useState(false);
@@ -53,6 +53,7 @@ export default function DefinicaoDetailsPage() {
             try {
                 // Buscar a definição específica pelo ID diretamente, sem filtro de postos
                 // Como estamos na página de detalhes, não precisamos filtrar por posto nem chamar /inspecao/fichas_inspecao?codigo_posto=CQ&aba=definicoes
+                // Usamos agora o endpoint /inspecao/especificacoes_inspecao?id=ID
                 const foundDefinicao = await definicaoService.getFichaInspecaoByIdDireto(parseInt(id));
 
                 if (foundDefinicao) {
@@ -62,19 +63,11 @@ export default function DefinicaoDetailsPage() {
                     console.log("Definição encontrada:", foundDefinicao);
                     console.log("ID da ficha de inspeção:", foundDefinicao.id_ficha_inspecao);
 
-                    // Buscar especificações da inspeção apenas se tivermos um ID válido
-                    if (foundDefinicao.id_ficha_inspecao) {
-                        fetchEspecificacoes(foundDefinicao.id_ficha_inspecao);
-                    } else {
-                        console.error("id_ficha_inspecao não encontrado na definição");
-                        setAlertMessage("Erro ao identificar a ficha de inspeção.");
-                        setAlertType("error");
-                        setIsLoadingEspecificacoes(false);
-                    }
+                    // Não carregaremos as especificações automaticamente
+                    // Elas serão carregadas apenas quando o usuário clicar no botão
                 } else {
                     setAlertMessage("Definição não encontrada ou você não tem permissão para visualizá-la.");
                     setAlertType("error");
-                    setIsLoadingEspecificacoes(false);
                 }
             } catch (error) {
                 console.error("Erro ao carregar detalhes da definição:", error);
@@ -88,23 +81,23 @@ export default function DefinicaoDetailsPage() {
         fetchData();
     }, [hasQPermission, id]);
 
-    // Função para buscar as especificações de inspeção
-    const fetchEspecificacoes = async (idFichaInspecao: number) => {
-        console.log("Chamando fetchEspecificacoes com idFichaInspecao:", idFichaInspecao);
-
-        if (!idFichaInspecao) {
-            console.error("ID da ficha de inspeção é undefined ou zero!");
-            setAlertMessage("Erro: ID da ficha de inspeção inválido.");
+    // Função para carregar as especificações quando solicitado pelo usuário
+    const fetchEspecificacoes = async () => {
+        // Verificar se temos uma definição válida com ID
+        if (!definicao || !definicao.id_ficha_inspecao) {
+            setAlertMessage("Não foi possível identificar a ficha de inspeção.");
             setAlertType("error");
-            setIsLoadingEspecificacoes(false);
             return;
         }
+
+        console.log("Carregando especificações para idFichaInspecao:", definicao.id_ficha_inspecao);
 
         setIsLoadingEspecificacoes(true);
         try {
             // Buscar as especificações usando o endpoint inspecao/especificacoes_inspecao
-            const result = await inspecaoService.getInspectionSpecifications(idFichaInspecao);
+            const result = await inspecaoService.getInspectionSpecifications(definicao.id_ficha_inspecao);
             setEspecificacoes(result.specifications);
+            console.log("Especificações carregadas:", result.specifications.length);
 
         } catch (error) {
             console.error("Erro ao carregar especificações da inspeção:", error);
@@ -255,9 +248,24 @@ export default function DefinicaoDetailsPage() {
 
                     {/* Seção de Especificações da Inspeção */}
                     <div className="border-t border-gray-200 mt-6 pt-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <FileText size={28} className="text-blue-600" />
-                            <h2 className="text-xl font-semibold">Especificações da Inspeção</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <FileText size={28} className="text-blue-600" />
+                                <h2 className="text-xl font-semibold">Especificações da Inspeção</h2>
+                            </div>
+                            {/* Botão para carregar/recarregar as especificações */}
+                            {!isLoadingEspecificacoes && (
+                                <button
+                                    onClick={fetchEspecificacoes}
+                                    className="px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-colors border border-blue-200 flex items-center gap-1"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                                        <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
+                                    </svg>
+                                    {especificacoes.length > 0 ? "Recarregar" : "Carregar"} Especificações
+                                </button>
+                            )}
                         </div>
 
                         {isLoadingEspecificacoes ? (
@@ -266,7 +274,9 @@ export default function DefinicaoDetailsPage() {
                             </div>
                         ) : especificacoes.length === 0 ? (
                             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
-                                <p className="text-gray-500">Nenhuma especificação encontrada para esta inspeção.</p>
+                                <p className="text-gray-500">
+                                    Clique no botão &ldquo;Carregar Especificações&rdquo; acima para visualizar os detalhes das especificações desta inspeção.
+                                </p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">

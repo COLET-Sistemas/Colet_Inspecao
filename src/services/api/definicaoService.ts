@@ -143,7 +143,7 @@ class DefinicaoService {
 
             // Aqui fazemos uma chamada direta para buscar apenas a ficha específica pelo ID
             // Usar o formato correto da URL conforme a API espera
-            const response = await fetchWithAuth(`${apiUrl}/inspecao/fichas_inspecao?id_ficha_inspecao=${id}`, {
+            const response = await fetchWithAuth(`${apiUrl}/inspecao/especificacoes_inspecao?id=${id}`, {
                 method: 'GET',
             });
 
@@ -155,21 +155,21 @@ class DefinicaoService {
             if (!data) return null;
 
             // Log para debug - verificar a estrutura dos dados recebidos
-            console.log("Dados recebidos da API fichas_inspecao:", data);
+            console.log("Dados recebidos da API especificacoes_inspecao:", data);
 
-            // Verifica se a API retornou um array e pega o primeiro item
-            // Isso é comum quando a API retorna uma lista, mesmo que seja apenas um item
-            if (Array.isArray(data) && data.length > 0) {
-                return this.mapApiDataToInspectionItem(data[0]);
-            } else if (typeof data === 'object' && data !== null) {
-                // Se não for array, assume que é diretamente o objeto
-                return this.mapApiDataToInspectionItem(data);
+            // O endpoint /inspecao/especificacoes_inspecao retorna os dados da ficha diretamente no objeto
+            // junto com o campo 'especificacoes', mas não precisamos das especificações nesse momento
+            if (typeof data === 'object' && data !== null) {
+                // Mapeia o objeto retornado diretamente (ignorando o campo 'especificacoes')
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { especificacoes, ...fichaData } = data;
+                return this.mapApiDataToInspectionItem(fichaData);
             }
 
             console.error("Formato de dados não esperado:", data);
             return null;
         } catch (error) {
-            console.error("Erro ao buscar ficha de inspeção por ID:", error);
+            console.error("Erro ao buscar especificações de inspeção por ID:", error);
             throw error;
         }
     }

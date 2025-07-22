@@ -240,10 +240,6 @@ export default function DefinicoesPage() {
                                 const statusColor = item.resultado_inspecao === "N" ? "red" : "amber";
                                 const isPriority = diasAtrasados > 5 || item.resultado_inspecao === "N";
 
-                                // Calcula a porcentagem de inspeção
-                                const porcentagemInspecao = item.qtde_inspecionada && item.qtde_produzida
-                                    ? Math.round((item.qtde_inspecionada / item.qtde_produzida) * 100)
-                                    : 0;
 
                                 return (
                                     <tr
@@ -346,31 +342,8 @@ export default function DefinicoesPage() {
                                                     <span className="text-gray-600">Inspecionada:</span>
                                                     <span className="font-medium text-gray-800">{item.qtde_inspecionada}</span>
                                                 </div>
-
-                                                <div className="w-full bg-gray-200 rounded-full h-2 mt-1.5 overflow-hidden shadow-inner">
-                                                    <div
-                                                        className={`h-2 rounded-full transition-all duration-300 ${porcentagemInspecao < 50
-                                                            ? "bg-red-500"
-                                                            : porcentagemInspecao < 80
-                                                                ? "bg-amber-500"
-                                                                : "bg-green-500"
-                                                            }`}
-                                                        style={{ width: `${porcentagemInspecao}%` }}
-                                                    ></div>
-                                                </div>
-
-                                                <div className={`text-center text-xs font-medium px-1.5 py-0.5 rounded mt-1 ${porcentagemInspecao < 50
-                                                    ? "text-red-700 bg-red-50"
-                                                    : porcentagemInspecao < 80
-                                                        ? "text-amber-700 bg-amber-50"
-                                                        : "text-green-700 bg-green-50"
-                                                    }`}>
-                                                    {porcentagemInspecao}%
-                                                </div>
                                             </div>
                                         </td>
-
-
                                     </tr>
                                 );
                             })}
