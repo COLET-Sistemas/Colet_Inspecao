@@ -50,13 +50,11 @@ export default function Navbar() {
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const { user, logout } = useAuth();
     const pathname = usePathname();
 
-    // Track scroll position to add shadow effect when scrolling
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 10);
@@ -67,7 +65,7 @@ export default function Navbar() {
     }, []); const navItems: NavItem[] = useMemo(() => [
         { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
         { label: "Inspeções", href: "/inspecoes", icon: <ClipboardCheck className="w-4 h-4" /> },
-        { label: "Definições", href: "/definicoes", icon: <Sliders className="w-4 h-4" /> },
+        { label: "Definições", href: "/definicoes", requiredPermission: "Q", icon: <Sliders className="w-4 h-4" /> },
         { label: "Consultas", href: "/consultas", icon: <FileSearch className="w-4 h-4" /> },
         { label: "Relatórios", href: "/relatorios", icon: <FileText className="w-4 h-4" /> },
         {
@@ -87,33 +85,27 @@ export default function Navbar() {
         }
     ], []);
 
-    const handleShowLogoutModal = (e?: React.MouseEvent) => {
+    const handleLogout = async (e?: React.MouseEvent) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        setUserMenuOpen(false);
-        setShowLogoutModal(true);
-    };
 
-    const handleLogout = async () => {
+        setUserMenuOpen(false);
+
         try {
             setIsLoggingOut(true);
 
-            // Limpar sessionStorage para evitar mensagens de erro indesejadas
             if (typeof sessionStorage !== 'undefined') {
                 sessionStorage.removeItem('authError');
             }
 
             await logout();
 
-            // A navegação para login já é feita dentro da função logout
-            // Não precisamos chamar router.push aqui novamente
         } catch (error) {
             console.error("Logout failed:", error);
         } finally {
             setIsLoggingOut(false);
-            setShowLogoutModal(false); // Fechar o modal após o logout, independente do resultado
         }
     };
 
@@ -126,7 +118,6 @@ export default function Navbar() {
         return pathname === href || pathname?.startsWith(href + '/');
     }, [pathname]); const hasActiveSubmenu = (item: NavItem) => {
         if (!item.submenu) return false;
-        // Check if any accessible submenu item is active
         return item.submenu.some(subItem =>
             (!subItem.requiredPermission || hasPermission(subItem.requiredPermission)) && isActive(subItem.href)
         );
@@ -276,27 +267,24 @@ export default function Navbar() {
                                             </p>
                                         )}
                                     </div>
-                                    <a
-                                        href="#"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setUserMenuOpen(false);
-                                        }}
-                                        className="flex items-center px-4 py-2.5 text-sm text-gray-300 
-                                               hover:bg-[#1ABC9C]/10 hover:text-white transition-colors duration-200"
-                                    >
-                                        <User className="mr-2.5 h-4 w-4 opacity-80" />
-                                        Perfil
-                                    </a>
+
                                     <button
                                         type="button"
-                                        onClick={(e) => handleShowLogoutModal(e)}
+                                        onClick={(e) => handleLogout(e)}
                                         className="w-full text-left flex items-center px-4 py-2.5 text-sm text-gray-300 
                                                hover:bg-[#1ABC9C]/10 hover:text-white transition-colors duration-200"
                                     >
-                                        <LogOut className="mr-2.5 h-4 w-4 opacity-80" />
-                                        Sair
+                                        {isLoggingOut ? (
+                                            <>
+                                                <Loader2 className="mr-2.5 h-4 w-4 opacity-80 animate-spin" />
+                                                Saindo...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <LogOut className="mr-2.5 h-4 w-4 opacity-80" />
+                                                Sair
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -428,12 +416,21 @@ export default function Navbar() {
                             </a>
                             <button
                                 type="button"
-                                onClick={(e) => handleShowLogoutModal(e)}
+                                onClick={(e) => handleLogout(e)}
                                 className="w-full flex items-center px-3 py-2.5 text-base font-medium text-gray-300 hover:text-white 
                                          transition-colors duration-200 rounded-lg hover:bg-[#2c2c2c]/60"
                             >
-                                <LogOut className="mr-3 h-4 w-4 opacity-80" />
-                                Sair
+                                {isLoggingOut ? (
+                                    <>
+                                        <Loader2 className="mr-3 h-4 w-4 opacity-80 animate-spin" />
+                                        Saindo...
+                                    </>
+                                ) : (
+                                    <>
+                                        <LogOut className="mr-3 h-4 w-4 opacity-80" />
+                                        Sair
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -448,56 +445,6 @@ export default function Navbar() {
                         setOpenSubmenu(null);
                     }}
                 ></div>
-            )}
-
-            {showLogoutModal && (
-                <>
-                    <div
-                        className="fixed inset-0 bg-black/60 z-50"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowLogoutModal(false);
-                        }}
-                    ></div>
-                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-[#2C2C2C] to-[#3A3A3A] 
-                                 rounded-lg shadow-2xl z-50 w-80 animate-fadeIn overflow-hidden border border-gray-700/30">
-                        <div className="p-5">
-                            <h3 className="text-lg font-medium text-white mb-2">Confirmar saída</h3>
-                            <p className="text-gray-300 mb-5">Tem certeza que deseja sair do sistema?</p>
-                            <div className="flex justify-end space-x-3">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowLogoutModal(false);
-                                    }}
-                                    className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white border border-gray-600 rounded-md 
-                                           hover:bg-gray-700/30 transition-colors"
-                                    disabled={isLoggingOut}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleLogout();
-                                    }}
-                                    disabled={isLoggingOut}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-[#1ABC9C] rounded-md hover:bg-[#16a085] 
-                                           transition-colors flex items-center justify-center min-w-[80px] shadow-lg shadow-[#1ABC9C]/20"
-                                >
-                                    {isLoggingOut ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            Saindo...
-                                        </>
-                                    ) : (
-                                        "Sim, sair"
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
             )}
         </nav>
     );

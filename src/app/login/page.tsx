@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getIsLogoutInProgress } from "@/services/api/authInterceptor";
 import { CheckCircle, Eye, EyeOff, Loader, Lock, Settings, User, X, XCircle } from "lucide-react";
 import Image from "next/image";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import packageInfo from '../../../package.json';
 
 interface ApiTestResult {
@@ -26,6 +26,8 @@ export default function LoginPage() {
     const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
     const [logoutInProgress, setLogoutInProgress] = useState<boolean>(false);
     const [isLandscape, setIsLandscape] = useState(false);
+
+    const usernameInputRef = useRef<HTMLInputElement>(null);
 
     const { apiUrl, isConnected, isLoading: apiIsLoading, saveApiUrl, testApiConnection } = useApiConfig();
     const { login, error: authError } = useAuth();
@@ -62,6 +64,13 @@ export default function LoginPage() {
             }
         }
     }, [apiUrl]);
+
+    // Efeito para focar automaticamente no input de usuário quando o componente é montado
+    useEffect(() => {
+        if (usernameInputRef.current) {
+            usernameInputRef.current.focus();
+        }
+    }, []);
 
     useEffect(() => {
         const checkLogoutStatus = () => {
@@ -368,6 +377,7 @@ export default function LoginPage() {
                                         placeholder="Seu usuário"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
+                                        ref={usernameInputRef}
                                     />
                                 </div>
                                 {formSubmitted && !username && (
