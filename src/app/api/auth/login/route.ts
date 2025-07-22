@@ -90,8 +90,6 @@ export async function POST(request: NextRequest) {
                 message: 'Login realizado com sucesso'
             };
 
-            // Retornamos a resposta sem definir cookies HTTPOnly
-            // O token será gerenciado apenas pelo cliente através de cookie JS
             const nextResponse = NextResponse.json(responseData, { status: 200 });
 
             return nextResponse;
