@@ -48,7 +48,24 @@ export default function DefinicoesPage() {
 
             setIsLoading(true);
             try {
-                // Obter postos do usuário logado apenas para exibição
+                // Obter postos do localStorage como nas outras páginas
+                const getPostosFromLocalStorage = (): string[] => {
+                    try {
+                        const postosData = localStorage.getItem("postos-vinculados");
+                        if (!postosData) return [];
+
+                        const parsedData = JSON.parse(postosData);
+                        if (Array.isArray(parsedData)) return parsedData;
+                        if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
+                        return [];
+                    } catch {
+                        return [];
+                    }
+                };
+
+                const postos = getPostosFromLocalStorage();
+
+                // Obter dados do usuário para exibição
                 const userDataStr = localStorage.getItem('userData');
                 let userPostos: string[] = [];
                 if (userDataStr) {
@@ -64,8 +81,8 @@ export default function DefinicoesPage() {
                 }
 
                 // Buscar dados da API de definições usando o serviço especializado
-                // Esta chamada não inclui o parâmetro codigo_posto
-                const data = await definicaoService.getFichasInspecaoDefinicoes();
+                // Agora incluindo o parâmetro codigo_posto
+                const data = await definicaoService.getFichasInspecaoDefinicoes(postos);
                 setDefinicoesData(data);
             } catch (error) {
                 console.error("Erro ao carregar definições:", error);

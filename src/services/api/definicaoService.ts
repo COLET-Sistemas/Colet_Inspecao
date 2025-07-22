@@ -60,11 +60,39 @@ class DefinicaoService {
 
     /**
      * Busca as fichas de inspeção que precisam de definição
-     * Esta chamada não utiliza o parâmetro código_posto
+     * @param codigosPostos - Array de códigos de posto ou string com códigos separados por vírgula
      */
-    async getFichasInspecaoDefinicoes(): Promise<InspectionItem[]> {
+    async getFichasInspecaoDefinicoes(codigosPostos: string[] | string): Promise<InspectionItem[]> {
         try {
-            const response = await fetchWithAuth(`${this.apiUrl}/inspecao/fichas_inspecao?aba=definicoes`, {
+            // Verificar se o usuário tem a letra Q no perfil_inspecao
+            let hasPerfilQ = false;
+            try {
+                const userDataStr = localStorage.getItem("userData");
+                if (userDataStr) {
+                    const userData = JSON.parse(userDataStr);
+                    if (userData && userData.perfil_inspecao) {
+                        if (typeof userData.perfil_inspecao === 'string') {
+                            hasPerfilQ = userData.perfil_inspecao.includes('Q');
+                        } else if (Array.isArray(userData.perfil_inspecao)) {
+                            hasPerfilQ = userData.perfil_inspecao.some((p: string) => p.includes('Q'));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar perfil de inspeção:', error);
+            }
+
+            let postos: string[];
+            if (hasPerfilQ) {
+                postos = ['CQ'];
+            } else {
+                postos = Array.isArray(codigosPostos) ? codigosPostos : codigosPostos.split(',').map(p => p.trim());
+            }
+
+            // Junta os postos com vírgula
+            const postosParam = postos.join(',');
+
+            const response = await fetchWithAuth(`${this.apiUrl}/inspecao/fichas_inspecao?codigo_posto=${postosParam}&aba=definicoes`, {
                 method: 'GET'
             });
 
@@ -86,9 +114,9 @@ class DefinicaoService {
     /**
      * Busca uma ficha de inspeção específica por ID
      */
-    async getFichaInspecaoById(id: number): Promise<InspectionItem | null> {
+    async getFichaInspecaoById(id: number, codigosPostos: string[] | string): Promise<InspectionItem | null> {
         try {
-            const allFichas = await this.getFichasInspecaoDefinicoes();
+            const allFichas = await this.getFichasInspecaoDefinicoes(codigosPostos);
             return allFichas.find(ficha => ficha.id_ficha_inspecao === id) || null;
         } catch (error) {
             throw error;

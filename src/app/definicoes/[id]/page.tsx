@@ -49,9 +49,25 @@ export default function DefinicaoDetailsPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Buscar a definição específica pelo ID diretamente usando o serviço de definições
-                // Este método já busca apenas definições sem filtro de posto
-                const foundDefinicao = await definicaoService.getFichaInspecaoById(parseInt(id));
+                // Obter postos do localStorage como nas outras páginas
+                const getPostosFromLocalStorage = (): string[] => {
+                    try {
+                        const postosData = localStorage.getItem("postos-vinculados");
+                        if (!postosData) return [];
+
+                        const parsedData = JSON.parse(postosData);
+                        if (Array.isArray(parsedData)) return parsedData;
+                        if (Array.isArray(parsedData?.selectedPostos)) return parsedData.selectedPostos;
+                        return [];
+                    } catch {
+                        return [];
+                    }
+                };
+
+                const postos = getPostosFromLocalStorage();
+
+                // Buscar a definição específica pelo ID com o filtro de postos
+                const foundDefinicao = await definicaoService.getFichaInspecaoById(parseInt(id), postos);
 
                 if (foundDefinicao) {
                     setDefinicao(foundDefinicao);

@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Parse dos dados do usuário
         let userData = null;
         try {
             userData = JSON.parse(userDataHeader);
