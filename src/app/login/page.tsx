@@ -98,6 +98,16 @@ export default function LoginPage() {
         return () => clearInterval(statusCheck);
     }, []);
 
+    // Efeito para limpar o campo de senha quando aparece o erro de código de pessoa
+    useEffect(() => {
+        if (authError?.message?.includes('Usuário não possui código de pessoa associado')) {
+            setTimeout(() => {
+                setPassword('');
+                setFormSubmitted(false);
+            }, 100);
+        }
+    }, [authError]);
+
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };

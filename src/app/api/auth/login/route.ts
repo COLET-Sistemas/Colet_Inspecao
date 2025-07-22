@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        // Log do payload recebido do frontend para debug
         const requestData = await request.json();
-        console.log("Payload recebido do frontend:", JSON.stringify(requestData));
-
         const { usuario, senha_cripto } = requestData;
 
         // Validação básica
@@ -67,26 +64,11 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Determina se estamos em localhost/desenvolvimento
-            const isLocalhost = request.headers.get('host')?.includes('localhost') ||
-                request.headers.get('host')?.includes('127.0.0.1');
-
-            // Em desenvolvimento local, permitimos flexibilidade para testes
-            const isSecure = process.env.NODE_ENV === 'production' ||
-                request.headers.get('x-forwarded-proto') === 'https';
-
-            // CRÍTICO: Para requisições cross-origin, SEMPRE use SameSite=None
-            // Exceto para testes puramente locais (mesmo domínio)
-            const sameSite = 'none' as const;
-
-            // Log para diagnóstico
-            console.log(`Login: isProduction=${process.env.NODE_ENV === 'production'}, isLocalhost=${isLocalhost}, isSecure=${isSecure}, sameSite=${sameSite}`);
-
             // Cria a resposta incluindo o token para acesso via JavaScript
             const responseData = {
                 success: true,
                 user: userData,
-                token: data.token || '',  
+                token: data.token || '',
                 message: 'Login realizado com sucesso'
             };
 
