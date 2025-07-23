@@ -392,7 +392,7 @@ export default function DefinicaoDetailsPage() {
                                                         {/* Conteúdo Detalhado (expandido) */}
                                                         {isExpanded && (
                                                             <div className="border-t border-gray-200 bg-gray-50 p-4">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                     {/* Coluna 1: Dados da Especificação */}
                                                                     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                                                                         <h4 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2">
@@ -434,8 +434,8 @@ export default function DefinicaoDetailsPage() {
                                                                                     <div>
                                                                                         <span className="text-xs font-medium text-gray-500 block mb-1">Característica</span>
                                                                                         <div
-                                                                                            className="w-20 h-20 bg-white border border-gray-200 rounded p-1"
-                                                                                            dangerouslySetInnerHTML={{ __html: especificacao.svg_caracteristica }}
+                                                                                            className="w-20 h-20 bg-white border border-gray-200 rounded p-1 flex items-center justify-center"
+                                                                                            dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">${especificacao.svg_caracteristica}</svg>` }}
                                                                                         />
                                                                                     </div>
                                                                                 )}
@@ -443,8 +443,8 @@ export default function DefinicaoDetailsPage() {
                                                                                     <div>
                                                                                         <span className="text-xs font-medium text-gray-500 block mb-1">Cota</span>
                                                                                         <div
-                                                                                            className="w-20 h-20 bg-white border border-gray-200 rounded p-1"
-                                                                                            dangerouslySetInnerHTML={{ __html: especificacao.svg_cota }}
+                                                                                            className="w-20 h-20 bg-white border border-gray-200 rounded p-1 flex items-center justify-center"
+                                                                                            dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">${especificacao.svg_cota}</svg>` }}
                                                                                         />
                                                                                     </div>
                                                                                 )}
@@ -452,78 +452,7 @@ export default function DefinicaoDetailsPage() {
                                                                         )}
                                                                     </div>
 
-                                                                    {/* Coluna 2: Valores e Limites */}
-                                                                    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                                                        <h4 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2">
-                                                                            <Ruler size={14} className="text-blue-600" />
-                                                                            Valores e Limites
-                                                                        </h4>
-
-                                                                        <div className="mb-4">
-                                                                            <div className="flex items-center gap-3 mb-2">
-                                                                                <div className="flex-1 h-1 bg-gray-200 rounded-full relative">
-                                                                                    {especificacao.valor_minimo !== null && especificacao.valor_maximo !== null && (
-                                                                                        <div className="absolute inset-0 bg-blue-200 rounded-full"></div>
-                                                                                    )}
-                                                                                    {especificacao.valor_encontrado !== null && especificacao.valor_minimo !== null && especificacao.valor_maximo !== null && (
-                                                                                        <div
-                                                                                            className={`absolute w-3 h-3 rounded-full -mt-1 ${especificacao.conforme === true ? 'bg-green-500' :
-                                                                                                especificacao.conforme === false ? 'bg-red-500' : 'bg-gray-500'
-                                                                                                }`}
-                                                                                            style={{
-                                                                                                left: `${Math.max(0, Math.min(100, (
-                                                                                                    ((Number(especificacao.valor_encontrado) - Number(especificacao.valor_minimo)) /
-                                                                                                        (Number(especificacao.valor_maximo) - Number(especificacao.valor_minimo))) * 100
-                                                                                                )))}%`
-                                                                                            }}
-                                                                                        ></div>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div className="grid grid-cols-2">
-                                                                                <div className="text-left">
-                                                                                    <span className="text-xs text-gray-500">Mínimo</span>
-                                                                                    <p className="font-medium">
-                                                                                        {especificacao.valor_minimo !== null ?
-                                                                                            `${especificacao.valor_minimo} ${especificacao.unidade_medida}` : 'N/A'}
-                                                                                    </p>
-                                                                                </div>
-                                                                                <div className="text-right">
-                                                                                    <span className="text-xs text-gray-500">Máximo</span>
-                                                                                    <p className="font-medium">
-                                                                                        {especificacao.valor_maximo !== null ?
-                                                                                            `${especificacao.valor_maximo} ${especificacao.unidade_medida}` : 'N/A'}
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                                                                            <div className="flex justify-between items-center mb-1">
-                                                                                <span className="text-xs font-medium text-gray-500">Valor Encontrado</span>
-                                                                                <span className={`text-xs px-2 py-0.5 rounded-full ${statusClass}`}>
-                                                                                    {statusText}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="text-lg font-bold">
-                                                                                {especificacao.valor_encontrado !== undefined && especificacao.valor_encontrado !== null
-                                                                                    ? `${especificacao.valor_encontrado} ${especificacao.unidade_medida}`
-                                                                                    : 'Não medido'}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {especificacao.observacao && (
-                                                                            <div className="mt-4">
-                                                                                <span className="text-xs font-medium text-gray-500">Observação</span>
-                                                                                <p className="text-sm p-2 bg-gray-50 border border-gray-200 rounded mt-1">
-                                                                                    {especificacao.observacao}
-                                                                                </p>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Coluna 3: Não Conformidades se houver */}
+                                                                    {/* Coluna 2: Não Conformidades se houver */}
                                                                     {hasOcorrencias ? (
                                                                         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                                                                             <h4 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2">
