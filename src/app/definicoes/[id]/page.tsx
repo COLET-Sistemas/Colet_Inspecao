@@ -12,7 +12,6 @@ import {
     ChevronDown,
     ChevronUp,
     Clock,
-    FileCheck,
     FileText,
     Ruler,
     SearchCheck,
@@ -70,7 +69,7 @@ export default function DefinicaoDetailsPage() {
         }
     }, []);
 
-    // Carregar dados da definição específica
+    // Carregar dados da definição específica e suas especificações
     useEffect(() => {
         if (!hasQPermission) return;
 
@@ -78,19 +77,32 @@ export default function DefinicaoDetailsPage() {
             setIsLoading(true);
             try {
                 // Buscar a definição específica pelo ID diretamente, sem filtro de postos
-                // Como estamos na página de detalhes, não precisamos filtrar por posto nem chamar /inspecao/fichas_inspecao?codigo_posto=CQ&aba=definicoes
-                // Usamos agora o endpoint /inspecao/especificacoes_inspecao?id=ID
                 const foundDefinicao = await definicaoService.getFichaInspecaoByIdDireto(parseInt(id));
 
                 if (foundDefinicao) {
                     setDefinicao(foundDefinicao);
 
-                    // Log para debug - verificar se id_ficha_inspecao está presente
                     console.log("Definição encontrada:", foundDefinicao);
                     console.log("ID da ficha de inspeção:", foundDefinicao.id_ficha_inspecao);
 
-                    // Não carregaremos as especificações automaticamente
-                    // Elas serão carregadas apenas quando o usuário clicar no botão
+                    // Carregar especificações automaticamente se tiver um ID válido
+                    if (foundDefinicao.id_ficha_inspecao) {
+                        setIsLoadingEspecificacoes(true);
+                        try {
+                            const result = await inspecaoService.getInspectionSpecifications(foundDefinicao.id_ficha_inspecao);
+                            setEspecificacoes(result.specifications as unknown as ExtendedInspectionSpecification[]);
+                            console.log("Especificações carregadas:", result.specifications.length);
+
+                            // Expandir todas as especificações por padrão
+                            setExpandedSpecs(result.specifications.map(spec => spec.id_especificacao));
+                        } catch (error) {
+                            console.error("Erro ao carregar especificações da inspeção:", error);
+                            setAlertMessage("Erro ao carregar especificações da inspeção. Tente novamente mais tarde.");
+                            setAlertType("error");
+                        } finally {
+                            setIsLoadingEspecificacoes(false);
+                        }
+                    }
                 } else {
                     setAlertMessage("Definição não encontrada ou você não tem permissão para visualizá-la.");
                     setAlertType("error");
@@ -106,37 +118,6 @@ export default function DefinicaoDetailsPage() {
 
         fetchData();
     }, [hasQPermission, id]);
-
-    // Função para carregar as especificações quando solicitado pelo usuário
-    const fetchEspecificacoes = async () => {
-        // Verificar se temos uma definição válida com ID
-        if (!definicao || !definicao.id_ficha_inspecao) {
-            setAlertMessage("Não foi possível identificar a ficha de inspeção.");
-            setAlertType("error");
-            return;
-        }
-
-        console.log("Carregando especificações para idFichaInspecao:", definicao.id_ficha_inspecao);
-
-        setIsLoadingEspecificacoes(true);
-        try {
-            // Buscar as especificações usando o endpoint inspecao/especificacoes_inspecao
-            const result = await inspecaoService.getInspectionSpecifications(definicao.id_ficha_inspecao);
-            // Temos que fazer um cast para o tipo estendido, já que a API pode retornar ocorrencias_nc
-            setEspecificacoes(result.specifications as unknown as ExtendedInspectionSpecification[]);
-            console.log("Especificações carregadas:", result.specifications.length);
-
-            // Expandir todas as especificações por padrão
-            setExpandedSpecs(result.specifications.map(spec => spec.id_especificacao));
-
-        } catch (error) {
-            console.error("Erro ao carregar especificações da inspeção:", error);
-            setAlertMessage("Erro ao carregar especificações da inspeção. Tente novamente mais tarde.");
-            setAlertType("error");
-        } finally {
-            setIsLoadingEspecificacoes(false);
-        }
-    };
 
     const handleBack = () => {
         router.back();
@@ -265,7 +246,7 @@ export default function DefinicaoDetailsPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-gray-500 mt-1.5">Carregue as especificações para ver</p>
+                                    <p className="text-xs text-gray-500 mt-1.5">Nenhum instrumento de medição encontrado</p>
                                 )}
                             </div>
                         </div>
@@ -295,27 +276,13 @@ export default function DefinicaoDetailsPage() {
                                     <p className="text-sm text-gray-500 mt-0.5">
                                         {especificacoes.length > 0
                                             ? `${especificacoes.length} itens de inspeção cadastrados`
-                                            : "Carregue as especificações para visualizar os itens"}
+                                            : "Nenhum item de inspeção encontrado"}
                                     </p>
                                 </div>
                             </div>
                             <div>
 
-                                {/* Botão para carregar/recarregar as especificações */}
-                                <div className="mt-3 sm:mt-2">
-                                    {!isLoadingEspecificacoes && (
-                                        <button
-                                            onClick={fetchEspecificacoes}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2 shadow-sm w-full sm:w-auto"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-clockwise" viewBox="0 0 16 16">
-                                                <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
-                                                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
-                                            </svg>
-                                            {especificacoes.length > 0 ? "Atualizar Especificações" : "Carregar Especificações"}
-                                        </button>
-                                    )}
-                                </div>
+                                {/* Botão removido */}
                             </div>
                         </div>
 
@@ -331,17 +298,10 @@ export default function DefinicaoDetailsPage() {
                                 <div className="bg-gray-50 p-8 rounded-lg border border-dashed border-gray-300 text-center">
                                     <div className="flex flex-col items-center justify-center">
                                         <SearchCheck size={48} className="text-gray-300 mb-3" />
-                                        <p className="text-gray-700 font-medium text-lg mb-1">Nenhuma especificação carregada</p>
-                                        <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                                            Para visualizar os detalhes e itens de especificação desta inspeção, clique no botão abaixo para carregar os dados.
+                                        <p className="text-gray-700 font-medium text-lg mb-1">Nenhuma especificação disponível</p>
+                                        <p className="text-gray-500 text-sm max-w-md mx-auto">
+                                            Não há especificações disponíveis para esta inspeção.
                                         </p>
-                                        <button
-                                            onClick={fetchEspecificacoes}
-                                            className="px-6 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
-                                        >
-                                            <SearchCheck size={18} />
-                                            Carregar Especificações
-                                        </button>
                                     </div>
                                 </div>
                             ) : (
@@ -669,201 +629,6 @@ export default function DefinicaoDetailsPage() {
                         </div>
                     </div>
 
-                    {/* Seção de Ações */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-6">
-                        <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4">
-                            <div className="flex flex-wrap gap-4 items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-                                        <FileCheck size={24} className="text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-white">Definição de Ações</h2>
-                                        <p className="text-indigo-100 text-sm mt-1">Informe as decisões e próximos passos para esta inspeção</p>
-                                    </div>
-                                </div>
-
-                                {/* Indicador de status atual */}
-                                {definicao.situacao && (
-                                    <div className="px-3 py-1.5 bg-white bg-opacity-95 rounded-lg shadow-sm flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                                        <span className="text-sm font-medium text-indigo-800">
-                                            Status: {definicao.situacao === "5" ? "Pendente de Decisão" : `Situação ${definicao.situacao}`}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Coluna esquerda: Ações principais */}
-                                <div className="lg:col-span-2">
-                                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 mb-6">
-                                        <h3 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-                                            <FileCheck size={18} className="text-indigo-600" />
-                                            Definir Próximo Passo
-                                        </h3>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Ação a ser tomada:</label>
-                                                <select className="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 h-11">
-                                                    <option value="">Selecione uma ação</option>
-                                                    <option value="aprovado">Aprovar</option>
-                                                    <option value="reprovado">Reprovar</option>
-                                                    <option value="retrabalho">Enviar para retrabalho</option>
-                                                    <option value="scrap">Sucatear</option>
-                                                    <option value="reinspecao">Solicitar reinspecão</option>
-                                                </select>
-                                                <p className="mt-1 text-xs text-gray-500">
-                                                    Esta ação definirá o fluxo subsequente da inspeção
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Destino:</label>
-                                                <select className="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 h-11">
-                                                    <option value="">Selecione um destino</option>
-                                                    <option value="linha">Linha de produção</option>
-                                                    <option value="retrabalho">Célula de retrabalho</option>
-                                                    <option value="descarte">Área de descarte</option>
-                                                    <option value="almoxarifado">Almoxarifado</option>
-                                                </select>
-                                                <p className="mt-1 text-xs text-gray-500">
-                                                    Local para onde os itens serão encaminhados
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Prioridade */}
-                                        <div className="mb-6">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Prioridade:</label>
-                                            <div className="flex flex-wrap gap-3">
-                                                <div className="flex-1 min-w-[120px]">
-                                                    <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                                        <input
-                                                            type="radio"
-                                                            name="prioridade"
-                                                            value="normal"
-                                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                                                            defaultChecked
-                                                        />
-                                                        <div className="ml-2">
-                                                            <span className="block text-sm font-medium text-gray-900">Normal</span>
-                                                            <span className="text-xs text-gray-500">Processamento padrão</span>
-                                                        </div>
-                                                    </label>
-                                                </div>
-                                                <div className="flex-1 min-w-[120px]">
-                                                    <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                                        <input
-                                                            type="radio"
-                                                            name="prioridade"
-                                                            value="alta"
-                                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                                                        />
-                                                        <div className="ml-2">
-                                                            <span className="block text-sm font-medium text-gray-900">Alta</span>
-                                                            <span className="text-xs text-gray-500">Priorizar processo</span>
-                                                        </div>
-                                                    </label>
-                                                </div>
-                                                <div className="flex-1 min-w-[120px]">
-                                                    <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                                        <input
-                                                            type="radio"
-                                                            name="prioridade"
-                                                            value="urgente"
-                                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                                                        />
-                                                        <div className="ml-2">
-                                                            <span className="block text-sm font-medium text-gray-900">Urgente</span>
-                                                            <span className="text-xs text-gray-500">Atender imediatamente</span>
-                                                        </div>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Justificativa / Observações:</label>
-                                            <textarea
-                                                rows={4}
-                                                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                placeholder="Descreva detalhes adicionais sobre sua decisão, incluindo justificativas técnicas se necessário..."
-                                            ></textarea>
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Estas informações serão visíveis para todas as áreas envolvidas no processo
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Coluna direita: Resumo e ações */}
-                                <div className="lg:col-span-1">
-                                    <div className="bg-gray-50 rounded-lg border border-gray-200 shadow-sm p-5 mb-6 sticky top-6">
-                                        <h3 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
-                                            <Tag size={18} className="text-indigo-600" />
-                                            Resumo da Decisão
-                                        </h3>
-
-                                        <div className="space-y-4 mb-6">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">Total de Itens</span>
-                                                <span className="font-bold">{especificacoes.length}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">Não Conformidades</span>
-                                                <span className="font-bold text-red-600">{especificacoes.filter(e => e.conforme === false).length}</span>
-                                            </div>
-
-                                            {definicao.resultado_inspecao && (
-                                                <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
-                                                    <span className="text-sm text-gray-600">Resultado Atual</span>
-                                                    <span className={`font-bold ${definicao.resultado_inspecao === 'Aprovado'
-                                                        ? 'text-green-600'
-                                                        : definicao.resultado_inspecao === 'Reprovado'
-                                                            ? 'text-red-600'
-                                                            : 'text-amber-600'
-                                                        }`}>
-                                                        {definicao.resultado_inspecao}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-3 mt-6">
-                                            <button className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
-                                                <FileCheck size={18} />
-                                                <span>Salvar Decisão</span>
-                                            </button>
-                                            <button
-                                                onClick={handleBack}
-                                                className="w-full px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 border border-gray-300"
-                                            >
-                                                <ArrowLeft size={18} />
-                                                <span>Voltar</span>
-                                            </button>
-                                        </div>
-
-                                        <div className="mt-4 pt-4 border-t border-gray-200">
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                                                <div className="text-blue-600 mt-0.5">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
-                                                    </svg>
-                                                </div>
-                                                <p className="text-xs text-blue-700">
-                                                    Após salvar esta decisão, o processo seguirá para a próxima etapa e as áreas envolvidas serão notificadas automaticamente.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             ) : (
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
