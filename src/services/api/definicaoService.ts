@@ -89,7 +89,6 @@ class DefinicaoService {
                 postos = Array.isArray(codigosPostos) ? codigosPostos : codigosPostos.split(',').map(p => p.trim());
             }
 
-            // Junta os postos com vírgula
             const postosParam = postos.join(',');
 
             const response = await fetchWithAuth(`${this.apiUrl}/inspecao/fichas_inspecao?codigo_posto=${postosParam}&aba=definicoes`, {
@@ -111,10 +110,7 @@ class DefinicaoService {
         }
     }
 
-    /**
-     * Busca uma ficha de inspeção específica por ID usando filtro de postos
-     * (usado na listagem para manter consistência com os filtros)
-     */
+
     async getFichaInspecaoById(id: number, codigosPostos?: string[] | string): Promise<InspectionItem | null> {
         try {
             // Se codigosPostos não for fornecido, busca diretamente pelo ID
@@ -130,10 +126,7 @@ class DefinicaoService {
         }
     }
 
-    /**
-     * Busca uma ficha de inspeção diretamente pelo ID sem filtro de postos
-     * (usado na tela de detalhes)
-     */
+
     async getFichaInspecaoByIdDireto(id: number): Promise<InspectionItem | null> {
         try {
             const apiUrl = localStorage.getItem("apiUrl");
@@ -154,11 +147,7 @@ class DefinicaoService {
             const data = await response.json();
             if (!data) return null;
 
-            // Log para debug - verificar a estrutura dos dados recebidos
-            console.log("Dados recebidos da API especificacoes_inspecao:", data);
 
-            // O endpoint /inspecao/especificacoes_inspecao retorna os dados da ficha diretamente no objeto
-            // junto com o campo 'especificacoes', mas não precisamos das especificações nesse momento
             if (typeof data === 'object' && data !== null) {
                 // Mapeia o objeto retornado diretamente (ignorando o campo 'especificacoes')
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars

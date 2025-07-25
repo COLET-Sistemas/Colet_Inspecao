@@ -6,7 +6,8 @@ import { RestrictedAccess } from "@/components/ui/RestrictedAccess";
 import { PageHeader } from "@/components/ui/cadastros/PageHeader";
 import definicaoService from "@/services/api/definicaoService";
 import { InspectionItem } from "@/services/api/inspecaoService";
-import { AlertCircle, FileText, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
+import { FileText, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -60,6 +61,58 @@ export default function DefinicoesPage() {
             setIsCheckingPermission(false);
         }
     }, []);
+
+    const handleManualRefresh = useCallback(async () => {
+        if (!hasQPermission) return;
+
+        setIsRefreshing(true);
+        setIsLoading(true);
+        setAlertMessage(null); // Limpa alertas anteriores
+
+        try {
+            // Obter postos do localStorage como nas outras páginas
+            const postos = getPostosFromLocalStorage();
+
+            // Obter dados do usuário para exibição
+            const userDataStr = localStorage.getItem('userData');
+            let userPostos: string[] = [];
+            if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                if (userData?.postos && Array.isArray(userData.postos)) {
+                    userPostos = userData.postos;
+                }
+            }
+
+            // Montar texto para exibição
+            if (userPostos.length > 0) {
+                setPostosText(`Postos: ${userPostos.join(', ')}`);
+            }
+
+            // Buscar dados da API de definições usando o serviço especializado
+            const data = await definicaoService.getFichasInspecaoDefinicoes(postos);
+
+            // Ordenar dados por prioridade e atualizar estado
+            sortDataByPriority(data);
+
+            setLastRefresh(new Date());
+
+            // Se ainda não houver dados após o refresh, mostra uma mensagem informativa
+            setTimeout(() => {
+                if (data.length === 0) {
+                    setAlertMessage("Verificação concluída. Não há definições pendentes no momento.");
+                    setAlertType("info");
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error("Erro ao atualizar dados manualmente:", error);
+            setAlertMessage("Erro ao verificar dados. Tente novamente em alguns instantes.");
+            setAlertType("error");
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [hasQPermission, sortDataByPriority]);
 
     // Função para obter postos do localStorage
     const getPostosFromLocalStorage = (): string[] => {
@@ -200,20 +253,29 @@ export default function DefinicoesPage() {
                 />
             )}
 
-            {/* Sem filtros e controles */}
-
             {isLoading ? (
                 <div className="flex justify-center items-center h-60">
                     <LoadingSpinner size="large" />
                 </div>
             ) : definicoesData.length === 0 ? (
-                <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex justify-center mb-2">
-                        <AlertCircle size={48} className="text-gray-400" />
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="py-12 text-center sm:py-16"
+                >
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm sm:h-24 sm:w-24">
+                        <FileText className="h-8 w-8 text-gray-400 sm:h-10 sm:w-10" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-700">Nenhuma definição encontrada</h3>
-                    <p className="text-gray-500">Não há definições pendentes para os postos selecionados.</p>
-                </div>
+                    <h3 className="mt-6 text-lg font-semibold text-gray-900 sm:text-xl">Nenhuma definição encontrada</h3>
+                    <p className="mt-2 px-4 text-sm text-gray-500 sm:text-base max-w-md mx-auto">Não há definições pendentes para os postos selecionados.</p>
+                    <button
+                        onClick={handleManualRefresh}
+                        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:text-[#1ABC9C] hover:border-[#1ABC9C]/30 focus:outline-none focus:ring-2 focus:ring-[#1ABC9C]/20"
+                    >
+                        <RefreshCw className="h-4 w-4 transition-transform duration-300 hover:rotate-180" />
+                        Verificar novamente
+                    </button>
+                </motion.div>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full bg-white rounded-lg shadow">
