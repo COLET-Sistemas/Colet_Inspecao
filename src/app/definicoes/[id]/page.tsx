@@ -176,7 +176,6 @@ export default function DefinicaoDetailsPage() {
                 <div className="flex justify-center items-center h-60 bg-white rounded-lg shadow-sm">
                     <div className="text-center">
                         <LoadingSpinner size="large" />
-                        <p className="mt-4 text-gray-600">Carregando informações da inspeção...</p>
                     </div>
                 </div>
             ) : definicao ? (

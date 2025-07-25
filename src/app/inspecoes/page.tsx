@@ -992,11 +992,8 @@ export default function InspecoesPage() {
                                         )}</p>
                                     </div>
                                 </div>
-
-
-
-                                <div className="col-span-2 sm:col-span-3 flex items-center mt-1 sm:mt-0">
-                                    {item.obs_criacao && item.obs_criacao.trim() !== "" && (
+                                {item.obs_criacao && item.obs_criacao.trim() !== "" && (
+                                    <div className="col-span-2 sm:col-span-3 flex items-center mt-1 sm:mt-0">
                                         <div className="flex items-center max-w-full">
                                             <FileText className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
                                             <p className="text-xs font-medium text-gray-500 uppercase mr-1.5">Obs:</p>
@@ -1004,8 +1001,8 @@ export default function InspecoesPage() {
                                                 {item.obs_criacao}
                                             </p>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Gradient overlay on hover */}
