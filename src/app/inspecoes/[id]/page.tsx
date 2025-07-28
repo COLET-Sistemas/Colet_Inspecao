@@ -22,21 +22,21 @@ import {
     TrendingUp,
     XCircle
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import './especificacoes-styles.css';
 
+import { useParams } from 'next/navigation';
+
 export default function EspecificacoesPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const id = searchParams?.get('id');
+    const params = useParams();
+    const id = params?.id ? String(params.id) : undefined;
     const hasInitialized = useRef(false);
     const auth = useAuth();
     const [specifications, setSpecifications] = useState<InspectionSpecification[]>([]);
 
-    // Enhanced validation for codigo_pessoa in localStorage
     useEffect(() => {
-        // Check userData in localStorage
         const userDataStr = localStorage.getItem('userData');
         let localStorageHasCodigoPessoa = false;
 
@@ -49,9 +49,7 @@ export default function EspecificacoesPage() {
             }
         }
 
-        // If neither auth context nor localStorage has codigo_pessoa, redirect
         if (!auth.user?.codigo_pessoa && !localStorageHasCodigoPessoa) {
-
             router.push('/inspecoes');
             return;
         }
@@ -684,7 +682,7 @@ export default function EspecificacoesPage() {
         if (localInspecao === 'Q') return "Requer perfil de Qualidade (Q) para editar";
         if (localInspecao === 'P') return "Requer perfil de Operador (O) para editar";
         return "";
-    }, []);    // Function removed as it's no longer used// Função para iniciar a inspeção
+    }, []);
 
     // Função que realmente inicia o processo de inspeção
     const startInspectionProcess = useCallback(async () => {
@@ -936,7 +934,6 @@ export default function EspecificacoesPage() {
                     }
                 });
 
-                // Se houve erro de validação, exibir e parar
                 if (validationError) {
                     setAlertMessage({
                         message: validationError,
@@ -1059,7 +1056,6 @@ export default function EspecificacoesPage() {
                                 menor_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.menorValor !== null ? tipo9Values.menorValor : 0),
                                 maior_valor: (tipo9Values.quantidade === 0) ? null : (tipo9Values.maiorValor !== null ? tipo9Values.maiorValor : 0)
                             };
-                            // Adicionar id_ocorrencia se existir
                             if (editingValue?.id_ocorrencia_maior) {
                                 ocorrenciaMaior.id_ocorrencia = editingValue.id_ocorrencia_maior;
                             }
@@ -1068,13 +1064,12 @@ export default function EspecificacoesPage() {
 
                         return {
                             id_especificacao: spec.id_especificacao,
-                            valor_encontrado: null, // Nulo para inspeção tipo 9
-                            conforme: null, // Nulo para inspeção tipo 9
+                            valor_encontrado: null,
+                            conforme: null,
                             observacao: tipo9Values.observacao,
                             ocorrencias_nc: ocorrencias_nc
                         };
                     } else {
-                        // Para outros tipos de inspeção, retornar formato normal
                         return {
                             id_especificacao: spec.id_especificacao,
                             valor_encontrado: processedValues.valorEncontrado,
@@ -1084,10 +1079,6 @@ export default function EspecificacoesPage() {
                     }
                 })
                 .filter(item => item !== null);
-
-            // Log para debug - verificar se apontamentos está vazio
-            console.log('DEBUG - Apontamentos antes de interromper:', apontamentos);
-            console.log('DEBUG - Estrutura completa com id_ocorrencia:', JSON.stringify(apontamentos, null, 2));
 
             // Garantir que para tipo 9 nunca enviamos um array vazio
             const apontamentosFinais = fichaDados.id_tipo_inspecao === 9 && apontamentos.length === 0
@@ -1101,7 +1092,6 @@ export default function EspecificacoesPage() {
                 : apontamentos;
 
             if (fichaDados.id_tipo_inspecao === 9) {
-                // Para inspeção tipo 9, passar qtde_inspecionada
                 await inspecaoService.interruptInspection(
                     parseInt(id),
                     apontamentosFinais,
@@ -1109,7 +1099,6 @@ export default function EspecificacoesPage() {
                     fichaDados.qtde_inspecionada
                 );
             } else {
-                // Para outros tipos, usar o método original
                 await inspecaoService.interruptInspection(
                     parseInt(id),
                     apontamentosFinais,
@@ -1125,7 +1114,6 @@ export default function EspecificacoesPage() {
                 type: "info",
             });
 
-            // Recarregar os dados atualizados
             await handleRefresh();
 
         } catch (error) {
@@ -1152,7 +1140,6 @@ export default function EspecificacoesPage() {
                 type: "success",
             });
 
-            // Redireciona após um pequeno delay para garantir que o usuário veja a mensagem
             setTimeout(() => {
                 router.back();
             }, 1500);
@@ -1181,7 +1168,6 @@ export default function EspecificacoesPage() {
                 type: "success",
             });
 
-            // Recarregar dados após confirmar recebimento
             await handleRefresh();
         } catch (error) {
             console.error("Erro ao confirmar recebimento:", error);

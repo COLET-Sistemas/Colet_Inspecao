@@ -432,7 +432,7 @@ export default function InspecoesPage() {
         }
 
         localStorage.setItem('activeInspectionTab', activeTab);
-        router.push(`/inspecoes/especificacoes?id=${data.inspection.id_ficha_inspecao}`);
+        router.push(`/inspecoes/${data.inspection.id_ficha_inspecao}`);
     }, [router, activeTab, isQuantidadeContext]);
 
     const handleNaoConformidadeSuccess = useCallback((quantidade: number, inspection: InspectionItem) => {
@@ -522,7 +522,7 @@ export default function InspecoesPage() {
         }
 
         if (hasData) {
-            router.push(`/inspecoes/especificacoes?id=${item.id_ficha_inspecao}`);
+            router.push(`/inspecoes/${item.id}`);
         } else {
             setSelectedInspection(item);
             setIsNaoConformidadeContext(false);
